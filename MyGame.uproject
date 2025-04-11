@@ -1,0 +1,47 @@
+{
+	"FileVersion": 3,
+	"EngineAssociation": "{8710F238-49DF-CEC0-CFD0-C8B89431D27D}",
+	"Category": "",
+	"Description": "",
+	"Modules": [
+		{
+			"Name": "MyGame",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"GameplayAbilities",
+				"Engine",
+				"MovieScene",
+				"UMG"
+			]
+		},
+		{
+			"Name": "ClientModule",
+			"Type": "ClientOnly",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"UMG",
+				"MyGame",
+				"Engine"
+			]
+		},
+		{
+			"Name": "ServerModule",
+			"Type": "ServerOnly",
+			"LoadingPhase": "Default"
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "ModelingToolsEditorMode",
+			"Enabled": true,
+			"TargetAllowList": [
+				"Editor"
+			]
+		},
+		{
+			"Name": "GameplayAbilities",
+			"Enabled": true
+		}
+	]
+}
