@@ -4,5 +4,9 @@
 #include "UI/ToolTip/BaseToolTip.h"
 
 void UBaseToolTip::SetToolTipData(UPrimaryDataAsset* Data) {
+	if (/*already exsits*/false) {
+		return;
+	}
+	AddToViewport(999);
 	SetVisibility(ESlateVisibility::Collapsed);
 }

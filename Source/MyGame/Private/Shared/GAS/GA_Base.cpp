@@ -9,13 +9,25 @@ void UGA_Base::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FG
                                const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) {
 	AGGwaCharacter * AvatarActor = Cast<AGGwaCharacter>(ActorInfo->AvatarActor.Get());
 	UE_LOG(LogTemp, Warning, TEXT("✅ UGA_Base Activated"));
+	UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get();
+	
 	if (AGGwaPlayerController * PC = Cast<AGGwaPlayerController>(ActorInfo->PlayerController.Get())) {
 		FHitResult Hit;
 		if (PC->GetHitResultUnderCursor(ECC_Visibility, false, Hit)) {
+			CacheHitLocation = Hit.ImpactPoint;
 			FVector Dir = Hit.ImpactPoint - AvatarActor->GetActorLocation();
 			Dir.Z = 0;
+			
 			AvatarActor->SetActorRotation(Dir.Rotation());
 		}
 	}
 	K2_ActivateAbility();
+}
+
+FSkillContext UGA_Base::BuildSkillContext(const FGameplayAbilityActorInfo* ActorInfo) {
+	FSkillContext Context;
+	Context.SourceASC = ActorInfo->AbilitySystemComponent.Get();
+	Context.SourceActor = ActorInfo->AvatarActor.Get();
+	Context.TargetLocation = CacheHitLocation;
+	return Context;
 }

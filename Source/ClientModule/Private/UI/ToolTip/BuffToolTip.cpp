@@ -20,6 +20,6 @@ void UBuffToolTip::SetToolTipData(UPrimaryDataAsset* ToolTip) {
 		if (ToolTipIcon) {
 			ToolTipIcon->SetBrushFromTexture(BuffData->Image);
 		}
-		SetVisibility(ESlateVisibility::Visible);
+		// SetVisibility(ESlateVisibility::Visible);
 	}
 }

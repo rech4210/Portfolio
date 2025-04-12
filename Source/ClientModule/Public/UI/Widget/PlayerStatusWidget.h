@@ -16,7 +16,7 @@ class UHorizontalBox;
 class UBuffSlotWidget;
 class UProgressBar;
 class UTextBlock;
-
+class UBuffToolTip;
 UCLASS()
 class CLIENTMODULE_API UPlayerStatusWidget : public UUserWidget, public ISetWidgetDataInterface
 {
@@ -39,6 +39,6 @@ public:
 	
 	void UpdateHealthBar(float Current, float Max) const;
 	void UpdateManaBar(float Current, float Max) const;
-	void AddBuff(UPrimaryDataAsset* Data);
+	void AddBuff(UBuffDataAsset* Data);
 	virtual void SetWidgetData(UPrimaryDataAsset* Data) override;
 };

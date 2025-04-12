@@ -6,9 +6,8 @@
 #include "AbilityInputID.h"
 #include "GA_Base.h"
 #include "GA_Skill1.generated.h"
-/**
- * 
- */
+class UBuffDataAsset;
+class USkillDataAsset;
 class UPrimaryDataAsset;
 UCLASS()
 class MYGAME_API UGA_Skill1 : public UGA_Base
@@ -21,9 +20,9 @@ public:
 	EAbilityInputID AbilityInputID;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
-	TObjectPtr<UPrimaryDataAsset> SkillDataAsset;
+	TObjectPtr<USkillDataAsset> SkillDataAsset;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
-	TObjectPtr<UPrimaryDataAsset> BuffDataAsset;
+	TObjectPtr<UBuffDataAsset> BuffDataAsset;
 	
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
 };

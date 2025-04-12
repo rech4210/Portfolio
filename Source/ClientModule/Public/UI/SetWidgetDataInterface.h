@@ -6,6 +6,7 @@
 #include "UObject/Interface.h"
 #include "SetWidgetDataInterface.generated.h"
 
+class UBaseToolTip;
 // This class does not need to be modified.
 class UPrimaryDataAsset;
 class UBuffDataAsset;
