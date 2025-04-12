@@ -19,7 +19,7 @@ class CLIENTMODULE_API UBuffSlotWidget : public UUserWidget, public ISetWidgetDa
 public:
 	virtual void NativeConstruct() override;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (BindWidget) ,Category= "Widget")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite ,Category= "Widget")
 	TObjectPtr<UBuffToolTip> BuffToolTipWidget;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category= "Data")
 	TObjectPtr<UBuffDataAsset> BuffDataAsset;
@@ -39,12 +39,11 @@ public:
 	virtual void NativeOnMouseEnter(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 	virtual void NativeOnMouseLeave(const FPointerEvent& InMouseEvent) override;
 	virtual void SetWidgetData(UPrimaryDataAsset* Data) override;
+
 private:
 	FTimerHandle CooldownTimerHandle;
 	float TotalCooldownTime;
 	float ElapsedCooldownTime;
 
 	void UpdateDuration();
-
-public:
 };

@@ -8,6 +8,7 @@
 #include "Engine/Texture2D.h"
 #include "BaseDataAsset.generated.h"
 
+class UUserWidget;
 /**
  * 
  */
@@ -24,6 +25,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	UTexture2D* Image;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UUserWidget* Tooltip;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FGameplayTag UniqueTag;  // 고유 식별용

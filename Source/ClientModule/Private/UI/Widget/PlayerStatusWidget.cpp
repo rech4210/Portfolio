@@ -6,6 +6,7 @@
 #include "Components/TextBlock.h"
 #include "Components/ProgressBar.h"
 #include "UI/Widget/BuffSlotWidget.h"
+#include "UI/ToolTip/BuffToolTip.h"
 
 
 void UPlayerStatusWidget::UpdateHealthBar(float Current, float Max) const{
@@ -25,13 +26,14 @@ void UPlayerStatusWidget::UpdateManaBar(float Current, float Max) const{
 	}
 }
 
-void UPlayerStatusWidget::AddBuff(UPrimaryDataAsset* Data) {
+void UPlayerStatusWidget::AddBuff(UBuffDataAsset* BuffData) {
 	UBuffSlotWidget* Widget = CreateWidget<UBuffSlotWidget>(this, BuffSlotWidgetClass);
-	Widget->SetWidgetData(Data);
+	Widget->SetWidgetData(BuffData);
 	BuffHorizontalBar->AddChildToHorizontalBox(Widget);
 }
 
 void UPlayerStatusWidget::SetWidgetData(UPrimaryDataAsset* Data) {
 	UE_LOG(LogTemp, Warning, TEXT("PlayerStatusWidget SetWidgetData"));
-	AddBuff(Data);
+	UBuffDataAsset* BuffData = Cast<UBuffDataAsset>(Data);
+	AddBuff(BuffData);
 }

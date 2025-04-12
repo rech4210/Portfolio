@@ -35,20 +35,26 @@ void UBuffSlotWidget::ConsumeDuration(float CooldownTime)
 void UBuffSlotWidget::NativeOnMouseEnter(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) {
 	Super::NativeOnMouseEnter(InGeometry, InMouseEvent);
 	BuffToolTipWidget->SetVisibility(ESlateVisibility::Visible);
+	BuffToolTipWidget->SetIsEnabled(false); // 입력 무시 (hover, focus 등)
+	FVector2D MousePosition = InMouseEvent.GetScreenSpacePosition();
+	BuffToolTipWidget->SetPositionInViewport(MousePosition, false); // false == absolute position
+	UE_LOG(LogTemp, Warning, TEXT("TooltipWidget on %s"), *UEnum::GetValueAsString(BuffToolTipWidget->GetVisibility()));
 }
 
 void UBuffSlotWidget::NativeOnMouseLeave(const FPointerEvent& InMouseEvent) {
 	Super::NativeOnMouseLeave(InMouseEvent);
 	BuffToolTipWidget->SetVisibility(ESlateVisibility::Collapsed);
+	UE_LOG(LogTemp, Warning, TEXT("TooltipWidget off %s"), *UEnum::GetValueAsString(BuffToolTipWidget->GetVisibility()));
 }
 
 void UBuffSlotWidget::SetWidgetData(UPrimaryDataAsset* Data) {
 	UBuffDataAsset * BuffData = Cast<UBuffDataAsset>(Data);
+	if (nullptr != BuffData->Tooltip) {
+		BuffToolTipWidget = Cast<UBuffToolTip>(BuffData->Tooltip);
+	}
 	SkillImage->SetBrushFromTexture(BuffData->Image);
-	BuffToolTipWidget->SetToolTipData(Data);
 	ConsumeDuration(BuffData->Duration);
 }
-
 
 void UBuffSlotWidget::UpdateDuration()
 {
@@ -85,5 +91,7 @@ void UBuffSlotWidget::UpdateDuration()
 		{
 			RemainTimeText->SetText(FText::FromString(TEXT("")));
 		}
+		BuffToolTipWidget->RemoveFromParent();
+		RemoveFromParent();
 	}
 }
