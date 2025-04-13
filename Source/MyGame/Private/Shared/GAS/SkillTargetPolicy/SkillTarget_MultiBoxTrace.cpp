@@ -2,3 +2,7 @@
 
 
 #include "Shared/GAS/SkillTargetPolicy/SkillTarget_MultiBoxTrace.h"
+
+TArray<AActor*> USkillTarget_MultiBoxTrace::DetectTargets(FSkillContext& SkillContext) {
+	return Super::DetectTargets(SkillContext);
+}

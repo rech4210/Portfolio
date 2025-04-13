@@ -5,8 +5,11 @@
 #include "Blueprint/UserWidget.h"
 #include "UI/SetWidgetDataInterface.h"
 #include "Shared/GAS/GGwaAttributeSet.h"
+#include "UI/ToolTip/BaseToolTip.h"
+#include "UObject/Object.h"
 #include "GGwaWidget.generated.h"
 
+class UBaseDataAsset;
 class UItemToolTip;
 class USkillToolTip;
 class UBuffToolTip;
@@ -20,7 +23,7 @@ class UItemSetWidget;
 class UAbilitySystemComponent;
 
 UCLASS()
-class CLIENTMODULE_API UGGwaWidget : public UUserWidget, public ISetWidgetDataInterface
+class CLIENTMODULE_API UGGwaWidget : public UUserWidget
 {
 	GENERATED_BODY()
 public:
@@ -42,6 +45,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite ,Category= "Widget")
 	TSubclassOf<UItemToolTip> ItemToolTipClass;
 
+	UPROPERTY()
+	TMap<UBaseDataAsset*, UBaseToolTip*> SlotTooltipCachePair;
+	
 	/*Player Status widget에서 buff Widget 구조 확인하기, depth 깊음*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (BindWidget) ,Category= "Widget")
 	TObjectPtr<UPlayerStatusWidget> BP_PlayerStatusWidget;
@@ -50,8 +56,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (BindWidget) ,Category= "Widget")
 	TObjectPtr<UItemSetWidget> BP_ItemBarWidget;
 
-	virtual void SetWidgetData(UPrimaryDataAsset* Data) override;
+	// virtual const UUserWidget* SetWidgetData(UPrimaryDataAsset* Data) override;
+	void BindWidgetWithTooltip(UBaseDataAsset* Data);
 	void InitWidget(UAbilitySystemComponent * AbilitySystemComponent, const UGGwaAttributeSet * AttributeSet);
 	void OnHealthChanged(const FOnAttributeChangeData& Data) const;
 	void OnManaChanged(const FOnAttributeChangeData& Data) const;
+	// template<typename TDataAsset, typename TToolTip, typename TWidget>
+	// void UGGwaWidget::BindTooltip(TDataAsset* DataAsset, TSubclassOf<TToolTip> ToolTipClass, UUserWidget* ContainerWidget);
 };

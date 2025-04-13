@@ -29,7 +29,7 @@ public:
 	FVector TargetLocation;
 
 	UPROPERTY()
-	TArray<TObjectPtr<AActor>> DetectedActors;
+	TArray<AActor*> DetectedActors;
 
 	UPROPERTY()
 	TObjectPtr<USkillDataAsset> SkillData;

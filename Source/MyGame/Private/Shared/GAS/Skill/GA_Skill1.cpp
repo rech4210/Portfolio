@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Shared/GAS/GA_Skill1.h"
+#include "Shared/GAS/Skill/GA_Skill1.h"
 
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemInterface.h"
@@ -36,7 +36,7 @@ void UGA_Skill1::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const 
 	if (AvatarActor->HasAuthority()) {
 		SkillContext = BuildSkillContext(ActorInfo);
 		SkillContext.SkillData = SkillDataAsset;
-		SkillContext.DetectedActors = NewObject<USkillTarget_Directional>(this, SkillDataAsset->TargetStrategyClass)->DetectTargets(SkillContext);
+		SkillContext.DetectedActors = NewObject<USkillTargetBase>(this, SkillDataAsset->TargetStrategyClass)->DetectTargets(SkillContext);
 		FGameplayEffectSpecHandle Spec = SkillContext.SourceASC->MakeOutgoingSpec(SkillDataAsset->GEClass, 1.f, SkillContext.SourceASC->MakeEffectContext());
 		if (Spec.IsValid()) {
 			for (auto& target: SkillContext.DetectedActors)

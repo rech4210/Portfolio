@@ -5,4 +5,5 @@
 
 void USkillToolTip::SetToolTipData(UPrimaryDataAsset* ToolTip) {
 	Super::SetToolTipData(ToolTip);
+	
 }

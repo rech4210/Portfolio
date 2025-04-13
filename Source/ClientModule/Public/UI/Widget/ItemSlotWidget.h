@@ -4,24 +4,22 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "UI/SetWidgetDataInterface.h"
-#include "SkillSetWidget.generated.h"
+#include "ItemSlotWidget.generated.h"
 
-class USkillSlotWidget;
+class UItemDataAsset;
 /**
  * 
  */
 UCLASS()
-class CLIENTMODULE_API USkillSetWidget : public UUserWidget, public ISetWidgetDataInterface
+class CLIENTMODULE_API UItemSlotWidget : public UUserWidget
 {
 	GENERATED_BODY()
+	
 
 public:
+	TArray<UItemSlotWidget*> ItemSlots;
+	TObjectPtr<UItemDataAsset> ItemDataAsset;
 
-	TArray<USkillSlotWidget*> SkillSlots;
-	TObjectPtr<USkillDataAsset> SkillDataAsset; 
-	
-	virtual void SetWidgetData(UPrimaryDataAsset* Data) override;
 private:
 	virtual void NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent, UDragDropOperation*& OutOperation) override;
 	virtual FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;

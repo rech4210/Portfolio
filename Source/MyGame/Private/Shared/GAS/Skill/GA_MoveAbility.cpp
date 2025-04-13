@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Shared/GAS/GA_MoveAbility.h"
+#include "Shared/GAS/Skill/GA_MoveAbility.h"
 #include "NavigationPath.h"
 #include "NavigationSystem.h"
 #include "Shared/Player/GGwaPlayerController.h"
@@ -12,9 +12,9 @@
 
 
 void UGA_MoveAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
-									  const FGameplayAbilityActorInfo* ActorInfo,
-									  const FGameplayAbilityActivationInfo ActivationInfo,
-									  const FGameplayEventData* TriggerEventData)
+                                      const FGameplayAbilityActorInfo* ActorInfo,
+                                      const FGameplayAbilityActivationInfo ActivationInfo,
+                                      const FGameplayEventData* TriggerEventData)
 {
 	TWeakObjectPtr<AGGwaCharacter> Avatar = Cast<AGGwaCharacter>(ActorInfo->AvatarActor.Get());
 	TWeakObjectPtr<AGGwaPlayerController> PC = Cast<AGGwaPlayerController>(ActorInfo->PlayerController);

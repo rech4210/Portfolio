@@ -9,5 +9,7 @@ TArray<AActor*> USkillTarget_Self::DetectTargets(FSkillContext& SkillContext) {
 	if (SkillContext.SourceActor) {
 		Actors.Add(SkillContext.SourceActor);
 	}
+
+	UE_LOG(LogTemp, Log, TEXT("SkillTarget: TargetStrategySelf"));
 	return Actors;
 }

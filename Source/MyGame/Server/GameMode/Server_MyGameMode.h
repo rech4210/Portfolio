@@ -4,8 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameMode.h"
-#include "Shared/GAS/GA_Skill1.h"
-#include "Shared/GAS/GE_Test.h"
+#include "Shared/GAS/Skill/GA_Skill1.h"
+#include "Shared/GAS/Skill/GE_Test.h"
 #include "Shared/Player/GGwaCharacter.h"
 #include "Shared/Player/GGwaPlayerController.h"
 #include "Shared/Player/GGwaPlayerState.h"

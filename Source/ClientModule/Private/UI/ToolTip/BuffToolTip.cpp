@@ -8,9 +8,11 @@
 #include "Components/TextBlock.h"
 
 
-void UBuffToolTip::SetToolTipData(UPrimaryDataAsset* ToolTip) {
-	Super::SetToolTipData(ToolTip);
-	if (UBuffDataAsset* BuffData = Cast<UBuffDataAsset>(ToolTip)) {
+void UBuffToolTip::SetToolTipData(UPrimaryDataAsset* Data) {
+	// Super::SetToolTipData(ToolTip);
+	AddToViewport(999);
+	SetVisibility(ESlateVisibility::Collapsed);
+	if (UBuffDataAsset* BuffData = Cast<UBuffDataAsset>(Data)) {
 		if (ToolTipTitle) {
 			ToolTipTitle->SetText(BuffData->DisplayName);
 		}
