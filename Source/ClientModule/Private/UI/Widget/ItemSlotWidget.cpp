@@ -1,28 +1,26 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "UI/Widget/SkillSetWidget.h"
+#include "UI/Widget/ItemSlotWidget.h"
 #include "Blueprint/DragDropOperation.h"
-#include "Shared/Data/SkillDataAsset.h"
+#include "Shared/Data/ItemDataAsset.h"
 
-void USkillSetWidget::SetWidgetData(UPrimaryDataAsset* Data) {
-}
-
-FReply USkillSetWidget::NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) {
+FReply UItemSlotWidget::NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) {
 	return Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);
+	
 }
 
-bool USkillSetWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent,
+bool UItemSlotWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent,
 	UDragDropOperation* InOperation) {
 	return Super::NativeOnDrop(InGeometry, InDragDropEvent, InOperation);
 	
 }
 
-void USkillSetWidget::NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent,
+void UItemSlotWidget::NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent,
                                            UDragDropOperation*& OutOperation) {
 	Super::NativeOnDragDetected(InGeometry, InMouseEvent, OutOperation);
 	UDragDropOperation* DragOp = NewObject<UDragDropOperation>();
-	DragOp->Payload = SkillDataAsset;
+	DragOp->Payload = ItemDataAsset;
 	DragOp->DefaultDragVisual = this;
 	OutOperation = DragOp;
 }

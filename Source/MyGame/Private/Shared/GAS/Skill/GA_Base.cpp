@@ -1,12 +1,12 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Shared/GAS/GA_Base.h"
+#include "Shared/GAS/Skill/GA_Base.h"
 #include "Shared/Player/GGwaCharacter.h"
 #include "Shared/Player/GGwaPlayerController.h"
 
-void UGA_Base::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
-                               const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) {
+
+void UGA_Base::PreProcessSkillStart(const FGameplayAbilityActorInfo* ActorInfo) {
 	AGGwaCharacter * AvatarActor = Cast<AGGwaCharacter>(ActorInfo->AvatarActor.Get());
 	UE_LOG(LogTemp, Warning, TEXT("✅ UGA_Base Activated"));
 	UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get();

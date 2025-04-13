@@ -5,6 +5,7 @@
 #include "UI/Widget/GGwaWidget.h"
 #include "UI/GGwaHUD.h"
 #include "Shared/GAS/GGwaAttributeSet.h"
+#include "Shared/Data/BaseDataAsset.h"
 #include "Shared/Player/GGwaPlayerState.h"
 
 
@@ -27,7 +28,7 @@ void AGGwaClient_PlayerController::InitClientWidget() {
 	}
 }
 
-void AGGwaClient_PlayerController::GetDataFromAbility(UPrimaryDataAsset* Data) {
-	GGwaHUD->GetBaseWidget()->SetWidgetData(Data);
+void AGGwaClient_PlayerController::GetDataFromAbility(UBaseDataAsset* Data) {
+	GGwaHUD->GetBaseWidget()->BindWidgetWithTooltip(Data);
 }
 

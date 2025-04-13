@@ -39,6 +39,5 @@ public:
 	
 	void UpdateHealthBar(float Current, float Max) const;
 	void UpdateManaBar(float Current, float Max) const;
-	void AddBuff(UBuffDataAsset* Data);
 	virtual void SetWidgetData(UPrimaryDataAsset* Data) override;
 };

@@ -1,6 +1,6 @@
 #include "Shared/Player/GGwaCharacter.h"
 #include "Shared/Player/GGwaPlayerState.h"
-#include "Shared/GAS/GA_Skill1.h"
+#include "Shared/GAS/Skill/GA_Skill1.h"
 
 #include "AbilitySystemComponent.h"
 #include "GameFramework/PlayerController.h"
@@ -33,6 +33,9 @@ void AGGwaCharacter::BeginPlay() {
 	bUseControllerRotationYaw = false;
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	if (ASC) {
+		
+		// 이 부분 스킬 연동과 통합하여 수정
+		// 스킬 변경시 재 바인딩 요구.
 		for (int32 i = 0; i < SkillAbilities.Num(); ++i)
 		{
 			if (SkillAbilities[i])
@@ -96,14 +99,11 @@ void AGGwaCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 
 void AGGwaCharacter::OnSkillTriggered(const FInputActionInstance& Instance, int32 Index)
 {
+	
 	if (ASC && SkillAbilities.IsValidIndex(Index) && SkillAbilities[Index])
 	{
-		ASC->TryActivateAbilityByClass(SkillAbilities[Index]);
-		// if (IsLocallyControlled()) {
-		// 	if (auto PC = Cast<AGGwaPlayerController>(ActorInfo->PlayerController); nullptr != PC) {
-		// 		// auto HUD = Cast<>()PC->GetHUD();
-		// 		PC->GetDataFromAbility(BuffDataAsset);
-		// 	}
+		// if (USkillDataAsset->skillCooldown <= 0.f) {
+			ASC->TryActivateAbilityByClass(SkillAbilities[Index]);
 		// }
 	}
 }

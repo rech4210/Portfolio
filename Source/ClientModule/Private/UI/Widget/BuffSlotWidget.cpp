@@ -31,20 +31,23 @@ void UBuffSlotWidget::ConsumeDuration(float CooldownTime)
 		CooldownTimerHandle, this, &UBuffSlotWidget::UpdateDuration, 0.05f, true
 	);
 }
-
 void UBuffSlotWidget::NativeOnMouseEnter(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) {
 	Super::NativeOnMouseEnter(InGeometry, InMouseEvent);
-	BuffToolTipWidget->SetVisibility(ESlateVisibility::Visible);
-	BuffToolTipWidget->SetIsEnabled(false); // 입력 무시 (hover, focus 등)
-	FVector2D MousePosition = InMouseEvent.GetScreenSpacePosition();
-	BuffToolTipWidget->SetPositionInViewport(MousePosition, false); // false == absolute position
-	UE_LOG(LogTemp, Warning, TEXT("TooltipWidget on %s"), *UEnum::GetValueAsString(BuffToolTipWidget->GetVisibility()));
+	if (BuffToolTipWidget->GetVisibility() != ESlateVisibility::Visible) {
+		BuffToolTipWidget->SetVisibility(ESlateVisibility::Visible);
+		BuffToolTipWidget->SetIsEnabled(false); // 입력 무시 (hover, focus 등)
+		FVector2D MousePosition = InMouseEvent.GetScreenSpacePosition();
+		BuffToolTipWidget->SetPositionInViewport(MousePosition, false); // false == absolute position
+	}
+	UE_LOG(LogTemp, Warning, TEXT("TooltipWidget on %s"), *BuffToolTipWidget.GetName());
 }
 
 void UBuffSlotWidget::NativeOnMouseLeave(const FPointerEvent& InMouseEvent) {
 	Super::NativeOnMouseLeave(InMouseEvent);
-	BuffToolTipWidget->SetVisibility(ESlateVisibility::Collapsed);
-	UE_LOG(LogTemp, Warning, TEXT("TooltipWidget off %s"), *UEnum::GetValueAsString(BuffToolTipWidget->GetVisibility()));
+	if (BuffToolTipWidget->GetVisibility() != ESlateVisibility::Collapsed) {
+		BuffToolTipWidget->SetVisibility(ESlateVisibility::Collapsed);
+		UE_LOG(LogTemp, Warning, TEXT("TooltipWidget off %s"), *UEnum::GetValueAsString(BuffToolTipWidget->GetVisibility()));
+	}
 }
 
 void UBuffSlotWidget::SetWidgetData(UPrimaryDataAsset* Data) {

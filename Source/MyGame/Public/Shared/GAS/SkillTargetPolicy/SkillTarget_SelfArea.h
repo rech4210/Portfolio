@@ -4,14 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "SkillTargetBase.h"
-#include "SkillTarget_TargetActor.generated.h"
+#include "SkillTarget_SelfArea.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class MYGAME_API USkillTarget_TargetActor : public USkillTargetBase {
+class MYGAME_API USkillTarget_SelfArea : public USkillTargetBase {
 	GENERATED_BODY()
-public:
 	virtual TArray<AActor*> DetectTargets(FSkillContext& SkillContext) override;
 };

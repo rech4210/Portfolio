@@ -12,4 +12,5 @@
 UCLASS()
 class MYGAME_API USkillTarget_Projectile : public USkillTargetBase {
 	GENERATED_BODY()
+	virtual TArray<AActor*> DetectTargets(FSkillContext& SkillContext) override;
 };

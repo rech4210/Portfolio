@@ -5,4 +5,5 @@
 
 void UItemToolTip::SetToolTipData(UPrimaryDataAsset* ToolTip) {
 	Super::SetToolTipData(ToolTip);
+	
 }

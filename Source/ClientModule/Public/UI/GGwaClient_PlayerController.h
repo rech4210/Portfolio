@@ -6,6 +6,7 @@
 #include "Shared/Player/GGwaPlayerController.h"
 #include "GGwaClient_PlayerController.generated.h"
 
+class UBaseDataAsset;
 class AGGwaHUD;
 class UGGwaWidget;
 class UGGwaAttributeSet;
@@ -19,7 +20,7 @@ class CLIENTMODULE_API AGGwaClient_PlayerController : public AGGwaPlayerControll
 public:
 	virtual void BeginPlay() override;
 	virtual void InitClientWidget() override;
-	virtual void GetDataFromAbility(UPrimaryDataAsset* Data) override;
+	virtual void GetDataFromAbility(UBaseDataAsset* Data) override;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widget")
 	TSubclassOf<UGGwaWidget> WidgetClass;

@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "AbilityInputID.h"
+#include "../AbilityInputID.h"
 #include "GA_Base.h"
 #include "GA_Skill1.generated.h"
 class UBuffDataAsset;

@@ -26,14 +26,10 @@ void UPlayerStatusWidget::UpdateManaBar(float Current, float Max) const{
 	}
 }
 
-void UPlayerStatusWidget::AddBuff(UBuffDataAsset* BuffData) {
-	UBuffSlotWidget* Widget = CreateWidget<UBuffSlotWidget>(this, BuffSlotWidgetClass);
-	Widget->SetWidgetData(BuffData);
-	BuffHorizontalBar->AddChildToHorizontalBox(Widget);
-}
-
 void UPlayerStatusWidget::SetWidgetData(UPrimaryDataAsset* Data) {
 	UE_LOG(LogTemp, Warning, TEXT("PlayerStatusWidget SetWidgetData"));
 	UBuffDataAsset* BuffData = Cast<UBuffDataAsset>(Data);
-	AddBuff(BuffData);
+	UBuffSlotWidget* Widget = CreateWidget<UBuffSlotWidget>(this, BuffSlotWidgetClass);
+	Widget->SetWidgetData(BuffData);
+	BuffHorizontalBar->AddChildToHorizontalBox(Widget);
 }
