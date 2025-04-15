@@ -36,7 +36,8 @@ public:
 	TObjectPtr<UHorizontalBox> BuffHorizontalBar;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite ,Category= "Buff Widget")
 	TSubclassOf<UBuffSlotWidget> BuffSlotWidgetClass;
-	
+
+	void InitWidget();
 	void UpdateHealthBar(float Current, float Max) const;
 	void UpdateManaBar(float Current, float Max) const;
 	virtual void SetWidgetData(UPrimaryDataAsset* Data) override;

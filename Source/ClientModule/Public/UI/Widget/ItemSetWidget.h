@@ -16,5 +16,6 @@ class CLIENTMODULE_API UItemSetWidget : public UUserWidget, public ISetWidgetDat
 	GENERATED_BODY()
 
 public:
+	void InitWidget();
 	virtual void SetWidgetData(UPrimaryDataAsset* Data) override;
 };
