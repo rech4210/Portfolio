@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "BaseDataAsset.h"
 #include "FSkillDataTypeContainer.h"
+#include "Shared/GAS/SkillInputSlot.h"
 #include "SkillDataAsset.generated.h"
 
 
@@ -20,10 +21,14 @@ class MYGAME_API USkillDataAsset : public UBaseDataAsset
 public:
 	// 쿨타임 (초 단위)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Skill")
-	float Cooldown = 0.f;
+	float CoolTime = 0.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Skill")
 	FSkillShapeConfig SkillShapeConfig;
+
+	//EIC키 와 연동을 위한 스킬 인덱스
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Skill")
+	ESkillInputSlot SkillSlotIndex;
 	
 	// 타겟 선택 전략 (예: 단일 타겟, 범위, 셀프 등)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Targeting")
@@ -40,4 +45,5 @@ public:
 	// 시전 효과음
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Visual")
 	USoundBase* CastSound;
+
 };

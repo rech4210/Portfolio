@@ -61,6 +61,7 @@ public:
 	void InitWidget(UAbilitySystemComponent * AbilitySystemComponent, const UGGwaAttributeSet * AttributeSet);
 	void OnHealthChanged(const FOnAttributeChangeData& Data) const;
 	void OnManaChanged(const FOnAttributeChangeData& Data) const;
+	void InitWidgetSetting();
 	// template<typename TDataAsset, typename TToolTip, typename TWidget>
 	// void UGGwaWidget::BindTooltip(TDataAsset* DataAsset, TSubclassOf<TToolTip> ToolTipClass, UUserWidget* ContainerWidget);
 };

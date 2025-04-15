@@ -26,7 +26,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	UTexture2D* Image;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UUserWidget* Tooltip;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)

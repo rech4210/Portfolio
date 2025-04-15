@@ -9,6 +9,9 @@
 #include "UI/ToolTip/BuffToolTip.h"
 
 
+void UPlayerStatusWidget::InitWidget() {
+}
+
 void UPlayerStatusWidget::UpdateHealthBar(float Current, float Max) const{
 	if (HealthBarProgress)
 	{

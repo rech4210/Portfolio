@@ -22,6 +22,7 @@ void UGGwaWidget::NativeConstruct() {
 	
 }
 
+
 void UGGwaWidget::BindWidgetWithTooltip(UBaseDataAsset* Data) {
 	if (auto* ValueWidget = SlotTooltipCachePair.FindRef(Data); ValueWidget!= nullptr) {
 		// buff의 경우 재생성 하므로 우선 구현. 나중에 Pooling 적용후 삭제 예정
@@ -60,10 +61,15 @@ void UGGwaWidget::InitWidget(UAbilitySystemComponent* AbilitySystemComponent, co
 	if (!AbilitySystemComponent || !AttributeSet) return;
 	ASC = AbilitySystemComponent;
 	GGwaAttributeSet = AttributeSet;
+	
+	BP_PlayerStatusWidget->InitWidget();
+	BP_SkillBarWidget->InitWidget();
+	BP_ItemBarWidget->InitWidget();
 
 	// 초기 값 표시
 	BP_PlayerStatusWidget->UpdateHealthBar(AttributeSet->GetHealth(), AttributeSet->GetMaxHealth());
 	BP_PlayerStatusWidget->UpdateManaBar(AttributeSet->GetMana(), AttributeSet->GetMaxMana());
+
 
 	// 델리게이트 바인딩
 	ASC->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetHealthAttribute())
@@ -81,6 +87,7 @@ void UGGwaWidget::OnHealthChanged(const FOnAttributeChangeData& Data) const{
 void UGGwaWidget::OnManaChanged(const FOnAttributeChangeData& Data) const{
 	BP_PlayerStatusWidget->UpdateManaBar(Data.NewValue, GGwaAttributeSet->GetMaxMana());
 }
+
 
 // template<typename TDataAsset, typename TToolTip, typename TWidget>
 // void UGGwaWidget::BindTooltip(TDataAsset* DataAsset, TSubclassOf<TToolTip> ToolTipClass, UUserWidget* ContainerWidget)

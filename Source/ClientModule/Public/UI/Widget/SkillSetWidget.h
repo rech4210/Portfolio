@@ -7,7 +7,9 @@
 #include "UI/SetWidgetDataInterface.h"
 #include "SkillSetWidget.generated.h"
 
+class UHorizontalBox;
 class USkillSlotWidget;
+class USkillDataAsset;
 /**
  * 
  */
@@ -18,9 +20,22 @@ class CLIENTMODULE_API USkillSetWidget : public UUserWidget, public ISetWidgetDa
 
 public:
 
-	TArray<USkillSlotWidget*> SkillSlots;
-	TObjectPtr<USkillDataAsset> SkillDataAsset; 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillSetWidget")
+	TSubclassOf<USkillSlotWidget> SkillSlotWidgetClass;
 	
+	UPROPERTY(VisibleAnywhere, Category = "Slot")
+	TArray<USkillSlotWidget*> SkillSlots;
+	UPROPERTY(VisibleAnywhere, Category = "Slot")
+	TArray<UHorizontalBox*> SkillContainers;
+	UPROPERTY(VisibleAnywhere,meta=(BindWidget) , Category = "Slot")
+	TObjectPtr<UHorizontalBox> SkillSlotContainer_1;
+	UPROPERTY(VisibleAnywhere,meta=(BindWidget) , Category = "Slot")
+	TObjectPtr<UHorizontalBox> SkillSlotContainer_2;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
+	TObjectPtr<USkillDataAsset> SkillDataAsset; 
+
+	void InitWidget();
 	virtual void SetWidgetData(UPrimaryDataAsset* Data) override;
 private:
 	virtual void NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent, UDragDropOperation*& OutOperation) override;
