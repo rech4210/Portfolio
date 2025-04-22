@@ -2,14 +2,16 @@
 
 
 #include "Shared/GAS/Skill/GA_Skill2.h"
-
 #include "AbilitySystemInterface.h"
+#include "Shared/GAS/GGwaAbilitySystemComponent.h"
 #include "Shared/GAS/SkillTargetPolicy/SkillTarget_TargetActor.h"
 
 
 void UGA_Skill2::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
                                  const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) {
 	const UAbilityTask_WaitTargetData* TargetDataTask = GetTargetDataTask();
+
+	
 	/*의문 : 여기서 어떤 기준으로 OnTargetDataReceived, OnTargetDataCancelled 호출하지?*/
 	// OnTargetDataReceived : HitData->HitResult.ImpactPoint;
 }
@@ -33,7 +35,7 @@ void UGA_Skill2::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Da
 		FGameplayEffectSpecHandle SpecHandle = SkillContext.SourceASC->MakeOutgoingSpec(SkillDataAsset->GEClass,
 											1.f, SkillContext.SourceASC->MakeEffectContext());
 		if (SkillContext.TargetActor->Implements<UAbilitySystemInterface>()) {
-			UAbilitySystemComponent* TargetASC = Cast<IAbilitySystemInterface>(SkillContext.TargetActor)->GetAbilitySystemComponent();
+			UGGwaAbilitySystemComponent* TargetASC = Cast<UGGwaAbilitySystemComponent>(Cast<IAbilitySystemInterface>(SkillContext.TargetActor)->GetAbilitySystemComponent());
 			if (TargetASC && SpecHandle.IsValid()) {
 				SkillContext.SourceASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
 			}

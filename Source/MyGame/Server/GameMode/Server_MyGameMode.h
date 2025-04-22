@@ -4,13 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameMode.h"
-#include "Shared/GAS/Skill/GA_Skill1.h"
-#include "Shared/GAS/Skill/GE_Test.h"
-#include "Shared/Player/GGwaCharacter.h"
-#include "Shared/Player/GGwaPlayerController.h"
-#include "Shared/Player/GGwaPlayerState.h"
 #include "Server_MyGameMode.generated.h"
 
+class AGGwaCharacter;
+class AGGwaPlayerState;
+class AGGwaPlayerController;
 /**
  * 
  */
@@ -36,9 +34,8 @@ public:
 // 	int32 InputID,                          // 입력 슬롯 (예: Q=0, E=1 등)
 // 	UObject* SourceObject = nullptr         // 출처 객체 (무기, 아이템 등)
 // )
-	UPROPERTY()
-	TSubclassOf<UGA_Skill1> Test_Ability;
-	UPROPERTY()
-	TSubclassOf<UGE_Test> Test_Effect;
+
 	virtual void PostLogin(APlayerController* NewPlayer) override;
+	UFUNCTION()
+	static void HandleAbilityActivated(const AActor* InstigatorActor, FName AbilityName, const FVector& TargetLocation);
 };

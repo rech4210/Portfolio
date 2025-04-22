@@ -5,6 +5,7 @@
 
 #include "AbilitySystemComponent.h"
 #include "Abilities/GameplayAbilityTypes.h"
+#include "Shared/GAS/GGwaAbilitySystemComponent.h"
 #include "Shared/Player/GGwaCharacter.h"
 #include "Shared/Player/GGwaPlayerState.h"
 
@@ -29,9 +30,8 @@ void AGGwaPlayerController::AcknowledgePossession(class APawn* PossessedPawn) {
 	Super::AcknowledgePossession(PossessedPawn);
 	AGGwaCharacter * MyCharacter = Cast<AGGwaCharacter>(PossessedPawn);
 	if (nullptr != MyCharacter) {
-		// Do something
 		UE_LOG(LogTemp,Warning,TEXT("AGGwaPlayerController::AcknowledgePossession : Pawn Possessed"));
-		UAbilitySystemComponent * ASC = GetPlayerState<AGGwaPlayerState>()->GetAbilitySystemComponent();
+		UGGwaAbilitySystemComponent * ASC = Cast<UGGwaAbilitySystemComponent>( GetPlayerState<AGGwaPlayerState>()->GetAbilitySystemComponent());
 		if (ASC) {
 			ASC->BindAbilityActivationToInputComponent(InputComponent, FGameplayAbilityInputBinds("Confirm", "Cancel", FTopLevelAssetPath(TEXT("/Script/MyGame"), TEXT("EAbilityInputID"))));
 		}

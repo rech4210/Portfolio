@@ -22,6 +22,8 @@ public:
 	// 쿨타임 (초 단위)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Skill")
 	float CoolTime = 0.f;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Skill")
+	FGameplayTag CooldownTag;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Skill")
 	FSkillShapeConfig SkillShapeConfig;

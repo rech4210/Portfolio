@@ -9,7 +9,7 @@
 
 class UInputMappingContext;
 class UInputAction;
-class UAbilitySystemComponent;
+class UGGwaAbilitySystemComponent;
 class UGameplayAbility;
 // class UGGwaAttributeSet;
 
@@ -53,7 +53,7 @@ public:
 	void SetMoveData(TArray<FVector> CurrentPath, int32 CurrentPathIndex, bool bIsFollowingPath);
 protected:
 	UPROPERTY()
-	TObjectPtr<UAbilitySystemComponent> ASC;
+	TObjectPtr<UGGwaAbilitySystemComponent> ASC;
 	// UPROPERTY()
 	// TObjectPtr<UGGwaAttributeSet> AttributeSet;
 	void InitASC();

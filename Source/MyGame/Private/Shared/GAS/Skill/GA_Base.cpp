@@ -2,14 +2,17 @@
 
 
 #include "Shared/GAS/Skill/GA_Base.h"
+#include "AbilitySystemInterface.h"
 #include "Shared/Player/GGwaCharacter.h"
+#include "Shared/GAS/GGwaAbilitySystemComponent.h"
 #include "Shared/Player/GGwaPlayerController.h"
+#include "Shared/Player/GGwaPlayerState.h"
 
 
 void UGA_Base::PreProcessSkillStart(const FGameplayAbilityActorInfo* ActorInfo) {
 	AGGwaCharacter * AvatarActor = Cast<AGGwaCharacter>(ActorInfo->AvatarActor.Get());
 	UE_LOG(LogTemp, Warning, TEXT("✅ UGA_Base Activated"));
-	UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get();
+	UGGwaAbilitySystemComponent* ASC = Cast<UGGwaAbilitySystemComponent>(ActorInfo->AbilitySystemComponent.Get());
 	
 	if (AGGwaPlayerController * PC = Cast<AGGwaPlayerController>(ActorInfo->PlayerController.Get())) {
 		FHitResult Hit;
@@ -22,6 +25,18 @@ void UGA_Base::PreProcessSkillStart(const FGameplayAbilityActorInfo* ActorInfo) 
 		}
 	}
 	K2_ActivateAbility();
+}
+
+UGGwaAbilitySystemComponent* UGA_Base::GetTargetASC(AActor* Actor) const {
+	AGGwaCharacter* Character = Cast<AGGwaCharacter>(Actor);
+	if (AGGwaPlayerState* PS = Cast<AGGwaPlayerState>(Character->GetPlayerState())) {
+		if (IAbilitySystemInterface* Interface = Cast<IAbilitySystemInterface>(PS))
+		{
+			return Cast<UGGwaAbilitySystemComponent>(Interface->GetAbilitySystemComponent());
+		}
+		return nullptr;
+	}
+	return nullptr;
 }
 
 FSkillContext UGA_Base::BuildSkillContext(const FGameplayAbilityActorInfo* ActorInfo) {

@@ -8,7 +8,7 @@
 #include "GGwaPlayerState.generated.h"
 
 class UGGwaAttributeSet;
-class UAbilitySystemComponent;
+class UGGwaAbilitySystemComponent;
 /**
  * 
  */
@@ -23,7 +23,7 @@ public:
 protected:
 	// 아직 UMyAbilitySystemComponent는 안씀.
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="GAS")
-	TObjectPtr<UAbilitySystemComponent> ASC;
+	TObjectPtr<UGGwaAbilitySystemComponent> ASC;
 	
 	UPROPERTY()
 	TObjectPtr<UGGwaAttributeSet> AttributeSet;

@@ -1,9 +1,11 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
-#include "AbilitySystemComponent.h"
+
+#include "Shared/GAS/GGwaAbilitySystemComponent.h"
 #include "GameFramework/Actor.h"
 #include "Shared/Data/SkillDataAsset.h"
+
 #include "FSkillContext.generated.h"
 
 USTRUCT(BlueprintType)
@@ -14,7 +16,7 @@ struct FSkillContext
 public:
 	FSkillContext() = default;
 
-	FSkillContext(UAbilitySystemComponent* InSourceASC, AActor* InSourceActor, AActor* InTargetActor, const FVector& InTargetLocation, USkillDataAsset* InSkillData, int32 InComboIndex = 0, float InStartTime = 0.f);
+	FSkillContext(UGGwaAbilitySystemComponent* InSourceASC, AActor* InSourceActor, AActor* InTargetActor, const FVector& InTargetLocation, USkillDataAsset* InSkillData, int32 InComboIndex = 0, float InStartTime = 0.f);
 
 	UPROPERTY()
 	TObjectPtr<UAbilitySystemComponent> SourceASC;

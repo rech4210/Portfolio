@@ -33,9 +33,6 @@ void AGGwaCharacter::BeginPlay() {
 	bUseControllerRotationYaw = false;
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	if (ASC) {
-		
-		// 이 부분 스킬 연동과 통합하여 수정
-		// 스킬 변경시 재 바인딩 요구.
 		for (int32 i = 0; i < SkillAbilities.Num(); ++i)
 		{
 			if (SkillAbilities[i])
@@ -85,32 +82,24 @@ void AGGwaCharacter::Tick(float DeltaSeconds) {
 	}
 }
 
-void AGGwaCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
+void AGGwaCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent){
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
-	if (UEnhancedInputComponent* EIC = Cast<UEnhancedInputComponent>(PlayerInputComponent))
-	{
-		for (int32 i = 0; i < SkillActions.Num(); ++i)
-		{
+	if (UEnhancedInputComponent* EIC = Cast<UEnhancedInputComponent>(PlayerInputComponent)){
+		for (int32 i = 0; i < SkillActions.Num(); ++i){
 			EIC->BindAction(SkillActions[i], ETriggerEvent::Triggered, this, &AGGwaCharacter::OnSkillTriggered, i);
 		}
 	}
 }
 
-void AGGwaCharacter::OnSkillTriggered(const FInputActionInstance& Instance, int32 Index)
-{
-	
-	if (ASC && SkillAbilities.IsValidIndex(Index) && SkillAbilities[Index])
-	{
-		// if (USkillDataAsset->skillCooldown <= 0.f) {
+void AGGwaCharacter::OnSkillTriggered(const FInputActionInstance& Instance, int32 Index){
+	if (ASC && SkillAbilities.IsValidIndex(Index) && SkillAbilities[Index]){
 			ASC->TryActivateAbilityByClass(SkillAbilities[Index]);
-		// }
 	}
 }
 
 void AGGwaCharacter::InitASC() {
 	if (AGGwaPlayerState * State = GetPlayerState<AGGwaPlayerState>(); nullptr != State) {
-		ASC = State->GetAbilitySystemComponent();
+		ASC = Cast<UGGwaAbilitySystemComponent>(State->GetAbilitySystemComponent());
 		if (ASC) {
 			// the structure that holds information about who we are acting on and who controls us.
 			// ASC의 연결 정보를 부여, ASC의 owner, Replicated 객체를 지정

@@ -1,7 +1,8 @@
 ﻿#include "Shared/GAS/SkillTargetPolicy/FSkillContext.h"
 
+
 FSkillContext::FSkillContext(
-	UAbilitySystemComponent* InSourceASC,
+	UGGwaAbilitySystemComponent* InSourceASC,
 	AActor* InSourceActor,
 	AActor* InTargetActor = nullptr,
 	const FVector& InTargetLocation = FVector::Zero(),

@@ -18,11 +18,20 @@ public:
 	UGA_Skill1();
 	UPROPERTY()
 	EAbilityInputID AbilityInputID;
-
+	virtual void OnAvatarSet(const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilitySpec& Spec) override;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
 	TObjectPtr<USkillDataAsset> SkillDataAsset;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
 	TObjectPtr<UBuffDataAsset> BuffDataAsset;
+	UPROPERTY()
+	TArray<UBaseDataAsset*> DataAssets;
+	// UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Cooldown")
+	// FGameplayTagContainer CooldownTags;
 	
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
+private:
+	UFUNCTION()
+	void OnMontageEnded();
+	UFUNCTION()
+	void OnMontageInterrupted();
 };

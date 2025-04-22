@@ -32,11 +32,12 @@ public:
 	UPROPERTY(VisibleAnywhere,meta=(BindWidget) , Category = "Slot")
 	TObjectPtr<UHorizontalBox> SkillSlotContainer_2;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
-	TObjectPtr<USkillDataAsset> SkillDataAsset; 
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
+	// TObjectPtr<USkillDataAsset> SkillDataAsset; 
 
 	void InitWidget();
 	virtual void SetWidgetData(UPrimaryDataAsset* Data) override;
+	void InitSkillWidgetData(UPrimaryDataAsset* SkillData);
 private:
 	virtual void NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent, UDragDropOperation*& OutOperation) override;
 	virtual FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
