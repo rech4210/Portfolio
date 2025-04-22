@@ -20,7 +20,7 @@ class UPlayerStatusWidget;
 class USkillSetWidget;
 class UItemSetWidget;
 
-class UAbilitySystemComponent;
+class UGGwaAbilitySystemComponent;
 
 UCLASS()
 class CLIENTMODULE_API UGGwaWidget : public UUserWidget
@@ -32,7 +32,7 @@ public:
 	/** Initialize the widget with the AbilitySystemComponent and GGwaAttributeSet */
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category="AbilitySystem")
-	TObjectPtr<UAbilitySystemComponent> ASC;
+	TObjectPtr<UGGwaAbilitySystemComponent> ASC;
 	UPROPERTY(Transient, BlueprintReadWrite, Category="AbilitySystem")
 	const UGGwaAttributeSet* GGwaAttributeSet;
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite,Category= "Widget")
@@ -56,9 +56,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (BindWidget) ,Category= "Widget")
 	TObjectPtr<UItemSetWidget> BP_ItemBarWidget;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (BindWidget) ,Category= "Init Data")
+	TArray<USkillDataAsset*> InitSkillDataAssets;
 	// virtual const UUserWidget* SetWidgetData(UPrimaryDataAsset* Data) override;
 	void BindWidgetWithTooltip(UBaseDataAsset* Data);
-	void InitWidget(UAbilitySystemComponent * AbilitySystemComponent, const UGGwaAttributeSet * AttributeSet);
+	void InitWidget(UGGwaAbilitySystemComponent * AbilitySystemComponent, const UGGwaAttributeSet * AttributeSet);
 	void OnHealthChanged(const FOnAttributeChangeData& Data) const;
 	void OnManaChanged(const FOnAttributeChangeData& Data) const;
 	void InitWidgetSetting();

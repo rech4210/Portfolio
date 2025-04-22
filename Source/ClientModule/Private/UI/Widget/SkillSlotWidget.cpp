@@ -7,6 +7,7 @@
 #include "Components/TextBlock.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "TimerManager.h"
+#include "Kismet/GameplayStatics.h"
 #include "Shared/GAS/SkillInputSlot.h"
 #include "Shared/Utill/USkillHelper.h"
 #include "UI/ToolTip/SkillToolTip.h"
@@ -30,8 +31,9 @@ void USkillSlotWidget::NativeOnMouseEnter(const FGeometry& InGeometry, const FPo
 	if (SkillToolTipWidget->GetVisibility() != ESlateVisibility::Visible) {
 		SkillToolTipWidget->SetVisibility(ESlateVisibility::Visible);
 		SkillToolTipWidget->SetIsEnabled(false); // 입력 무시 (hover, focus 등)
-		FVector2D MousePosition = InMouseEvent.GetScreenSpacePosition();
-		SkillToolTipWidget->SetPositionInViewport(MousePosition, false); // false == absolute position
+		FVector2D LocalMousePos;
+		UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetMousePosition(LocalMousePos.X, LocalMousePos.Y);
+		SkillToolTipWidget->SetPositionInViewport(LocalMousePos, true); // DPI 변환 고려됨
 	}
 	UE_LOG(LogTemp, Warning, TEXT("TooltipWidget on %s"), *SkillToolTipWidget.GetName());
 }
@@ -49,8 +51,6 @@ void USkillSlotWidget::UseSkillSlot(USkillDataAsset* Data) {
 		ApplySkillData(Data);
 	}
 	UE_LOG(LogTemp, Warning, TEXT("USkillSlotWidget::UseSkillSlot .%s"), *this->GetName());
-
-	// 쿨타임 체크. 다만 GAS 에서 GA를 호출하기 때문에 아마 발동 안되게 할것임.
 	CurrentCoolTime = 0.f;
 
 	if (CooldownImage)
@@ -88,6 +88,8 @@ void USkillSlotWidget::ApplySkillData(USkillDataAsset* NewData) {
 	SkillImage->SetBrushFromTexture(NewData->Image);
 	SkillKeyText->SetText(FText::FromString(USkillHelper::GetKeyString(NewData->SkillSlotIndex)));
 	SkillToolTipWidget = Cast<USkillToolTip>(NewData->Tooltip);
+	CooldownImage->SetVisibility(ESlateVisibility::Hidden);
+	CoolTimeText->SetVisibility(ESlateVisibility::Hidden);
 	// SkillWidgetToolTip =
 }
 

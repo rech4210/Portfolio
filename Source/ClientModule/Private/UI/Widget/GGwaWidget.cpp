@@ -12,6 +12,7 @@
 #include "Shared/Data/ItemDataAsset.h"
 #include "Shared/Data/SkillDataAsset.h"
 #include "Shared/Data/BaseDataAsset.h"
+#include "Shared/GAS/GGwaAbilitySystemComponent.h"
 
 #include "UI/ToolTip/BuffToolTip.h"
 #include "UI/ToolTip/ItemToolTip.h"
@@ -23,11 +24,18 @@ void UGGwaWidget::NativeConstruct() {
 }
 
 
+// buff의 경우 재생성 하므로 우선 구현. 나중에 Pooling 적용후 삭제 예정
+// 사용과 widget 바인딩을 분리할것.
 void UGGwaWidget::BindWidgetWithTooltip(UBaseDataAsset* Data) {
 	if (auto* ValueWidget = SlotTooltipCachePair.FindRef(Data); ValueWidget!= nullptr) {
-		// buff의 경우 재생성 하므로 우선 구현. 나중에 Pooling 적용후 삭제 예정
 		if (Cast<UBuffToolTip>(ValueWidget)) {
 			BP_PlayerStatusWidget->SetWidgetData(Data);
+		}
+		else if (Cast<USkillToolTip>(ValueWidget)) {
+			BP_SkillBarWidget->SetWidgetData(Data);
+		}
+		else if (Cast<UItemToolTip>(ValueWidget)) {
+			BP_ItemBarWidget->SetWidgetData(Data);
 		}
 		return;
 	}
@@ -44,7 +52,7 @@ void UGGwaWidget::BindWidgetWithTooltip(UBaseDataAsset* Data) {
 		USkillToolTip* NewToolTip = CreateWidget<USkillToolTip>(this, SkillToolTipClass);
 		NewToolTip->SetToolTipData(SkillData);
 		SkillData->Tooltip = NewToolTip;
-		BP_SkillBarWidget->SetWidgetData(BuffData);
+		BP_SkillBarWidget->InitSkillWidgetData(SkillData);
 		SlotTooltipCachePair.Add(SkillData, NewToolTip);
 	}
 	else if (UItemDataAsset* ItemData = Cast<UItemDataAsset>(Data))
@@ -52,12 +60,12 @@ void UGGwaWidget::BindWidgetWithTooltip(UBaseDataAsset* Data) {
 		UItemToolTip* NewToolTip = CreateWidget<UItemToolTip>(this, ItemToolTipClass);
 		NewToolTip->SetToolTipData(ItemData);
 		ItemData->Tooltip = NewToolTip;
-		BP_ItemBarWidget->SetWidgetData(BuffData);
+		BP_ItemBarWidget->SetWidgetData(ItemData);
 		SlotTooltipCachePair.Add(ItemData, NewToolTip);
 	}
 }
 
-void UGGwaWidget::InitWidget(UAbilitySystemComponent* AbilitySystemComponent, const UGGwaAttributeSet* AttributeSet) {
+void UGGwaWidget::InitWidget(UGGwaAbilitySystemComponent* AbilitySystemComponent, const UGGwaAttributeSet* AttributeSet) {
 	if (!AbilitySystemComponent || !AttributeSet) return;
 	ASC = AbilitySystemComponent;
 	GGwaAttributeSet = AttributeSet;
@@ -66,12 +74,12 @@ void UGGwaWidget::InitWidget(UAbilitySystemComponent* AbilitySystemComponent, co
 	BP_SkillBarWidget->InitWidget();
 	BP_ItemBarWidget->InitWidget();
 
-	// 초기 값 표시
 	BP_PlayerStatusWidget->UpdateHealthBar(AttributeSet->GetHealth(), AttributeSet->GetMaxHealth());
 	BP_PlayerStatusWidget->UpdateManaBar(AttributeSet->GetMana(), AttributeSet->GetMaxMana());
 
-
-	// 델리게이트 바인딩
+	for (auto& SkillData : InitSkillDataAssets) {
+		BindWidgetWithTooltip(SkillData);
+	}
 	ASC->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetHealthAttribute())
 		.AddUObject(this, &UGGwaWidget::OnHealthChanged);
 

@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Abilities/GameplayAbility.h"
 #include "Shared/GAS/SkillTargetPolicy/FSkillContext.h"
+#include "Shared/Data/CombinedAbilityDataAsset.h"
 #include "GA_Base.generated.h"
 
 
@@ -22,4 +23,5 @@ public:
 protected:
 	virtual FSkillContext BuildSkillContext(const FGameplayAbilityActorInfo *ActorInfo);
 	void PreProcessSkillStart(const FGameplayAbilityActorInfo* ActorInfo);
+	UGGwaAbilitySystemComponent* GetTargetASC(AActor* Actor) const;
 };

@@ -5,6 +5,7 @@
 #include "TimerManager.h"
 #include "Components/Image.h"
 #include "Engine/World.h"
+#include "Kismet/GameplayStatics.h"
 
 void UBuffSlotWidget::NativeConstruct()
 {
@@ -36,8 +37,9 @@ void UBuffSlotWidget::NativeOnMouseEnter(const FGeometry& InGeometry, const FPoi
 	if (BuffToolTipWidget->GetVisibility() != ESlateVisibility::Visible) {
 		BuffToolTipWidget->SetVisibility(ESlateVisibility::Visible);
 		BuffToolTipWidget->SetIsEnabled(false); // 입력 무시 (hover, focus 등)
-		FVector2D MousePosition = InMouseEvent.GetScreenSpacePosition();
-		BuffToolTipWidget->SetPositionInViewport(MousePosition, false); // false == absolute position
+		FVector2D LocalMousePos;
+		UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetMousePosition(LocalMousePos.X, LocalMousePos.Y);
+		BuffToolTipWidget->SetPositionInViewport(LocalMousePos, true); // DPI 변환 고려됨
 	}
 	UE_LOG(LogTemp, Warning, TEXT("TooltipWidget on %s"), *BuffToolTipWidget.GetName());
 }

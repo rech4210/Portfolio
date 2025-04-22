@@ -41,11 +41,11 @@ public:
 	void NativeOnMouseLeave(const FPointerEvent& InMouseEvent);
 
 	void UseSkillSlot(USkillDataAsset *Data);
+	void ApplySkillData(USkillDataAsset* NewData);
 private:
 	UPROPERTY()
 	TObjectPtr<UMaterialInstanceDynamic> SkillCooldownMaterial;
 	FTimerHandle CooldownTimerHandle;
 	virtual void NativeConstruct() override;
-	void ApplySkillData(USkillDataAsset* NewData);
 	void TickCoolDown();
 };

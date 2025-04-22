@@ -12,25 +12,19 @@ AServer_MyGameMode::AServer_MyGameMode() {
 	PlayerController = AGGwaPlayerController::StaticClass();
 	PlayerState = AGGwaPlayerState::StaticClass();
 	Character = AGGwaCharacter::StaticClass();
-	Test_Ability = UGA_Skill1::StaticClass();
-	Test_Effect = UGA_Skill1::StaticClass();
 }
 
-// 서버 접속시 플레이어 정보 설정
 void AServer_MyGameMode::PostLogin(APlayerController* NewPlayer) {
 	Super::PostLogin(NewPlayer);
 	AGGwaPlayerState* State = NewPlayer->GetPlayerState<AGGwaPlayerState>();
-	// if (State) {
-	// 	UAbilitySystemComponent* ASC = State->GetAbilitySystemComponent();
-	// 	FGameplayAbilitySpecHandle AbilitySpecHandle = ASC->GiveAbility(FGameplayAbilitySpec(Test_Ability, 1, 0));
-	// 	ASC->TryActivateAbility(AbilitySpecHandle);
-	// 	
-	// 	//Attribute 초기화용 GE 적용
-	// 	FGameplayEffectContextHandle EffectContextHandle = ASC->MakeEffectContext();
-	// 	FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(Test_Effect,1,EffectContextHandle);
-	// 	if (SpecHandle.IsValid()) {
-	// 		ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
-	// 		// ? ASC->ApplyGameplayEffectToSelf()
-	// 	}
-	// }
+	// 플레이어 데이터 호출 Player Default Settings
+	
+}
+
+void AServer_MyGameMode::HandleAbilityActivated(const AActor* Instigator, FName AbilityName, const FVector& TargetLocation){
+	//서버 사이드 로깅
+	UE_LOG(LogTemp, Log, TEXT("[Server] %s activated ability %s at %s"),
+		*Instigator->GetName(),
+		*AbilityName.ToString(),
+		*TargetLocation.ToString());
 }

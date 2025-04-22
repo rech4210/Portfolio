@@ -3,11 +3,11 @@
 
 #include "Shared/Player/GGwaPlayerState.h"
 #include "Shared/GAS/GGwaAttributeSet.h"
-#include "AbilitySystemComponent.h"
+#include "Shared/GAS/GGwaAbilitySystemComponent.h"
 
 
 AGGwaPlayerState::AGGwaPlayerState() {
-	ASC = CreateDefaultSubobject<UAbilitySystemComponent>("ASC");
+	ASC = CreateDefaultSubobject<UGGwaAbilitySystemComponent>("ASC");
 	ASC->SetIsReplicated(true);
 	ASC->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
 	AttributeSet = CreateDefaultSubobject<UGGwaAttributeSet>("AttributeSet");
