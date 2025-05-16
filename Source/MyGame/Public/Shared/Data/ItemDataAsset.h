@@ -33,4 +33,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TSubclassOf<UGameplayEffect> UseEffect;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Buff")
+	TArray<FPrimaryAssetId> AppliedBuffs;
 };

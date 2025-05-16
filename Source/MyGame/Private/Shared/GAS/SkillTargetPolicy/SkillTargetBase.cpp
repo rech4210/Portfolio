@@ -1,8 +1,12 @@
 
 #include "Shared/GAS/SkillTargetPolicy/SkillTargetBase.h"
+#include "AbilitySystemInterface.h"
+#include "GameFramework/PlayerState.h"
+#include "Shared/Player/GGwaCharacter.h"
+#include "Shared/Player/GGwaPlayerState.h"
 
 void USkillTargetBase::DebugSkillShape(const UWorld* World, const FVector& StartLocation, const FVector& EndLocation,
-	const FSkillShapeConfig& Config) const {
+                                       const FSkillShapeConfig& Config) const {
 #if WITH_EDITOR
 	// 🔷 Box Trace 시각화
 	DrawDebugBox(
@@ -17,7 +21,6 @@ void USkillTargetBase::DebugSkillShape(const UWorld* World, const FVector& Start
 		2.0f   // 선 두께
 	);
 
-	// 🟢 Sphere Overlap 시각화
 	DrawDebugSphere(
 		World,
 		EndLocation,
@@ -30,7 +33,6 @@ void USkillTargetBase::DebugSkillShape(const UWorld* World, const FVector& Start
 		2.0f
 	);
 
-	// 🔴 Forward 방향 시각화
 	DrawDebugLine(
 		World,
 		StartLocation,
@@ -42,4 +44,14 @@ void USkillTargetBase::DebugSkillShape(const UWorld* World, const FVector& Start
 		1.0f
 	);
 #endif
+}
+
+bool USkillTargetBase::HasASC(AActor* Actor) const {
+	if (AGGwaCharacter* Character =  Cast<AGGwaCharacter>(Actor)) {
+		if (Cast<AGGwaPlayerState>(Character->GetPlayerState())->Implements<UAbilitySystemInterface>()) {
+			return true;
+		}
+		return false;
+	}
+	return false;
 }

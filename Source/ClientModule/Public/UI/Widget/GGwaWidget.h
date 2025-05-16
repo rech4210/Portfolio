@@ -56,7 +56,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (BindWidget) ,Category= "Widget")
 	TObjectPtr<UItemSetWidget> BP_ItemBarWidget;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (BindWidget) ,Category= "Init Data")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category= "Init Data")
 	TArray<USkillDataAsset*> InitSkillDataAssets;
 	// virtual const UUserWidget* SetWidgetData(UPrimaryDataAsset* Data) override;
 	void BindWidgetWithTooltip(UBaseDataAsset* Data);

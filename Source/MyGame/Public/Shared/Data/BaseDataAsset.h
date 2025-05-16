@@ -12,7 +12,7 @@ class UUserWidget;
 /**
  * 
  */
-UCLASS()
+UCLASS(BlueprintType)
 class MYGAME_API UBaseDataAsset : public UPrimaryDataAsset
 {
 	GENERATED_BODY()

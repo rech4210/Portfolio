@@ -5,27 +5,25 @@
 #include "AbilitySystemComponent.h"
 #include "Net/UnrealNetwork.h"
 
+DEFINE_ONREP_ATTRIBUTE(UGGwaAttributeSet, Health)
+DEFINE_ONREP_ATTRIBUTE(UGGwaAttributeSet, MaxHealth)
+DEFINE_ONREP_ATTRIBUTE(UGGwaAttributeSet, Mana)
+DEFINE_ONREP_ATTRIBUTE(UGGwaAttributeSet, MaxMana)
+DEFINE_ONREP_ATTRIBUTE(UGGwaAttributeSet, Speed)
+DEFINE_ONREP_ATTRIBUTE(UGGwaAttributeSet, Defense)
+DEFINE_ONREP_ATTRIBUTE(UGGwaAttributeSet, Critical)
+DEFINE_ONREP_ATTRIBUTE(UGGwaAttributeSet, Damage)
+
+
 UGGwaAttributeSet::UGGwaAttributeSet() {
 	InitHealth(100.f);
 	InitMana(70.f);
 	InitMaxHealth(200.f);
 	InitMaxMana(100.f);
-}
-
-void UGGwaAttributeSet::OnRep_Health(const FGameplayAttributeData& Old) const {
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UGGwaAttributeSet, Health, Old);
-}
-
-void UGGwaAttributeSet::OnRep_Mana(const FGameplayAttributeData& Old) const {
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UGGwaAttributeSet, Mana, Old);
-}
-
-void UGGwaAttributeSet::OnRep_MaxHealth(const FGameplayAttributeData& Old) const{
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UGGwaAttributeSet, MaxHealth, Old);
-}
-
-void UGGwaAttributeSet::OnRep_MaxMana(const FGameplayAttributeData& Old) const{
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UGGwaAttributeSet, MaxMana, Old);
+	InitDefense(10.f); 
+	InitCritical(5.f);  
+	InitSpeed(100.f);  
+	InitDamage(10.f);    
 }
 
 void UGGwaAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue) {
@@ -34,6 +32,9 @@ void UGGwaAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, 
 	if (Attribute == GetHealthAttribute()) {
 		NewValue = FMath::Clamp(NewValue,0.f,GetMaxHealth());
 	}
+	if (Attribute == GetManaAttribute()) {
+		NewValue = FMath::Clamp(NewValue, 0.f, GetMaxMana());
+	}
 }
 
 void UGGwaAttributeSet::PostGameplayEffectExecute(const struct FGameplayEffectModCallbackData& Data) {
@@ -41,16 +42,23 @@ void UGGwaAttributeSet::PostGameplayEffectExecute(const struct FGameplayEffectMo
 
 	if (Data.EvaluatedData.Attribute == GetHealthAttribute()) {
 		SetHealth(FMath::Clamp(GetHealth(),0.f,GetMaxHealth()));
-		
+	}
+	if (Data.EvaluatedData.Attribute == GetManaAttribute()) {
+		SetMana(FMath::Clamp(GetMana(),0.f,GetMaxMana()));
 	}
 }
 
 
-void UGGwaAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
+void UGGwaAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
 	DOREPLIFETIME_CONDITION_NOTIFY(UGGwaAttributeSet, Health, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UGGwaAttributeSet, MaxHealth, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UGGwaAttributeSet, Mana, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UGGwaAttributeSet, MaxMana, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UGGwaAttributeSet, Defense, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UGGwaAttributeSet, Critical, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UGGwaAttributeSet, Speed, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UGGwaAttributeSet, Damage, COND_None, REPNOTIFY_Always);
 }
-

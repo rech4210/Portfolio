@@ -1,4 +1,6 @@
 #include "Shared/Player/GGwaCharacter.h"
+
+#include "AbilitySystemBlueprintLibrary.h"
 #include "Shared/Player/GGwaPlayerState.h"
 #include "Shared/GAS/Skill/GA_Skill1.h"
 
@@ -8,6 +10,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputMappingContext.h"
 #include "InputAction.h"
+#include "Shared/Player/GGwaPlayerController.h"
 
 // Sets default values
 AGGwaCharacter::AGGwaCharacter()
@@ -17,22 +20,7 @@ AGGwaCharacter::AGGwaCharacter()
 void AGGwaCharacter::PossessedBy(AController* NewController) {
 	Super::PossessedBy(NewController);
 	InitASC();
-}
-
-void AGGwaCharacter::OnRep_PlayerState() {
-	Super::OnRep_PlayerState();
-	InitASC();
-}
-
-void AGGwaCharacter::BeginPlay() {
-	Super::BeginPlay();
-	if (APlayerController * PC = Cast<APlayerController>(GetController()); nullptr != PC) {
-		UEnhancedInputLocalPlayerSubsystem * Subsystem = PC->GetLocalPlayer()->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>();
-		Subsystem->AddMappingContext(MappingContext, 0);
-	}
-	bUseControllerRotationYaw = false;
-	GetCharacterMovement()->bOrientRotationToMovement = true;
-	if (ASC) {
+	if (ASC && HasAuthority()) {
 		for (int32 i = 0; i < SkillAbilities.Num(); ++i)
 		{
 			if (SkillAbilities[i])
@@ -41,59 +29,23 @@ void AGGwaCharacter::BeginPlay() {
 				ASC->GiveAbility(Spec);
 			}
 		}
-	}
 
-	for (const FGameplayAbilitySpec& Spec : ASC->GetActivatableAbilities())
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Ability: %s | InputID: %d"),
-			*GetNameSafe(Spec.Ability), Spec.InputID);
-	}
-}
-
-void AGGwaCharacter::Tick(float DeltaSeconds) {
-	Super::Tick(DeltaSeconds);
-	if (false == bIsFollowingPath) return;
-
-	if (!CurrentPath.IsValidIndex(CurrentPathIndex)||ASC->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag("Skill"))) {
-		bIsFollowingPath = false;
-		CurrentPath.Empty();
-		CurrentPathIndex = 0;
-		GetCharacterMovement()->StopMovementImmediately();
-		return;
-	}
-	
-	FVector CurrentLocation = GetActorLocation();
-	FVector TargetPoint = CurrentPath[CurrentPathIndex];
-
-	TargetPoint.Z = CurrentLocation.Z;
-
-	FVector Direction = TargetPoint - CurrentLocation;
-	float Distance = Direction.Size();
-
-	if (Distance < AcceptanceRadius) {
-		CurrentPathIndex++;
-		if (!CurrentPath.IsValidIndex(CurrentPathIndex)) {
-			bIsFollowingPath = false;
+		for (const FGameplayAbilitySpec& Spec : ASC->GetActivatableAbilities())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Ability: %s | InputID: %d"),
+				*GetNameSafe(Spec.Ability), Spec.InputID);
 		}
-	}
-	else {
-		Direction.Normalize();
-		AddMovementInput(Direction, 1.0);
+		ASC->RefreshAbilityActorInfo();
 	}
 }
 
-void AGGwaCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent){
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-	if (UEnhancedInputComponent* EIC = Cast<UEnhancedInputComponent>(PlayerInputComponent)){
-		for (int32 i = 0; i < SkillActions.Num(); ++i){
-			EIC->BindAction(SkillActions[i], ETriggerEvent::Triggered, this, &AGGwaCharacter::OnSkillTriggered, i);
+void AGGwaCharacter::OnRep_PlayerState() {
+	Super::OnRep_PlayerState();
+	InitASC();
+	if (auto PC = GetController()) {
+		if (auto GGwaPC = Cast<AGGwaPlayerController>(PC))	{
+			GGwaPC->InitClientWidget();
 		}
-	}
-}
-
-void AGGwaCharacter::OnSkillTriggered(const FInputActionInstance& Instance, int32 Index){
-	if (ASC && SkillAbilities.IsValidIndex(Index) && SkillAbilities[Index]){
-			ASC->TryActivateAbilityByClass(SkillAbilities[Index]);
 	}
 }
 
@@ -108,8 +60,201 @@ void AGGwaCharacter::InitASC() {
 	}
 }
 
-void AGGwaCharacter::SetMoveData(TArray<FVector> Path, int32 Idx, bool bIsFollwing) {
+
+void AGGwaCharacter::BeginPlay() {
+	Super::BeginPlay();
+	if (APlayerController * PC = Cast<APlayerController>(GetController()); nullptr != PC) {
+		UEnhancedInputLocalPlayerSubsystem * Subsystem = PC->GetLocalPlayer()->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>();
+		Subsystem->AddMappingContext(MappingContext, 0);
+	}
+	bUseControllerRotationYaw = false;
+	GetCharacterMovement()->bOrientRotationToMovement = true;
+
+}
+
+void AGGwaCharacter::Tick(float DeltaSeconds) {
+	Super::Tick(DeltaSeconds);
+	// if (!HasAuthority()) return;
+	if (false == bIsFollowingPath && !IsLocallyControlled()) return;
+
+	if (!CurrentPath.IsValidIndex(CurrentPathIndex)/*||ASC->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag("Skill"))*/) {
+		bIsFollowingPath = false;
+		CurrentPath.Empty();
+		CurrentPathIndex = 0;
+		GetCharacterMovement()->StopMovementImmediately();
+		return;
+	}
+	
+	FVector CurrentLocation = GetActorLocation();
+	FVector TargetPoint = CurrentPath[CurrentPathIndex];
+
+	TargetPoint.Z = CurrentLocation.Z;
+
+	FVector Direction = TargetPoint - CurrentLocation;
+	float Distance = Direction.Size();
+	auto Dir = Direction.GetSafeNormal();
+	if (ASC->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag("Skill"))) {
+		bIsFollowingPath = false;
+		CurrentPath.Empty();
+		CurrentPathIndex = 0;
+	}
+	if (Distance < AcceptanceRadius) {
+		CurrentPathIndex++;
+		if (!CurrentPath.IsValidIndex(CurrentPathIndex)) {
+			bIsFollowingPath = false;
+		}
+	}
+	else {
+
+		bool bCanMove = GetCharacterMovement()->MovementMode != MOVE_None;
+		UE_LOG(LogTemp, Warning, TEXT("Can Move (MovementMode != MOVE_None): %d"), bCanMove);
+
+		UE_LOG(LogTemp, Warning, TEXT("Movement Mode: %d"), (int32)GetCharacterMovement()->MovementMode);
+		UE_LOG(LogTemp, Warning, TEXT("Velocity: %s"), *GetCharacterMovement()->Velocity.ToString());
+		UE_LOG(LogTemp, Warning, TEXT("IsMovingOnGround: %d"), GetCharacterMovement()->IsMovingOnGround());
+		UE_LOG(LogTemp, Warning, TEXT("Controller: %s"), *GetController()->GetName());
+
+		Direction.Normalize();
+		AddMovementInput(Direction, 1.0,true);
+		// GetCharacterMovement()->RequestPathMove(Dir);
+		UE_LOG(LogTemp, Log, TEXT("Current Actor Location : %s"), *CurrentLocation.ToString());
+	}
+}
+
+void AGGwaCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent){
+	Super::SetupPlayerInputComponent(PlayerInputComponent);
+	if (UEnhancedInputComponent* EIC = Cast<UEnhancedInputComponent>(PlayerInputComponent)){
+		for (int32 i = 0; i < SkillActions.Num(); ++i){
+			EIC->BindAction(SkillActions[i], ETriggerEvent::Triggered, this, &AGGwaCharacter::OnLocalSkillInput, i);
+			for (const FGameplayAbilitySpec& Spec : ASC->GetActivatableAbilities()){
+				UE_LOG(LogTemp, Warning, TEXT("Ability: %s"), *GetNameSafe(Spec.Ability));
+				if (IsLocallyControlled()) UE_LOG(LogTemp, Warning, TEXT("Client %s: Ability: %s"),*GetNameSafe(GetController()),*GetNameSafe(Spec.Ability));
+			}
+		}
+	}
+}
+
+
+bool AGGwaCharacter::OnSkillTriggered_Validate(const FGameplayEventData& EventData, int32 Index) {
+	if (GetLocalRole() != ROLE_Authority){
+		UE_LOG(LogTemp, Warning, TEXT("Validate: Not Authority"));
+		return false;
+	}
+
+	// 2) 이 캐릭터가 원격 클라이언트의 AutonomousProxy(소유 클라이언트)인지 검사
+	//    (소유하지 않은 클라이언트가 호출해 왔는지 차단)
+	// if (GetRemoteRole() != ROLE_AutonomousProxy)
+	// {
+	// 	UE_LOG(LogTemp, Warning, TEXT("Validate: RemoteRole != AutonomousProxy"));
+	// 	return false;
+	// }
+
+	// 3) Index 범위 검사
+	if (!SkillAbilities.IsValidIndex(Index) || !SkillAbilities[Index]){
+		UE_LOG(LogTemp, Warning, TEXT("Validate: Invalid Index %d"), Index);
+		return false;
+	}
+
+	// 4) EventTag 이 허용된 AbilityTag 와 일치하는지 검사
+	if (!AbilityTags.IsValidIndex(Index) ||EventData.EventTag != AbilityTags[Index]){
+		UE_LOG(LogTemp, Warning, TEXT("Validate: EventTag mismatch (got %s, expected %s)"),
+			*EventData.EventTag.ToString(), *AbilityTags[Index].ToString());
+		return false;
+	}
+
+	// (선택) EventData.Instigator 가 반드시 내가 맞는지 검사
+	if (EventData.Instigator != this){
+		UE_LOG(LogTemp, Warning, TEXT("Validate: Instigator mismatch"));
+		return false;
+	}
+
+	return true;
+}
+
+// Local Prediction
+void AGGwaCharacter::OnLocalSkillInput(const FInputActionInstance& Instance, int32 Index)
+{
+	if (!IsLocallyControlled() || !ASC || !SkillAbilities.IsValidIndex(Index)) return;
+
+	const FGameplayAbilitySpec* Spec = ASC->FindAbilitySpecFromClass(SkillAbilities[Index]);
+	if (!Spec) return;
+
+	// 클라이언트 예측 발동 (PredictionKey 생성됨)
+	bool bActivated = ASC->TryActivateAbility(Spec->Handle, true);
+
+	if (!bActivated){
+		UE_LOG(LogTemp, Warning, TEXT("TryActivateAbility failed for Index %d"), Index);
+	}
+}
+//
+
+
+// OnLocalSkillInput()	클라이언트	입력 수신 → 서버 호출
+// 클라이언트에서 마우스 위치 기반 RotationEventData 전송
+// void AGGwaCharacter::OnLocalSkillInput(const FInputActionInstance& Instance, int32 Index)
+// {
+// 	if (IsLocallyControlled())
+// 	{
+// 		AGGwaPlayerController* PC = Cast<AGGwaPlayerController>(GetController());
+// 		if (PC)
+// 		{
+// 			FHitResult Hit;
+// 			if (PC->GetHitResultUnderCursor(ECC_Visibility, false, Hit))
+// 			{
+// 				FGameplayEventData EventData;
+// 				EventData.Instigator = this;
+// 				EventData.EventTag = AbilityTags[Index];
+// 				EventData.TargetData = UAbilitySystemBlueprintLibrary::AbilityTargetDataFromHitResult(Hit);
+// 				
+// 				// if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance()) {
+// 				// 	if (SkillMontages.IsValidIndex(Index) && SkillMontages[Index]) {
+// 				// 		AnimInstance->Montage_Play(SkillMontages[Index], 1.0f, EMontagePlayReturnType::MontageLength, 0.0f);
+// 				// 	}
+// 				// }
+//
+// 				//해당 부분의 RPC
+// 				OnSkillTriggered(EventData, Index);  // 클라 -> 서버 RPC 호출
+// 			}
+// 		}
+// 	}
+// }
+
+// OnSkillTriggered_Implementation()	서버 (RPC)	클라이언트 요청 받아 실행
+void AGGwaCharacter::OnSkillTriggered_Implementation(const FGameplayEventData& EventData, int32 Index) {
+	ExecuteAbility(EventData, Index);
+}
+
+
+
+
+// ExecuteAbility()	공통	실제 GA 발동 처리
+void AGGwaCharacter::ExecuteAbility(const FGameplayEventData& EventData, int32 Index) {
+	if (ASC && SkillAbilities.IsValidIndex(Index) && SkillAbilities[Index]){
+		AGGwaPlayerController * PC = Cast<AGGwaPlayerController>(GetController());
+		// ASC->HandleGameplayEvent(EventData.EventTag ,&EventData);
+		FGameplayAbilitySpec* Spec = ASC->FindAbilitySpecFromClass(SkillAbilities[Index]);
+		if (Spec == nullptr) {
+			UE_LOG(LogTemp, Warning, TEXT("ExecuteAbility: Spec is nullptr"));
+			return;
+		}
+		ASC->TryActivateAbility(Spec->Handle, true);
+		// ASC->TryActivateAbilityByClass(SkillAbilities[Index]);
+	}
+}
+
+// void AGGwaCharacter::SetMoveData_Implementation(const TArray<FVector> Path, int32 PathIndex, bool bIsFollowing) {
+// 	this->CurrentPath = Path;
+// 	this->CurrentPathIndex = PathIndex;
+// 	this->bIsFollowingPath = bIsFollowing;
+// }
+
+/*
+ * FVector_NetQuantize 등으로 축소형 타입을 쓰거나
+ * 필요하다면 이동 취소나 수정 지시를 Server RPC로 다시 보내서 서버와 완전 동기화
+ */
+
+void AGGwaCharacter::SetMoveData_Implementation(const TArray<FVector>& Path, int32 PathIndex, bool bIsFollowing) {
 	this->CurrentPath = Path;
-	this->CurrentPathIndex = Idx;
-	this->bIsFollowingPath = bIsFollwing;
+	this->CurrentPathIndex = PathIndex;
+	this->bIsFollowingPath = bIsFollowing;
 }

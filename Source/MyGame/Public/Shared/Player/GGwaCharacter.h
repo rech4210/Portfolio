@@ -4,9 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "EnhancedInputComponent.h"
+#include "GameplayTagContainer.h"
 #include "GameFramework/Character.h"
 #include "GGwaCharacter.generated.h"
 
+struct FGameplayEventData;
 class UInputMappingContext;
 class UInputAction;
 class UGGwaAbilitySystemComponent;
@@ -39,6 +41,10 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Abilities")
 	TArray<TSubclassOf<UGameplayAbility>> SkillAbilities;
+	UPROPERTY(EditDefaultsOnly, Category = "Abilities")
+	TArray<FGameplayTag> AbilityTags;
+	UPROPERTY(EditDefaultsOnly, category = "Abilities")
+	TArray<UAnimMontage*> SkillMontages;
 
 	
 	virtual void PossessedBy(AController* NewController) override;
@@ -46,17 +52,21 @@ public:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
-	
-	void OnSkillTriggered(const FInputActionInstance& Instance, int32 Index);
+	UFUNCTION(Server, Reliable, WithValidation)
+	void OnSkillTriggered(const FGameplayEventData& EventData, int32 Index);
 	// UFUNCTION(BlueprintImplementableEvent,Category="input")
 	// void OnMouseClickActionPressed(const FInputActionInstance& InputActionInstance);
-	void SetMoveData(TArray<FVector> CurrentPath, int32 CurrentPathIndex, bool bIsFollowingPath);
+	UFUNCTION(client, reliable)
+	void SetMoveData(const TArray<FVector>& Path, int32 PathIndex, bool bIsFollowing);
 protected:
 	UPROPERTY()
 	TObjectPtr<UGGwaAbilitySystemComponent> ASC;
 	// UPROPERTY()
 	// TObjectPtr<UGGwaAttributeSet> AttributeSet;
 	void InitASC();
+private:
+	void ExecuteAbility(const FGameplayEventData& EventData, int32 Index);
+	void OnLocalSkillInput(const FInputActionInstance& Instance, int32 Index);
 };
 
 

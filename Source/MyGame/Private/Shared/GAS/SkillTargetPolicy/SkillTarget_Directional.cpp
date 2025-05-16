@@ -4,6 +4,7 @@
 #include "Shared/GAS/SkillTargetPolicy/SkillTarget_Directional.h"
 
 
+
 TArray<AActor*> USkillTarget_Directional::DetectTargets(FSkillContext& SkillContext) {
 	TArray<AActor*> Actors;
 
@@ -47,7 +48,9 @@ TArray<AActor*> USkillTarget_Directional::DetectTargets(FSkillContext& SkillCont
 			AActor* HitActor = Hit.GetActor();
 			if (HitActor && !Actors.Contains(HitActor))
 			{
-				Actors.Add(HitActor);
+				if (HasASC(HitActor)) {
+					Actors.Add(HitActor);
+				}
 			}
 		}
 	}
@@ -73,7 +76,9 @@ TArray<AActor*> USkillTarget_Directional::DetectTargets(FSkillContext& SkillCont
 			AActor* OverlappedActor = Result.GetActor();
 			if (OverlappedActor && !Actors.Contains(OverlappedActor))
 			{
-				Actors.Add(OverlappedActor);
+				if (HasASC(OverlappedActor)) {
+					Actors.Add(OverlappedActor);
+				}
 			}
 		}
 	}

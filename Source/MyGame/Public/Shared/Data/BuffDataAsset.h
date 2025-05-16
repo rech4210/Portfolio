@@ -22,5 +22,7 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	bool bIsDebuff;
-	
+	virtual FPrimaryAssetId GetPrimaryAssetId() const override {
+		return FPrimaryAssetId("Buff", GetFName());
+	}
 };

@@ -14,6 +14,7 @@ class MYGAME_API UGA_Base : public UGameplayAbility
 {
 	GENERATED_BODY()
 public:
+	static const FName SkillAssetTypeTag;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Skill")
 	FSkillContext SkillContext;
 

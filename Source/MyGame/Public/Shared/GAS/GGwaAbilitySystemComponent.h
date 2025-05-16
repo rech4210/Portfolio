@@ -5,11 +5,12 @@
 #include "CoreMinimal.h"
 #include "AbilitySystemComponent.h"
 #include "GGwaAbilitySystemComponent.generated.h"
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnCooldownTagChanged, FGameplayTag, CooldownTag, float, TimeRemaining);
+class ULocalDataBaseLoader;
+class UBaseDataAsset; 
+// DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnCooldownTagChanged, FGameplayTag, CooldownTag, float, TimeRemaining);
 
-/**
- * 
- */
+
+class UCombinedAbilityDataAsset;
 UCLASS()
 class MYGAME_API UGGwaAbilitySystemComponent : public UAbilitySystemComponent
 {
@@ -17,9 +18,14 @@ class MYGAME_API UGGwaAbilitySystemComponent : public UAbilitySystemComponent
 public:
 	
 	UGGwaAbilitySystemComponent();
-	UPROPERTY(BlueprintAssignable)
-	FOnCooldownTagChanged OnCooldownTagChanged;
+	// UPROPERTY(BlueprintAssignable)
+	// FOnCooldownTagChanged OnCooldownTagChanged;
 	virtual void BeginPlay() override;
+	UPROPERTY()
+	TObjectPtr<ULocalDataBaseLoader> LocalDataBaseLoader;
 private:
 	void OnGameplayAppliedCallback(UAbilitySystemComponent* ASC, const FGameplayEffectSpec& Spec, FActiveGameplayEffectHandle Handle);
+	void OnGameplayEffectReplicateCallback(UAbilitySystemComponent* ASC, const FGameplayEffectSpec& Spec, FActiveGameplayEffectHandle Handle);
+	void ProcessGameplayEffect(const FGameplayEffectSpec& Spec, bool bIsServer) const;
+	// TObjectPtr<UCombinedAbilityDataAsset> CachedAbilityDataAsset;
 };

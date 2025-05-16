@@ -21,4 +21,5 @@ public:
 		return TArray<AActor*>();
 	}
 	virtual void DebugSkillShape(const UWorld* World, const FVector& StartLocation, const FVector& EndLocation, const FSkillShapeConfig& Config) const;
+	bool HasASC(AActor* Actor) const;
 };
