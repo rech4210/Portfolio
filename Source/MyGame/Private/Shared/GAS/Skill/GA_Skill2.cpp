@@ -21,7 +21,7 @@ void UGA_Skill2::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const 
 void UGA_Skill2::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Data) {
 	if (const FGameplayAbilityTargetData_SingleTargetHit* HitData = static_cast<const FGameplayAbilityTargetData_SingleTargetHit*>(Data.Get(0))){
 		/* 여기서 부모를 호출하는 이유는, Task가 성공 후에 해당 방향을 바라보도록 부모 로직을 처리하기 위해서임.*/
-		PreProcessSkillStart(CurrentActorInfo);
+		// PreProcessSkillStart(CurrentActorInfo);
 		SkillContext = BuildSkillContext(CurrentActorInfo);
 		SkillContext.SkillData = SkillDataAsset;
 		

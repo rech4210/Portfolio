@@ -16,6 +16,7 @@ class MYGAME_API UGA_MoveAbility : public UGameplayAbility
 	GENERATED_BODY()
 
 public:
+	UGA_MoveAbility();
 	UPROPERTY(EditAnywhere, Category="LineTrace")
 	TSubclassOf<AActor> LineTraceRing;
 
@@ -24,5 +25,7 @@ public:
 	// UPROPERTY(VisibleAnywhere, Category="LineTrace")
 	// TObjectPtr<AGGwaCharacter> Character;
 
+	UFUNCTION()
+	void OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Data);
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
 };

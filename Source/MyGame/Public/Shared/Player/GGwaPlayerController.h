@@ -20,7 +20,10 @@ public:
 	/* 클라이언트 모듈 UI 설정을 위한 함수*/
 	virtual void InitClientWidget(){}
 
-	virtual void GetDataFromAbility(UBaseDataAsset* Data) {}
+	UFUNCTION(Client ,Reliable)
+	virtual void Client_ApplyAbilityDataAsset(UBaseDataAsset* Data);
 	//클라이언트가 자신에게 Possess한 Pawn을 인식(승인)하도록 알려주는 함수
 	virtual void AcknowledgePossession(APawn* PossessedPawn) override;
+		
+	// virtual void Client_NotifySkillActivated(int32 SkillId);
 };

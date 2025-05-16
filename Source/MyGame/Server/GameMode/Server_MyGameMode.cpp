@@ -9,16 +9,26 @@
 
 
 AServer_MyGameMode::AServer_MyGameMode() {
-	PlayerController = AGGwaPlayerController::StaticClass();
-	PlayerState = AGGwaPlayerState::StaticClass();
-	Character = AGGwaCharacter::StaticClass();
+	PlayerControllerClass = AGGwaPlayerController::StaticClass();
+	PlayerStateClass = AGGwaPlayerState::StaticClass();
+	DefaultPawnClass = AGGwaCharacter::StaticClass();
 }
 
 void AServer_MyGameMode::PostLogin(APlayerController* NewPlayer) {
 	Super::PostLogin(NewPlayer);
-	AGGwaPlayerState* State = NewPlayer->GetPlayerState<AGGwaPlayerState>();
-	// 플레이어 데이터 호출 Player Default Settings
+	// 플레이어 데이터 호출 Player Default Settings, 데이터 로딩
+	if (!NewPlayer) {
+		UE_LOG(LogTemp, Error, TEXT("NewPlayer is null"));
+	}
 	
+	AGGwaPlayerState* State = NewPlayer->GetPlayerState<AGGwaPlayerState>();
+
+	if (AGGwaCharacter* GGwaCharacter = Cast<AGGwaCharacter>(NewPlayer->GetPawn())) {
+		UE_LOG(LogTemp, Warning, TEXT("Player already exists"));
+	}
+	else {
+		UE_LOG(LogTemp, Warning, TEXT("Player is not spawned in postlogin"));
+	}
 }
 
 void AServer_MyGameMode::HandleAbilityActivated(const AActor* Instigator, FName AbilityName, const FVector& TargetLocation){

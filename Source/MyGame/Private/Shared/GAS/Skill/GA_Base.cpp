@@ -6,33 +6,46 @@
 #include "Shared/Player/GGwaCharacter.h"
 #include "Shared/GAS/GGwaAbilitySystemComponent.h"
 #include "Shared/Player/GGwaPlayerController.h"
+#include "AbilitySystemBlueprintLibrary.h"
 #include "Shared/Player/GGwaPlayerState.h"
 
+const FName UGA_Base::SkillAssetTypeTag = TEXT("Data.SkillID");
 
 void UGA_Base::PreProcessSkillStart(const FGameplayAbilityActorInfo* ActorInfo) {
 	AGGwaCharacter * AvatarActor = Cast<AGGwaCharacter>(ActorInfo->AvatarActor.Get());
-	UE_LOG(LogTemp, Warning, TEXT("✅ UGA_Base Activated"));
-	UGGwaAbilitySystemComponent* ASC = Cast<UGGwaAbilitySystemComponent>(ActorInfo->AbilitySystemComponent.Get());
-	
-	if (AGGwaPlayerController * PC = Cast<AGGwaPlayerController>(ActorInfo->PlayerController.Get())) {
-		FHitResult Hit;
-		if (PC->GetHitResultUnderCursor(ECC_Visibility, false, Hit)) {
-			CacheHitLocation = Hit.ImpactPoint;
-			FVector Dir = Hit.ImpactPoint - AvatarActor->GetActorLocation();
-			Dir.Z = 0;
-			
-			AvatarActor->SetActorRotation(Dir.Rotation());
+	if (IsLocallyControlled()) {
+		UE_LOG(LogTemp, Warning, TEXT("✅ Client PreProcess Activated"));
+		UGGwaAbilitySystemComponent* ASC = Cast<UGGwaAbilitySystemComponent>(ActorInfo->AbilitySystemComponent.Get());
+		
+		if (AGGwaPlayerController * PC = Cast<AGGwaPlayerController>(ActorInfo->PlayerController.Get())) {
+			// FHitResult Hit;
+			// if (PC->GetHitResultUnderCursor(ECC_Visibility, false, Hit)) {
+			// 	CacheHitLocation = Hit.ImpactPoint;
+			// 	FVector Dir = Hit.ImpactPoint - AvatarActor->GetActorLocation();
+			// 	Dir.Z = 0;
+			// 	
+			// 	AvatarActor->SetActorRotation(Dir.Rotation());
+			// 	FGameplayEventData RotationEventData;
+			// 	RotationEventData.Instigator = AvatarActor;
+			// 	RotationEventData.EventTag = FGameplayTag::RequestGameplayTag(TEXT("Skill.TargetLocation"));
+			// 	RotationEventData.TargetData = UAbilitySystemBlueprintLibrary::AbilityTargetDataFromHitResult(Hit);
+			// 	ActorInfo->AbilitySystemComponent->HandleGameplayEvent(RotationEventData.EventTag ,&RotationEventData);
+			// }
 		}
 	}
-	K2_ActivateAbility();
+	// else {
+	// 	if(TriggeredEventData && TriggeredEventData->TargetData.Num() > 0) {
+	// 		FVector Dir = TriggeredEventData->TargetData.Get(0)->GetHitResult()->ImpactPoint - AvatarActor->GetActorLocation();
+	// 		AvatarActor->SetActorRotation(Dir.Rotation());
+	// 	}
+	// }
 }
 
 UGGwaAbilitySystemComponent* UGA_Base::GetTargetASC(AActor* Actor) const {
-	AGGwaCharacter* Character = Cast<AGGwaCharacter>(Actor);
-	if (AGGwaPlayerState* PS = Cast<AGGwaPlayerState>(Character->GetPlayerState())) {
-		if (IAbilitySystemInterface* Interface = Cast<IAbilitySystemInterface>(PS))
-		{
-			return Cast<UGGwaAbilitySystemComponent>(Interface->GetAbilitySystemComponent());
+	//캐릭터가 아닌 경우?
+	if (AGGwaCharacter* Character = Cast<AGGwaCharacter>(Actor)){
+		if (AGGwaPlayerState* PS = Cast<AGGwaPlayerState>(Character->GetPlayerState())) {
+			return Cast<UGGwaAbilitySystemComponent>(PS->GetAbilitySystemComponent());
 		}
 		return nullptr;
 	}

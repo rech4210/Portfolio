@@ -20,10 +20,11 @@ void AGGwaPlayerController::BeginPlay() {
 	inputMode.SetHideCursorDuringCapture(false);
 	SetInputMode(inputMode);
 
-	if (IsLocalController()) {
-		InitClientWidget();
-	}
 	UE_LOG(LogTemp, Warning, TEXT("IsServer: %d | IsLocallyControlled: %d"), HasAuthority(), IsLocalController());
+}
+
+void AGGwaPlayerController::Client_ApplyAbilityDataAsset_Implementation(UBaseDataAsset* Data) {
+	UE_LOG(LogTemp, Log, TEXT("ApplyAbility Data Called From Server"));
 }
 
 void AGGwaPlayerController::AcknowledgePossession(class APawn* PossessedPawn) {

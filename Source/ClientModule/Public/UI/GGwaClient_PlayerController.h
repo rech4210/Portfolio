@@ -18,12 +18,13 @@ class CLIENTMODULE_API AGGwaClient_PlayerController : public AGGwaPlayerControll
 {
 	GENERATED_BODY()
 public:
-	virtual void BeginPlay() override;
-	virtual void InitClientWidget() override;
-	virtual void GetDataFromAbility(UBaseDataAsset* Data) override;
-	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widget")
 	TSubclassOf<UGGwaWidget> WidgetClass;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TObjectPtr<AGGwaHUD> GGwaHUD;
+	
+	virtual void BeginPlay() override;
+	virtual void InitClientWidget() override;
+	virtual void Client_ApplyAbilityDataAsset_Implementation(UBaseDataAsset* Data) override;
+	// virtual void Client_NotifySkillActivated_Implementation(int32 SkillId) override;
 };

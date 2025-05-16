@@ -11,24 +11,38 @@
 
 void AGGwaClient_PlayerController::BeginPlay() {
 	Super::BeginPlay();
+
 }
 
 void AGGwaClient_PlayerController::InitClientWidget() {
-	if (IsLocalController() && WidgetClass) {
+	if (HasAuthority()) {
+		UE_LOG(LogTemp, Warning, TEXT("server Controller"));
+		return;
+	}
+	else if (IsLocalController()) {
+		UE_LOG(LogTemp, Warning, TEXT("Client has been initialized"));
+	}
+	if (WidgetClass) {
 		// Widget = CreateWidget(this, WidgetClass);
 		UGGwaWidget * Widget = CreateWidget<UGGwaWidget>(this, WidgetClass);
 		Widget->AddToViewport();
 		if (Widget) {
+			// 이 getHUD 부분에서 client가 못가져오는건가?
 			GGwaHUD = Cast<AGGwaHUD>(GetHUD());
 			GGwaHUD->SetBaseWidget(Widget);
-			UGGwaAbilitySystemComponent* ASC = Cast<UGGwaAbilitySystemComponent>(GetPlayerState<AGGwaPlayerState>()->GetAbilitySystemComponent());
-			const UGGwaAttributeSet* GGwaAttributeSet = Cast<UGGwaAttributeSet>(ASC->GetAttributeSet(UGGwaAttributeSet::StaticClass()));
-			Widget->InitWidget(ASC, GGwaAttributeSet);
+			if (AGGwaPlayerState * PS = GetPlayerState<AGGwaPlayerState>()) {
+				auto ASC = PS->GetAbilitySystemComponent();
+				UGGwaAbilitySystemComponent* GGawASC = CastChecked<UGGwaAbilitySystemComponent>(ASC);
+				const UGGwaAttributeSet* GGwaAttributeSet = Cast<UGGwaAttributeSet>(GGawASC->GetAttributeSet(UGGwaAttributeSet::StaticClass()));
+				Widget->InitWidget(GGawASC, GGwaAttributeSet);
+			}
 		}
 	}
 }
 
-void AGGwaClient_PlayerController::GetDataFromAbility(UBaseDataAsset* Data) {
-	GGwaHUD->GetBaseWidget()->BindWidgetWithTooltip(Data);
+void AGGwaClient_PlayerController::Client_ApplyAbilityDataAsset_Implementation(UBaseDataAsset* Data) {
+	if (GGwaHUD && IsLocalController()) {
+		GGwaHUD->GetBaseWidget()->BindWidgetWithTooltip(Data);
+	}
 }
 

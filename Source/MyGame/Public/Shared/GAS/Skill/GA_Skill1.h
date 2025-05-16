@@ -9,6 +9,7 @@
 class UBuffDataAsset;
 class USkillDataAsset;
 class UPrimaryDataAsset;
+
 UCLASS()
 class MYGAME_API UGA_Skill1 : public UGA_Base
 {
@@ -16,22 +17,19 @@ class MYGAME_API UGA_Skill1 : public UGA_Base
 
 public:
 	UGA_Skill1();
+
 	UPROPERTY()
 	EAbilityInputID AbilityInputID;
 	virtual void OnAvatarSet(const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilitySpec& Spec) override;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
 	TObjectPtr<USkillDataAsset> SkillDataAsset;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
-	TObjectPtr<UBuffDataAsset> BuffDataAsset;
-	UPROPERTY()
-	TArray<UBaseDataAsset*> DataAssets;
-	// UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Cooldown")
-	// FGameplayTagContainer CooldownTags;
 	
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
 private:
 	UFUNCTION()
-	void OnMontageEnded();
+	void OnMontageInterrupted(FGameplayTag EventTag, FGameplayEventData EventData);
 	UFUNCTION()
-	void OnMontageInterrupted();
+	void OnMontageCompleted(FGameplayTag EventTag, FGameplayEventData EventData);
+	UFUNCTION()
+	void OnMontageEventReceived(FGameplayTag EventTag, FGameplayEventData EventData);
 };

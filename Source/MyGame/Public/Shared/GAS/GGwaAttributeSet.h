@@ -19,6 +19,12 @@ GAMEPLAYATTRIBUTE_VALUE_GETTER(PropertyName) \
 GAMEPLAYATTRIBUTE_VALUE_SETTER(PropertyName) \
 GAMEPLAYATTRIBUTE_VALUE_INITTER(PropertyName)
 
+#define DEFINE_ONREP_ATTRIBUTE(ClassName, PropertyName) \
+void ClassName::OnRep_##PropertyName(const FGameplayAttributeData& OldValue) const \
+{ \
+GAMEPLAYATTRIBUTE_REPNOTIFY(ClassName, PropertyName, OldValue); \
+}
+
 UCLASS()
 class MYGAME_API UGGwaAttributeSet : public UAttributeSet
 {
@@ -43,6 +49,23 @@ public:
 	FGameplayAttributeData MaxMana;
 	ATTRIBUTE_ACCESSORS(UGGwaAttributeSet, MaxMana)
 
+	UPROPERTY(BlueprintReadOnly, Category = "Attribute", ReplicatedUsing = OnRep_Defense)
+	FGameplayAttributeData Defense;
+	ATTRIBUTE_ACCESSORS(UGGwaAttributeSet, Defense)
+
+	UPROPERTY(BlueprintReadOnly, Category = "Attribute", ReplicatedUsing = OnRep_Critical)
+	FGameplayAttributeData Critical;
+	ATTRIBUTE_ACCESSORS(UGGwaAttributeSet, Critical)
+
+	UPROPERTY(BlueprintReadOnly, Category = "Attribute", ReplicatedUsing = OnRep_Speed)
+	FGameplayAttributeData Speed;
+	ATTRIBUTE_ACCESSORS(UGGwaAttributeSet, Speed)
+	
+	UPROPERTY(BlueprintReadOnly, Category = "Attribute", ReplicatedUsing = OnRep_Damage)
+	FGameplayAttributeData Damage;
+	ATTRIBUTE_ACCESSORS(UGGwaAttributeSet, Damage)
+
+
 	UFUNCTION()
 	void OnRep_Health(const FGameplayAttributeData& Old) const;
 	UFUNCTION()
@@ -51,8 +74,17 @@ public:
 	void OnRep_MaxHealth(const FGameplayAttributeData& Old) const;
 	UFUNCTION()
 	void OnRep_MaxMana(const FGameplayAttributeData& Old) const;
+	UFUNCTION()
+	void OnRep_Defense(const FGameplayAttributeData& Old) const;
+	UFUNCTION()
+	void OnRep_Critical(const FGameplayAttributeData& Old) const;
+	UFUNCTION()
+	void OnRep_Speed(const FGameplayAttributeData& Old) const;
+	UFUNCTION()
+	void OnRep_Damage(const FGameplayAttributeData& Old) const;
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue) override;
 	virtual void PostGameplayEffectExecute(const struct FGameplayEffectModCallbackData& Data) override;
 };
+
