@@ -25,7 +25,6 @@ public:
 	TObjectPtr<ULocalDataBaseLoader> LocalDataBaseLoader;
 private:
 	void OnGameplayAppliedCallback(UAbilitySystemComponent* ASC, const FGameplayEffectSpec& Spec, FActiveGameplayEffectHandle Handle);
-	void OnGameplayEffectReplicateCallback(UAbilitySystemComponent* ASC, const FGameplayEffectSpec& Spec, FActiveGameplayEffectHandle Handle);
 	void ProcessGameplayEffect(const FGameplayEffectSpec& Spec, bool bIsServer) const;
 	// TObjectPtr<UCombinedAbilityDataAsset> CachedAbilityDataAsset;
 };

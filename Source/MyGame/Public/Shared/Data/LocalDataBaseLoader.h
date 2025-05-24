@@ -3,10 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GGwaAssetManager.h"
-#include "SkillDataAsset.h"
 #include "Engine/AssetManager.h"
-#include "Kismet/GameplayStatics.h"
 #include "Shared/Data/BaseDataAsset.h"
 #include "LocalDataBaseLoader.generated.h"
 

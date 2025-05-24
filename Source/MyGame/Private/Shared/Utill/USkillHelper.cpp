@@ -24,7 +24,6 @@ int USkillHelper::GetValueFromKey(ESkillInputSlot Slot){
     return static_cast<int>(Slot);
 }
 
-
 FString USkillHelper::GetKeyString(ESkillInputSlot InputSlot) {
     const UEnum *EnumPtr = StaticEnum<ESkillInputSlot>();
     return EnumPtr ? EnumPtr->GetDisplayNameTextByValue(static_cast<int64>(InputSlot)).ToString() : FString("-");

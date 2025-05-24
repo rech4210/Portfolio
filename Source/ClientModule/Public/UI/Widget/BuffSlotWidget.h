@@ -26,7 +26,6 @@ public:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (BindWidget) ,Category= "Widget")
 	TObjectPtr<UImage> SkillImage;
-	/** 쿨타임 표시용 프로그레스바 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (BindWidget) ,Category= "Widget")
 	TObjectPtr<UProgressBar> RemainTimeBar;
 	

@@ -37,6 +37,9 @@ public:
 	UPROPERTY()
 	TObjectPtr<USkillDataAsset> SkillData;
 
+	UPROPERTY()
+	FVector HitLocation;
+
 	/** 콤보 인덱스 (콤보 기반 스킬용) */
 	UPROPERTY()
 	int32 ComboIndex = 0;
