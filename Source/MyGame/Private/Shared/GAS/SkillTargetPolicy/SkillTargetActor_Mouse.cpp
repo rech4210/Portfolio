@@ -26,6 +26,28 @@ void ASkillTargetActor_Mouse::ConfirmTargetingAndContinue()
 		return;
 	}
 
+	DrawDebugCone(GetWorld(),
+		Hit.Location,
+		PlayerController->GetPawn()->GetActorForwardVector(),
+		50.f,
+		100.f,
+		50.f,
+		20.f,
+		FColor::Red,
+		false,
+		5.f,
+		0,
+		1.f
+	);
+	UE_LOG(LogTemp, Warning, TEXT("Mouse ImpactPoint x- %f"), Hit.ImpactPoint.X);
+	UE_LOG(LogTemp, Warning, TEXT("Mouse ImpactPoint  y- %f"), Hit.ImpactPoint.Y);
+	UE_LOG(LogTemp, Warning, TEXT("Mouse ImpactPoint   z- %f"), Hit.ImpactPoint.Z);
+
+	UE_LOG(LogTemp, Warning, TEXT("Mouse Location  X- %f"), Hit.Location.X);
+	UE_LOG(LogTemp, Warning, TEXT("Mouse Location   Y- %f"), Hit.Location.Y);
+	UE_LOG(LogTemp, Warning, TEXT("Mouse Location    Z- %f"), Hit.Location.Z);
+
+
 	FGameplayAbilityTargetDataHandle Data = UAbilitySystemBlueprintLibrary::AbilityTargetDataFromHitResult(Hit);
 	if (!Data.IsValid(0)) return;
 

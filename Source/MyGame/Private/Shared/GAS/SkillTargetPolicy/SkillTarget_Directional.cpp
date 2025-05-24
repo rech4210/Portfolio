@@ -7,7 +7,6 @@
 
 TArray<AActor*> USkillTarget_Directional::DetectTargets(FSkillContext& SkillContext) {
 	TArray<AActor*> Actors;
-
 	if (!SkillContext.SourceActor || !SkillContext.SkillData)
 	{
 		return Actors;
@@ -22,13 +21,12 @@ TArray<AActor*> USkillTarget_Directional::DetectTargets(FSkillContext& SkillCont
 	const FSkillShapeConfig& Config = SkillContext.SkillData->SkillShapeConfig;
 
 	const FVector StartLocation = SkillContext.SourceActor->GetActorLocation();
-	const FVector ForwardVector = SkillContext.SourceActor->GetActorForwardVector();
-	const FVector EndLocation = StartLocation + (ForwardVector * Config.TraceDistance);
+	// const FVector ForwardVector = SkillContext.SourceActor->GetActorForwardVector();
+	const FVector EndLocation = (SkillContext.HitLocation/* * Config.TraceDistance*/);
 
 	FCollisionQueryParams Params;
 	Params.AddIgnoredActor(SkillContext.SourceActor);
 
-	// 📦 BoxTrace 감지
 	TArray<FHitResult> HitResults;
 
 	bool bHit = World->SweepMultiByChannel(
@@ -56,8 +54,6 @@ TArray<AActor*> USkillTarget_Directional::DetectTargets(FSkillContext& SkillCont
 	}
 
 	DebugSkillShape(World, StartLocation, EndLocation, Config);
-
-	// 🔵 SphereOverlap 감지
 	TArray<FOverlapResult> Overlaps;
 
 	bool bOverlap = World->OverlapMultiByChannel(

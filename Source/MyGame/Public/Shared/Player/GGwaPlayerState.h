@@ -21,7 +21,6 @@ public:
 	AGGwaPlayerState();
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 protected:
-	// 아직 UMyAbilitySystemComponent는 안씀.
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="GAS")
 	TObjectPtr<UGGwaAbilitySystemComponent> ASC;
 	

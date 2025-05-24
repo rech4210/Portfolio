@@ -31,12 +31,6 @@ void UGGwaAbilitySystemComponent::BeginPlay()
             this, &UGGwaAbilitySystemComponent::OnGameplayAppliedCallback
         );
     }
-    // else
-    // {
-    //     OnActiveGameplayEffectAddedDelegateToSelf.AddUObject(
-    //         this, &UGGwaAbilitySystemComponent::OnGameplayEffectReplicateCallback
-    //     );
-    // }
 
     LocalDataBaseLoader = NewObject<ULocalDataBaseLoader>(this);
     LocalDataBaseLoader->Initialize();
@@ -49,16 +43,7 @@ void UGGwaAbilitySystemComponent::OnGameplayAppliedCallback(
     ProcessGameplayEffect(Spec, /*bIsServer=*/true);
 }
 
-// void UGGwaAbilitySystemComponent::OnGameplayEffectReplicateCallback(
-//     UAbilitySystemComponent* ASC,
-//     const FGameplayEffectSpec& Spec,
-//     FActiveGameplayEffectHandle Handle){
-//     ProcessGameplayEffect(Spec, /*bIsServer=*/false);
-// }
-
 void UGGwaAbilitySystemComponent::ProcessGameplayEffect(const FGameplayEffectSpec& Spec,bool bIsServer) const{
-    // AGGwaPlayerState* PS = Cast<AGGwaPlayerState>(GetOwner());
-    // AGGwaPlayerController* PC = PS ? Cast<AGGwaPlayerController>(PS->GetPlayerController()) : nullptr;
     AGGwaPlayerController* PC = nullptr;
 
     AActor* InstigatorActor = Spec.GetContext().GetOriginalInstigator();
@@ -67,7 +52,6 @@ void UGGwaAbilitySystemComponent::ProcessGameplayEffect(const FGameplayEffectSpe
     if (InstigatorActor){
         PC = Cast<AGGwaPlayerController>(InstigatorActor->GetInstigatorController());
     }
-
     if (!PC){
         AGGwaPlayerState* PS = Cast<AGGwaPlayerState>(GetOwner());
         PC = PS ? Cast<AGGwaPlayerController>(PS->GetPlayerController()) : nullptr;
@@ -75,11 +59,11 @@ void UGGwaAbilitySystemComponent::ProcessGameplayEffect(const FGameplayEffectSpe
 
     if (!PC || !Spec.Def) return;
 
-    // 2) SkillID 추출
+    // SkillID 추출
     int32 SkillID = -1;
     SkillID = Spec.GetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag("Data.SkillID"), true, SkillID);
     if (SkillID <= 0){
-        UE_LOG(LogTemp, Error, TEXT("[ASC] Invalid SkillID %d"), SkillID);
+        UE_LOG(LogTemp, Log, TEXT("[ASC] Invalid SkillID %d"), SkillID);
         return;
     }
 
@@ -91,7 +75,6 @@ void UGGwaAbilitySystemComponent::ProcessGameplayEffect(const FGameplayEffectSpe
         return;
     }
 
-    // 4) 쿨다운 체크
     // 이미 GA의 Cooldown GE 적용 (쿨다운용 따로 만들어줘야하긴 함) 이 되므로 필요없음. 애초에 이게 호출되는 시점에 GE 쿨타임체크가 발동되지않음.
     const FGameplayTagContainer& Tags = Spec.Def->GetGrantedTags();
     if (Tags.HasTag(SkillData->CooldownTag)){

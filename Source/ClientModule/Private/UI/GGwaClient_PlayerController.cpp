@@ -23,11 +23,9 @@ void AGGwaClient_PlayerController::InitClientWidget() {
 		UE_LOG(LogTemp, Warning, TEXT("Client has been initialized"));
 	}
 	if (WidgetClass) {
-		// Widget = CreateWidget(this, WidgetClass);
 		UGGwaWidget * Widget = CreateWidget<UGGwaWidget>(this, WidgetClass);
 		Widget->AddToViewport();
 		if (Widget) {
-			// 이 getHUD 부분에서 client가 못가져오는건가?
 			GGwaHUD = Cast<AGGwaHUD>(GetHUD());
 			GGwaHUD->SetBaseWidget(Widget);
 			if (AGGwaPlayerState * PS = GetPlayerState<AGGwaPlayerState>()) {

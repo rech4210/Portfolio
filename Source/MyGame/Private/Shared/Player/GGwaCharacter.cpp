@@ -12,26 +12,18 @@
 #include "InputAction.h"
 #include "Shared/Player/GGwaPlayerController.h"
 
-// Sets default values
-AGGwaCharacter::AGGwaCharacter()
-{
-}
-
 void AGGwaCharacter::PossessedBy(AController* NewController) {
 	Super::PossessedBy(NewController);
 	InitASC();
 	if (ASC && HasAuthority()) {
-		for (int32 i = 0; i < SkillAbilities.Num(); ++i)
-		{
-			if (SkillAbilities[i])
-			{
+		for (int32 i = 0; i < SkillAbilities.Num(); ++i){
+			if (SkillAbilities[i]){
 				FGameplayAbilitySpec Spec(SkillAbilities[i], 1, static_cast<int32>(EAbilityInputID::Move) + i, this);
 				ASC->GiveAbility(Spec);
 			}
 		}
 
-		for (const FGameplayAbilitySpec& Spec : ASC->GetActivatableAbilities())
-		{
+		for (const FGameplayAbilitySpec& Spec : ASC->GetActivatableAbilities()){
 			UE_LOG(LogTemp, Warning, TEXT("Ability: %s | InputID: %d"),
 				*GetNameSafe(Spec.Ability), Spec.InputID);
 		}
@@ -53,7 +45,6 @@ void AGGwaCharacter::InitASC() {
 	if (AGGwaPlayerState * State = GetPlayerState<AGGwaPlayerState>(); nullptr != State) {
 		ASC = Cast<UGGwaAbilitySystemComponent>(State->GetAbilitySystemComponent());
 		if (ASC) {
-			// the structure that holds information about who we are acting on and who controls us.
 			// ASC의 연결 정보를 부여, ASC의 owner, Replicated 객체를 지정
 			ASC->InitAbilityActorInfo(State, this);
 		}
@@ -74,10 +65,9 @@ void AGGwaCharacter::BeginPlay() {
 
 void AGGwaCharacter::Tick(float DeltaSeconds) {
 	Super::Tick(DeltaSeconds);
-	// if (!HasAuthority()) return;
 	if (false == bIsFollowingPath && !IsLocallyControlled()) return;
 
-	if (!CurrentPath.IsValidIndex(CurrentPathIndex)/*||ASC->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag("Skill"))*/) {
+	if (!CurrentPath.IsValidIndex(CurrentPathIndex)) {
 		bIsFollowingPath = false;
 		CurrentPath.Empty();
 		CurrentPathIndex = 0;
@@ -87,7 +77,6 @@ void AGGwaCharacter::Tick(float DeltaSeconds) {
 	
 	FVector CurrentLocation = GetActorLocation();
 	FVector TargetPoint = CurrentPath[CurrentPathIndex];
-
 	TargetPoint.Z = CurrentLocation.Z;
 
 	FVector Direction = TargetPoint - CurrentLocation;
@@ -116,7 +105,6 @@ void AGGwaCharacter::Tick(float DeltaSeconds) {
 
 		Direction.Normalize();
 		AddMovementInput(Direction, 1.0,true);
-		// GetCharacterMovement()->RequestPathMove(Dir);
 		UE_LOG(LogTemp, Log, TEXT("Current Actor Location : %s"), *CurrentLocation.ToString());
 	}
 }
@@ -141,28 +129,17 @@ bool AGGwaCharacter::OnSkillTriggered_Validate(const FGameplayEventData& EventDa
 		return false;
 	}
 
-	// 2) 이 캐릭터가 원격 클라이언트의 AutonomousProxy(소유 클라이언트)인지 검사
-	//    (소유하지 않은 클라이언트가 호출해 왔는지 차단)
-	// if (GetRemoteRole() != ROLE_AutonomousProxy)
-	// {
-	// 	UE_LOG(LogTemp, Warning, TEXT("Validate: RemoteRole != AutonomousProxy"));
-	// 	return false;
-	// }
-
-	// 3) Index 범위 검사
 	if (!SkillAbilities.IsValidIndex(Index) || !SkillAbilities[Index]){
 		UE_LOG(LogTemp, Warning, TEXT("Validate: Invalid Index %d"), Index);
 		return false;
 	}
 
-	// 4) EventTag 이 허용된 AbilityTag 와 일치하는지 검사
 	if (!AbilityTags.IsValidIndex(Index) ||EventData.EventTag != AbilityTags[Index]){
 		UE_LOG(LogTemp, Warning, TEXT("Validate: EventTag mismatch (got %s, expected %s)"),
 			*EventData.EventTag.ToString(), *AbilityTags[Index].ToString());
 		return false;
 	}
 
-	// (선택) EventData.Instigator 가 반드시 내가 맞는지 검사
 	if (EventData.Instigator != this){
 		UE_LOG(LogTemp, Warning, TEXT("Validate: Instigator mismatch"));
 		return false;
@@ -186,7 +163,33 @@ void AGGwaCharacter::OnLocalSkillInput(const FInputActionInstance& Instance, int
 		UE_LOG(LogTemp, Warning, TEXT("TryActivateAbility failed for Index %d"), Index);
 	}
 }
-//
+
+// OnSkillTriggered_Implementation()	서버 (RPC)	클라이언트 요청 받아 실행
+void AGGwaCharacter::OnSkillTriggered_Implementation(const FGameplayEventData& EventData, int32 Index) {
+	ExecuteAbility(EventData, Index);
+}
+
+
+
+
+// ExecuteAbility()	공통	실제 GA 발동 처리
+void AGGwaCharacter::ExecuteAbility(const FGameplayEventData& EventData, int32 Index) {
+	if (ASC && SkillAbilities.IsValidIndex(Index) && SkillAbilities[Index]){
+		AGGwaPlayerController * PC = Cast<AGGwaPlayerController>(GetController());
+		FGameplayAbilitySpec* Spec = ASC->FindAbilitySpecFromClass(SkillAbilities[Index]);
+		if (Spec == nullptr) {
+			UE_LOG(LogTemp, Warning, TEXT("ExecuteAbility: Spec is nullptr"));
+			return;
+		}
+		ASC->TryActivateAbility(Spec->Handle, true);
+	}
+}
+
+void AGGwaCharacter::SetMoveData_Implementation(const TArray<FVector>& Path, int32 PathIndex, bool bIsFollowing) {
+	this->CurrentPath = Path;
+	this->CurrentPathIndex = PathIndex;
+	this->bIsFollowingPath = bIsFollowing;
+}
 
 
 // OnLocalSkillInput()	클라이언트	입력 수신 → 서버 호출
@@ -219,42 +222,3 @@ void AGGwaCharacter::OnLocalSkillInput(const FInputActionInstance& Instance, int
 // 	}
 // }
 
-// OnSkillTriggered_Implementation()	서버 (RPC)	클라이언트 요청 받아 실행
-void AGGwaCharacter::OnSkillTriggered_Implementation(const FGameplayEventData& EventData, int32 Index) {
-	ExecuteAbility(EventData, Index);
-}
-
-
-
-
-// ExecuteAbility()	공통	실제 GA 발동 처리
-void AGGwaCharacter::ExecuteAbility(const FGameplayEventData& EventData, int32 Index) {
-	if (ASC && SkillAbilities.IsValidIndex(Index) && SkillAbilities[Index]){
-		AGGwaPlayerController * PC = Cast<AGGwaPlayerController>(GetController());
-		// ASC->HandleGameplayEvent(EventData.EventTag ,&EventData);
-		FGameplayAbilitySpec* Spec = ASC->FindAbilitySpecFromClass(SkillAbilities[Index]);
-		if (Spec == nullptr) {
-			UE_LOG(LogTemp, Warning, TEXT("ExecuteAbility: Spec is nullptr"));
-			return;
-		}
-		ASC->TryActivateAbility(Spec->Handle, true);
-		// ASC->TryActivateAbilityByClass(SkillAbilities[Index]);
-	}
-}
-
-// void AGGwaCharacter::SetMoveData_Implementation(const TArray<FVector> Path, int32 PathIndex, bool bIsFollowing) {
-// 	this->CurrentPath = Path;
-// 	this->CurrentPathIndex = PathIndex;
-// 	this->bIsFollowingPath = bIsFollowing;
-// }
-
-/*
- * FVector_NetQuantize 등으로 축소형 타입을 쓰거나
- * 필요하다면 이동 취소나 수정 지시를 Server RPC로 다시 보내서 서버와 완전 동기화
- */
-
-void AGGwaCharacter::SetMoveData_Implementation(const TArray<FVector>& Path, int32 PathIndex, bool bIsFollowing) {
-	this->CurrentPath = Path;
-	this->CurrentPathIndex = PathIndex;
-	this->bIsFollowingPath = bIsFollowing;
-}

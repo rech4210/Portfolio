@@ -4,6 +4,7 @@
 #include "Shared/GAS/GGwaAttributeSet.h"
 #include "AbilitySystemComponent.h"
 #include "Net/UnrealNetwork.h"
+#include "Shared/GAS/AbilityTask/GGwaPlayMontageAndWaitForEvent.h"
 
 DEFINE_ONREP_ATTRIBUTE(UGGwaAttributeSet, Health)
 DEFINE_ONREP_ATTRIBUTE(UGGwaAttributeSet, MaxHealth)
@@ -49,8 +50,8 @@ void UGGwaAttributeSet::PostGameplayEffectExecute(const struct FGameplayEffectMo
 }
 
 
-void UGGwaAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
+// Called when a replicated property changes, Rep를 위한 매크로 등록.
+void UGGwaAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const{
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME_CONDITION_NOTIFY(UGGwaAttributeSet, Health, COND_None, REPNOTIFY_Always);

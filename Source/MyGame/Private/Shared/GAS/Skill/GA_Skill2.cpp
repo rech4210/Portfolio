@@ -3,6 +3,7 @@
 
 #include "Shared/GAS/Skill/GA_Skill2.h"
 #include "AbilitySystemInterface.h"
+#include "Abilities/Tasks/AbilityTask_WaitTargetData.h"
 #include "Shared/GAS/GGwaAbilitySystemComponent.h"
 #include "Shared/GAS/SkillTargetPolicy/SkillTarget_TargetActor.h"
 
