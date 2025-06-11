@@ -22,7 +22,9 @@ public class ServerModule : ModuleRules
                 "Slate",
                 "SlateCore",
                 "AIModule",
-                "NavigationSystem"
+                "NavigationSystem",
+                "GameplayAbilities",
+                "GameplayTags"
             }
         );
         if (Target.bBuildEditor)

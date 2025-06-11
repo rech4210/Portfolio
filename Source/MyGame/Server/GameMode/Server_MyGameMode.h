@@ -6,6 +6,7 @@
 #include "GameFramework/GameMode.h"
 #include "Server_MyGameMode.generated.h"
 
+class ABossCharacter;
 class AGGwaCharacter;
 class AGGwaPlayerState;
 class AGGwaPlayerController;
@@ -18,13 +19,8 @@ class MYGAME_API AServer_MyGameMode : public AGameMode
 	GENERATED_BODY()
 public:
 	AServer_MyGameMode();
-	UPROPERTY()
 	TSubclassOf<AGGwaPlayerController> PlayerController;
-
-	UPROPERTY()
 	TSubclassOf<AGGwaPlayerState> PlayerState;
-
-	UPROPERTY()
 	TSubclassOf<AGGwaCharacter> Character;
 
 

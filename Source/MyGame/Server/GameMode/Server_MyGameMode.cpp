@@ -3,11 +3,13 @@
 
 #include "Server_MyGameMode.h"
 
+#include "Shared/AI/BossCharacter.h"
 #include "Shared/Player/GGwaCharacter.h"
 #include "Shared/Player/GGwaPlayerController.h"
 #include "Shared/Player/GGwaPlayerState.h"
 
 
+//ServerModule로 옮겨야함.
 AServer_MyGameMode::AServer_MyGameMode() {
 	PlayerControllerClass = AGGwaPlayerController::StaticClass();
 	PlayerStateClass = AGGwaPlayerState::StaticClass();
@@ -16,18 +18,20 @@ AServer_MyGameMode::AServer_MyGameMode() {
 
 void AServer_MyGameMode::PostLogin(APlayerController* NewPlayer) {
 	Super::PostLogin(NewPlayer);
-	// 플레이어 데이터 호출 Player Default Settings, 데이터 로딩
-	if (!NewPlayer) {
-		UE_LOG(LogTemp, Error, TEXT("NewPlayer is null"));
-	}
+	if (HasAuthority()) {
+		// 플레이어 데이터 호출 Player Default Settings, 데이터 로딩
+		if (!NewPlayer) {
+			UE_LOG(LogTemp, Error, TEXT("NewPlayer is null"));
+		}
 	
-	AGGwaPlayerState* State = NewPlayer->GetPlayerState<AGGwaPlayerState>();
+		AGGwaPlayerState* State = NewPlayer->GetPlayerState<AGGwaPlayerState>();
 
-	if (AGGwaCharacter* GGwaCharacter = Cast<AGGwaCharacter>(NewPlayer->GetPawn())) {
-		UE_LOG(LogTemp, Warning, TEXT("Player already exists"));
-	}
-	else {
-		UE_LOG(LogTemp, Warning, TEXT("Player is not spawned in postlogin"));
+		if (AGGwaCharacter* GGwaCharacter = Cast<AGGwaCharacter>(NewPlayer->GetPawn())) {
+			UE_LOG(LogTemp, Warning, TEXT("Player already exists"));
+		}
+		else {
+			UE_LOG(LogTemp, Warning, TEXT("Player is not spawned in postlogin"));
+		}
 	}
 }
 

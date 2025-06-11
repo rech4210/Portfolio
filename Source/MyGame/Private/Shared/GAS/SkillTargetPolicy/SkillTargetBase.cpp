@@ -2,6 +2,7 @@
 #include "Shared/GAS/SkillTargetPolicy/SkillTargetBase.h"
 #include "AbilitySystemInterface.h"
 #include "GameFramework/PlayerState.h"
+#include "Shared/AI/BossCharacter.h"
 #include "Shared/Player/GGwaCharacter.h"
 #include "Shared/Player/GGwaPlayerState.h"
 
@@ -47,8 +48,15 @@ void USkillTargetBase::DebugSkillShape(const UWorld* World, const FVector& Start
 }
 
 bool USkillTargetBase::HasASC(AActor* Actor) const {
+	//체크 판단에서 적을 정의해야한다. 현재는 character 모두 상속받는다면, 보스와 플레이어 모두 타격 대상이 된다.
 	if (AGGwaCharacter* Character =  Cast<AGGwaCharacter>(Actor)) {
 		if (Cast<AGGwaPlayerState>(Character->GetPlayerState())->Implements<UAbilitySystemInterface>()) {
+			return true;
+		}
+		return false;
+	}
+	if (ABossCharacter* Boss = Cast<ABossCharacter>(Actor)) {
+		if (UAbilitySystemComponent* ASC = Boss->GetAbilitySystemComponent()) {
 			return true;
 		}
 		return false;

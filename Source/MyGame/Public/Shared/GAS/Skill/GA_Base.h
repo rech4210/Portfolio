@@ -24,5 +24,5 @@ public:
 protected:
 	virtual FSkillContext BuildSkillContext(const FGameplayAbilityActorInfo *ActorInfo);
 	void PreProcessSkillStart(const FGameplayAbilityActorInfo* ActorInfo);
-	UGGwaAbilitySystemComponent* GetTargetASC(AActor* Actor) const;
+	UAbilitySystemComponent* GetTargetASC(AActor* Actor) const;
 };

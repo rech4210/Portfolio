@@ -4,8 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include "Shared/AI/EnemySystemCore/FBossDataStruct.h"
 #include "GGwaPlayerController.generated.h"
 
+class ABossCharacter;
 class UBaseDataAsset;
 /**
  * 
@@ -22,8 +24,12 @@ public:
 
 	UFUNCTION(Client ,Reliable)
 	virtual void Client_ApplyAbilityDataAsset(UBaseDataAsset* Data);
+	UFUNCTION(Client ,Reliable)
+	virtual void Client_ReceiveBossData(const FBossDataStruct& BossCharacter);
+
 	//클라이언트가 자신에게 Possess한 Pawn을 인식(승인)하도록 알려주는 함수
 	virtual void AcknowledgePossession(APawn* PossessedPawn) override;
 		
 	// virtual void Client_NotifySkillActivated(int32 SkillId);
 };
+

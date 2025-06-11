@@ -7,6 +7,9 @@
 #include "Shared/GAS/GGwaAbilitySystemComponent.h"
 #include "Shared/Player/GGwaPlayerController.h"
 #include "AbilitySystemBlueprintLibrary.h"
+#include "Shared/AI/BossCharacter.h"
+#include "Shared/AI/EnemyAbilitySystemComponent.h"
+#include "Shared/AI/EnemyAttributeSet.h"
 #include "Shared/Player/GGwaPlayerState.h"
 
 const FName UGA_Base::SkillAssetTypeTag = TEXT("Data.SkillID");
@@ -40,12 +43,17 @@ void UGA_Base::PreProcessSkillStart(const FGameplayAbilityActorInfo* ActorInfo) 
 	// 	}
 	// }
 }
-
-UGGwaAbilitySystemComponent* UGA_Base::GetTargetASC(AActor* Actor) const {
+UAbilitySystemComponent* UGA_Base::GetTargetASC(AActor* Actor) const {
 	//캐릭터가 아닌 경우?
 	if (AGGwaCharacter* Character = Cast<AGGwaCharacter>(Actor)){
 		if (AGGwaPlayerState* PS = Cast<AGGwaPlayerState>(Character->GetPlayerState())) {
-			return Cast<UGGwaAbilitySystemComponent>(PS->GetAbilitySystemComponent());
+			return PS->GetAbilitySystemComponent();
+		}
+		return nullptr;
+	}
+	if (ABossCharacter* Boss = Cast<ABossCharacter>(Actor)) {
+		if (UAbilitySystemComponent* ASC = Boss->GetAbilitySystemComponent()) {
+			return ASC;
 		}
 		return nullptr;
 	}

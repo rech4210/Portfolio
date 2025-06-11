@@ -1,4 +1,5 @@
-﻿#include "ServerModule.h"
+﻿
+#include "ServerModule.h"
 
 #define LOCTEXT_NAMESPACE "FServerModuleModule"
 

@@ -27,6 +27,10 @@ void AGGwaPlayerController::Client_ApplyAbilityDataAsset_Implementation(UBaseDat
 	UE_LOG(LogTemp, Log, TEXT("ApplyAbility Data Called From Server"));
 }
 
+void AGGwaPlayerController::Client_ReceiveBossData_Implementation(const FBossDataStruct& BossCharacter) {
+	UE_LOG(LogTemp, Log, TEXT("BossData Called From Server"));
+}
+
 void AGGwaPlayerController::AcknowledgePossession(class APawn* PossessedPawn) {
 	Super::AcknowledgePossession(PossessedPawn);
 	AGGwaCharacter * MyCharacter = Cast<AGGwaCharacter>(PossessedPawn);
