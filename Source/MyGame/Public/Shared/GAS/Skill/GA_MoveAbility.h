@@ -20,10 +20,6 @@ public:
 	UPROPERTY(EditAnywhere, Category="LineTrace")
 	TSubclassOf<AActor> LineTraceRing;
 
-	// UPROPERTY(VisibleAnywhere, Category="LineTrace")
-	// TObjectPtr<AActor> Actor;
-	// UPROPERTY(VisibleAnywhere, Category="LineTrace")
-	// TObjectPtr<AGGwaCharacter> Character;
 
 	UFUNCTION()
 	void OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Data);

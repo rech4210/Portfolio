@@ -3,9 +3,7 @@
 
 #include "Shared/GAS/GGwaAbilitySystemComponent.h"
 // #include "Shared/Data/BaseDataAsset.h"
-#include "Chaos/Deformable/MuscleActivationConstraints.h"
 #include "Shared/Data/BuffDataAsset.h"
-#include "Shared/Data/CombinedAbilityDataAsset.h"
 #include "Shared/Data/ItemDataAsset.h"
 #include "Shared/Data/LocalDataBaseLoader.h"
 #include "Shared/Data/SkillDataAsset.h"
@@ -71,7 +69,7 @@ void UGGwaAbilitySystemComponent::ProcessGameplayEffect(const FGameplayEffectSpe
     LocalDataBaseLoader->GetPrimaryAssetId(SkillID, AssetId);
     USkillDataAsset* SkillData = LocalDataBaseLoader->GetDataFromAssetId<USkillDataAsset>(AssetId, /*bSync=*/true);
     if (!SkillData){
-        UE_LOG(LogTemp, Error, TEXT("[ASC] Failed to load SkillData for ID %d"), SkillID);
+        UE_LOG(LogTemp, Warning, TEXT("[ASC] Failed to load SkillData for ID %d"), SkillID);
         return;
     }
 

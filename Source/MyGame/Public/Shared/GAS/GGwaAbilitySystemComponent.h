@@ -7,7 +7,6 @@
 #include "GGwaAbilitySystemComponent.generated.h"
 class ULocalDataBaseLoader;
 class UBaseDataAsset; 
-// DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnCooldownTagChanged, FGameplayTag, CooldownTag, float, TimeRemaining);
 
 
 class UCombinedAbilityDataAsset;
@@ -18,13 +17,10 @@ class MYGAME_API UGGwaAbilitySystemComponent : public UAbilitySystemComponent
 public:
 	
 	UGGwaAbilitySystemComponent();
-	// UPROPERTY(BlueprintAssignable)
-	// FOnCooldownTagChanged OnCooldownTagChanged;
 	virtual void BeginPlay() override;
 	UPROPERTY()
 	TObjectPtr<ULocalDataBaseLoader> LocalDataBaseLoader;
 private:
 	void OnGameplayAppliedCallback(UAbilitySystemComponent* ASC, const FGameplayEffectSpec& Spec, FActiveGameplayEffectHandle Handle);
 	void ProcessGameplayEffect(const FGameplayEffectSpec& Spec, bool bIsServer) const;
-	// TObjectPtr<UCombinedAbilityDataAsset> CachedAbilityDataAsset;
 };

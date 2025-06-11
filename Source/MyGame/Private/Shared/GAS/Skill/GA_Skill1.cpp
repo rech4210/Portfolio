@@ -1,6 +1,8 @@
 // GA_Skill1.cpp
 
 #include "Shared/GAS/Skill/GA_Skill1.h"
+
+#include "HttpModule.h"
 #include "Shared/Data/SkillDataAsset.h"
 #include "Shared/GAS/SkillTargetPolicy/SkillTargetActor_Mouse.h"
 #include "Shared/GAS/SkillTargetPolicy/SkillTarget_Self.h"
@@ -28,7 +30,7 @@ void UGA_Skill1::ActivateAbility(
     const FGameplayAbilitySpecHandle Handle,
     const FGameplayAbilityActorInfo* ActorInfo,
     const FGameplayAbilityActivationInfo ActivationInfo,
-    const FGameplayEventData* /*TriggerEventData*/)
+    const FGameplayEventData*)
 {
 
     FScopedPredictionWindow ScopedPredictionWindow(ActorInfo->AbilitySystemComponent.Get());
@@ -83,8 +85,6 @@ void UGA_Skill1::OnTargetDataCancelled(const FGameplayAbilityTargetDataHandle& D
 
 void UGA_Skill1::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Data){
     
-
-    
     if (!CurrentActorInfo){
         EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
         return;
@@ -114,6 +114,10 @@ void UGA_Skill1::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Da
         }
     }
 
+    if (GetActorInfo().AvatarActor->HasAuthority()) {
+        SendSkillLogToServer(SkillDataAsset->GEClass.Get()->GetName(), HitPoint);
+    }
+
 
     // 4) 몽타주 Task
     UGGwaPlayMontageAndWaitForEvent* MontageTask =
@@ -141,6 +145,7 @@ void UGA_Skill1::OnMontageInterrupted(FGameplayTag /*EventTag*/, FGameplayEventD
     GetActorInfo().AbilitySystemComponent->RemoveGameplayCue(FGameplayTag::RequestGameplayTag(FName("GameplayCue.Skill1.DirectionPreview")));
     EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
 }
+
 
 void UGA_Skill1::OnMontageCompleted(FGameplayTag ,FGameplayEventData){
     if (GetAvatarActorFromActorInfo()->HasAuthority())
@@ -180,7 +185,7 @@ void UGA_Skill1::OnMontageCompleted(FGameplayTag ,FGameplayEventData){
         else{
             //여기서 콜백으로 인해, 버프가 이중 발생. 그러니 쿨타임에만 적용되도록 수정할것.
             for (AActor* Target : SkillContext.DetectedActors){
-                if (UGGwaAbilitySystemComponent* TargetASC = GetTargetASC(Target) ){
+                if (UAbilitySystemComponent* TargetASC = GetTargetASC(Target) ){
                     ASC->ApplyGameplayEffectSpecToTarget(*Spec.Data.Get(), TargetASC);
                 }
             }
@@ -197,4 +202,24 @@ void UGA_Skill1::OnMontageCompleted(FGameplayTag ,FGameplayEventData){
         true, 
         false 
     );
+}
+
+//Replace To Server Module Logic
+void UGA_Skill1::SendSkillLogToServer(const FString& SkillName, FVector SkillLocation) const
+{
+    FHttpModule& Http = FHttpModule::Get();
+    TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = Http.CreateRequest();
+
+    Request->SetURL(TEXT("http://localhost:8000/api/skill-log"));
+    Request->SetVerb(TEXT("POST"));
+    Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
+
+    FString Payload = FString::Printf(TEXT(
+        "{\"player_id\":\"%s\", \"skill\":\"%s\", \"location\":{\"x\":%.2f, \"y\":%.2f, \"z\":%.2f}}"),
+        *GetAvatarActorFromActorInfo()->GetName(),
+        *SkillName,
+        SkillLocation.X, SkillLocation.Y, SkillLocation.Z);
+
+    Request->SetContentAsString(Payload);
+    Request->ProcessRequest();
 }

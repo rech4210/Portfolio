@@ -4,7 +4,8 @@
 #include "Shared/GAS/GGwaAttributeSet.h"
 #include "AbilitySystemComponent.h"
 #include "Net/UnrealNetwork.h"
-#include "Shared/GAS/AbilityTask/GGwaPlayMontageAndWaitForEvent.h"
+#include "GameplayEffectExtension.h"
+// #include "Shared/GAS/AbilityTask/GGwaPlayMontageAndWaitForEvent.h"
 
 DEFINE_ONREP_ATTRIBUTE(UGGwaAttributeSet, Health)
 DEFINE_ONREP_ATTRIBUTE(UGGwaAttributeSet, MaxHealth)

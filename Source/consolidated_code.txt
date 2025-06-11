@@ -1,0 +1,5256 @@
+--- FILE: consolidated_code.txt ---
+
+
+--- FILE: MyGame.Target.cs ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+using UnrealBuildTool;
+using System.Collections.Generic;
+
+public class MyGameTarget : TargetRules
+{
+	public MyGameTarget(TargetInfo Target) : base(Target)
+	{
+		Type = TargetType.Game;
+		DefaultBuildSettings = BuildSettingsVersion.V5;
+
+		ExtraModuleNames.AddRange( new string[] { "MyGame" } );
+		RegisterModulesCreatedByRider();
+	}
+
+	private void RegisterModulesCreatedByRider()
+	{
+		ExtraModuleNames.AddRange(new string[] { "ClientModule", "ServerModule" });
+	}
+}
+
+
+--- FILE: MyGameEditor.Target.cs ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+using UnrealBuildTool;
+using System.Collections.Generic;
+
+public class MyGameEditorTarget : TargetRules
+{
+	public MyGameEditorTarget(TargetInfo Target) : base(Target)
+	{
+		Type = TargetType.Editor;
+		DefaultBuildSettings = BuildSettingsVersion.V5;
+
+		ExtraModuleNames.AddRange( new string[] { "MyGame" } );
+		RegisterModulesCreatedByRider();
+	}
+
+	private void RegisterModulesCreatedByRider()
+	{
+		ExtraModuleNames.AddRange(new string[] { "ClientModule" });
+	}
+}
+
+
+--- FILE: MyGameServer.Target.cs ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+using UnrealBuildTool;
+using System.Collections.Generic;
+
+public class MyGameServerTarget : TargetRules
+{
+	public MyGameServerTarget(TargetInfo Target) : base(Target)
+	{
+		Type = TargetType.Server;
+		DefaultBuildSettings = BuildSettingsVersion.V5;
+
+		ExtraModuleNames.AddRange( new string[] { "MyGame" } );
+		RegisterModulesCreatedByRider();
+	}
+
+	private void RegisterModulesCreatedByRider()
+	{
+		ExtraModuleNames.AddRange(new string[] { "ServerModule" });
+	}
+}
+
+
+--- FILE: test.py ---
+# Python Script: Gather and Consolidate All Files into a Single Text File
+
+import os
+
+def consolidate_directory(root_dir, output_filename="consolidated_code.txt"):
+    """
+    Traverses the given root directory (including all subdirectories),
+    reads each file's content, and writes the file path and its content
+    into a single output text file.
+    """
+    output_path = os.path.join(root_dir, output_filename)
+    with open(output_path, 'w', encoding='utf-8') as outfile:
+        for dirpath, dirnames, filenames in os.walk(root_dir):
+            for filename in filenames:
+                filepath = os.path.join(dirpath, filename)
+                # Write a header for each file
+                outfile.write(f"--- FILE: {os.path.relpath(filepath, root_dir)} ---\n")
+                try:
+                    with open(filepath, 'r', encoding='utf-8') as infile:
+                        content = infile.read()
+                        outfile.write(content)
+                except Exception as e:
+                    outfile.write(f"[Error reading file: {e}]\n")
+                outfile.write("\n\n")  # Separate files by blank lines
+    print(f"Consolidation complete! Output saved to: {output_path}")
+
+if __name__ == "__main__":
+    # Use current working directory as root
+    current_dir = os.getcwd()
+    consolidate_directory(current_dir)
+
+
+--- FILE: ClientModule\ClientModule.Build.cs ---
+﻿using UnrealBuildTool;
+
+public class ClientModule : ModuleRules
+{
+    public ClientModule(ReadOnlyTargetRules Target) : base(Target)
+    {
+        PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
+
+        PublicDependencyModuleNames.AddRange(
+            new string[]
+            {
+                "Core",
+                "MyGame"
+            }
+        );
+
+        PrivateDependencyModuleNames.AddRange(
+            new string[]
+            {
+                "CoreUObject",
+                "Engine",
+                "Slate",
+                "SlateCore",
+                "UMG",
+                "RenderCore",
+                "RHI",
+                "GameplayAbilities"
+            }
+        );
+    }
+}
+
+--- FILE: ClientModule\Private\ClientModule.cpp ---
+﻿#include "ClientModule.h"
+
+#define LOCTEXT_NAMESPACE "FClientModuleModule"
+
+void FClientModuleModule::StartupModule()
+{
+	UE_LOG(LogTemp, Log, TEXT("ClientModule has started!"));
+}
+
+void FClientModuleModule::ShutdownModule()
+{
+    
+}
+
+#undef LOCTEXT_NAMESPACE
+    
+IMPLEMENT_MODULE(FClientModuleModule, ClientModule)
+
+--- FILE: ClientModule\Private\UI\GGwaClient_PlayerController.cpp ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "UI/GGwaClient_PlayerController.h"
+#include "UI/Widget/GGwaWidget.h"
+#include "UI/GGwaHUD.h"
+#include "Shared/GAS/GGwaAttributeSet.h"
+#include "Shared/GAS/GGwaAbilitySystemComponent.h"
+#include "Shared/Player/GGwaPlayerState.h"
+
+
+void AGGwaClient_PlayerController::BeginPlay() {
+	Super::BeginPlay();
+
+}
+
+void AGGwaClient_PlayerController::InitClientWidget() {
+	if (HasAuthority()) {
+		UE_LOG(LogTemp, Warning, TEXT("server Controller"));
+		return;
+	}
+	else if (IsLocalController()) {
+		UE_LOG(LogTemp, Warning, TEXT("Client has been initialized"));
+	}
+	if (WidgetClass) {
+		UGGwaWidget * Widget = CreateWidget<UGGwaWidget>(this, WidgetClass);
+		Widget->AddToViewport();
+		if (Widget) {
+			GGwaHUD = Cast<AGGwaHUD>(GetHUD());
+			GGwaHUD->SetBaseWidget(Widget);
+			if (AGGwaPlayerState * PS = GetPlayerState<AGGwaPlayerState>()) {
+				auto ASC = PS->GetAbilitySystemComponent();
+				UGGwaAbilitySystemComponent* GGawASC = CastChecked<UGGwaAbilitySystemComponent>(ASC);
+				const UGGwaAttributeSet* GGwaAttributeSet = Cast<UGGwaAttributeSet>(GGawASC->GetAttributeSet(UGGwaAttributeSet::StaticClass()));
+				Widget->InitWidget(GGawASC, GGwaAttributeSet);
+			}
+		}
+	}
+}
+
+void AGGwaClient_PlayerController::Client_ApplyAbilityDataAsset_Implementation(UBaseDataAsset* Data) {
+	if (GGwaHUD && IsLocalController()) {
+		GGwaHUD->GetBaseWidget()->BindWidgetWithTooltip(Data);
+	}
+}
+
+
+
+--- FILE: ClientModule\Private\UI\GGwaHUD.cpp ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "UI/GGwaHUD.h"
+
+UGGwaWidget* AGGwaHUD::GetBaseWidget() const { return BaseWidget; }
+
+void AGGwaHUD::SetBaseWidget(UGGwaWidget* widget){
+	BaseWidget = widget;
+}
+
+
+--- FILE: ClientModule\Private\UI\SetWidgetDataInterface.cpp ---
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "UI/SetWidgetDataInterface.h"
+
+
+// Add default functionality here for any ISetWidgetDataInterface functions that are not pure virtual.
+
+
+--- FILE: ClientModule\Private\UI\ToolTip\BaseToolTip.cpp ---
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "UI/ToolTip/BaseToolTip.h"
+
+void UBaseToolTip::SetToolTipData(UPrimaryDataAsset* Data) {
+
+}
+
+
+--- FILE: ClientModule\Private\UI\ToolTip\BuffToolTip.cpp ---
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "UI/ToolTip/BuffToolTip.h"
+
+#include "Components/Image.h"
+#include "Shared/Data/BuffDataAsset.h"
+#include "Components/TextBlock.h"
+
+
+void UBuffToolTip::SetToolTipData(UPrimaryDataAsset* Data) {
+	// Super::SetToolTipData(ToolTip);
+	AddToViewport(999);
+	SetVisibility(ESlateVisibility::Collapsed);
+	if (UBuffDataAsset* BuffData = Cast<UBuffDataAsset>(Data)) {
+		if (ToolTipTitle) {
+			ToolTipTitle->SetText(BuffData->DisplayName);
+		}
+		if (ToolTipDescription) {
+			ToolTipDescription->SetText(BuffData->Description); // TODO: 실제 설명으로 변경
+		}
+		if (ToolTipIcon) {
+			ToolTipIcon->SetBrushFromTexture(BuffData->Image);
+		}
+		// SetVisibility(ESlateVisibility::Visible);
+	}
+}
+
+
+--- FILE: ClientModule\Private\UI\ToolTip\ItemToolTip.cpp ---
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "UI/ToolTip/ItemToolTip.h"
+
+void UItemToolTip::SetToolTipData(UPrimaryDataAsset* ToolTip) {
+	Super::SetToolTipData(ToolTip);
+	
+}
+
+
+--- FILE: ClientModule\Private\UI\ToolTip\SkillToolTip.cpp ---
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "UI/ToolTip/SkillToolTip.h"
+#include "Components/Image.h"
+#include "Components/TextBlock.h"
+#include "Shared/Data/SkillDataAsset.h"
+
+void USkillToolTip::SetToolTipData(UPrimaryDataAsset* Data) {
+	// Super::SetToolTipData(ToolTip);
+	AddToViewport(999);
+	SetVisibility(ESlateVisibility::Collapsed);
+	if (USkillDataAsset* BuffData = Cast<USkillDataAsset>(Data)) {
+		if (ToolTipTitle) {
+			ToolTipTitle->SetText(BuffData->DisplayName);
+		}
+		if (ToolTipDescription) {
+			ToolTipDescription->SetText(BuffData->Description); // TODO: 실제 설명으로 변경
+		}
+		if (ToolTipIcon) {
+			ToolTipIcon->SetBrushFromTexture(BuffData->Image);
+		}
+		// SetVisibility(ESlateVisibility::Visible);
+	}
+}
+
+
+--- FILE: ClientModule\Private\UI\Widget\BuffSlotWidget.cpp ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "UI/Widget/BuffSlotWidget.h"
+#include "TimerManager.h"
+#include "Components/Image.h"
+#include "Engine/World.h"
+#include "Kismet/GameplayStatics.h"
+
+void UBuffSlotWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
+	
+	if (RemainTimeBar){
+		RemainTimeBar->SetPercent(1.f); // 버프 시간 초기화
+	}
+	
+	if (RemainTimeText){
+		RemainTimeText->SetText(FText::FromString(TEXT("")));
+	}
+}
+
+
+
+void UBuffSlotWidget::ConsumeDuration(float CooldownTime)
+{
+	TotalCooldownTime = CooldownTime;
+	ElapsedCooldownTime = 0.f;
+
+	// 0.05초마다 UpdateDurationDuration 호출
+	GetWorld()->GetTimerManager().SetTimer(
+		CooldownTimerHandle, this, &UBuffSlotWidget::UpdateDuration, 0.05f, true
+	);
+}
+void UBuffSlotWidget::NativeOnMouseEnter(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) {
+	Super::NativeOnMouseEnter(InGeometry, InMouseEvent);
+	if (BuffToolTipWidget->GetVisibility() != ESlateVisibility::Visible) {
+		BuffToolTipWidget->SetVisibility(ESlateVisibility::Visible);
+		BuffToolTipWidget->SetIsEnabled(false); // 입력 무시 (hover, focus 등)
+		FVector2D LocalMousePos;
+		UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetMousePosition(LocalMousePos.X, LocalMousePos.Y);
+		BuffToolTipWidget->SetPositionInViewport(LocalMousePos, true); // DPI 변환 고려됨
+	}
+	UE_LOG(LogTemp, Warning, TEXT("TooltipWidget on %s"), *BuffToolTipWidget.GetName());
+}
+
+void UBuffSlotWidget::NativeOnMouseLeave(const FPointerEvent& InMouseEvent) {
+	Super::NativeOnMouseLeave(InMouseEvent);
+	if (BuffToolTipWidget->GetVisibility() != ESlateVisibility::Collapsed) {
+		BuffToolTipWidget->SetVisibility(ESlateVisibility::Collapsed);
+		UE_LOG(LogTemp, Warning, TEXT("TooltipWidget off %s"), *UEnum::GetValueAsString(BuffToolTipWidget->GetVisibility()));
+	}
+}
+
+void UBuffSlotWidget::SetWidgetData(UPrimaryDataAsset* Data) {
+	UBuffDataAsset * BuffData = Cast<UBuffDataAsset>(Data);
+	if (nullptr != BuffData->Tooltip) {
+		BuffToolTipWidget = Cast<UBuffToolTip>(BuffData->Tooltip);
+	}
+	SkillImage->SetBrushFromTexture(BuffData->Image);
+	ConsumeDuration(BuffData->Duration);
+}
+
+void UBuffSlotWidget::UpdateDuration()
+{
+	ElapsedCooldownTime += 0.05f;
+	float Ratio = 1.f - (ElapsedCooldownTime / TotalCooldownTime);
+	
+	// 프로그레스 바 갱신
+	if (RemainTimeBar)
+	{
+		RemainTimeBar->SetPercent(Ratio);
+	}
+	
+	// 텍스트 갱신 (소수점 1자리까지 보여줌)
+	if (RemainTimeText)
+	{
+		float RemainSeconds = TotalCooldownTime - ElapsedCooldownTime;
+		RemainSeconds = FMath::Max(0.f, RemainSeconds); // 음수 방지
+	
+		FString TimeString = FString::Printf(TEXT("%.1f"), RemainSeconds);
+		RemainTimeText->SetText(FText::FromString(TimeString));
+	}
+	
+	// 쿨타임 완료 처리
+	if (ElapsedCooldownTime >= TotalCooldownTime)
+	{
+		GetWorld()->GetTimerManager().ClearTimer(CooldownTimerHandle);
+	
+		if (RemainTimeBar)
+		{
+			RemainTimeBar->SetPercent(0.f);
+		}
+	
+		if (RemainTimeText)
+		{
+			RemainTimeText->SetText(FText::FromString(TEXT("")));
+		}
+		BuffToolTipWidget->RemoveFromParent();
+		RemoveFromParent();
+	}
+}
+
+
+--- FILE: ClientModule\Private\UI\Widget\GGwaWidget.cpp ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "UI/Widget/GGwaWidget.h"
+#include "AbilitySystemComponent.h"
+#include "Chaos/Deformable/MuscleActivationConstraints.h"
+#include "UI/Widget/PlayerStatusWidget.h"
+#include "UI/Widget/ItemSetWidget.h"
+#include "UI/Widget/SkillSetWidget.h"
+
+#include "Shared/Data/BuffDataAsset.h"
+#include "Shared/Data/ItemDataAsset.h"
+#include "Shared/Data/SkillDataAsset.h"
+#include "Shared/Data/BaseDataAsset.h"
+#include "Shared/GAS/GGwaAbilitySystemComponent.h"
+
+#include "UI/ToolTip/BuffToolTip.h"
+#include "UI/ToolTip/ItemToolTip.h"
+#include "UI/ToolTip/SkillToolTip.h"
+#include "UI/Widget/BuffSlotWidget.h"
+
+void UGGwaWidget::NativeConstruct() {
+	
+}
+
+
+// buff의 경우 재생성 하므로 우선 구현. 나중에 Pooling 적용후 삭제 예정
+// 사용과 widget 바인딩을 분리할것.
+void UGGwaWidget::BindWidgetWithTooltip(UBaseDataAsset* Data) {
+	if (auto* ValueWidget = SlotTooltipCachePair.FindRef(Data); ValueWidget!= nullptr) {
+		if (Cast<UBuffToolTip>(ValueWidget)) {
+			BP_PlayerStatusWidget->SetWidgetData(Data);
+		}
+		else if (Cast<USkillToolTip>(ValueWidget)) {
+			BP_SkillBarWidget->SetWidgetData(Data);
+		}
+		else if (Cast<UItemToolTip>(ValueWidget)) {
+			BP_ItemBarWidget->SetWidgetData(Data);
+		}
+		return;
+	}
+	if (UBuffDataAsset* BuffData = Cast<UBuffDataAsset>(Data))
+	{
+		UBuffToolTip* NewToolTip = CreateWidget<UBuffToolTip>(this, BuffToolTipClass);
+		NewToolTip->SetToolTipData(BuffData);
+		BuffData->Tooltip = NewToolTip;
+		BP_PlayerStatusWidget->SetWidgetData(BuffData);
+		SlotTooltipCachePair.Add(BuffData, NewToolTip);
+	}
+	else if (USkillDataAsset* SkillData = Cast<USkillDataAsset>(Data))
+	{
+		USkillToolTip* NewToolTip = CreateWidget<USkillToolTip>(this, SkillToolTipClass);
+		NewToolTip->SetToolTipData(SkillData);
+		SkillData->Tooltip = NewToolTip;
+		BP_SkillBarWidget->InitSkillWidgetData(SkillData);
+		SlotTooltipCachePair.Add(SkillData, NewToolTip);
+	}
+	else if (UItemDataAsset* ItemData = Cast<UItemDataAsset>(Data))
+	{
+		UItemToolTip* NewToolTip = CreateWidget<UItemToolTip>(this, ItemToolTipClass);
+		NewToolTip->SetToolTipData(ItemData);
+		ItemData->Tooltip = NewToolTip;
+		BP_ItemBarWidget->SetWidgetData(ItemData);
+		SlotTooltipCachePair.Add(ItemData, NewToolTip);
+	}
+}
+
+void UGGwaWidget::InitWidget(UGGwaAbilitySystemComponent* AbilitySystemComponent, const UGGwaAttributeSet* AttributeSet) {
+	if (!AbilitySystemComponent || !AttributeSet) return;
+	ASC = AbilitySystemComponent;
+	GGwaAttributeSet = AttributeSet;
+	
+	BP_PlayerStatusWidget->InitWidget();
+	BP_SkillBarWidget->InitWidget();
+	BP_ItemBarWidget->InitWidget();
+
+	BP_PlayerStatusWidget->UpdateHealthBar(AttributeSet->GetHealth(), AttributeSet->GetMaxHealth());
+	BP_PlayerStatusWidget->UpdateManaBar(AttributeSet->GetMana(), AttributeSet->GetMaxMana());
+
+	for (auto& SkillData : InitSkillDataAssets) {
+		BindWidgetWithTooltip(SkillData);
+	}
+	ASC->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetHealthAttribute())
+		.AddUObject(this, &UGGwaWidget::OnHealthChanged);
+
+	ASC->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetManaAttribute())
+		.AddUObject(this, &UGGwaWidget::OnManaChanged);
+}
+
+
+void UGGwaWidget::OnHealthChanged(const FOnAttributeChangeData& Data) const{
+	BP_PlayerStatusWidget->UpdateHealthBar(Data.NewValue, GGwaAttributeSet->GetMaxHealth());
+}
+
+void UGGwaWidget::OnManaChanged(const FOnAttributeChangeData& Data) const{
+	BP_PlayerStatusWidget->UpdateManaBar(Data.NewValue, GGwaAttributeSet->GetMaxMana());
+}
+
+
+// template<typename TDataAsset, typename TToolTip, typename TWidget>
+// void UGGwaWidget::BindTooltip(TDataAsset* DataAsset, TSubclassOf<TToolTip> ToolTipClass, UUserWidget* ContainerWidget)
+// {
+// 	if (!DataAsset || !ToolTipClass || !ContainerWidget) return;
+//
+// 	TToolTip* NewToolTip = CreateWidget<TToolTip>(this, ToolTipClass);
+// 	NewToolTip->SetToolTipData(DataAsset);
+// 	DataAsset->Tooltip = NewToolTip;
+//
+// 	TWidget* SlotWidget = Cast<TWidget>(ISetWidgetDataInterface::SetWidgetData(DataAsset));
+// 	SlotTooltipCachePair.Add(SlotWidget, NewToolTip);
+// }
+//
+
+
+--- FILE: ClientModule\Private\UI\Widget\ItemSetWidget.cpp ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "UI/Widget/ItemSetWidget.h"
+#include "Shared/Data/ItemDataAsset.h"
+
+void UItemSetWidget::InitWidget() {
+}
+
+void UItemSetWidget::SetWidgetData(UPrimaryDataAsset* Data) {
+	UE_LOG(LogTemp, Warning, TEXT("ItemWidgetData SetWidgetData"));
+}
+
+
+--- FILE: ClientModule\Private\UI\Widget\ItemSlotWidget.cpp ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "UI/Widget/ItemSlotWidget.h"
+#include "Blueprint/DragDropOperation.h"
+#include "Shared/Data/ItemDataAsset.h"
+
+FReply UItemSlotWidget::NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) {
+	return Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);
+	
+}
+
+bool UItemSlotWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent,
+	UDragDropOperation* InOperation) {
+	return Super::NativeOnDrop(InGeometry, InDragDropEvent, InOperation);
+	
+}
+
+void UItemSlotWidget::NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent,
+                                           UDragDropOperation*& OutOperation) {
+	Super::NativeOnDragDetected(InGeometry, InMouseEvent, OutOperation);
+	UDragDropOperation* DragOp = NewObject<UDragDropOperation>();
+	DragOp->Payload = ItemDataAsset;
+	DragOp->DefaultDragVisual = this;
+	OutOperation = DragOp;
+}
+
+
+--- FILE: ClientModule\Private\UI\Widget\PlayerStatusWidget.cpp ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "UI/Widget/PlayerStatusWidget.h"
+#include "Components/HorizontalBox.h"
+#include "Components/TextBlock.h"
+#include "Components/ProgressBar.h"
+#include "UI/Widget/BuffSlotWidget.h"
+#include "UI/ToolTip/BuffToolTip.h"
+
+
+void UPlayerStatusWidget::InitWidget() {
+}
+
+void UPlayerStatusWidget::UpdateHealthBar(float Current, float Max) const{
+	if (HealthBarProgress)
+	{
+		HealthBarProgress->SetPercent(Current / Max);
+		HealthText->SetText(FText::FromString(FString::Printf(TEXT("%d / %d"), FMath::FloorToInt(Current), FMath::FloorToInt(Max))));
+
+	}
+}
+
+void UPlayerStatusWidget::UpdateManaBar(float Current, float Max) const{
+	if (ManaBarProgress)
+	{
+		ManaBarProgress->SetPercent(Current / Max);
+		ManaText->SetText(FText::FromString(FString::Printf(TEXT("%d / %d"), FMath::FloorToInt(Current), FMath::FloorToInt(Max))));
+	}
+}
+
+void UPlayerStatusWidget::SetWidgetData(UPrimaryDataAsset* Data) {
+	UE_LOG(LogTemp, Warning, TEXT("PlayerStatusWidget SetWidgetData"));
+	//저장해두고 사용 + visible
+	UBuffDataAsset* BuffData = Cast<UBuffDataAsset>(Data);
+	UBuffSlotWidget* Widget = CreateWidget<UBuffSlotWidget>(this, BuffSlotWidgetClass);
+	Widget->SetWidgetData(BuffData);
+	BuffHorizontalBar->AddChildToHorizontalBox(Widget);
+}
+
+
+--- FILE: ClientModule\Private\UI\Widget\SkillSetWidget.cpp ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "UI/Widget/SkillSetWidget.h"
+#include "Blueprint/DragDropOperation.h"
+#include "Shared/Data/SkillDataAsset.h"
+#include "UI/Widget/SkillSlotWidget.h"
+#include "Components/HorizontalBox.h"
+#include "Shared/GAS/SkillInputSlot.h"
+#include "Shared/Utill/USkillHelper.h"
+// #include "Shared/Utill/USkillHelper.h"
+
+#define MAX_SKILL_SLOT 8
+
+void USkillSetWidget::InitWidget()
+{
+	SkillContainers.Add(SkillSlotContainer_1);
+	SkillContainers.Add(SkillSlotContainer_2);
+
+	SkillSlots.SetNum(MAX_SKILL_SLOT);
+
+	for (int32 i = 0; i < MAX_SKILL_SLOT; ++i)
+	{
+		USkillSlotWidget* NewSlot = CreateWidget<USkillSlotWidget>(this, SkillSlotWidgetClass);
+		SkillSlots[i] = NewSlot;
+
+		int32 Row = i / 4;
+		if (SkillContainers.IsValidIndex(Row))
+		{
+			SkillContainers[Row]->AddChild(NewSlot);
+		}
+	}
+}
+
+void USkillSetWidget::SetWidgetData(UPrimaryDataAsset* Data) {
+	
+	// 현재 이 부분은 Skill Use와 연관되어 있음. 스킬 초기화는 따로 해주는게 맞다.
+	if (USkillDataAsset* SkillData = Cast<USkillDataAsset>(Data)) {
+		SkillSlots[USkillHelper::GetValueFromKey(SkillData->SkillSlotIndex)-1]->UseSkillSlot(SkillData);
+		// SkillSlots[USkillHelper::GetValueFromKey(SkillData->SkillSlotIndex)]->ApplySkillData(SkillData);
+	}
+}
+
+void USkillSetWidget::InitSkillWidgetData(UPrimaryDataAsset* Data) {
+	if (USkillDataAsset* SkillData = Cast<USkillDataAsset>(Data)) {
+		SkillSlots[USkillHelper::GetValueFromKey(SkillData->SkillSlotIndex)-1]->ApplySkillData(SkillData);
+	}
+}
+
+
+FReply USkillSetWidget::NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) {
+	return Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);
+}
+
+bool USkillSetWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent,
+	UDragDropOperation* InOperation) {
+	return Super::NativeOnDrop(InGeometry, InDragDropEvent, InOperation);
+	
+}
+
+void USkillSetWidget::NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent,
+                                           UDragDropOperation*& OutOperation) {
+	Super::NativeOnDragDetected(InGeometry, InMouseEvent, OutOperation);
+	UDragDropOperation* DragOp = NewObject<UDragDropOperation>();
+	// DragOp->Payload = SkillDataAsset;
+	DragOp->DefaultDragVisual = this;
+	OutOperation = DragOp;
+}
+
+
+--- FILE: ClientModule\Private\UI\Widget\SkillSlotWidget.cpp ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "UI/Widget/SkillSlotWidget.h"
+#include "Shared/Data/SkillDataAsset.h"
+#include "Components/Image.h"
+#include "Components/TextBlock.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "TimerManager.h"
+#include "Kismet/GameplayStatics.h"
+#include "Shared/GAS/SkillInputSlot.h"
+#include "Shared/Utill/USkillHelper.h"
+#include "UI/ToolTip/SkillToolTip.h"
+
+// USkillSlotWidget::USkillSlotWidget() {
+//
+// }
+
+FReply USkillSlotWidget::NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) {
+	return Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);
+}
+
+void USkillSlotWidget::NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent,
+                                            UDragDropOperation*& OutOperation) {
+	Super::NativeOnDragDetected(InGeometry, InMouseEvent, OutOperation);
+}
+
+
+void USkillSlotWidget::NativeOnMouseEnter(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) {
+	Super::NativeOnMouseEnter(InGeometry, InMouseEvent);
+	if (SkillToolTipWidget->GetVisibility() != ESlateVisibility::Visible) {
+		SkillToolTipWidget->SetVisibility(ESlateVisibility::Visible);
+		SkillToolTipWidget->SetIsEnabled(false); // 입력 무시 (hover, focus 등)
+		FVector2D LocalMousePos;
+		UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetMousePosition(LocalMousePos.X, LocalMousePos.Y);
+		SkillToolTipWidget->SetPositionInViewport(LocalMousePos, true); // DPI 변환 고려됨
+	}
+	UE_LOG(LogTemp, Warning, TEXT("TooltipWidget on %s"), *SkillToolTipWidget.GetName());
+}
+
+void USkillSlotWidget::NativeOnMouseLeave(const FPointerEvent& InMouseEvent) {
+	Super::NativeOnMouseLeave(InMouseEvent);
+	if (SkillToolTipWidget->GetVisibility() != ESlateVisibility::Collapsed) {
+		SkillToolTipWidget->SetVisibility(ESlateVisibility::Collapsed);
+		UE_LOG(LogTemp, Warning, TEXT("TooltipWidget off %s"), *UEnum::GetValueAsString(SkillToolTipWidget->GetVisibility()));
+	}
+}
+void USkillSlotWidget::UseSkillSlot(USkillDataAsset* Data) {
+	//생성자에서 기본적인 스킬 데이터 초기화 -> 다른 데이터 들어올 경우, 해당 데이터로 초기화
+	if (SkillDataAsset != Data) {
+		ApplySkillData(Data);
+	}
+	UE_LOG(LogTemp, Warning, TEXT("USkillSlotWidget::UseSkillSlot .%s"), *this->GetName());
+	CurrentCoolTime = 0.f;
+
+	if (CooldownImage)
+	{
+		CooldownImage->SetVisibility(ESlateVisibility::Visible);
+	}
+	if (CoolTimeText)
+	{
+		CoolTimeText->SetVisibility(ESlateVisibility::Visible);
+	}
+	GetWorld()->GetTimerManager().SetTimer(CooldownTimerHandle, this, &USkillSlotWidget::TickCoolDown, 0.05f, true);
+	TickCoolDown();
+}
+
+void USkillSlotWidget::NativeConstruct() {
+	SetVisibility(ESlateVisibility::Hidden);
+	if (CooldownImage && !SkillCooldownMaterial) {
+		if (UMaterialInterface* BaseMat = Cast<UMaterialInterface>(CooldownImage->GetBrush().GetResourceObject())) {
+			SkillCooldownMaterial = UMaterialInstanceDynamic::Create(BaseMat, this);
+			CooldownImage->SetBrushFromMaterial(SkillCooldownMaterial);
+		}
+	}
+}
+
+void USkillSlotWidget::ApplySkillData(USkillDataAsset* NewData) {
+	if (NewData == nullptr) {
+		UE_LOG(LogTemp,Warning,TEXT("USkillSlotWidget::ApplySkillData: nullptr"));
+		return;
+	}
+	
+	SetVisibility(ESlateVisibility::Visible);
+
+	SkillDataAsset = NewData;
+	CoolTime = NewData->CoolTime;
+	SkillImage->SetBrushFromTexture(NewData->Image);
+	SkillKeyText->SetText(FText::FromString(USkillHelper::GetKeyString(NewData->SkillSlotIndex)));
+	SkillToolTipWidget = Cast<USkillToolTip>(NewData->Tooltip);
+	CooldownImage->SetVisibility(ESlateVisibility::Hidden);
+	CoolTimeText->SetVisibility(ESlateVisibility::Hidden);
+	// SkillWidgetToolTip =
+}
+
+void USkillSlotWidget::TickCoolDown() {
+	CurrentCoolTime += 0.05f;
+	float Percent = FMath::Clamp(CurrentCoolTime / CoolTime, 0.f, 1.f);
+	SkillCooldownMaterial->SetScalarParameterValue(FName("Progress"), Percent);
+
+	// 2. 쿨타임 텍스트 갱신
+	if (CoolTimeText)
+	{
+		float RemainingTime = FMath::Max(0.f, CoolTime - CurrentCoolTime);
+		CoolTimeText->SetText(FText::FromString(FString::Printf(TEXT("%ds"), FMath::CeilToInt(RemainingTime))));
+	}
+
+	// 3. 쿨타임 종료 처리
+	if (Percent >= 1.f)
+	{
+		GetWorld()->GetTimerManager().ClearTimer(CooldownTimerHandle);
+		CurrentCoolTime = 0.f;
+
+		// 이미지, 텍스트 숨기기 등 처리
+		if (CooldownImage)
+		{
+			CooldownImage->SetVisibility(ESlateVisibility::Hidden);
+		}
+		if (CoolTimeText)
+		{
+			CoolTimeText->SetVisibility(ESlateVisibility::Hidden);
+		}
+	}
+}
+
+
+--- FILE: ClientModule\Public\ClientModule.h ---
+﻿#pragma once
+
+#include "CoreMinimal.h"
+#include "Modules/ModuleManager.h"
+
+class FClientModuleModule : public IModuleInterface
+{
+public:
+    virtual void StartupModule() override;
+    virtual void ShutdownModule() override;
+};
+
+
+--- FILE: ClientModule\Public\UI\GGwaClient_PlayerController.h ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Shared/Player/GGwaPlayerController.h"
+#include "GGwaClient_PlayerController.generated.h"
+
+class UBaseDataAsset;
+class AGGwaHUD;
+class UGGwaWidget;
+class UGGwaAttributeSet;
+UCLASS(Blueprintable)
+class CLIENTMODULE_API AGGwaClient_PlayerController : public AGGwaPlayerController
+{
+	GENERATED_BODY()
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widget")
+	TSubclassOf<UGGwaWidget> WidgetClass;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	TObjectPtr<AGGwaHUD> GGwaHUD;
+	
+	virtual void BeginPlay() override;
+	virtual void InitClientWidget() override;
+	virtual void Client_ApplyAbilityDataAsset_Implementation(UBaseDataAsset* Data) override;
+};
+
+
+--- FILE: ClientModule\Public\UI\GGwaHUD.h ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "GameFramework/HUD.h"
+#include "UI/Widget/GGwaWidget.h"
+#include "GGwaHUD.generated.h"
+
+/**
+ * 
+ */
+UCLASS()
+class CLIENTMODULE_API AGGwaHUD : public AHUD
+{
+	GENERATED_BODY()
+	
+	
+public:
+	UGGwaWidget* GetBaseWidget() const;
+	void SetBaseWidget(UGGwaWidget* widget);
+private:
+	UPROPERTY()
+	TObjectPtr<UGGwaWidget> BaseWidget;
+};
+
+
+--- FILE: ClientModule\Public\UI\SetWidgetDataInterface.h ---
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "UObject/Interface.h"
+#include "SetWidgetDataInterface.generated.h"
+
+class UBaseToolTip;
+class UPrimaryDataAsset;
+class UBuffDataAsset;
+class USkillDataAsset;
+class UItemDataAsset;
+UINTERFACE()
+class USetWidgetDataInterface : public UInterface {
+	GENERATED_BODY()
+};
+
+class CLIENTMODULE_API ISetWidgetDataInterface {
+	GENERATED_BODY()
+
+public:
+	virtual void SetWidgetData(UPrimaryDataAsset* Data) = 0;
+};
+
+
+--- FILE: ClientModule\Public\UI\ToolTip\BaseToolTip.h ---
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Blueprint/UserWidget.h"
+#include "BaseToolTip.generated.h"
+
+class UPrimaryDataAsset;
+class UTextBlock;
+class UImage;
+
+UCLASS()
+class CLIENTMODULE_API UBaseToolTip : public UUserWidget {
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(VisibleAnywhere,BlueprintReadWrite,meta=(BindWidget),Category="ToolTip")
+	TObjectPtr<UTextBlock> ToolTipTitle;
+	UPROPERTY(VisibleAnywhere,BlueprintReadWrite,meta=(BindWidget),Category="ToolTip")
+	TObjectPtr<UTextBlock> ToolTipDescription;
+	UPROPERTY(VisibleAnywhere,BlueprintReadWrite,meta=(BindWidget), Category="ToolTip")
+	TObjectPtr<UImage> ToolTipIcon;
+
+	UFUNCTION()
+	virtual void SetToolTipData(UPrimaryDataAsset* Data);
+};
+
+
+--- FILE: ClientModule\Public\UI\ToolTip\BuffToolTip.h ---
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "BaseToolTip.h"
+#include "BuffToolTip.generated.h"
+
+class UPrimaryDataAsset;
+/**
+ * 
+ */
+UCLASS()
+class CLIENTMODULE_API UBuffToolTip : public UBaseToolTip {
+	GENERATED_BODY()
+
+public:
+	virtual void SetToolTipData(UPrimaryDataAsset* Data) override;
+};
+
+
+--- FILE: ClientModule\Public\UI\ToolTip\ItemToolTip.h ---
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "BaseToolTip.h"
+#include "ItemToolTip.generated.h"
+
+/**
+ * 
+ */
+UCLASS()
+class CLIENTMODULE_API UItemToolTip : public UBaseToolTip {
+	GENERATED_BODY()
+public:
+	virtual void SetToolTipData(UPrimaryDataAsset* Data) override;
+};
+
+
+--- FILE: ClientModule\Public\UI\ToolTip\SkillToolTip.h ---
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "BaseToolTip.h"
+#include "SkillToolTip.generated.h"
+
+/**
+ * 
+ */
+UCLASS()
+class CLIENTMODULE_API USkillToolTip : public UBaseToolTip {
+	GENERATED_BODY()
+public:
+	virtual void SetToolTipData(UPrimaryDataAsset* Data) override;
+};
+
+
+--- FILE: ClientModule\Public\UI\Widget\BuffSlotWidget.h ---
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Blueprint/UserWidget.h"
+#include "Shared/Data/BuffDataAsset.h"
+#include "UI/ToolTip/BuffToolTip.h"
+#include "Components/ProgressBar.h"
+#include "Components/TextBlock.h"
+#include "UI/SetWidgetDataInterface.h"
+#include "BuffSlotWidget.generated.h"
+
+/**
+ * 
+ */
+UCLASS()
+class CLIENTMODULE_API UBuffSlotWidget : public UUserWidget, public ISetWidgetDataInterface
+{
+	GENERATED_BODY()
+public:
+	virtual void NativeConstruct() override;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite ,Category= "Widget")
+	TObjectPtr<UBuffToolTip> BuffToolTipWidget;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category= "Data")
+	TObjectPtr<UBuffDataAsset> BuffDataAsset;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (BindWidget) ,Category= "Widget")
+	TObjectPtr<UImage> SkillImage;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (BindWidget) ,Category= "Widget")
+	TObjectPtr<UProgressBar> RemainTimeBar;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (BindWidget) ,Category= "Widget")
+	TObjectPtr<UTextBlock> RemainTimeText;
+	
+	UFUNCTION(BlueprintCallable)
+	void ConsumeDuration(float CooldownTime);
+
+	virtual void NativeOnMouseEnter(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
+	virtual void NativeOnMouseLeave(const FPointerEvent& InMouseEvent) override;
+	virtual void SetWidgetData(UPrimaryDataAsset* Data) override;
+
+private:
+	FTimerHandle CooldownTimerHandle;
+	float TotalCooldownTime;
+	float ElapsedCooldownTime;
+
+	void UpdateDuration();
+};
+
+
+--- FILE: ClientModule\Public\UI\Widget\GGwaWidget.h ---
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Blueprint/UserWidget.h"
+#include "UI/SetWidgetDataInterface.h"
+#include "Shared/GAS/GGwaAttributeSet.h"
+#include "UI/ToolTip/BaseToolTip.h"
+#include "UObject/Object.h"
+#include "GGwaWidget.generated.h"
+
+class UBaseDataAsset;
+class UItemToolTip;
+class USkillToolTip;
+class UBuffToolTip;
+class UBaseToolTip;
+class UPrimaryDataAsset;
+
+class UPlayerStatusWidget;
+class USkillSetWidget;
+class UItemSetWidget;
+
+class UGGwaAbilitySystemComponent;
+
+UCLASS()
+class CLIENTMODULE_API UGGwaWidget : public UUserWidget
+{
+	GENERATED_BODY()
+public:
+
+	virtual void NativeConstruct() override;
+	/** Initialize the widget with the AbilitySystemComponent and GGwaAttributeSet */
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category="AbilitySystem")
+	TObjectPtr<UGGwaAbilitySystemComponent> ASC;
+	UPROPERTY(Transient, BlueprintReadWrite, Category="AbilitySystem")
+	const UGGwaAttributeSet* GGwaAttributeSet;
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite,Category= "Widget")
+	// TObjectPtr<UBaseToolTip> BaseToolTipWidget;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite ,Category= "Widget")
+	TSubclassOf<UBuffToolTip> BuffToolTipClass;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite ,Category= "Widget")
+	TSubclassOf<USkillToolTip> SkillToolTipClass;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite ,Category= "Widget")
+	TSubclassOf<UItemToolTip> ItemToolTipClass;
+
+	UPROPERTY()
+	TMap<UBaseDataAsset*, UBaseToolTip*> SlotTooltipCachePair;
+	
+	/*Player Status widget에서 buff Widget 구조 확인하기, depth 깊음*/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (BindWidget) ,Category= "Widget")
+	TObjectPtr<UPlayerStatusWidget> BP_PlayerStatusWidget;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (BindWidget) ,Category= "Widget")
+	TObjectPtr<USkillSetWidget> BP_SkillBarWidget;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (BindWidget) ,Category= "Widget")
+	TObjectPtr<UItemSetWidget> BP_ItemBarWidget;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category= "Init Data")
+	TArray<USkillDataAsset*> InitSkillDataAssets;
+	// virtual const UUserWidget* SetWidgetData(UPrimaryDataAsset* Data) override;
+	void BindWidgetWithTooltip(UBaseDataAsset* Data);
+	void InitWidget(UGGwaAbilitySystemComponent * AbilitySystemComponent, const UGGwaAttributeSet * AttributeSet);
+	void OnHealthChanged(const FOnAttributeChangeData& Data) const;
+	void OnManaChanged(const FOnAttributeChangeData& Data) const;
+	void InitWidgetSetting();
+	// template<typename TDataAsset, typename TToolTip, typename TWidget>
+	// void UGGwaWidget::BindTooltip(TDataAsset* DataAsset, TSubclassOf<TToolTip> ToolTipClass, UUserWidget* ContainerWidget);
+};
+
+
+--- FILE: ClientModule\Public\UI\Widget\ItemSetWidget.h ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Blueprint/UserWidget.h"
+#include "UI/SetWidgetDataInterface.h"
+#include "ItemSetWidget.generated.h"
+
+/**
+ * 
+ */
+UCLASS()
+class CLIENTMODULE_API UItemSetWidget : public UUserWidget, public ISetWidgetDataInterface
+{
+	GENERATED_BODY()
+
+public:
+	void InitWidget();
+	virtual void SetWidgetData(UPrimaryDataAsset* Data) override;
+};
+
+
+--- FILE: ClientModule\Public\UI\Widget\ItemSlotWidget.h ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Blueprint/UserWidget.h"
+#include "ItemSlotWidget.generated.h"
+
+class UItemDataAsset;
+/**
+ * 
+ */
+UCLASS()
+class CLIENTMODULE_API UItemSlotWidget : public UUserWidget
+{
+	GENERATED_BODY()
+	
+
+public:
+	TArray<UItemSlotWidget*> ItemSlots;
+	TObjectPtr<UItemDataAsset> ItemDataAsset;
+
+private:
+	virtual void NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent, UDragDropOperation*& OutOperation) override;
+	virtual FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
+	virtual bool NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation) override;
+};
+
+
+--- FILE: ClientModule\Public\UI\Widget\PlayerStatusWidget.h ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Blueprint/UserWidget.h"
+
+#include "UI/SetWidgetDataInterface.h"
+#include "PlayerStatusWidget.generated.h"
+
+/**
+ * 
+ */
+class UBuffDataAsset;
+class UHorizontalBox;
+class UBuffSlotWidget;
+class UProgressBar;
+class UTextBlock;
+class UBuffToolTip;
+UCLASS()
+class CLIENTMODULE_API UPlayerStatusWidget : public UUserWidget, public ISetWidgetDataInterface
+{
+	GENERATED_BODY()
+	
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (BindWidget) ,Category= "Widget")
+	TObjectPtr<UProgressBar> HealthBarProgress;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (BindWidget) ,Category= "Widget")
+	TObjectPtr<UProgressBar> ManaBarProgress;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (BindWidget) ,Category= "Widget")
+	TObjectPtr<UTextBlock> HealthText;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (BindWidget) ,Category= "Widget")
+	TObjectPtr<UTextBlock> ManaText;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (BindWidget) ,Category= "Buff Widget")
+	TObjectPtr<UHorizontalBox> BuffHorizontalBar;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite ,Category= "Buff Widget")
+	TSubclassOf<UBuffSlotWidget> BuffSlotWidgetClass;
+
+	void InitWidget();
+	void UpdateHealthBar(float Current, float Max) const;
+	void UpdateManaBar(float Current, float Max) const;
+	virtual void SetWidgetData(UPrimaryDataAsset* Data) override;
+};
+
+
+--- FILE: ClientModule\Public\UI\Widget\SkillSetWidget.h ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Blueprint/UserWidget.h"
+#include "UI/SetWidgetDataInterface.h"
+#include "SkillSetWidget.generated.h"
+
+class UHorizontalBox;
+class USkillSlotWidget;
+class USkillDataAsset;
+/**
+ * 
+ */
+UCLASS()
+class CLIENTMODULE_API USkillSetWidget : public UUserWidget, public ISetWidgetDataInterface
+{
+	GENERATED_BODY()
+
+public:
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillSetWidget")
+	TSubclassOf<USkillSlotWidget> SkillSlotWidgetClass;
+	
+	UPROPERTY(VisibleAnywhere, Category = "Slot")
+	TArray<USkillSlotWidget*> SkillSlots;
+	UPROPERTY(VisibleAnywhere, Category = "Slot")
+	TArray<UHorizontalBox*> SkillContainers;
+	UPROPERTY(VisibleAnywhere,meta=(BindWidget) , Category = "Slot")
+	TObjectPtr<UHorizontalBox> SkillSlotContainer_1;
+	UPROPERTY(VisibleAnywhere,meta=(BindWidget) , Category = "Slot")
+	TObjectPtr<UHorizontalBox> SkillSlotContainer_2;
+	
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
+	// TObjectPtr<USkillDataAsset> SkillDataAsset; 
+
+	void InitWidget();
+	virtual void SetWidgetData(UPrimaryDataAsset* Data) override;
+	void InitSkillWidgetData(UPrimaryDataAsset* SkillData);
+private:
+	virtual void NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent, UDragDropOperation*& OutOperation) override;
+	virtual FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
+	virtual bool NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation) override;
+};
+
+
+--- FILE: ClientModule\Public\UI\Widget\SkillSlotWidget.h ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Blueprint/UserWidget.h"
+#include "Shared/GAS/SkillInputSlot.h"
+#include "SkillSlotWidget.generated.h"
+
+class USkillDataAsset;
+class UTextBlock;
+class USkillToolTip;
+class UMaterialInstanceDynamic;
+class UImage;
+
+UCLASS()
+class CLIENTMODULE_API USkillSlotWidget : public UUserWidget
+{
+	GENERATED_BODY()
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite ,Category= "ToolTip")
+	TObjectPtr<USkillToolTip> SkillToolTipWidget;
+	UPROPERTY(VisibleAnywhere ,Category= "Data")
+	TObjectPtr<USkillDataAsset> SkillDataAsset = nullptr;
+	
+	UPROPERTY(VisibleAnywhere,meta = (BindWidget) ,Category= "Widget")
+	TObjectPtr<UImage> SkillImage;
+	UPROPERTY(VisibleAnywhere,meta = (BindWidget) ,Category= "Widget")
+	TObjectPtr<UImage> CooldownImage;
+	UPROPERTY(VisibleAnywhere,meta = (BindWidget) ,Category= "Widget")
+	TObjectPtr<UTextBlock> CoolTimeText;
+	float CoolTime = 999.f;
+	float CurrentCoolTime;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (BindWidget) ,Category= "Widget")
+	TObjectPtr<UTextBlock> SkillKeyText;
+	
+
+	virtual FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
+	virtual void NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent, UDragDropOperation*& OutOperation) override;
+	void NativeOnMouseEnter(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent);
+	void NativeOnMouseLeave(const FPointerEvent& InMouseEvent);
+
+	void UseSkillSlot(USkillDataAsset *Data);
+	void ApplySkillData(USkillDataAsset* NewData);
+private:
+	UPROPERTY()
+	TObjectPtr<UMaterialInstanceDynamic> SkillCooldownMaterial;
+	FTimerHandle CooldownTimerHandle;
+	virtual void NativeConstruct() override;
+	void TickCoolDown();
+};
+
+
+--- FILE: MyGame\MyGame.Build.cs ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+using UnrealBuildTool;
+
+public class MyGame : ModuleRules
+{
+	public MyGame(ReadOnlyTargetRules Target) : base(Target)
+	{
+		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+	
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "GameplayAbilities", "GameplayTasks", "GameplayTags", "EnhancedInput","AIModule","NavigationSystem"});
+
+		
+		//Circular dependency
+		// if (Target.Type == TargetType.Client || Target.Type == TargetType.Editor)
+		// {
+		// 	PrivateDependencyModuleNames.Add("ClientModule");
+		// }
+		//
+		// if (Target.Type == TargetType.Server)
+		// {
+		// 	PrivateDependencyModuleNames.Add("ServerModule");
+		// }
+
+		PrivateDependencyModuleNames.AddRange(new string[] {  });
+
+		// Uncomment if you are using Slate UI
+		// PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
+		
+		// Uncomment if you are using online features
+		// PrivateDependencyModuleNames.Add("OnlineSubsystem");
+
+		// To include OnlineSubsystemSteam, add it to the plugins section in your uproject file with the Enabled attribute set to true
+	}
+}
+
+
+--- FILE: MyGame\MyGame.cpp ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#include "MyGame.h"
+#include "Modules/ModuleManager.h"
+
+IMPLEMENT_PRIMARY_GAME_MODULE( FDefaultGameModuleImpl, MyGame, "MyGame" );
+
+
+--- FILE: MyGame\MyGame.h ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+
+
+
+--- FILE: MyGame\Private\GGwaAssetManager.cpp ---
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "GGwaAssetManager.h"
+
+#include "Shared/Data/LocalDataBaseLoader.h"
+
+const FPrimaryAssetType UGGwaAssetManager::SkillType = TEXT("Skill");
+
+void UGGwaAssetManager::StartInitialLoading()
+{
+	Super::StartInitialLoading();
+
+}
+
+void UGGwaAssetManager::FinishInitialLoading() {
+	Super::FinishInitialLoading();
+	// TArray<FPrimaryAssetId> SkillAssets;
+	//
+	// // 1) 매핑 먼저 완료
+	// if (ULocalDataBaseLoader* Loader = NewObject<ULocalDataBaseLoader>(this))
+	// {
+	// 	Loader->Initialize();
+	// 	TArray<int32> PrefetchSkillIDs = { 15,101,102 };
+	// 	for (int32 SkillID : PrefetchSkillIDs)
+	// 	{
+	// 		FPrimaryAssetId IdPtr;
+	// 		Loader->GetPrimaryAssetId(SkillID, IdPtr);
+	// 		if (IdPtr.IsValid()){
+	// 			LoadPrimaryAsset(IdPtr, {}, FStreamableDelegate());
+	// 			SkillAssets.Add(IdPtr);
+	// 		}
+	// 		else {
+	// 			UE_LOG(LogTemp, Warning, TEXT("Loading skill %d failed"), SkillID);
+	// 		}
+	// 	}
+	// }
+	//
+	// GetPrimaryAssetIdList(FPrimaryAssetType("Skill"), SkillAssets);
+	// UE_LOG(LogTemp, Warning, TEXT("[디버깅] 스캔된 Skill 에셋 수: %d"), SkillAssets.Num());
+}
+
+
+--- FILE: MyGame\Private\Shared\Data\BaseDataAsset.cpp ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "Shared/Data/BaseDataAsset.h"
+
+
+
+
+
+
+--- FILE: MyGame\Private\Shared\Data\BuffDataAsset.cpp ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "Shared/Data/BuffDataAsset.h"
+#include "GameplayEffect.h"
+
+
+
+
+
+
+--- FILE: MyGame\Private\Shared\Data\CombinedAbilityDataAsset.cpp ---
+﻿#include "Shared/Data/CombinedAbilityDataAsset.h"
+
+void UCombinedAbilityDataAsset::SetData(USkillDataAsset* SkillData, UBuffDataAsset* BuffData, UItemDataAsset* ItemData) {
+	SkillDataAsset = SkillData;
+	BuffDataAsset = BuffData;
+	ItemDataAsset = ItemData;
+}
+
+
+--- FILE: MyGame\Private\Shared\Data\FSkillDataTypeContainer.cpp ---
+﻿#include "Shared/Data/FSkillDataTypeContainer.h"
+
+
+--- FILE: MyGame\Private\Shared\Data\ItemDataAsset.cpp ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "Shared/Data/ItemDataAsset.h"
+
+
+
+
+
+
+--- FILE: MyGame\Private\Shared\Data\LocalDataBaseLoader.cpp ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#include "Shared/Data/LocalDataBaseLoader.h"
+#include "Engine/AssetManager.h"
+#include "Shared/Data/SkillDataAsset.h"
+
+void ULocalDataBaseLoader::Initialize()
+{
+	UAssetManager& Manager = UAssetManager::Get();
+	TArray<FPrimaryAssetId> Ids;
+	Manager.GetPrimaryAssetIdList("Skill", Ids);
+
+	for (const FPrimaryAssetId& Id : Ids)
+	{
+		// 아직 로드된 적이 없는 경우에만 로드 요청
+		if (!Manager.GetPrimaryAssetObject(Id))
+		{
+			TSharedPtr<FStreamableHandle> Handle =
+				Manager.LoadPrimaryAsset(
+					Id,
+					{},
+					FStreamableDelegate(),
+					0
+				);
+			if (Handle.IsValid())
+			{
+				// 동기 블록킹
+				Handle->WaitUntilComplete();
+			}
+		}
+
+		// 동일한 아이디값일 경우 예외처리
+		if (USkillDataAsset* Data = Cast<USkillDataAsset>(Manager.GetPrimaryAssetObject(Id)))
+		{
+			SkillIdToAssetId.Add(Data->SkillID, Id);
+			UE_LOG(LogTemp, Log, TEXT("Mapped SkillID %d → %s"), Data->SkillID, *Id.ToString());
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Failed to load SkillDataAsset for %s"), *Id.ToString());
+		}
+	}
+}
+
+
+bool ULocalDataBaseLoader::GetPrimaryAssetId(int32 SkillID, FPrimaryAssetId& OutId) const {
+	if (const FPrimaryAssetId* Found = SkillIdToAssetId.Find(SkillID))
+	{
+		OutId = *Found;
+		return true;
+	}
+	return false;
+}
+
+
+--- FILE: MyGame\Private\Shared\Data\SkillDataAsset.cpp ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "Shared/Data/SkillDataAsset.h"
+
+
+--- FILE: MyGame\Private\Shared\GAS\AbilityInputID.cpp ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "Shared/GAS/AbilityInputID.h"
+
+
+
+
+
+
+--- FILE: MyGame\Private\Shared\GAS\GGwaAbilitySystemComponent.cpp ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "Shared/GAS/GGwaAbilitySystemComponent.h"
+// #include "Shared/Data/BaseDataAsset.h"
+#include "Chaos/Deformable/MuscleActivationConstraints.h"
+#include "Shared/Data/BuffDataAsset.h"
+#include "Shared/Data/CombinedAbilityDataAsset.h"
+#include "Shared/Data/ItemDataAsset.h"
+#include "Shared/Data/LocalDataBaseLoader.h"
+#include "Shared/Data/SkillDataAsset.h"
+#include "Shared/Player/GGwaPlayerController.h"
+#include "Shared/Player/GGwaPlayerState.h"
+#include "Shared/Data/BaseDataAsset.h"
+#include "Shared/Player/GGwaCharacter.h"
+
+UGGwaAbilitySystemComponent::UGGwaAbilitySystemComponent()
+{
+    PrimaryComponentTick.bCanEverTick = true;
+    SetIsReplicated(true);
+}
+
+void UGGwaAbilitySystemComponent::BeginPlay()
+{
+    Super::BeginPlay();
+    SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
+
+    if (IsOwnerActorAuthoritative())
+    {
+        OnGameplayEffectAppliedDelegateToSelf.AddUObject(
+            this, &UGGwaAbilitySystemComponent::OnGameplayAppliedCallback
+        );
+    }
+
+    LocalDataBaseLoader = NewObject<ULocalDataBaseLoader>(this);
+    LocalDataBaseLoader->Initialize();
+}
+
+void UGGwaAbilitySystemComponent::OnGameplayAppliedCallback(
+    UAbilitySystemComponent* ASC,
+    const FGameplayEffectSpec& Spec,
+    FActiveGameplayEffectHandle Handle){
+    ProcessGameplayEffect(Spec, /*bIsServer=*/true);
+}
+
+void UGGwaAbilitySystemComponent::ProcessGameplayEffect(const FGameplayEffectSpec& Spec,bool bIsServer) const{
+    AGGwaPlayerController* PC = nullptr;
+
+    AActor* InstigatorActor = Spec.GetContext().GetOriginalInstigator();
+
+    // Instigator를 통한 시전자 처리, 시전자일경우.
+    if (InstigatorActor){
+        PC = Cast<AGGwaPlayerController>(InstigatorActor->GetInstigatorController());
+    }
+    if (!PC){
+        AGGwaPlayerState* PS = Cast<AGGwaPlayerState>(GetOwner());
+        PC = PS ? Cast<AGGwaPlayerController>(PS->GetPlayerController()) : nullptr;
+    }
+
+    if (!PC || !Spec.Def) return;
+
+    // SkillID 추출
+    int32 SkillID = -1;
+    SkillID = Spec.GetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag("Data.SkillID"), true, SkillID);
+    if (SkillID <= 0){
+        UE_LOG(LogTemp, Log, TEXT("[ASC] Invalid SkillID %d"), SkillID);
+        return;
+    }
+
+    FPrimaryAssetId AssetId;
+    LocalDataBaseLoader->GetPrimaryAssetId(SkillID, AssetId);
+    USkillDataAsset* SkillData = LocalDataBaseLoader->GetDataFromAssetId<USkillDataAsset>(AssetId, /*bSync=*/true);
+    if (!SkillData){
+        UE_LOG(LogTemp, Error, TEXT("[ASC] Failed to load SkillData for ID %d"), SkillID);
+        return;
+    }
+
+    // 이미 GA의 Cooldown GE 적용 (쿨다운용 따로 만들어줘야하긴 함) 이 되므로 필요없음. 애초에 이게 호출되는 시점에 GE 쿨타임체크가 발동되지않음.
+    const FGameplayTagContainer& Tags = Spec.Def->GetGrantedTags();
+    if (Tags.HasTag(SkillData->CooldownTag)){
+        UE_LOG(LogTemp, Warning, TEXT("[ASC] Cooldown Active (%s) [%s]"),
+            bIsServer ? TEXT("Server") : TEXT("Client"),
+            *SkillData->DisplayName.ToString()
+        );
+    }
+
+    //Client RPC를 통한 스킬 ID 전송
+    PC->Client_ApplyAbilityDataAsset(SkillData);
+    for (const FPrimaryAssetId& BuffId : SkillData->AppliedBuffs)
+    {
+        UBuffDataAsset* BuffData =
+            LocalDataBaseLoader->GetDataFromAssetId<UBuffDataAsset>(BuffId, /*bSync=*/true);
+        if (BuffData)
+        {
+            UE_LOG(LogTemp, Display, TEXT("[ASC] Applied Buff: %s"), *BuffData->DisplayName.ToString());
+                PC->Client_ApplyAbilityDataAsset(BuffData);
+        }
+    }
+}
+
+
+
+--- FILE: MyGame\Private\Shared\GAS\GGwaAttributeSet.cpp ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "Shared/GAS/GGwaAttributeSet.h"
+#include "AbilitySystemComponent.h"
+#include "Net/UnrealNetwork.h"
+#include "Shared/GAS/AbilityTask/GGwaPlayMontageAndWaitForEvent.h"
+
+DEFINE_ONREP_ATTRIBUTE(UGGwaAttributeSet, Health)
+DEFINE_ONREP_ATTRIBUTE(UGGwaAttributeSet, MaxHealth)
+DEFINE_ONREP_ATTRIBUTE(UGGwaAttributeSet, Mana)
+DEFINE_ONREP_ATTRIBUTE(UGGwaAttributeSet, MaxMana)
+DEFINE_ONREP_ATTRIBUTE(UGGwaAttributeSet, Speed)
+DEFINE_ONREP_ATTRIBUTE(UGGwaAttributeSet, Defense)
+DEFINE_ONREP_ATTRIBUTE(UGGwaAttributeSet, Critical)
+DEFINE_ONREP_ATTRIBUTE(UGGwaAttributeSet, Damage)
+
+
+UGGwaAttributeSet::UGGwaAttributeSet() {
+	InitHealth(100.f);
+	InitMana(70.f);
+	InitMaxHealth(200.f);
+	InitMaxMana(100.f);
+	InitDefense(10.f); 
+	InitCritical(5.f);  
+	InitSpeed(100.f);  
+	InitDamage(10.f);    
+}
+
+void UGGwaAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue) {
+	Super::PreAttributeChange(Attribute, NewValue);
+
+	if (Attribute == GetHealthAttribute()) {
+		NewValue = FMath::Clamp(NewValue,0.f,GetMaxHealth());
+	}
+	if (Attribute == GetManaAttribute()) {
+		NewValue = FMath::Clamp(NewValue, 0.f, GetMaxMana());
+	}
+}
+
+void UGGwaAttributeSet::PostGameplayEffectExecute(const struct FGameplayEffectModCallbackData& Data) {
+	Super::PostGameplayEffectExecute(Data);
+
+	if (Data.EvaluatedData.Attribute == GetHealthAttribute()) {
+		SetHealth(FMath::Clamp(GetHealth(),0.f,GetMaxHealth()));
+	}
+	if (Data.EvaluatedData.Attribute == GetManaAttribute()) {
+		SetMana(FMath::Clamp(GetMana(),0.f,GetMaxMana()));
+	}
+}
+
+
+// Called when a replicated property changes, Rep를 위한 매크로 등록.
+void UGGwaAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME_CONDITION_NOTIFY(UGGwaAttributeSet, Health, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UGGwaAttributeSet, MaxHealth, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UGGwaAttributeSet, Mana, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UGGwaAttributeSet, MaxMana, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UGGwaAttributeSet, Defense, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UGGwaAttributeSet, Critical, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UGGwaAttributeSet, Speed, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UGGwaAttributeSet, Damage, COND_None, REPNOTIFY_Always);
+}
+
+
+--- FILE: MyGame\Private\Shared\GAS\SkillInputSlot.cpp ---
+﻿#include "Shared/GAS/SkillInputSlot.h"
+
+
+--- FILE: MyGame\Private\Shared\GAS\AbilityTask\GGwaPlayMontageAndWaitForEvent.cpp ---
+﻿// Copyright 2020 Dan Kestranek.
+
+#include "Shared/GAS/AbilityTask/GGwaPlayMontageAndWaitForEvent.h"
+#include "AbilitySystemGlobals.h"
+#include "Animation/AnimInstance.h"
+#include "Shared/GAS/GGwaAbilitySystemComponent.h"
+#include "Abilities/GameplayAbility.h"
+// #include "GASDocumentation/GASDocumentation.h"
+#include "Shared/Player/GGwaCharacter.h"
+
+UGGwaPlayMontageAndWaitForEvent::UGGwaPlayMontageAndWaitForEvent(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
+{
+	Rate = 1.f;
+	bStopWhenAbilityEnds = true;
+}
+
+void UGGwaPlayMontageAndWaitForEvent::OnMontageBlendingOut(UAnimMontage* Montage, bool bInterrupted)
+{
+	if (Ability && Ability->GetCurrentMontage() == MontageToPlay)
+	{
+		if (Montage == MontageToPlay)
+		{
+			AbilitySystemComponent->ClearAnimatingAbility(Ability);
+
+			// Reset AnimRootMotionTranslationScale
+			ACharacter* Character = Cast<ACharacter>(GetAvatarActor());
+			if (Character && (Character->GetLocalRole() == ROLE_Authority ||
+				(Character->GetLocalRole() == ROLE_AutonomousProxy && Ability->GetNetExecutionPolicy() == EGameplayAbilityNetExecutionPolicy::LocalPredicted)))
+			{
+				Character->SetAnimRootMotionTranslationScale(1.f);
+			}
+
+		}
+	}
+
+	if (bInterrupted)
+	{
+		if (ShouldBroadcastAbilityTaskDelegates())
+		{
+			OnInterrupted.Broadcast(FGameplayTag(), FGameplayEventData());
+		}
+	}
+	else
+	{
+		if (ShouldBroadcastAbilityTaskDelegates())
+		{
+			OnBlendOut.Broadcast(FGameplayTag(), FGameplayEventData());
+		}
+	}
+}
+
+void UGGwaPlayMontageAndWaitForEvent::OnAbilityCancelled()
+{
+	// TODO: Merge this fix back to engine, it was calling the wrong callback
+
+	if (StopPlayingMontage())
+	{
+		// Let the BP handle the interrupt as well
+		if (ShouldBroadcastAbilityTaskDelegates())
+		{
+			OnCancelled.Broadcast(FGameplayTag(), FGameplayEventData());
+		}
+	}
+}
+
+void UGGwaPlayMontageAndWaitForEvent::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
+{
+	if (!bInterrupted)
+	{
+		if (ShouldBroadcastAbilityTaskDelegates())
+		{
+			OnCompleted.Broadcast(FGameplayTag(), FGameplayEventData());
+		}
+	}
+
+	EndTask();
+}
+
+void UGGwaPlayMontageAndWaitForEvent::OnGameplayEvent(FGameplayTag EventTag, const FGameplayEventData* Payload)
+{
+	if (ShouldBroadcastAbilityTaskDelegates())
+	{
+		FGameplayEventData TempData = *Payload;
+		TempData.EventTag = EventTag;
+
+		EventReceived.Broadcast(EventTag, TempData);
+	}
+}
+
+UGGwaPlayMontageAndWaitForEvent* UGGwaPlayMontageAndWaitForEvent::PlayMontageAndWaitForEvent(UGameplayAbility* OwningAbility,
+	FName TaskInstanceName, UAnimMontage* MontageToPlay, FGameplayTagContainer EventTags, float Rate, FName StartSection, bool bStopWhenAbilityEnds, float AnimRootMotionTranslationScale)
+{
+	UAbilitySystemGlobals::NonShipping_ApplyGlobalAbilityScaler_Rate(Rate);
+
+	UGGwaPlayMontageAndWaitForEvent* MyObj = NewAbilityTask<UGGwaPlayMontageAndWaitForEvent>(OwningAbility, TaskInstanceName);
+	MyObj->MontageToPlay = MontageToPlay;
+	MyObj->EventTags = EventTags;
+	MyObj->Rate = Rate;
+	MyObj->StartSection = StartSection;
+	MyObj->AnimRootMotionTranslationScale = AnimRootMotionTranslationScale;
+	MyObj->bStopWhenAbilityEnds = bStopWhenAbilityEnds;
+
+	return MyObj;
+}
+
+void UGGwaPlayMontageAndWaitForEvent::Activate()
+{
+	if (Ability == nullptr)
+	{
+		return;
+	}
+
+	bool bPlayedMontage = false;
+
+	if (AbilitySystemComponent.IsValid())
+	{
+		const FGameplayAbilityActorInfo* ActorInfo = Ability->GetCurrentActorInfo();
+		UAnimInstance* AnimInstance = ActorInfo->GetAnimInstance();
+		if (AnimInstance != nullptr)
+		{
+			// Bind to event callback
+			EventHandle = AbilitySystemComponent->AddGameplayEventTagContainerDelegate(EventTags, FGameplayEventTagMulticastDelegate::FDelegate::CreateUObject(this, &UGGwaPlayMontageAndWaitForEvent::OnGameplayEvent));
+
+			if (AbilitySystemComponent->PlayMontage(Ability, Ability->GetCurrentActivationInfo(), MontageToPlay, Rate, StartSection) > 0.f)
+			{
+				// Playing a montage could potentially fire off a callback into game code which could kill this ability! Early out if we are  pending kill.
+				if (ShouldBroadcastAbilityTaskDelegates() == false)
+				{
+					return;
+				}
+
+				CancelledHandle = Ability->OnGameplayAbilityCancelled.AddUObject(this, &UGGwaPlayMontageAndWaitForEvent::OnAbilityCancelled);
+
+				BlendingOutDelegate.BindUObject(this, &UGGwaPlayMontageAndWaitForEvent::OnMontageBlendingOut);
+				AnimInstance->Montage_SetBlendingOutDelegate(BlendingOutDelegate, MontageToPlay);
+
+				MontageEndedDelegate.BindUObject(this, &UGGwaPlayMontageAndWaitForEvent::OnMontageEnded);
+				AnimInstance->Montage_SetEndDelegate(MontageEndedDelegate, MontageToPlay);
+
+				ACharacter* Character = Cast<ACharacter>(GetAvatarActor());
+				if (Character && (Character->GetLocalRole() == ROLE_Authority ||
+					(Character->GetLocalRole() == ROLE_AutonomousProxy && Ability->GetNetExecutionPolicy() == EGameplayAbilityNetExecutionPolicy::LocalPredicted)))
+				{
+					Character->SetAnimRootMotionTranslationScale(AnimRootMotionTranslationScale);
+				}
+
+				bPlayedMontage = true;
+			}
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("UGDAbilityTask_PlayMontageAndWaitForEvent call to PlayMontage failed!"));
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UGDAbilityTask_PlayMontageAndWaitForEvent called on invalid AbilitySystemComponent"));
+	}
+
+	if (!bPlayedMontage)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UGDAbilityTask_PlayMontageAndWaitForEvent called in Ability %s failed to play montage %s; Task Instance Name %s."), *Ability->GetName(), *GetNameSafe(MontageToPlay), *InstanceName.ToString());
+		if (ShouldBroadcastAbilityTaskDelegates())
+		{
+			//ABILITY_LOG(Display, TEXT("%s: OnCancelled"), *GetName());
+			OnCancelled.Broadcast(FGameplayTag(), FGameplayEventData());
+		}
+	}
+
+	SetWaitingOnAvatar();
+}
+
+void UGGwaPlayMontageAndWaitForEvent::ExternalCancel()
+{
+	check(AbilitySystemComponent.IsValid());
+
+	OnAbilityCancelled();
+
+	Super::ExternalCancel();
+}
+
+void UGGwaPlayMontageAndWaitForEvent::OnDestroy(bool AbilityEnded)
+{
+	// Note: Clearing montage end delegate isn't necessary since it`s not a multicast and will be cleared when the next montage plays.
+	// (If we are destroyed, it will detect this and not do anything)
+
+	// This delegate, however, should be cleared as it is a multicast
+	if (Ability)
+	{
+		Ability->OnGameplayAbilityCancelled.Remove(CancelledHandle);
+		if (AbilityEnded && bStopWhenAbilityEnds)
+		{
+			StopPlayingMontage();
+		}
+	}
+
+	if (AbilitySystemComponent.IsValid())
+	{
+		AbilitySystemComponent->RemoveGameplayEventTagContainerDelegate(EventTags, EventHandle);
+	}
+
+	Super::OnDestroy(AbilityEnded);
+
+}
+
+bool UGGwaPlayMontageAndWaitForEvent::StopPlayingMontage()
+{
+	const FGameplayAbilityActorInfo* ActorInfo = Ability->GetCurrentActorInfo();
+	if (!ActorInfo)
+	{
+		return false;
+	}
+
+	UAnimInstance* AnimInstance = ActorInfo->GetAnimInstance();
+	if (AnimInstance == nullptr)
+	{
+		return false;
+	}
+
+	// Check if the montage is still playing
+	// The ability would have been interrupted, in which case we should automatically stop the montage
+	if (AbilitySystemComponent.IsValid() && Ability)
+	{
+		if (AbilitySystemComponent->GetAnimatingAbility() == Ability
+			&& AbilitySystemComponent->GetCurrentMontage() == MontageToPlay)
+		{
+			// Unbind delegates so they don't get called as well
+			FAnimMontageInstance* MontageInstance = AnimInstance->GetActiveInstanceForMontage(MontageToPlay);
+			if (MontageInstance)
+			{
+				MontageInstance->OnMontageBlendingOutStarted.Unbind();
+				MontageInstance->OnMontageEnded.Unbind();
+			}
+
+			AbilitySystemComponent->CurrentMontageStop();
+			return true;
+		}
+	}
+
+	return false;
+}
+
+FString UGGwaPlayMontageAndWaitForEvent::GetDebugString() const
+{
+	UAnimMontage* PlayingMontage = nullptr;
+	if (Ability)
+	{
+		const FGameplayAbilityActorInfo* ActorInfo = Ability->GetCurrentActorInfo();
+		UAnimInstance* AnimInstance = ActorInfo->GetAnimInstance();
+
+		if (AnimInstance != nullptr)
+		{
+			PlayingMontage = AnimInstance->Montage_IsActive(MontageToPlay) ? MontageToPlay : AnimInstance->GetCurrentActiveMontage();
+		}
+	}
+
+	return FString::Printf(TEXT("PlayMontageAndWaitForEvent. MontageToPlay: %s  (Currently Playing): %s"), *GetNameSafe(MontageToPlay), *GetNameSafe(PlayingMontage));
+}
+
+
+
+
+
+--- FILE: MyGame\Private\Shared\GAS\Cue\UGCN_Skill1_DirectionPreview.cpp ---
+#include "Shared/GAS/Cue/UGCN_Skill1_DirectionPreview.h"
+#include "Shared/Data/SkillDataAsset.h"
+#include "Shared/Data/LocalDataBaseLoader.h"
+#include "DrawDebugHelpers.h"
+#include "Engine/Engine.h"
+
+AUGCN_Skill1_DirectionPreview::AUGCN_Skill1_DirectionPreview(){
+	PrimaryActorTick.bCanEverTick = false;
+
+	DecalComponent = CreateDefaultSubobject<UDecalComponent>(TEXT("DecalComponent"));
+	DecalComponent->SetupAttachment(RootComponent);
+	DecalComponent->SetRelativeRotation(FRotator(0.f, 0.f, 0.f)); 
+	DecalSize = FVector(0,0,0);
+	DecalComponent->DecalSize = DecalSize;
+}
+
+bool AUGCN_Skill1_DirectionPreview::OnActive_Implementation(AActor* MyTarget, const FGameplayCueParameters& Parameters)
+{
+	if (!MyTarget || !BaseDecalMaterial){
+		UE_LOG(LogTemp, Warning, TEXT("[Preview] Invalid Target or Material"));
+		return false;
+	}
+	
+	LocalDataBaseLoader = NewObject<ULocalDataBaseLoader>(this);
+	LocalDataBaseLoader->Initialize();
+
+	FPrimaryAssetId AssetId;
+	LocalDataBaseLoader->GetPrimaryAssetId(Parameters.RawMagnitude, AssetId);
+	SkillDataAsset = LocalDataBaseLoader->GetDataFromAssetId<USkillDataAsset>(AssetId);
+	float MontageTimeRate = SkillDataAsset->CastMontage->GetPlayLength();
+	ElapsedTime = 0.f;
+	Duration = FMath::Clamp(MontageTimeRate, 0.0f, 10.f);
+
+	FVector Location = Parameters.Location;
+	FRotator Rotation = Parameters.Normal.Rotation();
+
+	SetActorLocation(Location);
+	SetActorRotation(Rotation);
+	// 데칼 세팅
+	if (!DecalComponent) {
+		DecalComponent = CreateDefaultSubobject<UDecalComponent>(TEXT("DecalComponent"));
+		DecalComponent->SetupAttachment(RootComponent);
+		DecalComponent->SetRelativeRotation(FRotator(0.f, 0.f, 0.f)); // 지면 표시용
+	}
+	auto BoxShapeConfig = SkillDataAsset->SkillShapeConfig.BoxHalfExtent;
+	DecalComponent->DecalSize =  FVector(BoxShapeConfig.Z, BoxShapeConfig.Y, BoxShapeConfig.X); 
+	DecalComponent->SetDecalMaterial(BaseDecalMaterial);
+
+	UE_LOG(LogTemp, Log, TEXT("[Preview] Decal Size: %s"), *DecalComponent->DecalSize.ToString());
+
+	UMaterialInterface* Material = DecalComponent->GetMaterial(0);
+	DynMaterial = UMaterialInstanceDynamic::Create(Material, this);
+	DecalComponent->SetMaterial(0, DynMaterial);
+	if (DynMaterial){
+		UE_LOG(LogTemp, Log, TEXT("[Preview] DynMaterial created"));
+		DynMaterial->SetScalarParameterValue(FName("Progress"), 0.f);
+	}
+	else{
+		UE_LOG(LogTemp, Warning, TEXT("[Preview] DynMaterial creation failed"));
+	}
+
+	return true;
+}
+
+bool AUGCN_Skill1_DirectionPreview::WhileActive_Implementation(AActor* MyTarget, const FGameplayCueParameters& Parameters)
+{
+	if (!MyTarget || !BaseDecalMaterial){
+		UE_LOG(LogTemp, Warning, TEXT("[Preview] Invalid Target or Material"));
+		return false;
+	}
+
+	LocalDataBaseLoader = NewObject<ULocalDataBaseLoader>(this);
+	LocalDataBaseLoader->Initialize();
+
+	FPrimaryAssetId AssetId;
+	LocalDataBaseLoader->GetPrimaryAssetId(Parameters.RawMagnitude, AssetId);
+	SkillDataAsset = LocalDataBaseLoader->GetDataFromAssetId<USkillDataAsset>(AssetId);
+
+	float MontageTimeRate = SkillDataAsset->CastMontage->GetPlayLength();
+	Duration = FMath::Clamp(MontageTimeRate, 0.1f, 10.f);
+	ElapsedTime = 0.f;
+
+	FVector Location = Parameters.Location;
+	FRotator Rotation = Parameters.Normal.Rotation();
+	SetActorLocation(Location);
+	SetActorRotation(Rotation);
+
+	DecalComponent->DecalSize = SkillDataAsset->SkillShapeConfig.BoxHalfExtent;
+	DecalComponent->SetDecalMaterial(BaseDecalMaterial);
+
+	auto* Material = DecalComponent->GetMaterial(0);
+	DynMaterial = UMaterialInstanceDynamic::Create(Material, this);
+	DecalComponent->SetMaterial(0, DynMaterial);
+	if (DynMaterial){
+		DynMaterial->SetScalarParameterValue(FName("Progress"), 0.f);
+	}
+
+	GetWorld()->GetTimerManager().SetTimer(ProgressUpdateTimerHandle, this, &AUGCN_Skill1_DirectionPreview::UpdateProgress, 0.033f, true);
+
+	return true;
+}
+
+void AUGCN_Skill1_DirectionPreview::UpdateProgress(){
+	ElapsedTime += 0.066f;
+
+	float Progress = FMath::Clamp(ElapsedTime / Duration, 0.f, 1.f);
+	if (DynMaterial){
+		DynMaterial->SetScalarParameterValue(FName("Progress"), Progress);
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("[Preview] Timer Progress = %.2f / %.2f"), ElapsedTime, Duration);
+
+	if (ElapsedTime >= Duration){
+		GetWorld()->GetTimerManager().ClearTimer(ProgressUpdateTimerHandle);
+		Destroy();
+	}
+}
+
+bool AUGCN_Skill1_DirectionPreview::OnRemove_Implementation(AActor* MyTarget, const FGameplayCueParameters& Parameters){
+	return true;
+}
+
+
+
+--- FILE: MyGame\Private\Shared\GAS\Skill\GA_Base.cpp ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "Shared/GAS/Skill/GA_Base.h"
+#include "AbilitySystemInterface.h"
+#include "Shared/Player/GGwaCharacter.h"
+#include "Shared/GAS/GGwaAbilitySystemComponent.h"
+#include "Shared/Player/GGwaPlayerController.h"
+#include "AbilitySystemBlueprintLibrary.h"
+#include "Shared/Player/GGwaPlayerState.h"
+
+const FName UGA_Base::SkillAssetTypeTag = TEXT("Data.SkillID");
+
+void UGA_Base::PreProcessSkillStart(const FGameplayAbilityActorInfo* ActorInfo) {
+	AGGwaCharacter * AvatarActor = Cast<AGGwaCharacter>(ActorInfo->AvatarActor.Get());
+	if (IsLocallyControlled()) {
+		UE_LOG(LogTemp, Warning, TEXT("✅ Client PreProcess Activated"));
+		UGGwaAbilitySystemComponent* ASC = Cast<UGGwaAbilitySystemComponent>(ActorInfo->AbilitySystemComponent.Get());
+		
+		if (AGGwaPlayerController * PC = Cast<AGGwaPlayerController>(ActorInfo->PlayerController.Get())) {
+			// FHitResult Hit;
+			// if (PC->GetHitResultUnderCursor(ECC_Visibility, false, Hit)) {
+			// 	CacheHitLocation = Hit.ImpactPoint;
+			// 	FVector Dir = Hit.ImpactPoint - AvatarActor->GetActorLocation();
+			// 	Dir.Z = 0;
+			// 	
+			// 	AvatarActor->SetActorRotation(Dir.Rotation());
+			// 	FGameplayEventData RotationEventData;
+			// 	RotationEventData.Instigator = AvatarActor;
+			// 	RotationEventData.EventTag = FGameplayTag::RequestGameplayTag(TEXT("Skill.TargetLocation"));
+			// 	RotationEventData.TargetData = UAbilitySystemBlueprintLibrary::AbilityTargetDataFromHitResult(Hit);
+			// 	ActorInfo->AbilitySystemComponent->HandleGameplayEvent(RotationEventData.EventTag ,&RotationEventData);
+			// }
+		}
+	}
+	// else {
+	// 	if(TriggeredEventData && TriggeredEventData->TargetData.Num() > 0) {
+	// 		FVector Dir = TriggeredEventData->TargetData.Get(0)->GetHitResult()->ImpactPoint - AvatarActor->GetActorLocation();
+	// 		AvatarActor->SetActorRotation(Dir.Rotation());
+	// 	}
+	// }
+}
+
+UGGwaAbilitySystemComponent* UGA_Base::GetTargetASC(AActor* Actor) const {
+	//캐릭터가 아닌 경우?
+	if (AGGwaCharacter* Character = Cast<AGGwaCharacter>(Actor)){
+		if (AGGwaPlayerState* PS = Cast<AGGwaPlayerState>(Character->GetPlayerState())) {
+			return Cast<UGGwaAbilitySystemComponent>(PS->GetAbilitySystemComponent());
+		}
+		return nullptr;
+	}
+	return nullptr;
+}
+
+FSkillContext UGA_Base::BuildSkillContext(const FGameplayAbilityActorInfo* ActorInfo) {
+	FSkillContext Context;
+	Context.SourceASC = ActorInfo->AbilitySystemComponent.Get();
+	Context.SourceActor = ActorInfo->AvatarActor.Get();
+	Context.TargetLocation = CacheHitLocation;
+	return Context;
+}
+
+
+--- FILE: MyGame\Private\Shared\GAS\Skill\GA_MoveAbility.cpp ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "Shared/GAS/Skill/GA_MoveAbility.h"
+#include "NavigationPath.h"
+#include "NavigationSystem.h"
+#include "Shared/Player/GGwaPlayerController.h"
+#include "Shared/Player/GGwaCharacter.h"
+#include "DrawDebugHelpers.h"
+#include "GameFramework/Pawn.h"
+#include "TimerManager.h"
+#include "Abilities/Tasks/AbilityTask_WaitTargetData.h"
+#include "Shared/GAS/SkillTargetPolicy/SkillTargetActor_Mouse.h"
+
+
+UGA_MoveAbility::UGA_MoveAbility() {
+	// 매번 새로운 인스턴스 생성 → PredictionKey 발급 지원
+	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerExecution;
+
+	// 클라이언트 예측 사용
+	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
+
+	// (선택) 서버→클라이언트로도 자동 실행 결과를 replicate
+	// NetSecurityPolicy = EGameplayAbilityNetSecurityPolicy::ClientOrServer;
+}
+
+void UGA_MoveAbility::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Data)
+{
+	const FGameplayAbilityActorInfo* Info = GetCurrentActorInfo();
+	AGGwaCharacter* Avatar = Cast<AGGwaCharacter>(Info->AvatarActor.Get());
+	AGGwaPlayerController* PC = Cast<AGGwaPlayerController>(Info->PlayerController);
+
+	if (!Avatar || !PC || Data.Num() == 0) return;
+
+	FVector_NetQuantize Point = Data.Get(0)->GetHitResult()->ImpactPoint;
+	FRotator HitRotation = FRotator::ZeroRotator;
+
+	UNavigationPath* Path = UNavigationSystemV1::FindPathToLocationSynchronously(GetWorld(), Avatar->GetActorLocation(), Point);
+	if (Avatar->IsLocallyControlled()) {
+		GetWorld()->SpawnActor<AActor>(LineTraceRing, Point, HitRotation);
+	}
+
+	if (Path && Path->PathPoints.Num() > 1) {
+		if (Avatar->HasAuthority()) {
+			Avatar->SetMoveData(Path->PathPoints, 1, true);
+		}
+		else if (Avatar->IsLocallyControlled()) {
+			for (int32 i = 0; i < Path->PathPoints.Num() - 1; ++i)
+			{
+				DrawDebugLine(GetWorld(), Path->PathPoints[i], Path->PathPoints[i + 1], FColor::Green, false, 5.0f, 0, 5.0f);
+				DrawDebugSphere(GetWorld(), Path->PathPoints[i], 20.0f, 12, FColor::Red, false, 5.0f);
+			}
+		}
+	}
+
+	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+}
+
+void UGA_MoveAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
+									  const FGameplayAbilityActorInfo* ActorInfo,
+									  const FGameplayAbilityActivationInfo ActivationInfo,
+									  const FGameplayEventData* TriggerEventData){
+	if (!CommitAbility(Handle, ActorInfo, ActivationInfo)) {
+		EndAbility(Handle, ActorInfo, ActivationInfo, false, true);
+		return;
+	}
+	//
+	// if (ActorInfo->AvatarActor->HasAuthority()) {
+	// 	return;
+	// }
+
+
+	// ASkillTargetActor_Mouse 클래스로 내부에서 스폰 & 복제 처리
+	UAbilityTask_WaitTargetData* Task = UAbilityTask_WaitTargetData::WaitTargetDataUsingActor(
+		this,
+		"SkillTargeting",
+		EGameplayTargetingConfirmation::Instant,
+		NewObject<ASkillTargetActor_Mouse>(this)  // <-- Class 전달
+	);
+
+	if (Task)
+	{
+		Task->ValidData.AddDynamic(this, &UGA_MoveAbility::OnTargetDataReceived);
+		Task->ReadyForActivation();
+	}
+}
+
+
+
+--- FILE: MyGame\Private\Shared\GAS\Skill\GA_Skill1.cpp ---
+// GA_Skill1.cpp
+
+#include "Shared/GAS/Skill/GA_Skill1.h"
+#include "Shared/Data/SkillDataAsset.h"
+#include "Shared/GAS/SkillTargetPolicy/SkillTargetActor_Mouse.h"
+#include "Shared/GAS/SkillTargetPolicy/SkillTarget_Self.h"
+#include "Shared/GAS/AbilityTask/GGwaPlayMontageAndWaitForEvent.h"
+#include "Abilities/Tasks/AbilityTask_WaitTargetData.h"
+#include "Shared/GAS/SkillTargetPolicy/FSkillContext.h"
+#include "Shared/Player/GGwaAnimInstance.h"
+
+UGA_Skill1::UGA_Skill1()
+{
+    AbilityInputID    = EAbilityInputID::Skill1;
+    InstancingPolicy    = EGameplayAbilityInstancingPolicy::InstancedPerExecution;
+    NetExecutionPolicy  = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
+    NetSecurityPolicy   = EGameplayAbilityNetSecurityPolicy::ClientOrServer;
+}
+
+void UGA_Skill1::OnAvatarSet(
+    const FGameplayAbilityActorInfo* ActorInfo,
+    const FGameplayAbilitySpec& Spec)
+{
+    Super::OnAvatarSet(ActorInfo, Spec);
+}
+
+void UGA_Skill1::ActivateAbility(
+    const FGameplayAbilitySpecHandle Handle,
+    const FGameplayAbilityActorInfo* ActorInfo,
+    const FGameplayAbilityActivationInfo ActivationInfo,
+    const FGameplayEventData* /*TriggerEventData*/)
+{
+
+    FScopedPredictionWindow ScopedPredictionWindow(ActorInfo->AbilitySystemComponent.Get());
+
+    if (!CanActivateAbility(Handle, ActorInfo)) {
+        EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+        return;
+    }
+    
+    if (!ActorInfo || !CommitAbility(Handle, ActorInfo, ActivationInfo)){
+        EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+        return;
+    }
+
+    // AvatarActor 유효성 검사
+    AActor* AvatarActor = GetAvatarActorFromActorInfo();
+    if (!IsValid(AvatarActor)){
+        EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+        return;
+    }
+
+    // 2) 타겟팅 Task
+    if (SkillDataAsset->TargetStrategyClass->IsChildOf(USkillTarget_Self::StaticClass())){
+        OnTargetDataReceived(FGameplayAbilityTargetDataHandle());
+    }
+    else
+    {
+        // 마우스 기반 위치 타겟팅
+        ASkillTargetActor_Mouse* TargetActor =
+            NewObject<ASkillTargetActor_Mouse>(this);
+
+        UAbilityTask_WaitTargetData* TargetTask =
+            UAbilityTask_WaitTargetData::WaitTargetDataUsingActor(
+                this,
+                FName("Skill1_Target"),
+                EGameplayTargetingConfirmation::Instant,
+                TargetActor
+            );
+        TargetTask->ValidData.AddDynamic(this, &UGA_Skill1::OnTargetDataReceived);
+        TargetTask->Cancelled.AddDynamic(this, &UGA_Skill1::OnTargetDataCancelled);
+        TargetTask->ReadyForActivation();
+    }
+
+}
+
+void UGA_Skill1::OnTargetDataCancelled(const FGameplayAbilityTargetDataHandle& Data)
+{
+    // 취소 시엔 Ability 종료
+    GetActorInfo().AbilitySystemComponent->RemoveGameplayCue(FGameplayTag::RequestGameplayTag(FName("GameplayCue.Skill1.DirectionPreview")));
+    EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, false, true);
+}
+
+void UGA_Skill1::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Data){
+    
+
+    
+    if (!CurrentActorInfo){
+        EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
+        return;
+    }
+    AActor* AvatarActor = GetAvatarActorFromActorInfo();
+    if (!IsValid(AvatarActor)){
+        EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
+        return;
+    }
+    
+    if (Data.Num() > 0 && Data.Get(0)){
+        const FHitResult* Hit = Data.Get(0)->GetHitResult();
+        if (Hit){
+            HitPoint = Hit->ImpactPoint;
+            FVector Dir = Hit->ImpactPoint - AvatarActor->GetActorLocation();
+            AvatarActor->SetActorRotation(Dir.Rotation());
+            FGameplayCueParameters CueParams;
+            CueParams.Location = HitPoint;
+            CueParams.Normal = HitPoint - GetAvatarActorFromActorInfo()->GetActorLocation(); // 방향성 시각화 지원용
+            CueParams.Instigator = GetAvatarActorFromActorInfo()->GetInstigator();
+            CueParams.EffectCauser = GetAvatarActorFromActorInfo()->GetInstigator();
+            CueParams.RawMagnitude = SkillDataAsset->SkillID;
+            GetActorInfo().AbilitySystemComponent->AddGameplayCue(
+                FGameplayTag::RequestGameplayTag(FName("GameplayCue.Skill1.DirectionPreview")),
+                CueParams
+            );
+        }
+    }
+
+
+    // 4) 몽타주 Task
+    UGGwaPlayMontageAndWaitForEvent* MontageTask =
+        UGGwaPlayMontageAndWaitForEvent::PlayMontageAndWaitForEvent(
+            this,
+            NAME_None,
+            SkillDataAsset->CastMontage,
+            FGameplayTagContainer(),
+            1.0f,
+            NAME_None,
+            false
+        );
+
+    MontageTask->OnCompleted.AddDynamic(this, &UGA_Skill1::OnMontageCompleted);
+    //blend out 문제는 아닌것 같다.
+    MontageTask->OnBlendOut.AddDynamic(this, &UGA_Skill1::OnMontageCompleted);
+    MontageTask->OnInterrupted.AddDynamic(this, &UGA_Skill1::OnMontageInterrupted);
+    MontageTask->OnCancelled.AddDynamic(this, &UGA_Skill1::OnMontageInterrupted);
+
+    MontageTask->ReadyForActivation();
+}
+
+void UGA_Skill1::OnMontageInterrupted(FGameplayTag /*EventTag*/, FGameplayEventData /*EventData*/)
+{
+    GetActorInfo().AbilitySystemComponent->RemoveGameplayCue(FGameplayTag::RequestGameplayTag(FName("GameplayCue.Skill1.DirectionPreview")));
+    EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
+}
+
+void UGA_Skill1::OnMontageCompleted(FGameplayTag ,FGameplayEventData){
+    if (GetAvatarActorFromActorInfo()->HasAuthority())
+    {
+        SkillContext = BuildSkillContext(CurrentActorInfo);
+        SkillContext.SkillData = SkillDataAsset;
+        SkillContext.HitLocation =  HitPoint;
+        SkillContext.DetectedActors = NewObject<USkillTargetBase>(this, SkillDataAsset->TargetStrategyClass)->DetectTargets(SkillContext);
+
+        auto* ASC = SkillContext.SourceASC.Get();
+        FGameplayEffectContextHandle Context = ASC->MakeEffectContext();
+        Context.AddInstigator(SkillContext.SourceActor, SkillContext.SourceActor);
+
+        FGameplayEffectSpecHandle Spec = ASC->MakeOutgoingSpec(SkillContext.SkillData->GEClass, 1.f, Context);
+        // Spec.Data->SetSetByCallerMagnitude(
+        //     FGameplayTag::RequestGameplayTag(SkillAssetTypeTag),
+        //     SkillContext.SkillData->SkillID
+        // );
+
+        FGameplayEffectContextHandle CoolContext = ASC->MakeEffectContext();
+        CoolContext.AddInstigator(SkillContext.SourceActor, SkillContext.SourceActor);
+
+        FGameplayEffectSpecHandle CoolSpec = ASC->MakeOutgoingSpec(SkillContext.SkillData->CoolTimeGEClass, 1.f, CoolContext);
+        CoolSpec.Data->SetSetByCallerMagnitude(
+            SkillContext.SkillData->CooldownTag,
+            SkillContext.SkillData->CoolTime
+        );
+        CoolSpec.Data->SetSetByCallerMagnitude(
+            FGameplayTag::RequestGameplayTag(SkillAssetTypeTag),
+            SkillContext.SkillData->SkillID
+        );
+
+        if (SkillContext.SkillData->TargetStrategyClass == USkillTarget_Self::StaticClass()){
+            ASC->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
+            ASC->ApplyGameplayEffectSpecToSelf(*CoolSpec.Data.Get());
+        }
+        else{
+            //여기서 콜백으로 인해, 버프가 이중 발생. 그러니 쿨타임에만 적용되도록 수정할것.
+            for (AActor* Target : SkillContext.DetectedActors){
+                if (UGGwaAbilitySystemComponent* TargetASC = GetTargetASC(Target) ){
+                    ASC->ApplyGameplayEffectSpecToTarget(*Spec.Data.Get(), TargetASC);
+                }
+            }
+            ASC->ApplyGameplayEffectSpecToSelf(*CoolSpec.Data.Get());
+        }
+    }
+
+    GetActorInfo().AbilitySystemComponent->RemoveGameplayCue(FGameplayTag::RequestGameplayTag(FName("GameplayCue.Skill1.DirectionPreview")));
+
+    EndAbility(
+        CurrentSpecHandle,
+        CurrentActorInfo,
+        CurrentActivationInfo,
+        true, 
+        false 
+    );
+}
+
+
+--- FILE: MyGame\Private\Shared\GAS\Skill\GA_Skill2.cpp ---
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "Shared/GAS/Skill/GA_Skill2.h"
+#include "AbilitySystemInterface.h"
+#include "Abilities/Tasks/AbilityTask_WaitTargetData.h"
+#include "Shared/GAS/GGwaAbilitySystemComponent.h"
+#include "Shared/GAS/SkillTargetPolicy/SkillTarget_TargetActor.h"
+
+
+void UGA_Skill2::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
+                                 const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) {
+	const UAbilityTask_WaitTargetData* TargetDataTask = GetTargetDataTask();
+
+	
+	/*의문 : 여기서 어떤 기준으로 OnTargetDataReceived, OnTargetDataCancelled 호출하지?*/
+	// OnTargetDataReceived : HitData->HitResult.ImpactPoint;
+}
+
+
+/*아래 내용들은 Interface에 정의하여, AbilityTask가 필요한 기술일 경우 필수 구현하도록 순수가상함수 설정.*/
+void UGA_Skill2::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Data) {
+	if (const FGameplayAbilityTargetData_SingleTargetHit* HitData = static_cast<const FGameplayAbilityTargetData_SingleTargetHit*>(Data.Get(0))){
+		/* 여기서 부모를 호출하는 이유는, Task가 성공 후에 해당 방향을 바라보도록 부모 로직을 처리하기 위해서임.*/
+		// PreProcessSkillStart(CurrentActorInfo);
+		SkillContext = BuildSkillContext(CurrentActorInfo);
+		SkillContext.SkillData = SkillDataAsset;
+		
+		FVector HitLocation = HitData->HitResult.ImpactPoint;
+		SkillContext.TargetLocation = HitLocation;
+		SkillContext.TargetActor = HitData->GetHitResult()->GetActor();
+		// 범위 공격일 경우 사용
+		SkillContext.DetectedActors = NewObject<USkillTarget_TargetActor>
+									(SkillDataAsset->TargetStrategyClass)
+									->DetectTargets(SkillContext);
+		FGameplayEffectSpecHandle SpecHandle = SkillContext.SourceASC->MakeOutgoingSpec(SkillDataAsset->GEClass,
+											1.f, SkillContext.SourceASC->MakeEffectContext());
+		if (SkillContext.TargetActor->Implements<UAbilitySystemInterface>()) {
+			UGGwaAbilitySystemComponent* TargetASC = Cast<UGGwaAbilitySystemComponent>(Cast<IAbilitySystemInterface>(SkillContext.TargetActor)->GetAbilitySystemComponent());
+			if (TargetASC && SpecHandle.IsValid()) {
+				SkillContext.SourceASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
+			}
+		}
+	}
+
+	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true,false);
+}
+
+void UGA_Skill2::OnTargetDataCancelled(const FGameplayAbilityTargetDataHandle& Data) {
+	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true,true);
+}
+
+UAbilityTask_WaitTargetData* UGA_Skill2::GetTargetDataTask() {
+	UAbilityTask_WaitTargetData* WaitTargetData = UAbilityTask_WaitTargetData::WaitTargetDataUsingActor(
+		this,
+		NAME_None,
+		EGameplayTargetingConfirmation::UserConfirmed,
+		AbilityTargetActorClass);
+	WaitTargetData->ValidData.AddDynamic(this, &UGA_Skill2::OnTargetDataReceived);
+	WaitTargetData->Cancelled.AddDynamic(this, &UGA_Skill2::OnTargetDataCancelled);
+	WaitTargetData->ReadyForActivation();
+	return WaitTargetData;
+}
+
+--- FILE: MyGame\Private\Shared\GAS\Skill\GA_Skill3.cpp ---
+#include "Shared/GAS/Skill/GA_Skill3.h"
+
+#include "AbilitySystemComponent.h"
+#include "AbilitySystemInterface.h"
+#include "Abilities/Tasks/AbilityTask.h"
+#include "Shared/Player/GGwaPlayerController.h"
+#include "Shared/GAS/SkillTargetPolicy/SkillTarget_Directional.h"
+#include "MyGame/Public/Shared/GAS/SkillTargetPolicy/FSkillContext.h"
+
+#include "Shared/Data/BuffDataAsset.h"
+#include "Shared/Data/SkillDataAsset.h"
+
+UGA_Skill3::UGA_Skill3() {
+	AbilityInputID = EAbilityInputID::Skill3;
+}
+
+void UGA_Skill3::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
+	const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
+{
+	if (!CheckCooldown(Handle, ActorInfo)) {
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+		return;
+	}
+	TWeakObjectPtr<AActor> AvatarActor = ActorInfo ? ActorInfo->AvatarActor : nullptr;
+
+		if (auto PC = Cast<AGGwaPlayerController>(ActorInfo->PlayerController); nullptr != PC) {
+			PC->Client_ApplyAbilityDataAsset(BuffDataAsset);
+			PC->Client_ApplyAbilityDataAsset(SkillDataAsset);
+		}
+	
+	if (AvatarActor->HasAuthority()) {
+		SkillContext = BuildSkillContext(ActorInfo);
+		SkillContext.SkillData = SkillDataAsset;
+		SkillContext.DetectedActors = NewObject<USkillTargetBase>(this, SkillDataAsset->TargetStrategyClass)->DetectTargets(SkillContext);
+		FGameplayEffectSpecHandle Spec = SkillContext.SourceASC->MakeOutgoingSpec(SkillDataAsset->GEClass, 1.f, SkillContext.SourceASC->MakeEffectContext());
+		Spec.Data->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag("Data.Cooldown"), SkillDataAsset->CoolTime);
+		if (Spec.IsValid()) {
+			for (auto& target: SkillContext.DetectedActors)
+			{
+				if (target->Implements<UAbilitySystemInterface>()){
+					auto* TargetASC = Cast<IAbilitySystemInterface>(target)->GetAbilitySystemComponent();
+					SkillContext.SourceASC->ApplyGameplayEffectSpecToTarget(*Spec.Data.Get(), TargetASC);
+				}
+			}
+		}
+	}
+	
+	UE_LOG(LogTemp, Log, TEXT("SkillContext:\n SourceActor: %s\n TargetActor: %s\n TargetLocation: %s\n SkillData: %s\n ComboIndex: %d\n StartTime: %f\n DetectedActors.Num: %d"),
+		*GetNameSafe(SkillContext.SourceActor),
+		*GetNameSafe(SkillContext.TargetActor),
+		*SkillContext.TargetLocation.ToString(),
+		*GetNameSafe(SkillContext.SkillData),
+		SkillContext.ComboIndex,
+		SkillContext.StartTime,
+		SkillContext.DetectedActors.Num());
+	
+	const FGameplayAbilitySpec* Spec = GetCurrentAbilitySpec();
+	if (Spec && Spec->IsActive())
+	{
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
+	}
+}
+
+
+--- FILE: MyGame\Private\Shared\GAS\Skill\GA_Skill4.cpp ---
+#include "Shared/GAS/Skill/GA_Skill4.h"
+
+#include "AbilitySystemComponent.h"
+#include "AbilitySystemInterface.h"
+#include "Abilities/Tasks/AbilityTask.h"
+#include "Shared/Player/GGwaPlayerController.h"
+#include "Shared/GAS/SkillTargetPolicy/SkillTarget_Directional.h"
+#include "MyGame/Public/Shared/GAS/SkillTargetPolicy/FSkillContext.h"
+
+#include "Shared/Data/BuffDataAsset.h"
+#include "Shared/Data/SkillDataAsset.h"
+
+UGA_Skill4::UGA_Skill4() {
+	AbilityInputID = EAbilityInputID::Skill4;
+}
+
+void UGA_Skill4::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
+	const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
+{
+	if (!CheckCooldown(Handle, ActorInfo)) {
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+		return;
+	}
+	TWeakObjectPtr<AActor> AvatarActor = ActorInfo ? ActorInfo->AvatarActor : nullptr;
+
+		if (auto PC = Cast<AGGwaPlayerController>(ActorInfo->PlayerController); nullptr != PC) {
+			PC->Client_ApplyAbilityDataAsset(BuffDataAsset);
+			PC->Client_ApplyAbilityDataAsset(SkillDataAsset);
+		}
+	
+	if (AvatarActor->HasAuthority()) {
+		SkillContext = BuildSkillContext(ActorInfo);
+		SkillContext.SkillData = SkillDataAsset;
+		SkillContext.DetectedActors = NewObject<USkillTargetBase>(this, SkillDataAsset->TargetStrategyClass)->DetectTargets(SkillContext);
+		FGameplayEffectSpecHandle Spec = SkillContext.SourceASC->MakeOutgoingSpec(SkillDataAsset->GEClass, 1.f, SkillContext.SourceASC->MakeEffectContext());
+		Spec.Data->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag("Data.Cooldown"), SkillDataAsset->CoolTime);
+		if (Spec.IsValid()) {
+			for (auto& target: SkillContext.DetectedActors)
+			{
+				if (target->Implements<UAbilitySystemInterface>()){
+					auto* TargetASC = Cast<IAbilitySystemInterface>(target)->GetAbilitySystemComponent();
+					SkillContext.SourceASC->ApplyGameplayEffectSpecToTarget(*Spec.Data.Get(), TargetASC);
+				}
+			}
+		}
+	}
+	
+	UE_LOG(LogTemp, Log, TEXT("SkillContext:\n SourceActor: %s\n TargetActor: %s\n TargetLocation: %s\n SkillData: %s\n ComboIndex: %d\n StartTime: %f\n DetectedActors.Num: %d"),
+		*GetNameSafe(SkillContext.SourceActor),
+		*GetNameSafe(SkillContext.TargetActor),
+		*SkillContext.TargetLocation.ToString(),
+		*GetNameSafe(SkillContext.SkillData),
+		SkillContext.ComboIndex,
+		SkillContext.StartTime,
+		SkillContext.DetectedActors.Num());
+	
+	const FGameplayAbilitySpec* Spec = GetCurrentAbilitySpec();
+	if (Spec && Spec->IsActive())
+	{
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
+	}
+}
+
+
+--- FILE: MyGame\Private\Shared\GAS\Skill\GA_Skill5.cpp ---
+#include "Shared/GAS/Skill/GA_Skill5.h"
+
+#include "AbilitySystemComponent.h"
+#include "AbilitySystemInterface.h"
+#include "Abilities/Tasks/AbilityTask.h"
+#include "Shared/Player/GGwaPlayerController.h"
+#include "Shared/GAS/SkillTargetPolicy/SkillTarget_Directional.h"
+#include "MyGame/Public/Shared/GAS/SkillTargetPolicy/FSkillContext.h"
+
+#include "Shared/Data/BuffDataAsset.h"
+#include "Shared/Data/SkillDataAsset.h"
+
+UGA_Skill5::UGA_Skill5() {
+	AbilityInputID = EAbilityInputID::Skill5;
+}
+
+void UGA_Skill5::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
+	const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
+{
+	if (!CheckCooldown(Handle, ActorInfo)) {
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+		return;
+	}
+	TWeakObjectPtr<AActor> AvatarActor = ActorInfo ? ActorInfo->AvatarActor : nullptr;
+
+		if (auto PC = Cast<AGGwaPlayerController>(ActorInfo->PlayerController); nullptr != PC) {
+			PC->Client_ApplyAbilityDataAsset(BuffDataAsset);
+			PC->Client_ApplyAbilityDataAsset(SkillDataAsset);
+		}
+	
+	if (AvatarActor->HasAuthority()) {
+		SkillContext = BuildSkillContext(ActorInfo);
+		SkillContext.SkillData = SkillDataAsset;
+		SkillContext.DetectedActors = NewObject<USkillTargetBase>(this, SkillDataAsset->TargetStrategyClass)->DetectTargets(SkillContext);
+		FGameplayEffectSpecHandle Spec = SkillContext.SourceASC->MakeOutgoingSpec(SkillDataAsset->GEClass, 1.f, SkillContext.SourceASC->MakeEffectContext());
+		Spec.Data->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag("Data.Cooldown"), SkillDataAsset->CoolTime);
+		if (Spec.IsValid()) {
+			for (auto& target: SkillContext.DetectedActors)
+			{
+				if (target->Implements<UAbilitySystemInterface>()){
+					auto* TargetASC = Cast<IAbilitySystemInterface>(target)->GetAbilitySystemComponent();
+					SkillContext.SourceASC->ApplyGameplayEffectSpecToTarget(*Spec.Data.Get(), TargetASC);
+				}
+			}
+		}
+	}
+	
+	UE_LOG(LogTemp, Log, TEXT("SkillContext:\n SourceActor: %s\n TargetActor: %s\n TargetLocation: %s\n SkillData: %s\n ComboIndex: %d\n StartTime: %f\n DetectedActors.Num: %d"),
+		*GetNameSafe(SkillContext.SourceActor),
+		*GetNameSafe(SkillContext.TargetActor),
+		*SkillContext.TargetLocation.ToString(),
+		*GetNameSafe(SkillContext.SkillData),
+		SkillContext.ComboIndex,
+		SkillContext.StartTime,
+		SkillContext.DetectedActors.Num());
+	
+	const FGameplayAbilitySpec* Spec = GetCurrentAbilitySpec();
+	if (Spec && Spec->IsActive())
+	{
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
+	}
+}
+
+
+--- FILE: MyGame\Private\Shared\GAS\Skill\GA_Skill6.cpp ---
+#include "Shared/GAS/Skill/GA_Skill6.h"
+
+#include "AbilitySystemComponent.h"
+#include "AbilitySystemInterface.h"
+#include "Abilities/Tasks/AbilityTask.h"
+#include "Shared/Player/GGwaPlayerController.h"
+#include "Shared/GAS/SkillTargetPolicy/SkillTarget_Directional.h"
+#include "MyGame/Public/Shared/GAS/SkillTargetPolicy/FSkillContext.h"
+
+#include "Shared/Data/BuffDataAsset.h"
+#include "Shared/Data/SkillDataAsset.h"
+
+UGA_Skill6::UGA_Skill6() {
+	AbilityInputID = EAbilityInputID::Skill6;
+}
+
+void UGA_Skill6::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
+	const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
+{
+	if (!CheckCooldown(Handle, ActorInfo)) {
+    	EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+    	return;
+    }
+	TWeakObjectPtr<AActor> AvatarActor = ActorInfo ? ActorInfo->AvatarActor : nullptr;
+
+		if (auto PC = Cast<AGGwaPlayerController>(ActorInfo->PlayerController); nullptr != PC) {
+			PC->Client_ApplyAbilityDataAsset(BuffDataAsset);
+			PC->Client_ApplyAbilityDataAsset(SkillDataAsset);
+		}
+	
+	if (AvatarActor->HasAuthority()) {
+		SkillContext = BuildSkillContext(ActorInfo);
+		SkillContext.SkillData = SkillDataAsset;
+		SkillContext.DetectedActors = NewObject<USkillTargetBase>(this, SkillDataAsset->TargetStrategyClass)->DetectTargets(SkillContext);
+		FGameplayEffectSpecHandle Spec = SkillContext.SourceASC->MakeOutgoingSpec(SkillDataAsset->GEClass, 1.f, SkillContext.SourceASC->MakeEffectContext());
+		Spec.Data->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag("Data.Cooldown"), SkillDataAsset->CoolTime);
+		if (Spec.IsValid()) {
+			for (auto& target: SkillContext.DetectedActors)
+			{
+				if (target->Implements<UAbilitySystemInterface>()){
+					auto* TargetASC = Cast<IAbilitySystemInterface>(target)->GetAbilitySystemComponent();
+					SkillContext.SourceASC->ApplyGameplayEffectSpecToTarget(*Spec.Data.Get(), TargetASC);
+				}
+			}
+		}
+	}
+	
+	UE_LOG(LogTemp, Log, TEXT("SkillContext:\n SourceActor: %s\n TargetActor: %s\n TargetLocation: %s\n SkillData: %s\n ComboIndex: %d\n StartTime: %f\n DetectedActors.Num: %d"),
+		*GetNameSafe(SkillContext.SourceActor),
+		*GetNameSafe(SkillContext.TargetActor),
+		*SkillContext.TargetLocation.ToString(),
+		*GetNameSafe(SkillContext.SkillData),
+		SkillContext.ComboIndex,
+		SkillContext.StartTime,
+		SkillContext.DetectedActors.Num());
+	
+	const FGameplayAbilitySpec* Spec = GetCurrentAbilitySpec();
+	if (Spec && Spec->IsActive())
+	{
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
+	}
+}
+
+
+--- FILE: MyGame\Private\Shared\GAS\Skill\GA_Skill7.cpp ---
+#include "Shared/GAS/Skill/GA_Skill7.h"
+
+#include "AbilitySystemComponent.h"
+#include "AbilitySystemInterface.h"
+#include "Abilities/Tasks/AbilityTask.h"
+#include "Shared/Player/GGwaPlayerController.h"
+#include "Shared/GAS/SkillTargetPolicy/SkillTarget_Directional.h"
+#include "MyGame/Public/Shared/GAS/SkillTargetPolicy/FSkillContext.h"
+
+#include "Shared/Data/BuffDataAsset.h"
+#include "Shared/Data/SkillDataAsset.h"
+
+UGA_Skill7::UGA_Skill7() {
+	AbilityInputID = EAbilityInputID::Skill7;
+}
+
+void UGA_Skill7::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
+	const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
+{
+	if (!CheckCooldown(Handle, ActorInfo)) {
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+		return;
+	}
+	TWeakObjectPtr<AActor> AvatarActor = ActorInfo ? ActorInfo->AvatarActor : nullptr;
+
+		if (auto PC = Cast<AGGwaPlayerController>(ActorInfo->PlayerController); nullptr != PC) {
+			PC->Client_ApplyAbilityDataAsset(BuffDataAsset);
+			PC->Client_ApplyAbilityDataAsset(SkillDataAsset);
+		}
+	
+	if (AvatarActor->HasAuthority()) {
+		SkillContext = BuildSkillContext(ActorInfo);
+		SkillContext.SkillData = SkillDataAsset;
+		SkillContext.DetectedActors = NewObject<USkillTargetBase>(this, SkillDataAsset->TargetStrategyClass)->DetectTargets(SkillContext);
+		FGameplayEffectSpecHandle Spec = SkillContext.SourceASC->MakeOutgoingSpec(SkillDataAsset->GEClass, 1.f, SkillContext.SourceASC->MakeEffectContext());
+		Spec.Data->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag("Data.Cooldown"), SkillDataAsset->CoolTime);
+		if (Spec.IsValid()) {
+			for (auto& target: SkillContext.DetectedActors)
+			{
+				if (target->Implements<UAbilitySystemInterface>()){
+					auto* TargetASC = Cast<IAbilitySystemInterface>(target)->GetAbilitySystemComponent();
+					SkillContext.SourceASC->ApplyGameplayEffectSpecToTarget(*Spec.Data.Get(), TargetASC);
+				}
+			}
+		}
+	}
+	
+	UE_LOG(LogTemp, Log, TEXT("SkillContext:\n SourceActor: %s\n TargetActor: %s\n TargetLocation: %s\n SkillData: %s\n ComboIndex: %d\n StartTime: %f\n DetectedActors.Num: %d"),
+		*GetNameSafe(SkillContext.SourceActor),
+		*GetNameSafe(SkillContext.TargetActor),
+		*SkillContext.TargetLocation.ToString(),
+		*GetNameSafe(SkillContext.SkillData),
+		SkillContext.ComboIndex,
+		SkillContext.StartTime,
+		SkillContext.DetectedActors.Num());
+	
+	const FGameplayAbilitySpec* Spec = GetCurrentAbilitySpec();
+	if (Spec && Spec->IsActive())
+	{
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
+	}
+}
+
+
+--- FILE: MyGame\Private\Shared\GAS\Skill\GA_Skill8.cpp ---
+#include "Shared/GAS/Skill/GA_Skill8.h"
+
+#include "AbilitySystemComponent.h"
+#include "AbilitySystemInterface.h"
+#include "Abilities/Tasks/AbilityTask.h"
+#include "Shared/Player/GGwaPlayerController.h"
+#include "Shared/GAS/SkillTargetPolicy/SkillTarget_Directional.h"
+#include "MyGame/Public/Shared/GAS/SkillTargetPolicy/FSkillContext.h"
+
+#include "Shared/Data/BuffDataAsset.h"
+#include "Shared/Data/SkillDataAsset.h"
+
+UGA_Skill8::UGA_Skill8() {
+	AbilityInputID = EAbilityInputID::Skill8;
+}
+
+void UGA_Skill8::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
+	const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
+{
+	if (!CheckCooldown(Handle, ActorInfo)) {
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+		return;
+	}
+	TWeakObjectPtr<AActor> AvatarActor = ActorInfo ? ActorInfo->AvatarActor : nullptr;
+
+		if (auto PC = Cast<AGGwaPlayerController>(ActorInfo->PlayerController); nullptr != PC) {
+			PC->Client_ApplyAbilityDataAsset(BuffDataAsset);
+			PC->Client_ApplyAbilityDataAsset(SkillDataAsset);
+		}
+	
+	if (AvatarActor->HasAuthority()) {
+		SkillContext = BuildSkillContext(ActorInfo);
+		SkillContext.SkillData = SkillDataAsset;
+		SkillContext.DetectedActors = NewObject<USkillTargetBase>(this, SkillDataAsset->TargetStrategyClass)->DetectTargets(SkillContext);
+		FGameplayEffectSpecHandle Spec = SkillContext.SourceASC->MakeOutgoingSpec(SkillDataAsset->GEClass, 1.f, SkillContext.SourceASC->MakeEffectContext());
+		Spec.Data->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag("Data.Cooldown"), SkillDataAsset->CoolTime);
+		if (Spec.IsValid()) {
+			for (auto& target: SkillContext.DetectedActors)
+			{
+				if (target->Implements<UAbilitySystemInterface>()){
+					auto* TargetASC = Cast<IAbilitySystemInterface>(target)->GetAbilitySystemComponent();
+					SkillContext.SourceASC->ApplyGameplayEffectSpecToTarget(*Spec.Data.Get(), TargetASC);
+				}
+			}
+		}
+	}
+	
+	UE_LOG(LogTemp, Log, TEXT("SkillContext:\n SourceActor: %s\n TargetActor: %s\n TargetLocation: %s\n SkillData: %s\n ComboIndex: %d\n StartTime: %f\n DetectedActors.Num: %d"),
+		*GetNameSafe(SkillContext.SourceActor),
+		*GetNameSafe(SkillContext.TargetActor),
+		*SkillContext.TargetLocation.ToString(),
+		*GetNameSafe(SkillContext.SkillData),
+		SkillContext.ComboIndex,
+		SkillContext.StartTime,
+		SkillContext.DetectedActors.Num());
+	
+	const FGameplayAbilitySpec* Spec = GetCurrentAbilitySpec();
+	if (Spec && Spec->IsActive())
+	{
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
+	}
+}
+
+
+--- FILE: MyGame\Private\Shared\GAS\Skill\GE_Test.cpp ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "Shared/GAS/Skill/GE_Test.h"
+
+
+
+
+
+
+--- FILE: MyGame\Private\Shared\GAS\SkillTargetPolicy\FSkillContext.cpp ---
+﻿#include "Shared/GAS/SkillTargetPolicy/FSkillContext.h"
+
+
+FSkillContext::FSkillContext(
+	UGGwaAbilitySystemComponent* InSourceASC,
+	AActor* InSourceActor,
+	AActor* InTargetActor = nullptr,
+	const FVector& InTargetLocation = FVector::Zero(),
+	USkillDataAsset* InSkillData = nullptr,
+	int32 InComboIndex,
+	float InStartTime)
+	: SourceASC(InSourceASC)
+	, SourceActor(InSourceActor)
+	, TargetActor(InTargetActor)
+	, TargetLocation(InTargetLocation)
+	, SkillData(InSkillData)
+	, ComboIndex(InComboIndex)
+	, StartTime(InStartTime)
+{}
+
+
+--- FILE: MyGame\Private\Shared\GAS\SkillTargetPolicy\SkillTargetActor_Mouse.cpp ---
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "Shared/GAS/SkillTargetPolicy/SkillTargetActor_Mouse.h"
+#include "AbilitySystemBlueprintLibrary.h"
+#include "Abilities/GameplayAbility.h"
+#include "Shared/Player/GGwaPlayerController.h"
+
+void ASkillTargetActor_Mouse::StartTargeting(UGameplayAbility* InAbility)
+{
+	Super::StartTargeting(InAbility);
+	PlayerController = Cast<AGGwaPlayerController>(InAbility->GetCurrentActorInfo()->PlayerController);
+}
+
+
+void ASkillTargetActor_Mouse::ConfirmTargetingAndContinue()
+{
+	if (!PlayerController) return;
+
+	FHitResult Hit;
+	PlayerController->GetHitResultUnderCursor(ECC_Visibility, false, Hit);
+
+	if (!Hit.bBlockingHit)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Mouse targeting failed - no blocking hit"));
+		return;
+	}
+
+	DrawDebugCone(GetWorld(),
+		Hit.Location,
+		PlayerController->GetPawn()->GetActorForwardVector(),
+		50.f,
+		100.f,
+		50.f,
+		20.f,
+		FColor::Red,
+		false,
+		5.f,
+		0,
+		1.f
+	);
+	UE_LOG(LogTemp, Warning, TEXT("Mouse ImpactPoint x- %f"), Hit.ImpactPoint.X);
+	UE_LOG(LogTemp, Warning, TEXT("Mouse ImpactPoint  y- %f"), Hit.ImpactPoint.Y);
+	UE_LOG(LogTemp, Warning, TEXT("Mouse ImpactPoint   z- %f"), Hit.ImpactPoint.Z);
+
+	UE_LOG(LogTemp, Warning, TEXT("Mouse Location  X- %f"), Hit.Location.X);
+	UE_LOG(LogTemp, Warning, TEXT("Mouse Location   Y- %f"), Hit.Location.Y);
+	UE_LOG(LogTemp, Warning, TEXT("Mouse Location    Z- %f"), Hit.Location.Z);
+
+
+	FGameplayAbilityTargetDataHandle Data = UAbilitySystemBlueprintLibrary::AbilityTargetDataFromHitResult(Hit);
+	if (!Data.IsValid(0)) return;
+
+	TargetDataReadyDelegate.Broadcast(Data);
+}
+
+
+--- FILE: MyGame\Private\Shared\GAS\SkillTargetPolicy\SkillTargetBase.cpp ---
+
+#include "Shared/GAS/SkillTargetPolicy/SkillTargetBase.h"
+#include "AbilitySystemInterface.h"
+#include "GameFramework/PlayerState.h"
+#include "Shared/Player/GGwaCharacter.h"
+#include "Shared/Player/GGwaPlayerState.h"
+
+void USkillTargetBase::DebugSkillShape(const UWorld* World, const FVector& StartLocation, const FVector& EndLocation,
+                                       const FSkillShapeConfig& Config) const {
+#if WITH_EDITOR
+	// 🔷 Box Trace 시각화
+	DrawDebugBox(
+		World,
+		(StartLocation + EndLocation) * 0.5f, // 박스 중심
+		Config.BoxHalfExtent,
+		FQuat::Identity,
+		FColor::Blue,
+		false,
+		1.0f,  // 지속 시간 (초)
+		0,
+		2.0f   // 선 두께
+	);
+
+	DrawDebugSphere(
+		World,
+		EndLocation,
+		Config.SphereRadius,
+		12,            // 세그먼트 수
+		FColor::Green,
+		false,
+		1.0f,
+		0,
+		2.0f
+	);
+
+	DrawDebugLine(
+		World,
+		StartLocation,
+		EndLocation,
+		FColor::Red,
+		false,
+		1.0f,
+		0,
+		1.0f
+	);
+#endif
+}
+
+bool USkillTargetBase::HasASC(AActor* Actor) const {
+	if (AGGwaCharacter* Character =  Cast<AGGwaCharacter>(Actor)) {
+		if (Cast<AGGwaPlayerState>(Character->GetPlayerState())->Implements<UAbilitySystemInterface>()) {
+			return true;
+		}
+		return false;
+	}
+	return false;
+}
+
+
+--- FILE: MyGame\Private\Shared\GAS\SkillTargetPolicy\SkillTarget_Directional.cpp ---
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "Shared/GAS/SkillTargetPolicy/SkillTarget_Directional.h"
+
+
+
+TArray<AActor*> USkillTarget_Directional::DetectTargets(FSkillContext& SkillContext) {
+	TArray<AActor*> Actors;
+	if (!SkillContext.SourceActor || !SkillContext.SkillData)
+	{
+		return Actors;
+	}
+
+	const UWorld* World = SkillContext.SourceActor->GetWorld();
+	if (!World)
+	{
+		return Actors;
+	}
+
+	const FSkillShapeConfig& Config = SkillContext.SkillData->SkillShapeConfig;
+
+	const FVector StartLocation = SkillContext.SourceActor->GetActorLocation();
+	// const FVector ForwardVector = SkillContext.SourceActor->GetActorForwardVector();
+	const FVector EndLocation = (SkillContext.HitLocation/* * Config.TraceDistance*/);
+
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(SkillContext.SourceActor);
+
+	TArray<FHitResult> HitResults;
+
+	bool bHit = World->SweepMultiByChannel(
+		HitResults,
+		StartLocation,
+		EndLocation,
+		FQuat::Identity,
+		Config.TraceChannel,
+		FCollisionShape::MakeBox(Config.BoxHalfExtent),
+		Params
+	);
+
+	if (bHit)
+	{
+		for (const FHitResult& Hit : HitResults)
+		{
+			AActor* HitActor = Hit.GetActor();
+			if (HitActor && !Actors.Contains(HitActor))
+			{
+				if (HasASC(HitActor)) {
+					Actors.Add(HitActor);
+				}
+			}
+		}
+	}
+
+	DebugSkillShape(World, StartLocation, EndLocation, Config);
+	TArray<FOverlapResult> Overlaps;
+
+	bool bOverlap = World->OverlapMultiByChannel(
+		Overlaps,
+		EndLocation,
+		FQuat::Identity,
+		Config.TraceChannel,
+		FCollisionShape::MakeSphere(Config.SphereRadius),
+		Params
+	);
+
+	if (bOverlap)
+	{
+		for (const FOverlapResult& Result : Overlaps)
+		{
+			AActor* OverlappedActor = Result.GetActor();
+			if (OverlappedActor && !Actors.Contains(OverlappedActor))
+			{
+				if (HasASC(OverlappedActor)) {
+					Actors.Add(OverlappedActor);
+				}
+			}
+		}
+	}
+	
+	return Actors;
+}
+
+
+--- FILE: MyGame\Private\Shared\GAS\SkillTargetPolicy\SkillTarget_GroundArea.cpp ---
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "Shared/GAS/SkillTargetPolicy/SkillTarget_GroundArea.h"
+
+TArray<AActor*> USkillTarget_GroundArea::DetectTargets(FSkillContext& SkillContext) {
+	return Super::DetectTargets(SkillContext);
+}
+
+
+--- FILE: MyGame\Private\Shared\GAS\SkillTargetPolicy\SkillTarget_MultiBoxTrace.cpp ---
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "Shared/GAS/SkillTargetPolicy/SkillTarget_MultiBoxTrace.h"
+
+TArray<AActor*> USkillTarget_MultiBoxTrace::DetectTargets(FSkillContext& SkillContext) {
+	return Super::DetectTargets(SkillContext);
+}
+
+
+--- FILE: MyGame\Private\Shared\GAS\SkillTargetPolicy\SkillTarget_Projectile.cpp ---
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "Shared/GAS/SkillTargetPolicy/SkillTarget_Projectile.h"
+
+TArray<AActor*> USkillTarget_Projectile::DetectTargets(FSkillContext& SkillContext) {
+	return Super::DetectTargets(SkillContext);
+}
+
+
+--- FILE: MyGame\Private\Shared\GAS\SkillTargetPolicy\SkillTarget_Self.cpp ---
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "Shared/GAS/SkillTargetPolicy/SkillTarget_Self.h"
+
+TArray<AActor*> USkillTarget_Self::DetectTargets(FSkillContext& SkillContext) {
+	TArray<AActor*> Actors;
+
+	if (SkillContext.SourceActor) {
+		Actors.Add(SkillContext.SourceActor);
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("SkillTarget: TargetStrategySelf"));
+	return Actors;
+}
+
+
+--- FILE: MyGame\Private\Shared\GAS\SkillTargetPolicy\SkillTarget_SelfArea.cpp ---
+﻿
+#include "Shared/GAS/SkillTargetPolicy/SkillTarget_SelfArea.h"
+
+TArray<AActor*> USkillTarget_SelfArea::DetectTargets(FSkillContext& SkillContext) {
+	UE_LOG(LogTemp, Warning, TEXT("SkillTarget: TargetStrategySelfArea"));
+	TArray<AActor*> Actors;
+	SkillContext.SkillData->SkillShapeConfig;
+
+	const FSkillShapeConfig& Config = SkillContext.SkillData->SkillShapeConfig;
+	UWorld* World = SkillContext.SourceActor->GetWorld();
+	if (!World)
+	{
+		return Actors;
+	}
+	
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(SkillContext.SourceActor);
+
+	TArray<FOverlapResult> Overlaps;
+
+	bool bOverlap = World->OverlapMultiByChannel(
+		Overlaps,
+		SkillContext.SourceActor->GetActorLocation(),
+		FQuat::Identity,
+		Config.TraceChannel,
+		FCollisionShape::MakeSphere(Config.SphereRadius),
+		Params
+	);
+
+	if (bOverlap) {
+		for (const FOverlapResult& OverlapResult : Overlaps) {
+			AActor * OverlappedActor = OverlapResult.GetActor();
+			if (OverlappedActor && !Actors.Contains(OverlappedActor))
+				Actors.Add(OverlapResult.GetActor());
+		}
+	}
+
+	DebugSkillShape(World,FVector::Zero(), SkillContext.SourceActor->GetActorLocation(), Config);
+	
+	return Actors;
+}
+
+
+--- FILE: MyGame\Private\Shared\GAS\SkillTargetPolicy\SkillTarget_TargetActor.cpp ---
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "Shared/GAS/SkillTargetPolicy/SkillTarget_TargetActor.h"
+
+TArray<AActor*> USkillTarget_TargetActor::DetectTargets(FSkillContext& SkillContext) {
+	TArray<AActor*> Actors;
+	if (SkillContext.TargetActor){
+		Actors.Add(SkillContext.TargetActor.Get());
+	}
+	return Actors;
+}
+
+
+--- FILE: MyGame\Private\Shared\Player\GGwaAnimInstance.cpp ---
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "Shared/Player/GGwaAnimInstance.h"
+
+
+--- FILE: MyGame\Private\Shared\Player\GGwaCharacter.cpp ---
+#include "Shared/Player/GGwaCharacter.h"
+
+#include "AbilitySystemBlueprintLibrary.h"
+#include "Shared/Player/GGwaPlayerState.h"
+#include "Shared/GAS/Skill/GA_Skill1.h"
+
+#include "AbilitySystemComponent.h"
+#include "GameFramework/PlayerController.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "EnhancedInputSubsystems.h"
+#include "InputMappingContext.h"
+#include "InputAction.h"
+#include "Shared/Player/GGwaPlayerController.h"
+
+void AGGwaCharacter::PossessedBy(AController* NewController) {
+	Super::PossessedBy(NewController);
+	InitASC();
+	if (ASC && HasAuthority()) {
+		for (int32 i = 0; i < SkillAbilities.Num(); ++i){
+			if (SkillAbilities[i]){
+				FGameplayAbilitySpec Spec(SkillAbilities[i], 1, static_cast<int32>(EAbilityInputID::Move) + i, this);
+				ASC->GiveAbility(Spec);
+			}
+		}
+
+		for (const FGameplayAbilitySpec& Spec : ASC->GetActivatableAbilities()){
+			UE_LOG(LogTemp, Warning, TEXT("Ability: %s | InputID: %d"),
+				*GetNameSafe(Spec.Ability), Spec.InputID);
+		}
+		ASC->RefreshAbilityActorInfo();
+	}
+}
+
+void AGGwaCharacter::OnRep_PlayerState() {
+	Super::OnRep_PlayerState();
+	InitASC();
+	if (auto PC = GetController()) {
+		if (auto GGwaPC = Cast<AGGwaPlayerController>(PC))	{
+			GGwaPC->InitClientWidget();
+		}
+	}
+}
+
+void AGGwaCharacter::InitASC() {
+	if (AGGwaPlayerState * State = GetPlayerState<AGGwaPlayerState>(); nullptr != State) {
+		ASC = Cast<UGGwaAbilitySystemComponent>(State->GetAbilitySystemComponent());
+		if (ASC) {
+			// ASC의 연결 정보를 부여, ASC의 owner, Replicated 객체를 지정
+			ASC->InitAbilityActorInfo(State, this);
+		}
+	}
+}
+
+
+void AGGwaCharacter::BeginPlay() {
+	Super::BeginPlay();
+	if (APlayerController * PC = Cast<APlayerController>(GetController()); nullptr != PC) {
+		UEnhancedInputLocalPlayerSubsystem * Subsystem = PC->GetLocalPlayer()->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>();
+		Subsystem->AddMappingContext(MappingContext, 0);
+	}
+	bUseControllerRotationYaw = false;
+	GetCharacterMovement()->bOrientRotationToMovement = true;
+
+}
+
+void AGGwaCharacter::Tick(float DeltaSeconds) {
+	Super::Tick(DeltaSeconds);
+	if (false == bIsFollowingPath && !IsLocallyControlled()) return;
+
+	if (!CurrentPath.IsValidIndex(CurrentPathIndex)) {
+		bIsFollowingPath = false;
+		CurrentPath.Empty();
+		CurrentPathIndex = 0;
+		GetCharacterMovement()->StopMovementImmediately();
+		return;
+	}
+	
+	FVector CurrentLocation = GetActorLocation();
+	FVector TargetPoint = CurrentPath[CurrentPathIndex];
+	TargetPoint.Z = CurrentLocation.Z;
+
+	FVector Direction = TargetPoint - CurrentLocation;
+	float Distance = Direction.Size();
+	auto Dir = Direction.GetSafeNormal();
+	if (ASC->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag("Skill"))) {
+		bIsFollowingPath = false;
+		CurrentPath.Empty();
+		CurrentPathIndex = 0;
+	}
+	if (Distance < AcceptanceRadius) {
+		CurrentPathIndex++;
+		if (!CurrentPath.IsValidIndex(CurrentPathIndex)) {
+			bIsFollowingPath = false;
+		}
+	}
+	else {
+
+		bool bCanMove = GetCharacterMovement()->MovementMode != MOVE_None;
+		UE_LOG(LogTemp, Warning, TEXT("Can Move (MovementMode != MOVE_None): %d"), bCanMove);
+
+		UE_LOG(LogTemp, Warning, TEXT("Movement Mode: %d"), (int32)GetCharacterMovement()->MovementMode);
+		UE_LOG(LogTemp, Warning, TEXT("Velocity: %s"), *GetCharacterMovement()->Velocity.ToString());
+		UE_LOG(LogTemp, Warning, TEXT("IsMovingOnGround: %d"), GetCharacterMovement()->IsMovingOnGround());
+		UE_LOG(LogTemp, Warning, TEXT("Controller: %s"), *GetController()->GetName());
+
+		Direction.Normalize();
+		AddMovementInput(Direction, 1.0,true);
+		UE_LOG(LogTemp, Log, TEXT("Current Actor Location : %s"), *CurrentLocation.ToString());
+	}
+}
+
+void AGGwaCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent){
+	Super::SetupPlayerInputComponent(PlayerInputComponent);
+	if (UEnhancedInputComponent* EIC = Cast<UEnhancedInputComponent>(PlayerInputComponent)){
+		for (int32 i = 0; i < SkillActions.Num(); ++i){
+			EIC->BindAction(SkillActions[i], ETriggerEvent::Triggered, this, &AGGwaCharacter::OnLocalSkillInput, i);
+			for (const FGameplayAbilitySpec& Spec : ASC->GetActivatableAbilities()){
+				UE_LOG(LogTemp, Warning, TEXT("Ability: %s"), *GetNameSafe(Spec.Ability));
+				if (IsLocallyControlled()) UE_LOG(LogTemp, Warning, TEXT("Client %s: Ability: %s"),*GetNameSafe(GetController()),*GetNameSafe(Spec.Ability));
+			}
+		}
+	}
+}
+
+
+bool AGGwaCharacter::OnSkillTriggered_Validate(const FGameplayEventData& EventData, int32 Index) {
+	if (GetLocalRole() != ROLE_Authority){
+		UE_LOG(LogTemp, Warning, TEXT("Validate: Not Authority"));
+		return false;
+	}
+
+	if (!SkillAbilities.IsValidIndex(Index) || !SkillAbilities[Index]){
+		UE_LOG(LogTemp, Warning, TEXT("Validate: Invalid Index %d"), Index);
+		return false;
+	}
+
+	if (!AbilityTags.IsValidIndex(Index) ||EventData.EventTag != AbilityTags[Index]){
+		UE_LOG(LogTemp, Warning, TEXT("Validate: EventTag mismatch (got %s, expected %s)"),
+			*EventData.EventTag.ToString(), *AbilityTags[Index].ToString());
+		return false;
+	}
+
+	if (EventData.Instigator != this){
+		UE_LOG(LogTemp, Warning, TEXT("Validate: Instigator mismatch"));
+		return false;
+	}
+
+	return true;
+}
+
+// Local Prediction
+void AGGwaCharacter::OnLocalSkillInput(const FInputActionInstance& Instance, int32 Index)
+{
+	if (!IsLocallyControlled() || !ASC || !SkillAbilities.IsValidIndex(Index)) return;
+
+	const FGameplayAbilitySpec* Spec = ASC->FindAbilitySpecFromClass(SkillAbilities[Index]);
+	if (!Spec) return;
+
+	// 클라이언트 예측 발동 (PredictionKey 생성됨)
+	bool bActivated = ASC->TryActivateAbility(Spec->Handle, true);
+
+	if (!bActivated){
+		UE_LOG(LogTemp, Warning, TEXT("TryActivateAbility failed for Index %d"), Index);
+	}
+}
+
+// OnSkillTriggered_Implementation()	서버 (RPC)	클라이언트 요청 받아 실행
+void AGGwaCharacter::OnSkillTriggered_Implementation(const FGameplayEventData& EventData, int32 Index) {
+	ExecuteAbility(EventData, Index);
+}
+
+
+
+
+// ExecuteAbility()	공통	실제 GA 발동 처리
+void AGGwaCharacter::ExecuteAbility(const FGameplayEventData& EventData, int32 Index) {
+	if (ASC && SkillAbilities.IsValidIndex(Index) && SkillAbilities[Index]){
+		AGGwaPlayerController * PC = Cast<AGGwaPlayerController>(GetController());
+		FGameplayAbilitySpec* Spec = ASC->FindAbilitySpecFromClass(SkillAbilities[Index]);
+		if (Spec == nullptr) {
+			UE_LOG(LogTemp, Warning, TEXT("ExecuteAbility: Spec is nullptr"));
+			return;
+		}
+		ASC->TryActivateAbility(Spec->Handle, true);
+	}
+}
+
+void AGGwaCharacter::SetMoveData_Implementation(const TArray<FVector>& Path, int32 PathIndex, bool bIsFollowing) {
+	this->CurrentPath = Path;
+	this->CurrentPathIndex = PathIndex;
+	this->bIsFollowingPath = bIsFollowing;
+}
+
+
+// OnLocalSkillInput()	클라이언트	입력 수신 → 서버 호출
+// 클라이언트에서 마우스 위치 기반 RotationEventData 전송
+// void AGGwaCharacter::OnLocalSkillInput(const FInputActionInstance& Instance, int32 Index)
+// {
+// 	if (IsLocallyControlled())
+// 	{
+// 		AGGwaPlayerController* PC = Cast<AGGwaPlayerController>(GetController());
+// 		if (PC)
+// 		{
+// 			FHitResult Hit;
+// 			if (PC->GetHitResultUnderCursor(ECC_Visibility, false, Hit))
+// 			{
+// 				FGameplayEventData EventData;
+// 				EventData.Instigator = this;
+// 				EventData.EventTag = AbilityTags[Index];
+// 				EventData.TargetData = UAbilitySystemBlueprintLibrary::AbilityTargetDataFromHitResult(Hit);
+// 				
+// 				// if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance()) {
+// 				// 	if (SkillMontages.IsValidIndex(Index) && SkillMontages[Index]) {
+// 				// 		AnimInstance->Montage_Play(SkillMontages[Index], 1.0f, EMontagePlayReturnType::MontageLength, 0.0f);
+// 				// 	}
+// 				// }
+//
+// 				//해당 부분의 RPC
+// 				OnSkillTriggered(EventData, Index);  // 클라 -> 서버 RPC 호출
+// 			}
+// 		}
+// 	}
+// }
+
+
+
+--- FILE: MyGame\Private\Shared\Player\GGwaPlayerController.cpp ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "Shared/Player/GGwaPlayerController.h"
+
+#include "AbilitySystemComponent.h"
+#include "Abilities/GameplayAbilityTypes.h"
+#include "Shared/GAS/GGwaAbilitySystemComponent.h"
+#include "Shared/Player/GGwaCharacter.h"
+#include "Shared/Player/GGwaPlayerState.h"
+
+AGGwaPlayerController::AGGwaPlayerController() {
+}
+
+void AGGwaPlayerController::BeginPlay() {
+	Super::BeginPlay();
+	bShowMouseCursor = true;
+	FInputModeGameAndUI inputMode;
+	inputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	inputMode.SetHideCursorDuringCapture(false);
+	SetInputMode(inputMode);
+
+	UE_LOG(LogTemp, Warning, TEXT("IsServer: %d | IsLocallyControlled: %d"), HasAuthority(), IsLocalController());
+}
+
+void AGGwaPlayerController::Client_ApplyAbilityDataAsset_Implementation(UBaseDataAsset* Data) {
+	UE_LOG(LogTemp, Log, TEXT("ApplyAbility Data Called From Server"));
+}
+
+void AGGwaPlayerController::AcknowledgePossession(class APawn* PossessedPawn) {
+	Super::AcknowledgePossession(PossessedPawn);
+	AGGwaCharacter * MyCharacter = Cast<AGGwaCharacter>(PossessedPawn);
+	if (nullptr != MyCharacter) {
+		UE_LOG(LogTemp,Warning,TEXT("AGGwaPlayerController::AcknowledgePossession : Pawn Possessed"));
+		UGGwaAbilitySystemComponent * ASC = Cast<UGGwaAbilitySystemComponent>( GetPlayerState<AGGwaPlayerState>()->GetAbilitySystemComponent());
+		if (ASC) {
+			ASC->BindAbilityActivationToInputComponent(InputComponent, FGameplayAbilityInputBinds("Confirm", "Cancel", FTopLevelAssetPath(TEXT("/Script/MyGame"), TEXT("EAbilityInputID"))));
+		}
+	}
+}
+
+
+--- FILE: MyGame\Private\Shared\Player\GGwaPlayerState.cpp ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "Shared/Player/GGwaPlayerState.h"
+#include "Shared/GAS/GGwaAttributeSet.h"
+#include "Shared/GAS/GGwaAbilitySystemComponent.h"
+
+
+AGGwaPlayerState::AGGwaPlayerState() {
+	ASC = CreateDefaultSubobject<UGGwaAbilitySystemComponent>("ASC");
+	ASC->SetIsReplicated(true);
+	ASC->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
+	AttributeSet = CreateDefaultSubobject<UGGwaAttributeSet>("AttributeSet");
+}
+
+UAbilitySystemComponent* AGGwaPlayerState::GetAbilitySystemComponent() const {
+	return ASC.Get() ? ASC.Get() : nullptr;
+}
+
+
+--- FILE: MyGame\Private\Shared\Utill\USkillHelper.cpp ---
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "Shared/Utill/USkillHelper.h"
+
+
+ESkillInputSlot USkillHelper::GetKeyFromIndex(int32 SlotIndex) {
+    static const TArray<ESkillInputSlot> IndexToKey ={
+        ESkillInputSlot::None,
+            ESkillInputSlot::Q,
+            ESkillInputSlot::W,
+            ESkillInputSlot::E,
+            ESkillInputSlot::R,
+            ESkillInputSlot::A,
+            ESkillInputSlot::S,
+            ESkillInputSlot::D,
+            ESkillInputSlot::F
+        };
+
+    return IndexToKey.IsValidIndex(SlotIndex) ? IndexToKey[SlotIndex] : ESkillInputSlot::None;
+}
+
+int USkillHelper::GetValueFromKey(ESkillInputSlot Slot){
+    return static_cast<int>(Slot);
+}
+
+FString USkillHelper::GetKeyString(ESkillInputSlot InputSlot) {
+    const UEnum *EnumPtr = StaticEnum<ESkillInputSlot>();
+    return EnumPtr ? EnumPtr->GetDisplayNameTextByValue(static_cast<int64>(InputSlot)).ToString() : FString("-");
+}
+
+
+
+
+--- FILE: MyGame\Public\GGwaAssetManager.h ---
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Engine/AssetManager.h"
+#include "GGwaAssetManager.generated.h"
+
+/**
+ * 
+ */
+UCLASS()
+class MYGAME_API UGGwaAssetManager : public UAssetManager {
+	GENERATED_BODY()
+public:
+	static const FPrimaryAssetType SkillType;
+
+	virtual void StartInitialLoading() override;
+	virtual void FinishInitialLoading() override;
+};
+
+
+--- FILE: MyGame\Public\Shared\Data\BaseDataAsset.h ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
+#include "Engine/DataAsset.h"
+#include "Engine/Texture2D.h"
+#include "BaseDataAsset.generated.h"
+
+class UUserWidget;
+/**
+ * 
+ */
+UCLASS(BlueprintType)
+class MYGAME_API UBaseDataAsset : public UPrimaryDataAsset
+{
+	GENERATED_BODY()
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	FText DisplayName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	FText Description;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UTexture2D* Image;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	UUserWidget* Tooltip;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	FGameplayTag UniqueTag;  // 고유 식별용
+};
+
+
+--- FILE: MyGame\Public\Shared\Data\BuffDataAsset.h ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "BaseDataAsset.h"
+#include "BuffDataAsset.generated.h"
+
+class UGameplayEffect;
+/**
+ * 
+ */
+UCLASS()
+class MYGAME_API UBuffDataAsset : public UBaseDataAsset
+{
+	GENERATED_BODY()
+	
+	
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float Duration;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	bool bIsDebuff;
+	virtual FPrimaryAssetId GetPrimaryAssetId() const override {
+		return FPrimaryAssetId("Buff", GetFName());
+	}
+};
+
+
+--- FILE: MyGame\Public\Shared\Data\CombinedAbilityDataAsset.h ---
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "UObject/Object.h"
+#include "Shared/Data/SkillDataAsset.h"
+#include "Shared/Data/BuffDataAsset.h"
+#include "Shared/Data/ItemDataAsset.h"
+
+#include "CombinedAbilityDataAsset.generated.h"
+
+/**
+ * 
+ */
+
+
+UCLASS()
+class MYGAME_API UCombinedAbilityDataAsset : public UObject {
+	GENERATED_BODY()
+public:
+	UPROPERTY(VIsibleAnywhere)
+	TObjectPtr<USkillDataAsset> SkillDataAsset;
+	UPROPERTY(VIsibleAnywhere)
+	TObjectPtr<UBuffDataAsset> BuffDataAsset;
+	UPROPERTY(VIsibleAnywhere)
+	TObjectPtr<UItemDataAsset> ItemDataAsset;
+
+	template<typename T>
+	T* GetData() const;
+	
+	void SetData(USkillDataAsset* SkillData = nullptr, UBuffDataAsset* BuffData = nullptr, UItemDataAsset* ItemData = nullptr);
+};
+
+template<typename T>
+T* UCombinedAbilityDataAsset::GetData() const
+{
+	if (TIsSame<T, USkillDataAsset>::Value) return Cast<T>(SkillDataAsset);
+	if (TIsSame<T, UBuffDataAsset>::Value) return Cast<T>(BuffDataAsset);
+	if (TIsSame<T, UItemDataAsset>::Value) return Cast<T>(ItemDataAsset);
+	return nullptr;
+}
+
+
+--- FILE: MyGame\Public\Shared\Data\FSkillDataTypeContainer.h ---
+﻿#pragma once
+
+#include "FSkillDataTypeContainer.generated.h"
+
+
+UENUM(BlueprintType)
+enum class ETargetDetectType : uint8 {
+	Self,           // 자기 자신
+	AreaAround,     // 주변 범위 감지 (근접)
+	Directional,    // 방향 범위 (예: 전방 베기)
+	TargetActor,    // 타겟 지정 (클릭 대상)
+	GroundLocation,  // 지면 클릭 위치 기준
+	autopilot      // 자동 조준 (예: 스킬 사용 시 자동으로 적을 조준)
+};
+
+USTRUCT(BlueprintType)
+struct FSkillShapeConfig {
+	GENERATED_BODY()
+
+	UPROPERTY(EditDefaultsOnly, Category = "Trace")
+	float TraceDistance = 500.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Trace")
+	FVector BoxHalfExtent = FVector(100.f, 100.f, 100.f);
+
+	UPROPERTY(EditDefaultsOnly, Category = "Trace")
+	float SphereRadius = 150.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Trace")
+	TEnumAsByte<ECollisionChannel> TraceChannel = ECC_Pawn;
+};
+
+--- FILE: MyGame\Public\Shared\Data\ItemDataAsset.h ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "BaseDataAsset.h"
+#include "ItemDataAsset.generated.h"
+UENUM(BlueprintType)
+enum class EItemType : uint8
+{
+	Consumable,
+	Equipment,
+	Quest,
+	Misc
+};
+
+/**
+ * 
+ */
+class UGameplayEffect;
+UCLASS()
+class MYGAME_API UItemDataAsset : public UBaseDataAsset
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	EItemType ItemType;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	int32 MaxStackCount;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	TSubclassOf<UGameplayEffect> UseEffect;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Buff")
+	TArray<FPrimaryAssetId> AppliedBuffs;
+};
+
+
+--- FILE: MyGame\Public\Shared\Data\LocalDataBaseLoader.h ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Engine/AssetManager.h"
+#include "Shared/Data/BaseDataAsset.h"
+#include "LocalDataBaseLoader.generated.h"
+
+DECLARE_DELEGATE_OneParam(FOnSkillDataLoaded, UBaseDataAsset*);
+
+/**
+ * 
+ */
+class UCombinedAbilityDataAsset;
+UCLASS()
+class MYGAME_API ULocalDataBaseLoader : public UObject
+{
+	GENERATED_BODY()
+public:
+	void Initialize();
+	bool GetPrimaryAssetId(int32 SkillID, FPrimaryAssetId& OutId) const;
+
+	// AssetId 로부터 실제 DataAsset 꺼내기 (동기)
+	template<typename T>
+	T* GetDataFromAssetId(const FPrimaryAssetId& AssetId, bool bSync = true){
+		UAssetManager& Manager = UAssetManager::Get();
+
+		if (UObject* Obj = Manager.GetPrimaryAssetObject(AssetId)){
+			return Cast<T>(Obj);
+		}
+
+		// 비동기 로드시 콜백 필요
+		Manager.LoadPrimaryAsset(
+			AssetId,{},FStreamableDelegate(),0
+		);
+
+		return Cast<T>( Manager.GetPrimaryAssetObject(AssetId));
+	}
+private:
+	TMap<int32, FPrimaryAssetId> SkillIdToAssetId;
+};
+
+--- FILE: MyGame\Public\Shared\Data\SkillDataAsset.h ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "BaseDataAsset.h"
+#include "FSkillDataTypeContainer.h"
+#include "Shared/GAS/SkillInputSlot.h"
+#include "SkillDataAsset.generated.h"
+
+
+class USkillTargetBase;
+class UGameplayEffect;
+/**
+ * 
+ */
+UCLASS()
+class MYGAME_API USkillDataAsset : public UBaseDataAsset
+{
+	GENERATED_BODY()
+public:
+	// 쿨타임 (초 단위)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Skill")
+	float CoolTime = 0.f;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Skill")
+	FGameplayTag CooldownTag;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Skill")
+	FSkillShapeConfig SkillShapeConfig;
+
+	//EIC키 와 연동을 위한 스킬 인덱스
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Skill")
+	ESkillInputSlot SkillSlotIndex;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Skill")
+	int32 SkillID = 999;
+	
+	// 타겟 선택 전략 (예: 단일 타겟, 범위, 셀프 등)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Targeting")
+	TSubclassOf<USkillTargetBase> TargetStrategyClass;
+
+	// 실제로 적용되는 GameplayEffect 클래스
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Effect")
+	TSubclassOf<UGameplayEffect> GEClass;
+
+	// CoolTime GameplayEffect 클래스
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Effect")
+	TSubclassOf<UGameplayEffect> CoolTimeGEClass;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Skill")
+	TArray<FPrimaryAssetId> AppliedBuffs;
+
+	// 시전 애니메이션
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Visual")
+	UAnimMontage* CastMontage;
+
+	// 시전 효과음
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Visual")
+	USoundBase* CastSound;
+
+	virtual FPrimaryAssetId GetPrimaryAssetId() const override {
+		return FPrimaryAssetId("Skill", GetFName());
+	}
+};
+
+
+--- FILE: MyGame\Public\Shared\GAS\AbilityInputID.h ---
+#pragma once
+
+#include "AbilityInputID.generated.h"
+
+
+UENUM(BlueprintType)
+enum class EAbilityInputID : uint8
+{
+    None UMETA(displayname = "None"),
+    Confirm UMETA(displayname = "Confirm"),
+    Cancel UMETA(displayname = "Cancel"),
+    Move UMETA(displayname = "Move"),
+    Skill1 UMETA(displayname = "Skill1"),
+    Skill2 UMETA(displayname = "Skill2"),
+    Skill3 UMETA(displayname = "Skill3"),
+    Skill4 UMETA(displayname = "Skill4"),
+    Skill5 UMETA(displayname = "Skill5"),
+    Skill6 UMETA(displayname = "Skill6"),
+    Skill7 UMETA(displayname = "Skill7"),
+    Skill8 UMETA(displayname = "Skill8")
+};
+
+
+--- FILE: MyGame\Public\Shared\GAS\GGwaAbilitySystemComponent.h ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "AbilitySystemComponent.h"
+#include "GGwaAbilitySystemComponent.generated.h"
+class ULocalDataBaseLoader;
+class UBaseDataAsset; 
+// DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnCooldownTagChanged, FGameplayTag, CooldownTag, float, TimeRemaining);
+
+
+class UCombinedAbilityDataAsset;
+UCLASS()
+class MYGAME_API UGGwaAbilitySystemComponent : public UAbilitySystemComponent
+{
+	GENERATED_BODY()
+public:
+	
+	UGGwaAbilitySystemComponent();
+	// UPROPERTY(BlueprintAssignable)
+	// FOnCooldownTagChanged OnCooldownTagChanged;
+	virtual void BeginPlay() override;
+	UPROPERTY()
+	TObjectPtr<ULocalDataBaseLoader> LocalDataBaseLoader;
+private:
+	void OnGameplayAppliedCallback(UAbilitySystemComponent* ASC, const FGameplayEffectSpec& Spec, FActiveGameplayEffectHandle Handle);
+	void ProcessGameplayEffect(const FGameplayEffectSpec& Spec, bool bIsServer) const;
+	// TObjectPtr<UCombinedAbilityDataAsset> CachedAbilityDataAsset;
+};
+
+
+--- FILE: MyGame\Public\Shared\GAS\GGwaAttributeSet.h ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "AttributeSet.h"
+#include "AbilitySystemComponent.h"
+#include "GameplayEffectExtension.h"
+#include "GGwaAttributeSet.generated.h"
+
+/**
+ * 
+ */
+
+
+#define ATTRIBUTE_ACCESSORS(ClassName, PropertyName) \
+GAMEPLAYATTRIBUTE_PROPERTY_GETTER(ClassName, PropertyName) \
+GAMEPLAYATTRIBUTE_VALUE_GETTER(PropertyName) \
+GAMEPLAYATTRIBUTE_VALUE_SETTER(PropertyName) \
+GAMEPLAYATTRIBUTE_VALUE_INITTER(PropertyName)
+
+#define DEFINE_ONREP_ATTRIBUTE(ClassName, PropertyName) \
+void ClassName::OnRep_##PropertyName(const FGameplayAttributeData& OldValue) const \
+{ \
+GAMEPLAYATTRIBUTE_REPNOTIFY(ClassName, PropertyName, OldValue); \
+}
+
+UCLASS()
+class MYGAME_API UGGwaAttributeSet : public UAttributeSet
+{
+	GENERATED_BODY()
+	
+public:
+	UGGwaAttributeSet();
+
+	UPROPERTY(BlueprintReadOnly, Category = "Attribute", ReplicatedUsing=OnRep_Health)
+	FGameplayAttributeData Health;
+	ATTRIBUTE_ACCESSORS(UGGwaAttributeSet, Health)
+
+	UPROPERTY(BlueprintReadOnly, Category = "Attribute", ReplicatedUsing=OnRep_Mana)
+	FGameplayAttributeData Mana;
+	ATTRIBUTE_ACCESSORS(UGGwaAttributeSet, Mana)
+
+	UPROPERTY(BlueprintReadOnly, Category = "Attribute", ReplicatedUsing=OnRep_MaxHealth)
+	FGameplayAttributeData MaxHealth;
+	ATTRIBUTE_ACCESSORS(UGGwaAttributeSet, MaxHealth)
+
+	UPROPERTY(BlueprintReadOnly, Category = "Attribute", ReplicatedUsing=OnRep_MaxMana)
+	FGameplayAttributeData MaxMana;
+	ATTRIBUTE_ACCESSORS(UGGwaAttributeSet, MaxMana)
+
+	UPROPERTY(BlueprintReadOnly, Category = "Attribute", ReplicatedUsing = OnRep_Defense)
+	FGameplayAttributeData Defense;
+	ATTRIBUTE_ACCESSORS(UGGwaAttributeSet, Defense)
+
+	UPROPERTY(BlueprintReadOnly, Category = "Attribute", ReplicatedUsing = OnRep_Critical)
+	FGameplayAttributeData Critical;
+	ATTRIBUTE_ACCESSORS(UGGwaAttributeSet, Critical)
+
+	UPROPERTY(BlueprintReadOnly, Category = "Attribute", ReplicatedUsing = OnRep_Speed)
+	FGameplayAttributeData Speed;
+	ATTRIBUTE_ACCESSORS(UGGwaAttributeSet, Speed)
+	
+	UPROPERTY(BlueprintReadOnly, Category = "Attribute", ReplicatedUsing = OnRep_Damage)
+	FGameplayAttributeData Damage;
+	ATTRIBUTE_ACCESSORS(UGGwaAttributeSet, Damage)
+
+
+	UFUNCTION()
+	void OnRep_Health(const FGameplayAttributeData& Old) const;
+	UFUNCTION()
+	void OnRep_Mana(const FGameplayAttributeData& Old) const;
+	UFUNCTION()
+	void OnRep_MaxHealth(const FGameplayAttributeData& Old) const;
+	UFUNCTION()
+	void OnRep_MaxMana(const FGameplayAttributeData& Old) const;
+	UFUNCTION()
+	void OnRep_Defense(const FGameplayAttributeData& Old) const;
+	UFUNCTION()
+	void OnRep_Critical(const FGameplayAttributeData& Old) const;
+	UFUNCTION()
+	void OnRep_Speed(const FGameplayAttributeData& Old) const;
+	UFUNCTION()
+	void OnRep_Damage(const FGameplayAttributeData& Old) const;
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue) override;
+	virtual void PostGameplayEffectExecute(const struct FGameplayEffectModCallbackData& Data) override;
+};
+
+
+
+--- FILE: MyGame\Public\Shared\GAS\SkillInputSlot.h ---
+﻿#pragma once
+
+UENUM(BlueprintType)
+enum class ESkillInputSlot : uint8 {
+	None UMETA(DisplayName = "None"),
+	Q UMETA(DisplayName = "Q"),
+	W UMETA(DisplayName = "W"),
+	E UMETA(DisplayName = "E"),
+	R UMETA(DisplayName = "R"),
+	A UMETA(DisplayName = "A"),
+	S UMETA(DisplayName = "S"),
+	D UMETA(DisplayName = "D"),
+	F UMETA(DisplayName = "F")
+};
+
+
+
+--- FILE: MyGame\Public\Shared\GAS\AbilityTask\GGwaPlayMontageAndWaitForEvent.h ---
+﻿// Copyright 2020 Dan Kestranek.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Abilities/Tasks/AbilityTask.h"
+#include "GGwaPlayMontageAndWaitForEvent.generated.h"
+
+class UGDAbilitySystemComponent;
+
+/** Delegate type used, EventTag and Payload may be empty if it came from the montage callbacks */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FGDPlayMontageAndWaitForEventDelegate, FGameplayTag, EventTag, FGameplayEventData, EventData);
+
+/**
+ * This task combines PlayMontageAndWait and WaitForEvent into one task, so you can wait for multiple types of activations such as from a melee combo
+ * Much of this code is copied from one of those two ability tasks
+ * This is a good task to look at as an example when creating game-specific tasks
+ * It is expected that each game will have a set of game-specific tasks to do what they want
+ */
+UCLASS()
+class MYGAME_API UGGwaPlayMontageAndWaitForEvent : public UAbilityTask
+{
+	GENERATED_BODY()
+	
+public:
+	// Constructor and overrides
+	UGGwaPlayMontageAndWaitForEvent(const FObjectInitializer& ObjectInitializer);
+
+	/**
+	* The Blueprint node for this task, PlayMontageAndWaitForEvent, has some black magic from the plugin that automagically calls Activate()
+	* inside of K2Node_LatentAbilityCall as stated in the AbilityTask.h. Ability logic written in C++ probably needs to call Activate() itself manually.
+	*/
+	virtual void Activate() override;
+	virtual void ExternalCancel() override;
+	virtual FString GetDebugString() const override;
+	virtual void OnDestroy(bool AbilityEnded) override;
+
+	/** The montage completely finished playing */
+	UPROPERTY(BlueprintAssignable)
+	FGDPlayMontageAndWaitForEventDelegate OnCompleted;
+
+	/** The montage started blending out */
+	UPROPERTY(BlueprintAssignable)
+	FGDPlayMontageAndWaitForEventDelegate OnBlendOut;
+
+	/** The montage was interrupted */
+	UPROPERTY(BlueprintAssignable)
+	FGDPlayMontageAndWaitForEventDelegate OnInterrupted;
+
+	/** The ability task was explicitly cancelled by another ability */
+	UPROPERTY(BlueprintAssignable)
+	FGDPlayMontageAndWaitForEventDelegate OnCancelled;
+
+	/** One of the triggering gameplay events happened */
+	UPROPERTY(BlueprintAssignable)
+	FGDPlayMontageAndWaitForEventDelegate EventReceived;
+
+	/**
+	 * Play a montage and wait for it end. If a gameplay event happens that matches EventTags (or EventTags is empty), the EventReceived delegate will fire with a tag and event data.
+	 * If StopWhenAbilityEnds is true, this montage will be aborted if the ability ends normally. It is always stopped when the ability is explicitly cancelled.
+	 * On normal execution, OnBlendOut is called when the montage is blending out, and OnCompleted when it is completely done playing
+	 * OnInterrupted is called if another montage overwrites this, and OnCancelled is called if the ability or task is cancelled
+	 *
+	 * @param TaskInstanceName Set to override the name of this task, for later querying
+	 * @param MontageToPlay The montage to play on the character
+	 * @param EventTags Any gameplay events matching this tag will activate the EventReceived callback. If empty, all events will trigger callback
+	 * @param Rate Change to play the montage faster or slower
+	 * @param bStopWhenAbilityEnds If true, this montage will be aborted if the ability ends normally. It is always stopped when the ability is explicitly cancelled
+	 * @param AnimRootMotionTranslationScale Change to modify size of root motion or set to 0 to block it entirely
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Ability|Tasks", meta = (HidePin = "OwningAbility", DefaultToSelf = "OwningAbility", BlueprintInternalUseOnly = "TRUE"))
+	static UGGwaPlayMontageAndWaitForEvent* PlayMontageAndWaitForEvent(
+			UGameplayAbility* OwningAbility,
+			FName TaskInstanceName,
+			UAnimMontage* MontageToPlay,
+			FGameplayTagContainer EventTags,
+			float Rate = 1.f,
+			FName StartSection = NAME_None,
+			bool bStopWhenAbilityEnds = true,
+			float AnimRootMotionTranslationScale = 1.f);
+
+private:
+	/** Montage that is playing */
+	UPROPERTY()
+	UAnimMontage* MontageToPlay;
+
+	/** List of tags to match against gameplay events */
+	UPROPERTY()
+	FGameplayTagContainer EventTags;
+
+	/** Playback rate */
+	UPROPERTY()
+	float Rate;
+
+	/** Section to start montage from */
+	UPROPERTY()
+	FName StartSection;
+
+	/** Modifies how root motion movement to apply */
+	UPROPERTY()
+	float AnimRootMotionTranslationScale;
+
+	/** Rather montage should be aborted if ability ends */
+	UPROPERTY()
+	bool bStopWhenAbilityEnds;
+
+	/** Checks if the ability is playing a montage and stops that montage, returns true if a montage was stopped, false if not. */
+	bool StopPlayingMontage();
+
+	void OnMontageBlendingOut(UAnimMontage* Montage, bool bInterrupted);
+	void OnAbilityCancelled();
+	void OnMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+	void OnGameplayEvent(FGameplayTag EventTag, const FGameplayEventData* Payload);
+
+	FOnMontageBlendingOutStarted BlendingOutDelegate;
+	FOnMontageEnded MontageEndedDelegate;
+	FDelegateHandle CancelledHandle;
+	FDelegateHandle EventHandle;
+	
+};
+
+
+--- FILE: MyGame\Public\Shared\GAS\Cue\UGCN_Skill1_DirectionPreview.h ---
+#pragma once
+
+#include "CoreMinimal.h"
+#include "GameplayCueNotify_Looping.h"
+#include "Components/DecalComponent.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "UGCN_Skill1_DirectionPreview.generated.h"
+
+class USkillDataAsset;
+class ULocalDataBaseLoader;
+UCLASS()
+class MYGAME_API AUGCN_Skill1_DirectionPreview : public AGameplayCueNotify_Looping
+{
+	GENERATED_BODY()
+
+public:
+	AUGCN_Skill1_DirectionPreview();
+
+	virtual bool OnActive_Implementation(AActor* MyTarget, const FGameplayCueParameters& Parameters) override;
+	virtual bool WhileActive_Implementation(AActor* MyTarget, const FGameplayCueParameters& Parameters) override;
+	virtual bool OnRemove_Implementation(AActor* MyTarget, const FGameplayCueParameters& Parameters) override;
+
+protected:
+	UPROPERTY(EditDefaultsOnly, Category = "Cue|Decal")
+	UMaterialInterface* BaseDecalMaterial;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Cue|Decal")
+	FVector DecalSize;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Cue|Timing")
+	float Duration;
+
+private:
+	bool bIsPlaying;
+	UPROPERTY()
+	UDecalComponent* DecalComponent;
+
+	UPROPERTY()
+	UMaterialInstanceDynamic* DynMaterial;
+
+	TObjectPtr<ULocalDataBaseLoader> LocalDataBaseLoader;
+	TObjectPtr<USkillDataAsset> SkillDataAsset;
+	
+	FTimerHandle ProgressUpdateTimerHandle;
+
+	float ElapsedTime = 0.f;
+	void UpdateProgress();
+};
+
+
+--- FILE: MyGame\Public\Shared\GAS\Skill\GA_Base.h ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Abilities/GameplayAbility.h"
+#include "Shared/GAS/SkillTargetPolicy/FSkillContext.h"
+#include "Shared/Data/CombinedAbilityDataAsset.h"
+#include "GA_Base.generated.h"
+
+
+UCLASS(BlueprintType, Blueprintable)
+class MYGAME_API UGA_Base : public UGameplayAbility
+{
+	GENERATED_BODY()
+public:
+	static const FName SkillAssetTypeTag;
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Skill")
+	FSkillContext SkillContext;
+
+	UPROPERTY(VisibleAnywhere)
+	FVector CacheHitLocation;
+	// virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData);
+protected:
+	virtual FSkillContext BuildSkillContext(const FGameplayAbilityActorInfo *ActorInfo);
+	void PreProcessSkillStart(const FGameplayAbilityActorInfo* ActorInfo);
+	UGGwaAbilitySystemComponent* GetTargetASC(AActor* Actor) const;
+};
+
+
+--- FILE: MyGame\Public\Shared\GAS\Skill\GA_MoveAbility.h ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Abilities/GameplayAbility.h"
+#include "GA_MoveAbility.generated.h"
+
+/**
+ * 
+ */
+class AGGwaCharacter;
+UCLASS()
+class MYGAME_API UGA_MoveAbility : public UGameplayAbility
+{
+	GENERATED_BODY()
+
+public:
+	UGA_MoveAbility();
+	UPROPERTY(EditAnywhere, Category="LineTrace")
+	TSubclassOf<AActor> LineTraceRing;
+
+	// UPROPERTY(VisibleAnywhere, Category="LineTrace")
+	// TObjectPtr<AActor> Actor;
+	// UPROPERTY(VisibleAnywhere, Category="LineTrace")
+	// TObjectPtr<AGGwaCharacter> Character;
+
+	UFUNCTION()
+	void OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Data);
+	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
+};
+
+
+--- FILE: MyGame\Public\Shared\GAS\Skill\GA_Skill1.h ---
+// GA_Skill1.h
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "../AbilityInputID.h"
+#include "GA_Base.h"
+#include "Abilities/Tasks/AbilityTask_WaitTargetData.h"
+#include "Shared/GAS/AbilityTask/GGwaPlayMontageAndWaitForEvent.h"
+#include "GA_Skill1.generated.h"
+
+class USkillDataAsset;
+class USkillTargetBase;
+
+UCLASS()
+class MYGAME_API UGA_Skill1 : public UGA_Base
+{
+	GENERATED_BODY()
+
+public:
+	EAbilityInputID AbilityInputID;
+	UGA_Skill1();
+
+	/** 스킬 데이터 에셋 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Data")
+	TObjectPtr<USkillDataAsset> SkillDataAsset;
+
+	virtual void OnAvatarSet(
+		const FGameplayAbilityActorInfo* ActorInfo,
+		const FGameplayAbilitySpec& Spec
+	) override;
+
+	virtual void ActivateAbility(
+		const FGameplayAbilitySpecHandle Handle,
+		const FGameplayAbilityActorInfo* ActorInfo,
+		const FGameplayAbilityActivationInfo ActivationInfo,
+		const FGameplayEventData* TriggerEventData
+	) override;
+
+private:
+	UFUNCTION()
+	void OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Data);
+
+	UFUNCTION()
+	void OnTargetDataCancelled(const FGameplayAbilityTargetDataHandle& Data);
+
+	UFUNCTION()
+	void OnMontageCompleted(FGameplayTag EventTag, FGameplayEventData EventData);
+
+	UFUNCTION()
+	void OnMontageInterrupted(FGameplayTag EventTag, FGameplayEventData EventData);
+	FVector HitPoint;
+};
+
+
+--- FILE: MyGame\Public\Shared\GAS\Skill\GA_Skill2.h ---
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "GA_Base.h"
+#include "Shared/GAS/Interface/ICustomAbilityTaskInterface.h"
+#include "GA_Skill2.generated.h"
+
+class UBuffDataAsset;
+class USkillDataAsset;
+class AGameplayAbilityTargetActor;
+UCLASS()
+class MYGAME_API UGA_Skill2 : public UGA_Base, public ICustomAbilityTaskInterface{
+	GENERATED_BODY()
+public:
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<AGameplayAbilityTargetActor> AbilityTargetActorClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category= "Data")
+	TObjectPtr<USkillDataAsset> SkillDataAsset;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category= "Data")
+	TObjectPtr<UBuffDataAsset> BuffDataAsset;
+	
+	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
+private:
+	virtual UAbilityTask_WaitTargetData* GetTargetDataTask() override;
+	
+	UFUNCTION()
+	virtual void OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Data) override;
+	UFUNCTION()
+	virtual void OnTargetDataCancelled(const FGameplayAbilityTargetDataHandle& Data) override;
+};
+
+
+--- FILE: MyGame\Public\Shared\GAS\Skill\GA_Skill3.h ---
+#pragma once
+
+#include "CoreMinimal.h"
+#include "../AbilityInputID.h"
+#include "GA_Base.h"
+#include "GA_Skill3.generated.h"
+
+class UBuffDataAsset;
+class USkillDataAsset;
+class UPrimaryDataAsset;
+
+UCLASS()
+class MYGAME_API UGA_Skill3 : public UGA_Base
+{
+	GENERATED_BODY()
+
+public:
+	UGA_Skill3();
+
+	UPROPERTY()
+	EAbilityInputID AbilityInputID;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
+	TObjectPtr<USkillDataAsset> SkillDataAsset;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
+	TObjectPtr<UBuffDataAsset> BuffDataAsset;
+
+	virtual void ActivateAbility(
+		const FGameplayAbilitySpecHandle Handle,
+		const FGameplayAbilityActorInfo* ActorInfo,
+		const FGameplayAbilityActivationInfo ActivationInfo,
+		const FGameplayEventData* TriggerEventData
+	) override;
+};
+
+
+--- FILE: MyGame\Public\Shared\GAS\Skill\GA_Skill4.h ---
+#pragma once
+
+#include "CoreMinimal.h"
+#include "../AbilityInputID.h"
+#include "GA_Base.h"
+#include "GA_Skill4.generated.h"
+
+class UBuffDataAsset;
+class USkillDataAsset;
+class UPrimaryDataAsset;
+
+UCLASS()
+class MYGAME_API UGA_Skill4 : public UGA_Base
+{
+	GENERATED_BODY()
+
+public:
+	UGA_Skill4();
+
+	UPROPERTY()
+	EAbilityInputID AbilityInputID;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
+	TObjectPtr<USkillDataAsset> SkillDataAsset;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
+	TObjectPtr<UBuffDataAsset> BuffDataAsset;
+
+	virtual void ActivateAbility(
+		const FGameplayAbilitySpecHandle Handle,
+		const FGameplayAbilityActorInfo* ActorInfo,
+		const FGameplayAbilityActivationInfo ActivationInfo,
+		const FGameplayEventData* TriggerEventData
+	) override;
+};
+
+
+--- FILE: MyGame\Public\Shared\GAS\Skill\GA_Skill5.h ---
+#pragma once
+
+#include "CoreMinimal.h"
+#include "../AbilityInputID.h"
+#include "GA_Base.h"
+#include "GA_Skill5.generated.h"
+
+class UBuffDataAsset;
+class USkillDataAsset;
+class UPrimaryDataAsset;
+
+UCLASS()
+class MYGAME_API UGA_Skill5 : public UGA_Base
+{
+	GENERATED_BODY()
+
+public:
+	UGA_Skill5();
+
+	UPROPERTY()
+	EAbilityInputID AbilityInputID;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
+	TObjectPtr<USkillDataAsset> SkillDataAsset;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
+	TObjectPtr<UBuffDataAsset> BuffDataAsset;
+
+	virtual void ActivateAbility(
+		const FGameplayAbilitySpecHandle Handle,
+		const FGameplayAbilityActorInfo* ActorInfo,
+		const FGameplayAbilityActivationInfo ActivationInfo,
+		const FGameplayEventData* TriggerEventData
+	) override;
+};
+
+
+--- FILE: MyGame\Public\Shared\GAS\Skill\GA_Skill6.h ---
+#pragma once
+
+#include "CoreMinimal.h"
+#include "../AbilityInputID.h"
+#include "GA_Base.h"
+#include "GA_Skill6.generated.h"
+
+class UBuffDataAsset;
+class USkillDataAsset;
+class UPrimaryDataAsset;
+
+UCLASS()
+class MYGAME_API UGA_Skill6 : public UGA_Base
+{
+	GENERATED_BODY()
+
+public:
+	UGA_Skill6();
+
+	UPROPERTY()
+	EAbilityInputID AbilityInputID;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
+	TObjectPtr<USkillDataAsset> SkillDataAsset;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
+	TObjectPtr<UBuffDataAsset> BuffDataAsset;
+
+	virtual void ActivateAbility(
+		const FGameplayAbilitySpecHandle Handle,
+		const FGameplayAbilityActorInfo* ActorInfo,
+		const FGameplayAbilityActivationInfo ActivationInfo,
+		const FGameplayEventData* TriggerEventData
+	) override;
+};
+
+
+--- FILE: MyGame\Public\Shared\GAS\Skill\GA_Skill7.h ---
+#pragma once
+
+#include "CoreMinimal.h"
+#include "../AbilityInputID.h"
+#include "GA_Base.h"
+#include "GA_Skill7.generated.h"
+
+class UBuffDataAsset;
+class USkillDataAsset;
+class UPrimaryDataAsset;
+
+UCLASS()
+class MYGAME_API UGA_Skill7 : public UGA_Base
+{
+	GENERATED_BODY()
+
+public:
+	UGA_Skill7();
+
+	UPROPERTY()
+	EAbilityInputID AbilityInputID;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
+	TObjectPtr<USkillDataAsset> SkillDataAsset;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
+	TObjectPtr<UBuffDataAsset> BuffDataAsset;
+
+	virtual void ActivateAbility(
+		const FGameplayAbilitySpecHandle Handle,
+		const FGameplayAbilityActorInfo* ActorInfo,
+		const FGameplayAbilityActivationInfo ActivationInfo,
+		const FGameplayEventData* TriggerEventData
+	) override;
+};
+
+
+--- FILE: MyGame\Public\Shared\GAS\Skill\GA_Skill8.h ---
+#pragma once
+
+#include "CoreMinimal.h"
+#include "../AbilityInputID.h"
+#include "GA_Base.h"
+#include "GA_Skill8.generated.h"
+
+class UBuffDataAsset;
+class USkillDataAsset;
+class UPrimaryDataAsset;
+
+UCLASS()
+class MYGAME_API UGA_Skill8 : public UGA_Base
+{
+	GENERATED_BODY()
+
+public:
+	UGA_Skill8();
+
+	UPROPERTY()
+	EAbilityInputID AbilityInputID;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
+	TObjectPtr<USkillDataAsset> SkillDataAsset;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
+	TObjectPtr<UBuffDataAsset> BuffDataAsset;
+
+	virtual void ActivateAbility(
+		const FGameplayAbilitySpecHandle Handle,
+		const FGameplayAbilityActorInfo* ActorInfo,
+		const FGameplayAbilityActivationInfo ActivationInfo,
+		const FGameplayEventData* TriggerEventData
+	) override;
+};
+
+
+--- FILE: MyGame\Public\Shared\GAS\Skill\GE_Test.h ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "GameplayEffect.h"
+#include "GE_Test.generated.h"
+
+/**
+ * 
+ */
+UCLASS()
+class MYGAME_API UGE_Test : public UGameplayEffect
+{
+	GENERATED_BODY()
+	
+	
+	
+	
+};
+
+
+--- FILE: MyGame\Public\Shared\GAS\SkillTargetPolicy\FSkillContext.h ---
+﻿#pragma once
+
+#include "CoreMinimal.h"
+
+#include "Shared/GAS/GGwaAbilitySystemComponent.h"
+#include "GameFramework/Actor.h"
+#include "Shared/Data/SkillDataAsset.h"
+
+#include "FSkillContext.generated.h"
+
+USTRUCT(BlueprintType)
+struct FSkillContext
+{
+	GENERATED_BODY()
+
+public:
+	FSkillContext() = default;
+
+	FSkillContext(UGGwaAbilitySystemComponent* InSourceASC, AActor* InSourceActor, AActor* InTargetActor, const FVector& InTargetLocation, USkillDataAsset* InSkillData, int32 InComboIndex = 0, float InStartTime = 0.f);
+
+	
+	UPROPERTY()
+	TObjectPtr<UAbilitySystemComponent> SourceASC;
+
+	UPROPERTY()
+	TObjectPtr<AActor> SourceActor;
+
+	UPROPERTY()
+	TObjectPtr<AActor> TargetActor;
+
+	UPROPERTY()
+	FVector TargetLocation;
+
+	UPROPERTY()
+	TArray<AActor*> DetectedActors;
+
+	UPROPERTY()
+	TObjectPtr<USkillDataAsset> SkillData;
+
+	UPROPERTY()
+	FVector HitLocation;
+
+	/** 콤보 인덱스 (콤보 기반 스킬용) */
+	UPROPERTY()
+	int32 ComboIndex = 0;
+
+	/** 스킬이 시작된 시점 시간 (후처리 로직 등에 활용 가능) */
+	UPROPERTY()
+	float StartTime = 0.f;
+};
+
+
+--- FILE: MyGame\Public\Shared\GAS\SkillTargetPolicy\SkillTargetActor_Mouse.h ---
+﻿#pragma once
+
+#include "CoreMinimal.h"
+#include "Abilities/GameplayAbilityTargetActor.h"
+#include "SkillTargetActor_Mouse.generated.h"
+
+
+class AGGwaPlayerController;
+
+UCLASS()
+class MYGAME_API ASkillTargetActor_Mouse : public AGameplayAbilityTargetActor {
+	GENERATED_BODY()
+
+public:
+	virtual void StartTargeting(UGameplayAbility* Ability) override;
+	virtual void ConfirmTargetingAndContinue() override;
+protected:
+	UPROPERTY()
+	AGGwaPlayerController* PlayerController;
+};
+
+
+
+--- FILE: MyGame\Public\Shared\GAS\SkillTargetPolicy\SkillTargetBase.h ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "UObject/NoExportTypes.h"
+#include "Shared/GAS/SkillTargetPolicy/FSkillContext.h"
+#include "SkillTargetBase.generated.h"
+
+/**
+ * 
+ */
+UCLASS()
+class MYGAME_API USkillTargetBase : public UObject
+{
+	GENERATED_BODY()
+
+public:
+	virtual TArray<AActor*> DetectTargets(FSkillContext& SkillContext) {
+		UE_LOG(LogTemp, Warning, TEXT("SkillTarget: Base"));
+		return TArray<AActor*>();
+	}
+	virtual void DebugSkillShape(const UWorld* World, const FVector& StartLocation, const FVector& EndLocation, const FSkillShapeConfig& Config) const;
+	bool HasASC(AActor* Actor) const;
+};
+
+
+--- FILE: MyGame\Public\Shared\GAS\SkillTargetPolicy\SkillTarget_Directional.h ---
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "SkillTargetBase.h"
+#include "SkillTarget_Directional.generated.h"
+
+/**
+ * 
+ */
+UCLASS()
+class MYGAME_API USkillTarget_Directional : public USkillTargetBase {
+	GENERATED_BODY()
+public:
+	virtual TArray<AActor*> DetectTargets(FSkillContext& SkillContext) override;
+};
+
+
+--- FILE: MyGame\Public\Shared\GAS\SkillTargetPolicy\SkillTarget_GroundArea.h ---
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "SkillTargetBase.h"
+#include "SkillTarget_GroundArea.generated.h"
+
+/**
+ * 
+ */
+UCLASS()
+class MYGAME_API USkillTarget_GroundArea : public USkillTargetBase {
+	GENERATED_BODY()
+	virtual TArray<AActor*> DetectTargets(FSkillContext& SkillContext) override;
+};
+
+
+--- FILE: MyGame\Public\Shared\GAS\SkillTargetPolicy\SkillTarget_MultiBoxTrace.h ---
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "SkillTargetBase.h"
+#include "SkillTarget_MultiBoxTrace.generated.h"
+
+/**
+ * 
+ */
+UCLASS()
+class MYGAME_API USkillTarget_MultiBoxTrace : public USkillTargetBase {
+	GENERATED_BODY()
+	virtual TArray<AActor*> DetectTargets(FSkillContext& SkillContext) override;
+};
+
+
+--- FILE: MyGame\Public\Shared\GAS\SkillTargetPolicy\SkillTarget_Projectile.h ---
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "SkillTargetBase.h"
+#include "SkillTarget_Projectile.generated.h"
+
+/**
+ * 
+ */
+UCLASS()
+class MYGAME_API USkillTarget_Projectile : public USkillTargetBase {
+	GENERATED_BODY()
+	virtual TArray<AActor*> DetectTargets(FSkillContext& SkillContext) override;
+};
+
+
+--- FILE: MyGame\Public\Shared\GAS\SkillTargetPolicy\SkillTarget_Self.h ---
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "SkillTargetBase.h"
+#include "SkillTarget_Self.generated.h"
+
+/**
+ * 
+ */
+UCLASS()
+class MYGAME_API USkillTarget_Self : public USkillTargetBase {
+	GENERATED_BODY()
+public:
+	virtual TArray<AActor*> DetectTargets(FSkillContext& SkillContext) override;
+};
+
+
+--- FILE: MyGame\Public\Shared\GAS\SkillTargetPolicy\SkillTarget_SelfArea.h ---
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "SkillTargetBase.h"
+#include "SkillTarget_SelfArea.generated.h"
+
+/**
+ * 
+ */
+UCLASS()
+class MYGAME_API USkillTarget_SelfArea : public USkillTargetBase {
+	GENERATED_BODY()
+	virtual TArray<AActor*> DetectTargets(FSkillContext& SkillContext) override;
+};
+
+
+--- FILE: MyGame\Public\Shared\GAS\SkillTargetPolicy\SkillTarget_TargetActor.h ---
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "SkillTargetBase.h"
+#include "SkillTarget_TargetActor.generated.h"
+
+/**
+ * 
+ */
+UCLASS()
+class MYGAME_API USkillTarget_TargetActor : public USkillTargetBase {
+	GENERATED_BODY()
+public:
+	virtual TArray<AActor*> DetectTargets(FSkillContext& SkillContext) override;
+};
+
+
+--- FILE: MyGame\Public\Shared\Player\GGwaAnimInstance.h ---
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Animation/AnimInstance.h"
+#include "GGwaAnimInstance.generated.h"
+
+/**
+ * 
+ */
+UCLASS()
+class MYGAME_API UGGwaAnimInstance : public UAnimInstance {
+	GENERATED_BODY()
+public:
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "State")
+	bool bIsPlayingMontage;
+};
+
+
+--- FILE: MyGame\Public\Shared\Player\GGwaCharacter.h ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "EnhancedInputComponent.h"
+#include "GameplayTagContainer.h"
+#include "GameFramework/Character.h"
+#include "GGwaCharacter.generated.h"
+
+struct FGameplayEventData;
+class UInputMappingContext;
+class UInputAction;
+class UGGwaAbilitySystemComponent;
+class UGameplayAbility;
+
+UCLASS()
+class MYGAME_API AGGwaCharacter : public ACharacter
+{
+	GENERATED_BODY()
+
+public:
+	
+	UPROPERTY(EditAnywhere)
+	float AcceptanceRadius = 50.0f;
+	UPROPERTY(VisibleAnywhere)
+	TArray<FVector> CurrentPath;
+	UPROPERTY()
+	bool bIsFollowingPath = false;
+	
+	int32 CurrentPathIndex = 1;
+	FTimerHandle MoveTickHandle;
+	
+	UPROPERTY(EditDefaultsOnly, Category="Input")
+	TObjectPtr<UInputMappingContext> MappingContext;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Abilities")
+	TArray<UInputAction*> SkillActions;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Abilities")
+	TArray<TSubclassOf<UGameplayAbility>> SkillAbilities;
+	UPROPERTY(EditDefaultsOnly, Category = "Abilities")
+	TArray<FGameplayTag> AbilityTags;
+	UPROPERTY(EditDefaultsOnly, category = "Abilities")
+	TArray<UAnimMontage*> SkillMontages;
+
+	
+	virtual void PossessedBy(AController* NewController) override;
+	virtual void OnRep_PlayerState() override;
+	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaSeconds) override;
+	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
+	UFUNCTION(Server, Reliable, WithValidation)
+	void OnSkillTriggered(const FGameplayEventData& EventData, int32 Index);
+	UFUNCTION(client, reliable)
+	void SetMoveData(const TArray<FVector>& Path, int32 PathIndex, bool bIsFollowing);
+protected:
+	UPROPERTY()
+	TObjectPtr<UGGwaAbilitySystemComponent> ASC;
+	void InitASC();
+private:
+	void ExecuteAbility(const FGameplayEventData& EventData, int32 Index);
+	void OnLocalSkillInput(const FInputActionInstance& Instance, int32 Index);
+};
+
+
+
+
+--- FILE: MyGame\Public\Shared\Player\GGwaPlayerController.h ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "GameFramework/PlayerController.h"
+#include "GGwaPlayerController.generated.h"
+
+class UBaseDataAsset;
+/**
+ * 
+ */
+UCLASS()
+class MYGAME_API AGGwaPlayerController : public APlayerController
+{
+	GENERATED_BODY()
+public:
+	AGGwaPlayerController();
+	virtual void BeginPlay() override;
+	/* 클라이언트 모듈 UI 설정을 위한 함수*/
+	virtual void InitClientWidget(){}
+
+	UFUNCTION(Client ,Reliable)
+	virtual void Client_ApplyAbilityDataAsset(UBaseDataAsset* Data);
+	//클라이언트가 자신에게 Possess한 Pawn을 인식(승인)하도록 알려주는 함수
+	virtual void AcknowledgePossession(APawn* PossessedPawn) override;
+		
+	// virtual void Client_NotifySkillActivated(int32 SkillId);
+};
+
+
+--- FILE: MyGame\Public\Shared\Player\GGwaPlayerState.h ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "AbilitySystemInterface.h"
+#include "GameFramework/PlayerState.h"
+#include "GGwaPlayerState.generated.h"
+
+class UGGwaAttributeSet;
+class UGGwaAbilitySystemComponent;
+/**
+ * 
+ */
+UCLASS()
+class MYGAME_API AGGwaPlayerState : public APlayerState, public IAbilitySystemInterface
+{
+	GENERATED_BODY()
+
+public:
+	AGGwaPlayerState();
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="GAS")
+	TObjectPtr<UGGwaAbilitySystemComponent> ASC;
+	
+	UPROPERTY()
+	TObjectPtr<UGGwaAttributeSet> AttributeSet;
+};
+
+
+--- FILE: MyGame\Public\Shared\Utill\USkillHelper.h ---
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Shared/GAS/SkillInputSlot.h"
+#include "UObject/Object.h"
+#include "USkillHelper.generated.h"
+
+/**
+ * 
+ */
+UCLASS()
+class MYGAME_API USkillHelper : public UObject {
+	GENERATED_BODY()
+public:
+	static ESkillInputSlot GetKeyFromIndex(int32 SlotIndex);
+	static int GetValueFromKey(ESkillInputSlot SlotIndex);
+	static FString GetKeyString(ESkillInputSlot InputSlot);
+};
+
+
+--- FILE: MyGame\Server\GameMode\Server_MyGameMode.cpp ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "Server_MyGameMode.h"
+
+#include "Shared/Player/GGwaCharacter.h"
+#include "Shared/Player/GGwaPlayerController.h"
+#include "Shared/Player/GGwaPlayerState.h"
+
+
+AServer_MyGameMode::AServer_MyGameMode() {
+	PlayerControllerClass = AGGwaPlayerController::StaticClass();
+	PlayerStateClass = AGGwaPlayerState::StaticClass();
+	DefaultPawnClass = AGGwaCharacter::StaticClass();
+}
+
+void AServer_MyGameMode::PostLogin(APlayerController* NewPlayer) {
+	Super::PostLogin(NewPlayer);
+	// 플레이어 데이터 호출 Player Default Settings, 데이터 로딩
+	if (!NewPlayer) {
+		UE_LOG(LogTemp, Error, TEXT("NewPlayer is null"));
+	}
+	
+	AGGwaPlayerState* State = NewPlayer->GetPlayerState<AGGwaPlayerState>();
+
+	if (AGGwaCharacter* GGwaCharacter = Cast<AGGwaCharacter>(NewPlayer->GetPawn())) {
+		UE_LOG(LogTemp, Warning, TEXT("Player already exists"));
+	}
+	else {
+		UE_LOG(LogTemp, Warning, TEXT("Player is not spawned in postlogin"));
+	}
+}
+
+void AServer_MyGameMode::HandleAbilityActivated(const AActor* Instigator, FName AbilityName, const FVector& TargetLocation){
+	//서버 사이드 로깅
+	UE_LOG(LogTemp, Log, TEXT("[Server] %s activated ability %s at %s"),
+		*Instigator->GetName(),
+		*AbilityName.ToString(),
+		*TargetLocation.ToString());
+}
+
+--- FILE: MyGame\Server\GameMode\Server_MyGameMode.h ---
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "GameFramework/GameMode.h"
+#include "Server_MyGameMode.generated.h"
+
+class AGGwaCharacter;
+class AGGwaPlayerState;
+class AGGwaPlayerController;
+/**
+ * 
+ */
+UCLASS()
+class MYGAME_API AServer_MyGameMode : public AGameMode
+{
+	GENERATED_BODY()
+public:
+	AServer_MyGameMode();
+	UPROPERTY()
+	TSubclassOf<AGGwaPlayerController> PlayerController;
+
+	UPROPERTY()
+	TSubclassOf<AGGwaPlayerState> PlayerState;
+
+	UPROPERTY()
+	TSubclassOf<AGGwaCharacter> Character;
+
+
+// 	FGameplayAbilitySpec(
+// 	TSubclassOf<UGameplayAbility> Ability,  // 어떤 능력?
+// 	int32 Level,                            // 능력 레벨
+// 	int32 InputID,                          // 입력 슬롯 (예: Q=0, E=1 등)
+// 	UObject* SourceObject = nullptr         // 출처 객체 (무기, 아이템 등)
+// )
+
+	virtual void PostLogin(APlayerController* NewPlayer) override;
+	UFUNCTION()
+	static void HandleAbilityActivated(const AActor* InstigatorActor, FName AbilityName, const FVector& TargetLocation);
+};
+
+
+--- FILE: ServerModule\ServerModule.Build.cs ---
+﻿using UnrealBuildTool;
+
+public class ServerModule : ModuleRules
+{
+    public ServerModule(ReadOnlyTargetRules Target) : base(Target)
+    {
+        PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
+
+        PublicDependencyModuleNames.AddRange(
+            new string[]
+            {
+                "Core",
+                "MyGame"
+            }
+        );
+
+        PrivateDependencyModuleNames.AddRange(
+            new string[]
+            {
+                "CoreUObject",
+                "Engine",
+                "Slate",
+                "SlateCore",
+                "AIModule",
+                "NavigationSystem"
+            }
+        );
+        if (Target.bBuildEditor)
+        {
+            PrivateDependencyModuleNames.Add("GameplayTagsEditor");
+        }
+    }
+}
+
+--- FILE: ServerModule\Private\ServerModule.cpp ---
+﻿#include "ServerModule.h"
+
+#define LOCTEXT_NAMESPACE "FServerModuleModule"
+
+void FServerModuleModule::StartupModule()
+{
+	UE_LOG(LogTemp, Log, TEXT("ServerModule has started!"));
+}
+
+void FServerModuleModule::ShutdownModule()
+{
+    
+}
+
+#undef LOCTEXT_NAMESPACE
+    
+IMPLEMENT_MODULE(FServerModuleModule, ServerModule)
+
+--- FILE: ServerModule\Public\ServerModule.h ---
+﻿#pragma once
+
+#include "CoreMinimal.h"
+#include "Modules/ModuleManager.h"
+
+class FServerModuleModule : public IModuleInterface
+{
+public:
+    virtual void StartupModule() override;
+    virtual void ShutdownModule() override;
+};
+
+

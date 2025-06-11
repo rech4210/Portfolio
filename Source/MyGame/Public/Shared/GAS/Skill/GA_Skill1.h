@@ -50,4 +50,6 @@ private:
 	UFUNCTION()
 	void OnMontageInterrupted(FGameplayTag EventTag, FGameplayEventData EventData);
 	FVector HitPoint;
+
+	void SendSkillLogToServer(const FString& SkillName, FVector SkillLocation) const;
 };

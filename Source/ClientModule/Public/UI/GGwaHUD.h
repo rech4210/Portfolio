@@ -7,6 +7,7 @@
 #include "UI/Widget/GGwaWidget.h"
 #include "GGwaHUD.generated.h"
 
+class UBossStatusWidget;
 /**
  * 
  */
@@ -18,8 +19,13 @@ class CLIENTMODULE_API AGGwaHUD : public AHUD
 	
 public:
 	UGGwaWidget* GetBaseWidget() const;
+	UBossStatusWidget* GetBossWidget() const;
+
 	void SetBaseWidget(UGGwaWidget* widget);
+	void SetBossWidget(UBossStatusWidget* widget);
 private:
 	UPROPERTY()
 	TObjectPtr<UGGwaWidget> BaseWidget;
+	UPROPERTY()
+	TObjectPtr<UBossStatusWidget> BossWidget;
 };
