@@ -14,6 +14,7 @@ class MYGAME_API UEnemyAbilitySystemComponent : public UAbilitySystemComponent
 {
 	GENERATED_BODY()
 	UEnemyAbilitySystemComponent();
-	
+
+	virtual void BeginPlay() override;
 	
 };

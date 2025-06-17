@@ -1,10 +1,13 @@
 ﻿#include "Shared/AI/GAS/AttackProjectile.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"
+#include "Abilities/GameplayAbility.h"
 #include "GameFramework/Actor.h"
 #include "Components/StaticMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameplayEffect.h"
+#include "Animation/AnimTrace.h"
+#include "Concepts/Iterable.h"
 #include "Net/UnrealNetwork.h"
 #include "Shared/Player/GGwaCharacter.h"
 #include "Shared/Player/GGwaPlayerState.h"
@@ -28,15 +31,19 @@ void AAttackProjectile::BeginPlay() {
     SetActorTickEnabled(true);
 }
 
-void AAttackProjectile::InitProjectile(const FVector& Start, const FVector& End) {
+void AAttackProjectile::InitProjectile(const FVector& Start, AActor* Target) {
     if (!HasAuthority()) return;
 
-    StartLocation = Start;
-    EndLocation = End;
-    CurrentTime = 0.f;
-
-    // 처음 위치로 세팅
-    SetActorLocation(StartLocation);
+    if (auto Character = Cast<AGGwaCharacter>(Target)) {
+        StartLocation = Start;
+        TargetCharacter = Character;
+        EndLocation = Target->GetActorLocation();
+        CurrentTime = 0.f;
+        SetActorLocation(StartLocation);
+    }
+    else {
+        UE_LOG(LogTemp, Error, TEXT("AAttackProjectile::InitProjectile: Target is not a valid GGwaCharacter"));
+    }
 }
 
 void AAttackProjectile::Tick(float DeltaSeconds) {
@@ -47,6 +54,13 @@ void AAttackProjectile::Tick(float DeltaSeconds) {
     CurrentTime += DeltaSeconds;
     float t = FMath::Clamp(CurrentTime / TravelTime, 0.f, 1.f);
 
+    if (!TargetCharacter) {
+        SetActorLocation(EndLocation);
+        MeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        return;
+    }
+    
+    EndLocation = TargetCharacter->GetActorLocation();
     FVector HorizontalPos = FMath::Lerp(StartLocation, EndLocation, t);
     // 포물선 오프셋: zOffset = 4h * t * (1 - t)
     float zOffset = 4.f * ArcHeight * t * (1.f - t);
@@ -55,13 +69,11 @@ void AAttackProjectile::Tick(float DeltaSeconds) {
     SetActorLocation(NewPos);
 
     if (t >= 1.f) {
-        if (ImpactEffect) {
-            UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ImpactEffect, NewPos);
-        }
         Destroy();
     }
 }
 
+//투척 위치에 VFX 생성.
 void AAttackProjectile::OnMeshBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
                                            UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
                                            bool bFromSweep, const FHitResult& SweepResult) {
@@ -69,15 +81,12 @@ void AAttackProjectile::OnMeshBeginOverlap(UPrimitiveComponent* OverlappedCompon
     if (!OtherActor || OtherActor == this || OtherActor == GetInstigator())
         return;
 
-    if (ImpactEffect) {
-        UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ImpactEffect, GetActorLocation());
-    }
-    
     if (HasAuthority() && Projectile_GE) {
         if (auto Character = Cast<AGGwaCharacter>(OtherActor)) {
             if (auto ASC = Cast<AGGwaPlayerState>(Character->GetPlayerState())->GetAbilitySystemComponent()) {
                 FGameplayEffectContextHandle Context = ASC->MakeEffectContext();
                 FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(Projectile_GE, 1.f, Context);
+                //GC 적용을 위한 임시 처리. 추후 Duration 기반으로 처리
                 if (SpecHandle.IsValid()) {
                     //Character의 after GE 적용됨. 여기서 리액션 적용
                     ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());

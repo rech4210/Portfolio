@@ -5,6 +5,8 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "GameplayEffectTypes.h"
+#include "Shared/AI/EnemySystemCore/EObservedAttribute.h"
+#include "Shared/Utill/FObservedAttributeHelper.h"
 #include "BossAttributeObserverComponent.generated.h"
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
@@ -19,7 +21,8 @@ protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
+	FObservedAttributeHelper<FBossDataStruct> AttributeHelper;
 public:
-	void OnHealthChanged(const FOnAttributeChangeData& Data) const;
+	void OnAttributeChanged(EObservedAttribute Attribute, const FOnAttributeChangeData& Data) const;
 	void BindBossDataDelegate();
 };

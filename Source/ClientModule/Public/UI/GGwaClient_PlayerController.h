@@ -28,4 +28,9 @@ public:
 	virtual void InitClientWidget() override;
 	virtual void Client_ApplyAbilityDataAsset_Implementation(UBaseDataAsset* Data) override;
 	virtual void Client_ReceiveBossData_Implementation(const FBossDataStruct& Data) override;
+	virtual void PlayerTick(float DeltaTime) override;
+
+private:
+	// hover 대상을 적으로 제어하기 위해, enemy base character 제공할것.
+	TWeakObjectPtr<ABossCharacter> LastHoveredEnemy;
 };

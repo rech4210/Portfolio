@@ -9,6 +9,7 @@
 #include "Shared/GAS/AbilityTask/GGwaPlayMontageAndWaitForEvent.h"
 #include "Abilities/Tasks/AbilityTask_WaitTargetData.h"
 #include "Shared/GAS/SkillTargetPolicy/FSkillContext.h"
+#include "Shared/Mode/BaseGameMode.h"
 #include "Shared/Player/GGwaAnimInstance.h"
 
 UGA_Skill1::UGA_Skill1()
@@ -155,6 +156,7 @@ void UGA_Skill1::OnMontageCompleted(FGameplayTag ,FGameplayEventData){
         SkillContext.HitLocation =  HitPoint;
         SkillContext.DetectedActors = NewObject<USkillTargetBase>(this, SkillDataAsset->TargetStrategyClass)->DetectTargets(SkillContext);
 
+        
         auto* ASC = SkillContext.SourceASC.Get();
         FGameplayEffectContextHandle Context = ASC->MakeEffectContext();
         Context.AddInstigator(SkillContext.SourceActor, SkillContext.SourceActor);
@@ -164,7 +166,6 @@ void UGA_Skill1::OnMontageCompleted(FGameplayTag ,FGameplayEventData){
         //     FGameplayTag::RequestGameplayTag(SkillAssetTypeTag),
         //     SkillContext.SkillData->SkillID
         // );
-
         FGameplayEffectContextHandle CoolContext = ASC->MakeEffectContext();
         CoolContext.AddInstigator(SkillContext.SourceActor, SkillContext.SourceActor);
 
@@ -205,21 +206,6 @@ void UGA_Skill1::OnMontageCompleted(FGameplayTag ,FGameplayEventData){
 }
 
 //Replace To Server Module Logic
-void UGA_Skill1::SendSkillLogToServer(const FString& SkillName, FVector SkillLocation) const
-{
-    FHttpModule& Http = FHttpModule::Get();
-    TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = Http.CreateRequest();
+void UGA_Skill1::SendSkillLogToServer(const FString& SkillName, FVector SkillLocation) const{
 
-    Request->SetURL(TEXT("http://localhost:8000/api/skill-log"));
-    Request->SetVerb(TEXT("POST"));
-    Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
-
-    FString Payload = FString::Printf(TEXT(
-        "{\"player_id\":\"%s\", \"skill\":\"%s\", \"location\":{\"x\":%.2f, \"y\":%.2f, \"z\":%.2f}}"),
-        *GetAvatarActorFromActorInfo()->GetName(),
-        *SkillName,
-        SkillLocation.X, SkillLocation.Y, SkillLocation.Z);
-
-    Request->SetContentAsString(Payload);
-    Request->ProcessRequest();
 }

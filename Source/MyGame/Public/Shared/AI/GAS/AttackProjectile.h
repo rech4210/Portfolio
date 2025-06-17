@@ -2,8 +2,10 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Shared/Player/GGwaCharacter.h"
 #include "AttackProjectile.generated.h"
 
+class AGameplayCueNotify_Actor;
 class UGameplayEffect;
 class UStaticMeshComponent;
 class UParticleSystem;
@@ -19,13 +21,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TObjectPtr<UStaticMeshComponent> MeshComponent;
 
-	UPROPERTY(EditAnywhere, Category = "Damage")
+	UPROPERTY(EditAnywhere, Category = "GE")
 	TSubclassOf<UGameplayEffect> Projectile_GE;
 
-	UPROPERTY(EditAnywhere, Category = "VFX")
-	UParticleSystem* ImpactEffect;
-
-	// 포물선의 최대 높이 (시작·끝점 중 높은 곳에서 이만큼 더 띄워서 궤적을 만듭니다)
 	UPROPERTY(EditAnywhere, Category = "Movement")
 	float ArcHeight = 300.f;
 
@@ -41,7 +39,7 @@ public:
 	FVector EndLocation;
 
 	// 초기화
-	void InitProjectile(const FVector& Start, const FVector& End);
+	void InitProjectile(const FVector& Start, AActor* Target);
 
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
@@ -52,9 +50,10 @@ public:
 							bool bFromSweep, const FHitResult& SweepResult);
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-
 private:
 	//오브젝트 풀 만들기
 	// 내부 상태
+	UPROPERTY(VisibleAnywhere)
+	AGGwaCharacter* TargetCharacter;
 	float CurrentTime;    // 경과 시간
 };

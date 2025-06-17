@@ -10,13 +10,16 @@ struct MYGAME_API FBossDataStruct {
 	UPROPERTY()
 	int32 Phase;
 	UPROPERTY()
-	int32 Health;
+	float Health;
 	UPROPERTY()
-	int32 Damage;
+	float MaxHealth;
+	UPROPERTY()
+	float Damage;
 	
 	FBossDataStruct& operator=(const FBossDataStruct& Other) {
 		Phase = Other.Phase;
 		Health = Other.Health;
+		MaxHealth = Other.MaxHealth;
 		Damage = Other.Damage;
 		return *this;
 	}
@@ -24,7 +27,8 @@ struct MYGAME_API FBossDataStruct {
 	bool operator==(const FBossDataStruct& Other) const {
 		return Phase == Other.Phase &&
 			   Health == Other.Health &&
-			   Damage == Other.Damage;
+			   Damage == Other.Damage &&
+			   MaxHealth == Other.MaxHealth;
 	}
 };
 

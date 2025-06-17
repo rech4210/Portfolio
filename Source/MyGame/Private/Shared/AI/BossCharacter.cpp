@@ -13,6 +13,7 @@
 #include "Shared/AI/Interface/EnemyDataReceiver.h"
 #include "Shared/Player/GGwaCharacter.h"
 #include "Shared/Player/GGwaPlayerController.h"
+#include "Shared/AI/EnemySystemCore/EnemyDataAsset.h"
 
 static constexpr int MAX_FLOAT = 9999.f;
 
@@ -52,6 +53,23 @@ void ABossCharacter::OnRep_PlayerState() {
 	InitASC();
 }
 
+
+void ABossCharacter::BeginPlay(){
+	Super::BeginPlay();
+	WidgetData = BossDataAsset->WidgetData;
+	const UEnemyAttributeSet* Attribute = E_ASC->GetSet<UEnemyAttributeSet>();
+	CachedBossData = FBossDataStruct{1, Attribute->GetHealth(),Attribute->GetMaxHealth(),Attribute->GetDamage()};
+}
+
+
+/** 
+ * 1. GAS Attribute 변경 발생 
+ * 2. ObserverComponent에서 델리게이트로 감지 
+ * 3. OnAttributeChanged → UpdateDataFromBoss 호출 
+ * 4. CachedBossData 갱신 
+ * 5. 서버 → 클라이언트 RPC: Client_ReceiveBossData 
+ * 6. 클라이언트에 데이터 동기화 
+ */
 void ABossCharacter::UpdateDataFromBoss(FBossDataStruct& Data) {
 	if (HasAuthority()) {
 		// 데이터 미변경시에 강제 복제 실시
@@ -59,13 +77,17 @@ void ABossCharacter::UpdateDataFromBoss(FBossDataStruct& Data) {
 		// 	ForceNetUpdate();
 		//	CachedBossData = Data;
 		// }
-		if (!(CachedBossData == Data)) {
+		if (CachedBossData != Data) {
 			CachedBossData = Data;
 			if (IEnemyDataReceiver* Receiver = Cast<IEnemyDataReceiver>(GetController())) {
 				Receiver->ReceiveEnemyData(Data);
 			}
 		}
 	}
+}
+
+const FEnemyWidgetData& ABossCharacter::GetWidgetData() {
+	return WidgetData;
 }
 
 void ABossCharacter::OnRep_BossData() {
@@ -93,9 +115,6 @@ void ABossCharacter::InitASC() {
 	}
 }
 
-void ABossCharacter::BeginPlay(){
-	Super::BeginPlay();
-}
 
 // TODO: Be Componentize.
 TArray<AActor*> ABossCharacter::DetectTarget(float Radius) const{
@@ -143,8 +162,3 @@ void ABossCharacter::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 }
-
-void ABossCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent){
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-}
-
