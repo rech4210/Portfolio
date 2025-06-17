@@ -109,6 +109,18 @@ void AGGwaCharacter::Tick(float DeltaSeconds) {
 	}
 }
 
+
+/**
+	 * 현재 구조:
+	 * - 각 입력 액션(SkillActions[i])은 슬롯 인덱스(i)와 연결됨
+	 * - 슬롯에는 고정된 GA가 할당되어 있으며, 해당 슬롯의 GA를 실행
+	 * 
+	 * 개선 아이디어:
+	 * - 입력 키마다 슬롯 인덱스가 아닌 "GA를 소유한 오브젝트"를 직접 연결
+	 * - 키 입력 시, 현재 장착된 무기/장비/오브젝트에서 GA를 추출하여 실행
+	 * - 장비 변경 시, 해당 키에 연결된 오브젝트만 교체하면 자동으로 능력이 바뀌도록 설계 가능
+*/
+
 void AGGwaCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent){
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 	if (UEnhancedInputComponent* EIC = Cast<UEnhancedInputComponent>(PlayerInputComponent)){

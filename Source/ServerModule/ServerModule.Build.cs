@@ -24,7 +24,8 @@ public class ServerModule : ModuleRules
                 "AIModule",
                 "NavigationSystem",
                 "GameplayAbilities",
-                "GameplayTags"
+                "GameplayTags",
+                "HTTP"
             }
         );
         if (Target.bBuildEditor)

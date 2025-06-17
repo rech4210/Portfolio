@@ -17,6 +17,7 @@ DEFINE_ONREP_ATTRIBUTE(UGGwaAttributeSet, Critical)
 DEFINE_ONREP_ATTRIBUTE(UGGwaAttributeSet, Damage)
 
 
+// Driven data as...
 UGGwaAttributeSet::UGGwaAttributeSet() {
 	InitHealth(100.f);
 	InitMana(70.f);
@@ -25,7 +26,7 @@ UGGwaAttributeSet::UGGwaAttributeSet() {
 	InitDefense(10.f); 
 	InitCritical(5.f);  
 	InitSpeed(100.f);  
-	InitDamage(10.f);    
+	InitDamage(10.f);
 }
 
 void UGGwaAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue) {

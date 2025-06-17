@@ -10,6 +10,7 @@
 #include "Shared/Player/GGwaPlayerController.h"
 #include "Shared/Player/GGwaPlayerState.h"
 #include "Shared/Data/BaseDataAsset.h"
+#include "Shared/GAS/GGwaAttributeSet.h"
 #include "Shared/Player/GGwaCharacter.h"
 
 UGGwaAbilitySystemComponent::UGGwaAbilitySystemComponent()
@@ -32,6 +33,11 @@ void UGGwaAbilitySystemComponent::BeginPlay()
 
     LocalDataBaseLoader = NewObject<ULocalDataBaseLoader>(this);
     LocalDataBaseLoader->Initialize();
+
+    /**
+     *스탯 초기 설정을 위한 GE, CurveTable.
+     */
+    //ApplyGameplayEffectToSelf(StartupEffect, 1.f, ASC->MakeEffectContext());
 }
 
 void UGGwaAbilitySystemComponent::OnGameplayAppliedCallback(

@@ -29,7 +29,7 @@ void UGA_BossAttack::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	}
 	
 	FVector StartLocation = Avatar->GetActorLocation() + ProjectileOffset;
-	FVector TargetLocation = TargetActor->GetActorLocation();
+	// FVector TargetLocation = TargetActor->GetActorLocation();
 	
 	if (HasAuthority(&ActivationInfo)) {
 		FActorSpawnParameters Params;
@@ -38,7 +38,7 @@ void UGA_BossAttack::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 		Params.Owner = Avatar;
 		SpawnedProjectile = GetWorld()->SpawnActor<AAttackProjectile>(Projectile, StartLocation, FRotator::ZeroRotator, Params);
 		if (SpawnedProjectile) {
-			SpawnedProjectile->InitProjectile(StartLocation, TargetLocation);
+			SpawnedProjectile->InitProjectile(StartLocation, TargetActor);
 		}
 		UE_LOG(LogTemp, Warning, TEXT("Projectile spawned: %s"), *GetNameSafe(SpawnedProjectile));
 		FGameplayEventData Payload;

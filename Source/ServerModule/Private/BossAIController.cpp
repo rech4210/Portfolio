@@ -25,7 +25,7 @@ void ABossAIController::OnPossess(APawn* InPawn) {
 	RunBehaviorTree( TempBehavior);
 	BB = GetBlackboardComponent();
 }
-// 현재 StateComponent가 Phase 변경에 대한 책임도 가지고 있다. 추후 필요하다면 SRP 원칙에 따라 분리할것.
+// Phase 변경에 대한 책임도 가지고 있다. 추후 필요하다면 SRP 원칙에 따라 분리할것.
 void ABossAIController::RequestPhaseChange() const{
 	StateComponent->AdvanceBossPhase(BB);
 }
@@ -35,10 +35,8 @@ void ABossAIController::RequestBossStateChange(EBossState BossState) const{
 }
 
 void ABossAIController::ReceiveEnemyData(FBossDataStruct& Data){
-	// RequestHUDUpdate(Data);
 	if (HasAuthority()) {
 		if (Data.Health <70.f) {
-			// Enum BossPhase::
 			RequestPhaseChange();
 		}
 	}

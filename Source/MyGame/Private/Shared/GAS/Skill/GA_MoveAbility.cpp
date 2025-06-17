@@ -18,6 +18,7 @@ UGA_MoveAbility::UGA_MoveAbility() {
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
 }
 
+//이동 로직에서, 매우 가깝거나, 대상의 진행방향 바로 앞 장애물이 있을 경우, 이동하지 않음. 아마 velocity 영향일듯.
 void UGA_MoveAbility::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Data)
 {
 	const FGameplayAbilityActorInfo* Info = GetCurrentActorInfo();
