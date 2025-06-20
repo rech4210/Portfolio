@@ -6,6 +6,8 @@
 #include "Shared/Player/GGwaPlayerController.h"
 #include "Shared/GAS/SkillTargetPolicy/SkillTarget_Directional.h"
 #include "MyGame/Public/Shared/GAS/SkillTargetPolicy/FSkillContext.h"
+#include "Shared/Utill/UEnumTagMatchHelper.h"
+#include "Shared/Data/EGasDataType.h"
 
 #include "Shared/Data/BuffDataAsset.h"
 #include "Shared/Data/SkillDataAsset.h"
@@ -33,7 +35,7 @@ void UGA_Skill6::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const 
 		SkillContext.SkillData = SkillDataAsset;
 		SkillContext.DetectedActors = NewObject<USkillTargetBase>(this, SkillDataAsset->TargetStrategyClass)->DetectTargets(SkillContext);
 		FGameplayEffectSpecHandle Spec = SkillContext.SourceASC->MakeOutgoingSpec(SkillDataAsset->GEClass, 1.f, SkillContext.SourceASC->MakeEffectContext());
-		Spec.Data->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag("Data.Cooldown"), SkillDataAsset->CoolTime);
+		Spec.Data->SetSetByCallerMagnitude(UEnumTagMatchHelper::GetTagFromEnum<EGasDataType>(EGasDataType::Cooldown), SkillDataAsset->CoolTime);
 		if (Spec.IsValid()) {
 			for (auto& target: SkillContext.DetectedActors)
 			{

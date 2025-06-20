@@ -14,7 +14,6 @@ class MYGAME_API UGGwaAssetManager : public UAssetManager {
 	GENERATED_BODY()
 public:
 	static const FPrimaryAssetType SkillType;
-
 	virtual void StartInitialLoading() override;
 	virtual void FinishInitialLoading() override;
 };

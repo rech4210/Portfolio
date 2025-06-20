@@ -9,6 +9,8 @@
 #include "Abilities/GameplayAbilityTypes.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Shared/AI/BossCharacter.h"
+#include "Shared/GAS/EGasEventType.h"
+#include "Shared/Utill/UEnumTagMatchHelper.h"
 
 void UGA_BossAttack::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
                                      const FGameplayAbilityActorInfo* ActorInfo,
@@ -45,7 +47,7 @@ void UGA_BossAttack::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 		Payload.Instigator = GetAvatarActorFromActorInfo();
 		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
 			GetAvatarActorFromActorInfo(),
-			FGameplayTag::RequestGameplayTag(TEXT("Event.GA.Finished")),
+			UEnumTagMatchHelper::GetTagFromEnum(EGasEventType::AbilityFinished),
 			Payload
 		);
 	}

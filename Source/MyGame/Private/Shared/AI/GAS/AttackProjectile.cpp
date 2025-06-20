@@ -57,6 +57,7 @@ void AAttackProjectile::Tick(float DeltaSeconds) {
     if (!TargetCharacter) {
         SetActorLocation(EndLocation);
         MeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        // Destroy();
         return;
     }
     

@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 
 #include "Shared/GAS/Skill/GA_MoveAbility.h"
 #include "NavigationPath.h"

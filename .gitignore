@@ -79,3 +79,25 @@ DerivedDataCache/*
 Content/Sci_FI_Valley_Village/
 Content/Assets
 Content/Fab
+
+
+# ✅ IDE 관련
+.idea/
+.vscode/
+Source/.idea/
+Source/.vscode/
+
+# ✅ 빌드 캐시 및 임시 파일
+.cache/
+CMakeFiles/
+FakeTarget.dir/
+MyGameExecutable.dir/
+x64/
+compile_commands.json
+clang_build.txt
+
+# ✅ 기타
+*.tlog/
+*.pdb
+*.lastbuildstate
+*.recipe

@@ -56,3 +56,10 @@ bool UGwaFactionLibrary::IsEnemy(AActor* Self, AActor* Other, EGameModeType Mode
 // 6월 9일
 대상 타격 GA 생성 시도중...
 현재 GA 발동 문제로 인해 처리중임. (actor 생성 문제.)
+
+
+6.19
+PlayerState에서 enum 판단처리중... death
+TagMatching을 위한 enum 정리중 (player status 관련 enum 필요)
+knockback 임시 구현 (테스트필요)
+tag 설정 해둬야함 (추가로 사용할 tag 등록하는 과정 필요 -> Set, Template)

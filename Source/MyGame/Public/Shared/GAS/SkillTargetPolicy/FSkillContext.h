@@ -17,7 +17,6 @@ public:
 	FSkillContext() = default;
 
 	FSkillContext(UGGwaAbilitySystemComponent* InSourceASC, AActor* InSourceActor, AActor* InTargetActor, const FVector& InTargetLocation, USkillDataAsset* InSkillData, int32 InComboIndex = 0, float InStartTime = 0.f);
-
 	
 	UPROPERTY()
 	TObjectPtr<UAbilitySystemComponent> SourceASC;

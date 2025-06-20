@@ -10,7 +10,13 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputMappingContext.h"
 #include "InputAction.h"
+#include "Shared/GAS/Skill/ESkillType.h"
 #include "Shared/Player/GGwaPlayerController.h"
+#include "Shared/Player/Component/PlayerReactionComponent.h"
+#include "Shared/Player/Component/UPlayerStateComponent.h"
+#include "Shared/Utill/UEnumTagMatchHelper.h"
+
+enum class ESkillType : uint8;
 
 void AGGwaCharacter::PossessedBy(AController* NewController) {
 	Super::PossessedBy(NewController);
@@ -41,6 +47,7 @@ void AGGwaCharacter::OnRep_PlayerState() {
 	}
 }
 
+
 void AGGwaCharacter::InitASC() {
 	if (AGGwaPlayerState * State = GetPlayerState<AGGwaPlayerState>(); nullptr != State) {
 		ASC = Cast<UGGwaAbilitySystemComponent>(State->GetAbilitySystemComponent());
@@ -61,6 +68,10 @@ void AGGwaCharacter::BeginPlay() {
 	bUseControllerRotationYaw = false;
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 
+	if (AGGwaPlayerState* PS = Cast<AGGwaPlayerState>(GetPlayerState())) {
+		ReactionComponent->Initialize(ASC);
+		// PS->GetStateComponent()->Initialize(ASC);
+	}
 }
 
 void AGGwaCharacter::Tick(float DeltaSeconds) {
@@ -82,7 +93,7 @@ void AGGwaCharacter::Tick(float DeltaSeconds) {
 	FVector Direction = TargetPoint - CurrentLocation;
 	float Distance = Direction.Size();
 	auto Dir = Direction.GetSafeNormal();
-	if (ASC->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag("Skill"))) {
+	if (ASC->HasMatchingGameplayTag(UEnumTagMatchHelper::GetTagFromEnum(ESkillType::None))) {
 		bIsFollowingPath = false;
 		CurrentPath.Empty();
 		CurrentPathIndex = 0;
@@ -201,6 +212,11 @@ void AGGwaCharacter::SetMoveData_Implementation(const TArray<FVector>& Path, int
 	this->CurrentPath = Path;
 	this->CurrentPathIndex = PathIndex;
 	this->bIsFollowingPath = bIsFollowing;
+}
+
+
+UPlayerReactionComponent* AGGwaCharacter::GetReactionComponent() const {
+	return ReactionComponent.Get();
 }
 
 
