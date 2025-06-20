@@ -6,12 +6,14 @@
 #include "Shared/AI/BossCharacter.h"
 #include "Shared/AI/EnemyAbilitySystemComponent.h"
 #include "Shared/AI/EnemyAttributeSet.h"
+#include "Shared/Data/EGasDataType.h"
 #include "UI/Widget/GGwaWidget.h"
 #include "UI/GGwaHUD.h"
 #include "Shared/GAS/GGwaAttributeSet.h"
 #include "Shared/GAS/GGwaAbilitySystemComponent.h"
 #include "UI/Enemy/BossStatusWidget.h"
 #include "Shared/Player/GGwaPlayerState.h"
+#include "Shared/Utill/UEnumTagMatchHelper.h"
 
 
 void AGGwaClient_PlayerController::BeginPlay() {
@@ -48,6 +50,11 @@ void AGGwaClient_PlayerController::InitClientWidget() {
 	}
 }
 
+/*
+ * Attribute -> GGwaPlayerState (복제) -> Replicate -> UI 반영 로직으로 적용하기
+ */
+
+// 해당 로직을 대체함 Attribute -> GGwaPlayerState (복제) -> Replicate -> Loader -> get skillAsset
 void AGGwaClient_PlayerController::Client_ApplyAbilityDataAsset_Implementation(UBaseDataAsset* Data) {
 	if (GGwaHUD && IsLocalController()) {
 		// Is it call twice?
@@ -111,7 +118,6 @@ void AGGwaClient_PlayerController::PlayerTick(float DeltaTime) {
 
 // void AGGwaClient_PlayerController::Client_ApplyAbilityDataAsset(UBaseDataAsset* Data) {
 // 	if (GGwaHUD && IsLocalController()) {
-// 		GGwaHUD->GetBaseWidget()->BindWidgetWithTooltip(Data);
 // 	}
 // }
 //
@@ -120,4 +126,6 @@ void AGGwaClient_PlayerController::PlayerTick(float DeltaTime) {
 // 		GGwaHUD->GetBossWidget()->UpdateBossWidget(Data);
 // 	}
 // }
+
+
 

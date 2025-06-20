@@ -80,9 +80,7 @@ void USkillSlotWidget::ApplySkillData(USkillDataAsset* NewData) {
 		UE_LOG(LogTemp,Warning,TEXT("USkillSlotWidget::ApplySkillData: nullptr"));
 		return;
 	}
-	
 	SetVisibility(ESlateVisibility::Visible);
-
 	SkillDataAsset = NewData;
 	CoolTime = NewData->CoolTime;
 	SkillImage->SetBrushFromTexture(NewData->Image);

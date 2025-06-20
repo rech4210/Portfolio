@@ -8,9 +8,12 @@
 #include "Shared/GAS/SkillTargetPolicy/SkillTarget_Self.h"
 #include "Shared/GAS/AbilityTask/GGwaPlayMontageAndWaitForEvent.h"
 #include "Abilities/Tasks/AbilityTask_WaitTargetData.h"
+#include "Shared/Data/EGasDataType.h"
+#include "Shared/GAS/Cue/ECueType.h"
 #include "Shared/GAS/SkillTargetPolicy/FSkillContext.h"
 #include "Shared/Mode/BaseGameMode.h"
 #include "Shared/Player/GGwaAnimInstance.h"
+#include "Shared/Utill/UEnumTagMatchHelper.h"
 
 UGA_Skill1::UGA_Skill1()
 {
@@ -80,7 +83,7 @@ void UGA_Skill1::ActivateAbility(
 void UGA_Skill1::OnTargetDataCancelled(const FGameplayAbilityTargetDataHandle& Data)
 {
     // 취소 시엔 Ability 종료
-    GetActorInfo().AbilitySystemComponent->RemoveGameplayCue(FGameplayTag::RequestGameplayTag(FName("GameplayCue.Skill1.DirectionPreview")));
+    GetActorInfo().AbilitySystemComponent->RemoveGameplayCue(UEnumTagMatchHelper::GetTagFromEnum(ECueType::DirectionPreview));
     EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, false, true);
 }
 
@@ -109,7 +112,7 @@ void UGA_Skill1::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Da
             CueParams.EffectCauser = GetAvatarActorFromActorInfo()->GetInstigator();
             CueParams.RawMagnitude = SkillDataAsset->SkillID;
             GetActorInfo().AbilitySystemComponent->AddGameplayCue(
-                FGameplayTag::RequestGameplayTag(FName("GameplayCue.Skill1.DirectionPreview")),
+                UEnumTagMatchHelper::GetTagFromEnum(ECueType::DirectionPreview),
                 CueParams
             );
         }
@@ -143,7 +146,7 @@ void UGA_Skill1::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Da
 
 void UGA_Skill1::OnMontageInterrupted(FGameplayTag /*EventTag*/, FGameplayEventData /*EventData*/)
 {
-    GetActorInfo().AbilitySystemComponent->RemoveGameplayCue(FGameplayTag::RequestGameplayTag(FName("GameplayCue.Skill1.DirectionPreview")));
+    GetActorInfo().AbilitySystemComponent->RemoveGameplayCue(UEnumTagMatchHelper::GetTagFromEnum(ECueType::DirectionPreview));
     EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
 }
 
@@ -171,11 +174,11 @@ void UGA_Skill1::OnMontageCompleted(FGameplayTag ,FGameplayEventData){
 
         FGameplayEffectSpecHandle CoolSpec = ASC->MakeOutgoingSpec(SkillContext.SkillData->CoolTimeGEClass, 1.f, CoolContext);
         CoolSpec.Data->SetSetByCallerMagnitude(
-            SkillContext.SkillData->CooldownTag,
+            UEnumTagMatchHelper::GetTagFromEnum(EGasDataType::Cooldown),
             SkillContext.SkillData->CoolTime
         );
         CoolSpec.Data->SetSetByCallerMagnitude(
-            FGameplayTag::RequestGameplayTag(SkillAssetTypeTag),
+            SkillAssetTypeTag,
             SkillContext.SkillData->SkillID
         );
 
@@ -194,7 +197,7 @@ void UGA_Skill1::OnMontageCompleted(FGameplayTag ,FGameplayEventData){
         }
     }
 
-    GetActorInfo().AbilitySystemComponent->RemoveGameplayCue(FGameplayTag::RequestGameplayTag(FName("GameplayCue.Skill1.DirectionPreview")));
+    GetActorInfo().AbilitySystemComponent->RemoveGameplayCue(UEnumTagMatchHelper::GetTagFromEnum(ECueType::DirectionPreview));
 
     EndAbility(
         CurrentSpecHandle,

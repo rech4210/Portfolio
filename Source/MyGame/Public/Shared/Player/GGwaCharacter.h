@@ -8,6 +8,7 @@
 #include "GameFramework/Character.h"
 #include "GGwaCharacter.generated.h"
 
+class UPlayerReactionComponent;
 struct FGameplayEventData;
 class UInputMappingContext;
 class UInputAction;
@@ -54,6 +55,8 @@ public:
 	void OnSkillTriggered(const FGameplayEventData& EventData, int32 Index);
 	UFUNCTION(client, reliable)
 	void SetMoveData(const TArray<FVector>& Path, int32 PathIndex, bool bIsFollowing);
+
+	UPlayerReactionComponent* GetReactionComponent() const;
 protected:
 	UPROPERTY()
 	TObjectPtr<UGGwaAbilitySystemComponent> ASC;
@@ -61,6 +64,7 @@ protected:
 private:
 	void ExecuteAbility(const FGameplayEventData& EventData, int32 Index);
 	void OnLocalSkillInput(const FInputActionInstance& Instance, int32 Index);
+	TObjectPtr<UPlayerReactionComponent> ReactionComponent;
 };
 
 

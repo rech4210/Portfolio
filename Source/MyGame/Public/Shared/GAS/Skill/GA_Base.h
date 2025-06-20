@@ -1,20 +1,15 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
-
 #include "CoreMinimal.h"
 #include "Abilities/GameplayAbility.h"
 #include "Shared/GAS/SkillTargetPolicy/FSkillContext.h"
-#include "Shared/Data/CombinedAbilityDataAsset.h"
 #include "GA_Base.generated.h"
-
 
 UCLASS(BlueprintType, Blueprintable)
 class MYGAME_API UGA_Base : public UGameplayAbility
 {
 	GENERATED_BODY()
 public:
-	static const FName SkillAssetTypeTag;
+	static const FGameplayTag SkillAssetTypeTag;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Skill")
 	FSkillContext SkillContext;
 

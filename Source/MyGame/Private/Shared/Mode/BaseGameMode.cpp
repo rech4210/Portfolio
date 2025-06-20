@@ -4,6 +4,7 @@
 #include "Shared/Player/GGwaCharacter.h"
 #include "Shared/Player/GGwaPlayerController.h"
 #include "Shared/Player/GGwaPlayerState.h"
+#include "Shared/Utill/UEnumTagMatchHelper.h"
 
 ABaseGameMode::ABaseGameMode()
 {
@@ -16,6 +17,8 @@ ABaseGameMode::ABaseGameMode()
 void ABaseGameMode::BeginPlay()
 {
 	Super::BeginPlay();
+	if (HasAuthority()) {
+	}
 	// 서버 전용 매니저 초기화 훅 호출
 	InitializeServerManagers();
 }

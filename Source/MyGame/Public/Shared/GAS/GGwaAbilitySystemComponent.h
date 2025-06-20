@@ -20,6 +20,9 @@ public:
 	virtual void BeginPlay() override;
 	UPROPERTY()
 	TObjectPtr<ULocalDataBaseLoader> LocalDataBaseLoader;
+	
+	void ExecuteGameplayCueLocal(const FGameplayTag& GameplayCueTag, const FGameplayCueParameters& Parameters);
+	
 private:
 	void OnGameplayAppliedCallback(UAbilitySystemComponent* ASC, const FGameplayEffectSpec& Spec, FActiveGameplayEffectHandle Handle);
 	void ProcessGameplayEffect(const FGameplayEffectSpec& Spec, bool bIsServer) const;

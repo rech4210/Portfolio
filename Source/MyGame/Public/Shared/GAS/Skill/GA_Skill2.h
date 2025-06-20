@@ -7,6 +7,7 @@
 #include "Shared/GAS/Interface/ICustomAbilityTaskInterface.h"
 #include "GA_Skill2.generated.h"
 
+
 class UBuffDataAsset;
 class USkillDataAsset;
 class AGameplayAbilityTargetActor;

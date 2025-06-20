@@ -4,6 +4,8 @@
 #include "Shared/AI/BossCharacter.h"
 #include "GameplayTags.h"
 #include "Shared/AI/EnemyAbilitySystemComponent.h"
+#include "Shared/GAS/EGasEventType.h"
+#include "Shared/Utill/UEnumTagMatchHelper.h"
 
 EBTNodeResult::Type UBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
@@ -13,8 +15,9 @@ EBTNodeResult::Type UBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 	ASC = Cast<ABossCharacter>(OwnerComp.GetBlackboardComponent()->GetValueAsObject(FName("SelfActor")))->GetAbilitySystemComponent();
 	if (!ASC)
 		return EBTNodeResult::Failed;
-	FGameplayTag FinishTag = FGameplayTag::RequestGameplayTag(TEXT("Event.GA.Finished"));
-	FGameplayTagContainer TagContainer(FinishTag);
+
+	FGameplayTag Tag = UEnumTagMatchHelper::GetTagFromEnum(EGasEventType::AbilityFinished);
+	FGameplayTagContainer TagContainer(Tag);
 	EventHandle = ASC->AddGameplayEventTagContainerDelegate(
 		TagContainer,
 		FGameplayEventTagMulticastDelegate::FDelegate::CreateUObject(this, &UBTTask_Attack::OnFinished)
@@ -43,7 +46,7 @@ void UBTTask_Attack::OnFinished(FGameplayTag EventTag, const FGameplayEventData*
 void UBTTask_Attack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) {
 	if (!bFinished) return;
 
-	FGameplayTag FinishTag = FGameplayTag::RequestGameplayTag(TEXT("Event.GA.Finished"));
+	FGameplayTag FinishTag = UEnumTagMatchHelper::GetTagFromEnum(EGasEventType::AbilityFinished);
 	FGameplayTagContainer TagContainer(FinishTag);
 	if (ASC && FinishTag.IsValid() && EventHandle.IsValid()) {
 		ASC->RemoveGameplayEventTagContainerDelegate(TagContainer,EventHandle);

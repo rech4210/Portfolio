@@ -24,7 +24,8 @@ public class ClientModule : ModuleRules
                 "UMG",
                 "RenderCore",
                 "RHI",
-                "GameplayAbilities"
+                "GameplayAbilities",
+                "GameplayTags"
             }
         );
     }

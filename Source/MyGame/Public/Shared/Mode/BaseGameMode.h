@@ -11,7 +11,6 @@ class AGGwaCharacter;
 class AGGwaPlayerController;
 class AGGwaPlayerState;
 
-
 /**
  * 
  */
@@ -27,7 +26,6 @@ public:
 									   FName AbilityName,
 									   const FVector& TargetLocation);
 protected:
-	// 서버 전용 매니저 초기화 훅 (기본 구현은 빈 동작)
 	virtual void InitializeServerManagers() {}
 
 	virtual void BeginPlay() override;

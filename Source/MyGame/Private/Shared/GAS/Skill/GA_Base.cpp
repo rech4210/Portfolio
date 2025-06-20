@@ -10,9 +10,11 @@
 #include "Shared/AI/BossCharacter.h"
 #include "Shared/AI/EnemyAbilitySystemComponent.h"
 #include "Shared/AI/EnemyAttributeSet.h"
+#include "Shared/Data/EGasDataType.h"
 #include "Shared/Player/GGwaPlayerState.h"
+#include "Shared/Utill/UEnumTagMatchHelper.h"
 
-const FName UGA_Base::SkillAssetTypeTag = TEXT("Data.SkillID");
+const FGameplayTag UGA_Base::SkillAssetTypeTag = UEnumTagMatchHelper::GetTagFromEnum(EGasDataType::SkillID);
 
 void UGA_Base::PreProcessSkillStart(const FGameplayAbilityActorInfo* ActorInfo) {
 	AGGwaCharacter * AvatarActor = Cast<AGGwaCharacter>(ActorInfo->AvatarActor.Get());
@@ -30,7 +32,6 @@ void UGA_Base::PreProcessSkillStart(const FGameplayAbilityActorInfo* ActorInfo) 
 			// 	AvatarActor->SetActorRotation(Dir.Rotation());
 			// 	FGameplayEventData RotationEventData;
 			// 	RotationEventData.Instigator = AvatarActor;
-			// 	RotationEventData.EventTag = FGameplayTag::RequestGameplayTag(TEXT("Skill.TargetLocation"));
 			// 	RotationEventData.TargetData = UAbilitySystemBlueprintLibrary::AbilityTargetDataFromHitResult(Hit);
 			// 	ActorInfo->AbilitySystemComponent->HandleGameplayEvent(RotationEventData.EventTag ,&RotationEventData);
 			// }

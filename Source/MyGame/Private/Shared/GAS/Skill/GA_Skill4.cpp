@@ -8,7 +8,9 @@
 #include "MyGame/Public/Shared/GAS/SkillTargetPolicy/FSkillContext.h"
 
 #include "Shared/Data/BuffDataAsset.h"
+#include "Shared/Data/EGasDataType.h"
 #include "Shared/Data/SkillDataAsset.h"
+#include "Shared/Utill/UEnumTagMatchHelper.h"
 
 UGA_Skill4::UGA_Skill4() {
 	AbilityInputID = EAbilityInputID::Skill4;
@@ -33,7 +35,7 @@ void UGA_Skill4::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const 
 		SkillContext.SkillData = SkillDataAsset;
 		SkillContext.DetectedActors = NewObject<USkillTargetBase>(this, SkillDataAsset->TargetStrategyClass)->DetectTargets(SkillContext);
 		FGameplayEffectSpecHandle Spec = SkillContext.SourceASC->MakeOutgoingSpec(SkillDataAsset->GEClass, 1.f, SkillContext.SourceASC->MakeEffectContext());
-		Spec.Data->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag("Data.Cooldown"), SkillDataAsset->CoolTime);
+		Spec.Data->SetSetByCallerMagnitude(UEnumTagMatchHelper::GetTagFromEnum<EGasDataType>(EGasDataType::Cooldown), SkillDataAsset->CoolTime);
 		if (Spec.IsValid()) {
 			for (auto& target: SkillContext.DetectedActors)
 			{
