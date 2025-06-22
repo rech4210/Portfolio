@@ -38,9 +38,15 @@ void UPlayerReactionComponent::ExecuteKnockback(
 }
 
 void UPlayerReactionComponent::ExecuteDeadReaction() {
-	if (GetOwner()->HasAuthority()) {
-	}
-	else {
-		
-	}
+        if (AGGwaCharacter* Character = Cast<AGGwaCharacter>(GetOwner()))
+        {
+                if (Character->HasAuthority())
+                {
+                        Character->DetachFromControllerPendingDestroy();
+                }
+                else
+                {
+                        Character->DisableInput(nullptr);
+                }
+        }
 }

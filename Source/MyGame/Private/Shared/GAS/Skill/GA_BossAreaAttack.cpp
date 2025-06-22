@@ -21,15 +21,22 @@ UGA_BossAreaAttack::UGA_BossAreaAttack()
 }
 
 void UGA_BossAreaAttack::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData){
-    if (ActorInfo->AvatarActor.IsValid()){
+    AActor* Avatar = GetAvatarActorFromActorInfo();
+    if (IsValid(Avatar)){
         // Gameplay Cue 트리거
         FGameplayCueParameters CueParams;
-        CueParams.Instigator = ActorInfo->AvatarActor.Get();
-        CueParams.Location = ActorInfo->AvatarActor->GetActorLocation();
-        UGGwaAbilitySystemComponent* ASC = Cast<UGGwaAbilitySystemComponent>(Cast<AGGwaPlayerState>(Cast<AGGwaCharacter>(ActorInfo->AvatarActor)->GetPlayerState())->GetAbilitySystemComponent());
-        if (ASC){
-            //GA -> ASC -> PlayerReactionComponent
-            ASC->ExecuteGameplayCueLocal(UEnumTagMatchHelper::GetTagFromEnum(ECueType::AreaAttackWarning), CueParams);
+        CueParams.Instigator = Avatar;
+        CueParams.Location = Avatar->GetActorLocation();
+        if (AGGwaCharacter* Character = Cast<AGGwaCharacter>(Avatar))
+        {
+            if (AGGwaPlayerState* PS = Cast<AGGwaPlayerState>(Character->GetPlayerState()))
+            {
+                if (UGGwaAbilitySystemComponent* ASC = Cast<UGGwaAbilitySystemComponent>(PS->GetAbilitySystemComponent()))
+                {
+                    //GA -> ASC -> PlayerReactionComponent
+                    ASC->ExecuteGameplayCueLocal(UEnumTagMatchHelper::GetTagFromEnum(ECueType::AreaAttackWarning), CueParams);
+                }
+            }
         }
 
         UAbilityTask_WaitDelay* WaitDelayTask = UAbilityTask_WaitDelay::WaitDelay(this, DelayBeforeAttack);

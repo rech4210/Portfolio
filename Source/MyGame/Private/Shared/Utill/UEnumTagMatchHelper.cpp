@@ -6,18 +6,18 @@
 #include "Shared/GAS/EGasEventType.h"
 #include "Shared/GAS/Skill/ESkillType.h"
 
-// template<>
-// TMap<EObservedAttribute, FGameplayTag> UEnumTagMatchHelper::StateMap<EObservedAttribute>;
-// template<>
-// MYGAME_API TMap<EPlayerState, FGameplayTag> UEnumTagMatchHelper::StateMap<EPlayerState>;
-// template<>
-// MYGAME_API TMap<ECueType, FGameplayTag> UEnumTagMatchHelper::StateMap<ECueType>;
-// template<>
-// MYGAME_API TMap<EGasEventType, FGameplayTag> UEnumTagMatchHelper::StateMap<EGasEventType>;
-// template<>
-// MYGAME_API TMap<ESkillType, FGameplayTag> UEnumTagMatchHelper::StateMap<ESkillType>;
-// template<>
-// MYGAME_API TMap<EGasDataType, FGameplayTag> UEnumTagMatchHelper::StateMap<EGasDataType>;
+template<>
+MYGAME_API TMap<EObservedAttribute, FGameplayTag> UEnumTagMatchHelper::StateMap<EObservedAttribute>;
+template<>
+MYGAME_API TMap<EPlayerState, FGameplayTag> UEnumTagMatchHelper::StateMap<EPlayerState>;
+template<>
+MYGAME_API TMap<ECueType, FGameplayTag> UEnumTagMatchHelper::StateMap<ECueType>;
+template<>
+MYGAME_API TMap<EGasEventType, FGameplayTag> UEnumTagMatchHelper::StateMap<EGasEventType>;
+template<>
+MYGAME_API TMap<ESkillType, FGameplayTag> UEnumTagMatchHelper::StateMap<ESkillType>;
+template<>
+MYGAME_API TMap<EGasDataType, FGameplayTag> UEnumTagMatchHelper::StateMap<EGasDataType>;
 
 void UEnumTagMatchHelper::InitializeHelper() {
 	// Player States

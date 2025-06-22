@@ -13,6 +13,7 @@ UPlayerStateComponent::UPlayerStateComponent() {
 }
 
 void UPlayerStateComponent::PlayerDeath() {
+    OnPlayerStateChanged.Broadcast(EPlayerState::Dead);
 }
 
 //

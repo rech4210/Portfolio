@@ -27,6 +27,6 @@ class MYGAME_API UEnumTagMatchHelper {
 		return FGameplayTag::EmptyTag;
 	}
 private:
-	template<typename T>
-	static inline TMap<T, FGameplayTag> StateMap;
+        template<typename T>
+        static inline MYGAME_API TMap<T, FGameplayTag> StateMap;
 };
