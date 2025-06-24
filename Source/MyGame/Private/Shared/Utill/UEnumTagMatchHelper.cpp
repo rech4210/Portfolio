@@ -1,4 +1,5 @@
 ﻿#include "Shared/Utill/UEnumTagMatchHelper.h"
+#include "GameplayTagsManager.h"
 
 #include "Shared/Data/EGasDataType.h"
 #include "Shared/Player/EPlayerState.h"
@@ -6,18 +7,11 @@
 #include "Shared/GAS/EGasEventType.h"
 #include "Shared/GAS/Skill/ESkillType.h"
 
-// template<>
-// TMap<EObservedAttribute, FGameplayTag> UEnumTagMatchHelper::StateMap<EObservedAttribute>;
-// template<>
-// MYGAME_API TMap<EPlayerState, FGameplayTag> UEnumTagMatchHelper::StateMap<EPlayerState>;
-// template<>
-// MYGAME_API TMap<ECueType, FGameplayTag> UEnumTagMatchHelper::StateMap<ECueType>;
-// template<>
-// MYGAME_API TMap<EGasEventType, FGameplayTag> UEnumTagMatchHelper::StateMap<EGasEventType>;
-// template<>
-// MYGAME_API TMap<ESkillType, FGameplayTag> UEnumTagMatchHelper::StateMap<ESkillType>;
-// template<>
-// MYGAME_API TMap<EGasDataType, FGameplayTag> UEnumTagMatchHelper::StateMap<EGasDataType>;
+template<> TMap<EPlayerState, FGameplayTag> UEnumTagMatchHelper::StateMap<EPlayerState> = {};
+template<> TMap<ECueType, FGameplayTag> UEnumTagMatchHelper::StateMap<ECueType> = {};
+template<> TMap<EGasEventType, FGameplayTag> UEnumTagMatchHelper::StateMap<EGasEventType> = {};
+template<> TMap<ESkillType, FGameplayTag> UEnumTagMatchHelper::StateMap<ESkillType> = {};
+template<> TMap<EGasDataType, FGameplayTag> UEnumTagMatchHelper::StateMap<EGasDataType> = {};
 
 void UEnumTagMatchHelper::InitializeHelper() {
 	// Player States
@@ -27,15 +21,18 @@ void UEnumTagMatchHelper::InitializeHelper() {
 	Register<EPlayerState>(EPlayerState::Knockback, FGameplayTag::RequestGameplayTag(TEXT("State.Player.Knockback")));
 	Register<EPlayerState>(EPlayerState::Dead, FGameplayTag::RequestGameplayTag(TEXT("State.Player.Dead")));
 	Register<EPlayerState>(EPlayerState::Hit, FGameplayTag::RequestGameplayTag(TEXT("State.Player.Hit")));
+	Register<EPlayerState>(EPlayerState::Guard, FGameplayTag::RequestGameplayTag(TEXT("State.Player.Guard")));
 
 	// Cue Types
 	Register<ECueType>(ECueType::None, FGameplayTag::RequestGameplayTag(TEXT("Cue.None")));
 	Register<ECueType>(ECueType::DirectionPreview, FGameplayTag::RequestGameplayTag(TEXT("Cue.DirectionPreview")));
 	Register<ECueType>(ECueType::AreaAttackWarning, FGameplayTag::RequestGameplayTag(TEXT("Cue.AreaAttackWarning")));
+	
 
 	// GAS Event Types
 	Register<EGasEventType>(EGasEventType::None, FGameplayTag::RequestGameplayTag(TEXT("GasEvent.None")));
 	Register<EGasEventType>(EGasEventType::AbilityFinished, FGameplayTag::RequestGameplayTag(TEXT("GasEvent.AbilityFinished")));
+	
 
 	// Skill Types
 	Register<ESkillType>(ESkillType::None, FGameplayTag::RequestGameplayTag(TEXT("Skill")));
@@ -49,9 +46,12 @@ void UEnumTagMatchHelper::InitializeHelper() {
 	Register<ESkillType>(ESkillType::Skill7, FGameplayTag::RequestGameplayTag(TEXT("Skill.Skill7")));
 	Register<ESkillType>(ESkillType::Skill8, FGameplayTag::RequestGameplayTag(TEXT("Skill.Skill8")));
 	Register<ESkillType>(ESkillType::Skill9, FGameplayTag::RequestGameplayTag(TEXT("Skill.Skill9")));
+	
 
 	// GAS Data Types
 	Register<EGasDataType>(EGasDataType::None, FGameplayTag::RequestGameplayTag(TEXT("Data.None")));
 	Register<EGasDataType>(EGasDataType::Cooldown, FGameplayTag::RequestGameplayTag(TEXT("Data.Cooldown")));
+	Register<EGasDataType>(EGasDataType::CueDuration, FGameplayTag::RequestGameplayTag(TEXT("Data.CueDuration")));
 	Register<EGasDataType>(EGasDataType::SkillID, FGameplayTag::RequestGameplayTag(TEXT("Data.SkillID")));
+	Register<EGasDataType>(EGasDataType::TagDuration, FGameplayTag::RequestGameplayTag(TEXT("Data.TagDuration")));
 }

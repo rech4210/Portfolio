@@ -5,9 +5,12 @@
 #include "CoreMinimal.h"
 #include "GameFramework/HUD.h"
 #include "UI/Widget/GGwaWidget.h"
+#include "Shared/AI/EnemySystemCore/FBossDataStruct.h"
 #include "GGwaHUD.generated.h"
 
 class UBossStatusWidget;
+class UBaseDataAsset;
+
 /**
  * 
  */
@@ -17,6 +20,12 @@ class CLIENTMODULE_API AGGwaHUD : public AHUD
 	GENERATED_BODY()
 	
 	
+public:
+	UFUNCTION()
+	void HandleAbilityDataApplied(UBaseDataAsset* Data);
+	UFUNCTION()
+	void HandleBossDataReceived(const FBossDataStruct& BossData);
+
 public:
 	UGGwaWidget* GetBaseWidget() const;
 	UBossStatusWidget* GetBossWidget() const;

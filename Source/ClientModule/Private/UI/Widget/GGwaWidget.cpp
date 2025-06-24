@@ -19,9 +19,14 @@
 #include "UI/ToolTip/SkillToolTip.h"
 #include "UI/Widget/BuffSlotWidget.h"
 
-void UGGwaWidget::NativeConstruct() {
-	
-}
+
+// TMap<EPlayerState, TFunction<void()>> StateHandlers;
+//
+// void InitializeStateHandlers()
+// {
+// 	StateHandlers.Add(EPlayerState::Stunned, [this]() { ShowStunUI(); });
+// 	StateHandlers.Add(EPlayerState::Dead, [this]() { ShowDeathScreen(); });
+// }
 
 
 // buff의 경우 재생성 하므로 우선 구현. 나중에 Pooling 적용후 삭제 예정
@@ -65,10 +70,19 @@ void UGGwaWidget::BindWidgetWithTooltip(UBaseDataAsset* Data) {
 	}
 }
 
+
+void UGGwaWidget::DoWidgetWork() {
+}
+
+
 void UGGwaWidget::InitWidget(UGGwaAbilitySystemComponent* AbilitySystemComponent, const UGGwaAttributeSet* AttributeSet) {
 	if (!AbilitySystemComponent || !AttributeSet) return;
+
 	ASC = AbilitySystemComponent;
 	GGwaAttributeSet = AttributeSet;
+	
+	// Bind to the new delegate from the ASC for buff/skill/item UI updates
+	ASC->OnEffectAssetApplied.AddDynamic(this, &UGGwaWidget::BindWidgetWithTooltip);
 	
 	BP_PlayerStatusWidget->InitWidget();
 	BP_SkillBarWidget->InitWidget();

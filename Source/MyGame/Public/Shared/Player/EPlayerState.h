@@ -10,5 +10,6 @@ enum class EPlayerState : uint8{
 	Stunned,
 	Knockback,
 	Dead,
-	Hit
+	Hit,
+	Guard
 };

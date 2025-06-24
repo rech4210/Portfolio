@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "AbilitySystemInterface.h"
+#include "EPlayerState.h"
 #include "GameplayEffectTypes.h"
 #include "GameFramework/PlayerState.h"
 #include "Shared/Data/SkillDataAsset.h"
@@ -34,9 +35,8 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "GAS")
 	FOnAttributeChanged OnAttributeChanged;
 
-	void BroadcastAttributeChange(const FGameplayAttribute& Attribute, float NewValue, USkillDataAsset* SkillData) const;
-	void SetPlayerDeathState() const;
-	virtual void BeginPlay() override;
+	void BroadcastAttributeChange(const FGameplayAttribute& Attribute, float NewValue) const;
+	void InitPlayerState();
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="GAS")
 	TObjectPtr<UGGwaAbilitySystemComponent> ASC;

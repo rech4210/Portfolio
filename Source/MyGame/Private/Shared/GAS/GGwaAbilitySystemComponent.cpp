@@ -15,11 +15,16 @@
 #include "Shared/Player/GGwaCharacter.h"
 #include "Shared/Player/Component/PlayerReactionComponent.h"
 #include "Shared/Utill/UEnumTagMatchHelper.h"
+#include "AbilitySystemGlobals.h"
+#include "GameplayCueManager.h"
+#include "Kismet/GameplayStatics.h"
+#include "AbilitySystemBlueprintLibrary.h"
 
 UGGwaAbilitySystemComponent::UGGwaAbilitySystemComponent()
 {
     PrimaryComponentTick.bCanEverTick = true;
     SetIsReplicated(true);
+    LocalDataBaseLoader = CreateDefaultSubobject<ULocalDataBaseLoader>(TEXT("LocalDataBaseLoader"));
 }
 
 void UGGwaAbilitySystemComponent::BeginPlay()
@@ -34,7 +39,6 @@ void UGGwaAbilitySystemComponent::BeginPlay()
         );
     }
 
-    LocalDataBaseLoader = NewObject<ULocalDataBaseLoader>(this);
     LocalDataBaseLoader->Initialize();
 
     /**
@@ -58,6 +62,7 @@ void UGGwaAbilitySystemComponent::ProcessGameplayEffect(const FGameplayEffectSpe
         PC = Cast<AGGwaPlayerController>(InstigatorActor->GetInstigatorController());
     }
     if (!PC){
+        //보스 조건부 필요
         AGGwaPlayerState* PS = Cast<AGGwaPlayerState>(GetOwner());
         PC = PS ? Cast<AGGwaPlayerController>(PS->GetPlayerController()) : nullptr;
     }
@@ -68,31 +73,20 @@ void UGGwaAbilitySystemComponent::ProcessGameplayEffect(const FGameplayEffectSpe
     int32 SkillID = -1;
     SkillID = Spec.GetSetByCallerMagnitude(UEnumTagMatchHelper::GetTagFromEnum(EGasDataType::SkillID), true, SkillID);
     
-    if (SkillID <= 0){
-        UE_LOG(LogTemp, Log, TEXT("[ASC] Invalid SkillID %d"), SkillID);
-        return;
-    }
-
+    // 해당 로직을 점검..할것
     FPrimaryAssetId AssetId;
     LocalDataBaseLoader->GetPrimaryAssetId(SkillID, AssetId);
     USkillDataAsset* SkillData = LocalDataBaseLoader->GetDataFromAssetId<USkillDataAsset>(AssetId, /*bSync=*/true);
-
-    if (AGGwaPlayerState* PS = Cast<AGGwaPlayerState>(InstigatorActor))
-    {
-        // 변경된 속성들에 대해 브로드캐스트 
-        for (const FGameplayModifierInfo& Mod : Spec.Def->Modifiers)
-        {
-            const FGameplayAttribute& Attribute = Mod.Attribute;
-            float NewValue = GetNumericAttribute(Attribute);
-            if (!SkillData){
-                UE_LOG(LogTemp, Warning, TEXT("[ASC] Failed to load SkillData for ID %d"), SkillID);
-                // return;
-            }
-            PS->BroadcastAttributeChange(Attribute, NewValue, SkillData);
+        if (!SkillData){
+            UE_LOG(LogTemp, Warning, TEXT("[ASC] Failed to load SkillData for ID %d"), SkillID);
+            return;
         }
-    }
+        for (UBuffDataAsset* Buff : SkillData->AppliedBuffs) {
+            // 버프 적용 로직도 구현할것. 현재 SRP 원칙이 지켜지는지 확인.
+            // State 적용시 UI나, 이펙트 처리에도 필요할것이라고 판단함.  
+            OnEffectAssetApplied.Broadcast(Buff);
+        }
 
-    // 이미 GA의 Cooldown GE 적용 (쿨다운용 따로 만들어줘야하긴 함) 이 되므로 필요없음. 애초에 이게 호출되는 시점에 GE 쿨타임체크가 발동되지않음.
     const FGameplayTagContainer& Tags = Spec.Def->GetGrantedTags();
     if (Tags.HasTag(UEnumTagMatchHelper::GetTagFromEnum(EGasDataType::Cooldown))){
         UE_LOG(LogTemp, Warning, TEXT("[ASC] Cooldown Active (%s) [%s]"),
@@ -100,25 +94,17 @@ void UGGwaAbilitySystemComponent::ProcessGameplayEffect(const FGameplayEffectSpe
             *SkillData->DisplayName.ToString()
         );
     }
-
-    //Client RPC를 통한 스킬 ID 전송 (Deprecated) -> PlayerState의 BroadcastAttributeChange로 대체됨.
-    // PC->Client_ApplyAbilityDataAsset(SkillData);
-    // for (const FPrimaryAssetId& BuffId : SkillData->AppliedBuffs)
-    // {
-    //     UBuffDataAsset* BuffData =
-    //         LocalDataBaseLoader->GetDataFromAssetId<UBuffDataAsset>(BuffId, /*bSync=*/true);
-    //     if (BuffData)
-    //     {
-    //         UE_LOG(LogTemp, Display, TEXT("[ASC] Applied Buff: %s"), *BuffData->DisplayName.ToString());
-    //         PC->Client_ApplyAbilityDataAsset(BuffData);
-    //     }
-    // }
 }
 
 void UGGwaAbilitySystemComponent::ExecuteGameplayCueLocal(const FGameplayTag& GameplayCueTag, const FGameplayCueParameters& Parameters) {
-    if (AGGwaCharacter* Character = Cast<AGGwaCharacter>(GetOwner())) {
-        if (UPlayerReactionComponent* ReactionComponent = Character->GetReactionComponent()) {
-            ReactionComponent->HandleGameplayCue(GameplayCueTag, EGameplayCueEvent::Executed, Parameters);
-        }
+    // This should only be called on a client.
+    // We can get the OwnerActor and check if it's locally controlled.
+    AActor* OwnActor = GetOwnerActor();
+    if(!OwnActor) return;
+    
+    APawn* OwnerPawn = Cast<APawn>(OwnActor);
+    if(OwnerPawn && OwnerPawn->IsLocallyControlled())
+    {
+        UAbilitySystemGlobals::Get().GetGameplayCueManager()->HandleGameplayCue(GetOwnerActor(), GameplayCueTag, EGameplayCueEvent::Executed, Parameters);
     }
 }

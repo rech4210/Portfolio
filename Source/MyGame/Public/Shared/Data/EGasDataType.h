@@ -3,5 +3,7 @@
 enum class EGasDataType : uint8{
     None = 0,
     Cooldown,
-    SkillID
+    SkillID,
+    CueDuration,
+    TagDuration
 };

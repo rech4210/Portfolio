@@ -2,8 +2,9 @@
 
 #include "CoreMinimal.h"
 #include "GA_Base.h"
-#include "Abilities/GameplayAbility.h"
 #include "GA_BossAreaAttack.generated.h"
+
+class UBossSkillDataAsset;
 
 UCLASS()
 class MYGAME_API UGA_BossAreaAttack : public UGA_Base
@@ -13,6 +14,14 @@ class MYGAME_API UGA_BossAreaAttack : public UGA_Base
 public:
     UGA_BossAreaAttack();
 
+
+    UPROPERTY(EditAnywhere)
+    TSubclassOf<UGameplayEffect> TagEffect;
+    UPROPERTY(EditAnywhere)
+    TObjectPtr<USkillDataAsset> SkillDataAsset;
+    	
+    UPROPERTY(EditAnywhere)
+    float KnockbackTagMagnitude = 0.f;
 protected:
     virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
     UFUNCTION()
@@ -27,8 +36,5 @@ private:
 
     UPROPERTY(EditDefaultsOnly, Category = "Ability")
     float DelayBeforeAttack;
-
-    UPROPERTY(EditDefaultsOnly, Category = "Ability")
-    TSubclassOf<class UGameplayEffect> KnockBackEffect;
 
 };

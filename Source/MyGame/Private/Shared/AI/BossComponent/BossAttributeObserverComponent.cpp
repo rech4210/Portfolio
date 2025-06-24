@@ -29,8 +29,13 @@ void UBossAttributeObserverComponent::BeginPlay() {
 void UBossAttributeObserverComponent::OnAttributeChanged(EObservedAttribute Attribute,
 	const FOnAttributeChangeData& Data) const{
 	ABossCharacter* BC = Cast<ABossCharacter>(GetOwner());
+	const FBossDataStruct Old = BC->CachedBossData;
 	AttributeHelper.HandleAttributeChange(Attribute, BC->CachedBossData, Data.NewValue);
 	if (BC->HasAuthority()) {
+		//주의해야할 점. Attribute의 값이 수정되지 않아도 callback 이 호출되는 경우가 존재했음. Old Value 기준으로 처리할것.
+		if (Old == BC->CachedBossData) {
+			return;
+		}
 		BC->UpdateDataFromBoss(BC->CachedBossData);
 	}
 }

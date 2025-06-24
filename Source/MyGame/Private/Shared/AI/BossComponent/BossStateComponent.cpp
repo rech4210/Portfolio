@@ -46,8 +46,11 @@ void UBossStateComponent::BindOnStateChanged(UBlackboardComponent* BB, EBossStat
 
 
 void UBossStateComponent::AdvanceBossPhase(UBlackboardComponent* BB){
-	PhaseIndex = FMath::Clamp(PhaseIndex+1, MIN_PHASE, MAX_PHASE);;
-	BB->SetValueAsInt(FName("PhaseIndex"), PhaseIndex);
+	UE_LOG(LogTemp, Warning, TEXT("Phase Change Request"));
+	if (GetOwner()->HasAuthority()) {
+		PhaseIndex = FMath::Clamp(PhaseIndex+1, MIN_PHASE, MAX_PHASE);;
+		BB->SetValueAsInt(FName("PhaseIndex"), PhaseIndex);
+	}
 }
 
 

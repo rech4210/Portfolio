@@ -6,51 +6,92 @@
 #include "Shared/AI/EnemyAbilitySystemComponent.h"
 #include "Shared/GAS/EGasEventType.h"
 #include "Shared/Utill/UEnumTagMatchHelper.h"
+#include "BehaviorTree/BehaviorTreeComponent.h"
 
 EBTNodeResult::Type UBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
+	BTComponent = &OwnerComp;
+
 	if (!AttackAbility)
+	{
 		return EBTNodeResult::Failed;
+	}
 
-	ASC = Cast<ABossCharacter>(OwnerComp.GetBlackboardComponent()->GetValueAsObject(FName("SelfActor")))->GetAbilitySystemComponent();
+	auto* SelfActor = OwnerComp.GetBlackboardComponent()->GetValueAsObject(FName("SelfActor"));
+	ABossCharacter* BossCharacter = Cast<ABossCharacter>(SelfActor);
+	if (!BossCharacter)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UBTTask_Attack::ExecuteTask: SelfActor is not a BossCharacter."));
+		return EBTNodeResult::Failed;
+	}
+
+	ASC = BossCharacter->GetAbilitySystemComponent();
 	if (!ASC)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UBTTask_Attack::ExecuteTask: Could not get AbilitySystemComponent."));
 		return EBTNodeResult::Failed;
+	}
 
-	FGameplayTag Tag = UEnumTagMatchHelper::GetTagFromEnum(EGasEventType::AbilityFinished);
-	FGameplayTagContainer TagContainer(Tag);
-	EventHandle = ASC->AddGameplayEventTagContainerDelegate(
-		TagContainer,
-		FGameplayEventTagMulticastDelegate::FDelegate::CreateUObject(this, &UBTTask_Attack::OnFinished)
-	);
 	
-	bFinished = false;
+	const FGameplayTag FinishEventTag = FGameplayTag::RequestGameplayTag("GasEvent.AbilityFinished");
+	if (!FinishEventTag.IsValid())
+	{
+		UE_LOG(LogTemp, Error, TEXT("UBTTask_Attack::ExecuteTask: Invalid GameplayTag for AbilityFinished."));
+		return EBTNodeResult::Failed;
+	}
+
+	EventHandle = ASC->AddGameplayEventTagContainerDelegate(
+		FGameplayTagContainer(FinishEventTag),
+		FGameplayEventTagMulticastDelegate::FDelegate::CreateUObject(this, &UBTTask_Attack::OnAbilityFinished)
+	);
+
+	// 현재 boss area 공격의 경우, OnAbilityFinished 가 제대로 적용되지 않는 경우가 존재함.
+	// Area attack 이 실행되고 난 후, task가 종료되지 못해서 무한정 대기중임.
 	FGameplayAbilitySpec* Spec = ASC->FindAbilitySpecFromClass(AttackAbility);
-	if (!Spec) {
+	if (!Spec)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UBTTask_Attack::ExecuteTask: Ability spec not found for %s"), *AttackAbility->GetName());
+		CleanUp();
 		return EBTNodeResult::Failed;
 	}
-	bool bActivated = ASC->TryActivateAbility(Spec->Handle, false);
-	if (!bActivated) {
+	
+	const bool bActivated = ASC->TryActivateAbility(Spec->Handle, false);
+	if (!bActivated)
+	{
 		UE_LOG(LogTemp, Warning, TEXT("UBTTask_Attack::ExecuteTask: TryActivateAbility failed for %s"), *AttackAbility->GetName());
+		CleanUp();
 		return EBTNodeResult::Failed;
 	}
-	bNotifyTick = true;
 	
 	return EBTNodeResult::InProgress;
 }
 
-void UBTTask_Attack::OnFinished(FGameplayTag EventTag, const FGameplayEventData* EventData) {
-	bFinished = true;
+void UBTTask_Attack::OnAbilityFinished(FGameplayTag EventTag, const FGameplayEventData* EventData)
+{
+	if (BTComponent)
+	{
+		FinishLatentTask(*BTComponent, EBTNodeResult::Succeeded);
+	}
+	CleanUp();
 }
 
-// 종료 조건이 잘 이루어지지 않음.
-void UBTTask_Attack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) {
-	if (!bFinished) return;
+EBTNodeResult::Type UBTTask_Attack::AbortTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
+{
+	CleanUp();
+	return EBTNodeResult::Aborted;
+}
 
-	FGameplayTag FinishTag = UEnumTagMatchHelper::GetTagFromEnum(EGasEventType::AbilityFinished);
-	FGameplayTagContainer TagContainer(FinishTag);
-	if (ASC && FinishTag.IsValid() && EventHandle.IsValid()) {
-		ASC->RemoveGameplayEventTagContainerDelegate(TagContainer,EventHandle);
+void UBTTask_Attack::CleanUp()
+{
+	if (ASC && EventHandle.IsValid())
+	{
+		const FGameplayTag FinishEventTag = FGameplayTag::RequestGameplayTag("GasEvent.AbilityFinished");
+		if (FinishEventTag.IsValid())
+		{
+			ASC->RemoveGameplayEventTagContainerDelegate(FGameplayTagContainer(FinishEventTag), EventHandle);
+		}
+		EventHandle.Reset();
 	}
-
-	FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
+	ASC = nullptr;
+	BTComponent = nullptr;
 }

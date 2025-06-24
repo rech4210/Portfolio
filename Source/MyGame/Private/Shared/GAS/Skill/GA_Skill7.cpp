@@ -25,11 +25,11 @@ void UGA_Skill7::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const 
 	}
 	TWeakObjectPtr<AActor> AvatarActor = ActorInfo ? ActorInfo->AvatarActor : nullptr;
 
-		if (auto PC = Cast<AGGwaPlayerController>(ActorInfo->PlayerController); nullptr != PC) {
-			PC->Client_ApplyAbilityDataAsset(BuffDataAsset);
-			PC->Client_ApplyAbilityDataAsset(SkillDataAsset);
-		}
-	
+		// if (auto PC = Cast<AGGwaPlayerController>(ActorInfo->PlayerController); nullptr != PC) {
+		// 	PC->Client_ApplyAbilityDataAsset(BuffDataAsset);
+		// 	PC->Client_ApplyAbilityDataAsset(SkillDataAsset);
+		// }
+		//
 	if (AvatarActor->HasAuthority()) {
 		SkillContext = BuildSkillContext(ActorInfo);
 		SkillContext.SkillData = SkillDataAsset;

@@ -2,7 +2,24 @@
 
 
 #include "UI/GGwaHUD.h"
+#include "Shared/AI/EnemySystemCore/FBossDataStruct.h"
 #include "UI/Enemy/BossStatusWidget.h"
+
+void AGGwaHUD::HandleAbilityDataApplied(UBaseDataAsset* Data)
+{
+	if (BaseWidget)
+	{
+		BaseWidget->BindWidgetWithTooltip(Data);
+	}
+}
+
+void AGGwaHUD::HandleBossDataReceived(const FBossDataStruct& BossData)
+{
+	if (BossWidget)
+	{
+		BossWidget->UpdateWidget(BossData);
+	}
+}
 
 UGGwaWidget* AGGwaHUD::GetBaseWidget() const { return BaseWidget; }
 

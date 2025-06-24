@@ -39,6 +39,11 @@ void AGGwaClient_PlayerController::InitClientWidget() {
 			GGwaHUD = Cast<AGGwaHUD>(GetHUD());
 			GGwaHUD->SetBaseWidget(Widget);
 			GGwaHUD->SetBossWidget(BossWidget);
+
+			// Bind to the controller's delegates
+			// OnAbilityDataAssetApplied is no longer used.
+			// OnAbilityDataAssetApplied.AddDynamic(GGwaHUD, &AGGwaHUD::HandleAbilityDataApplied);
+			OnBossDataReceived.AddDynamic(GGwaHUD, &AGGwaHUD::HandleBossDataReceived);
 			
 			if (AGGwaPlayerState * PS = GetPlayerState<AGGwaPlayerState>()) {
 				auto ASC = PS->GetAbilitySystemComponent();
@@ -54,19 +59,28 @@ void AGGwaClient_PlayerController::InitClientWidget() {
  * Attribute -> GGwaPlayerState (복제) -> Replicate -> UI 반영 로직으로 적용하기
  */
 
-// 해당 로직을 대체함 Attribute -> GGwaPlayerState (복제) -> Replicate -> Loader -> get skillAsset
+// This RPC is no longer used and will be removed.
+/*
 void AGGwaClient_PlayerController::Client_ApplyAbilityDataAsset_Implementation(UBaseDataAsset* Data) {
-	if (GGwaHUD && IsLocalController()) {
-		// Is it call twice?
-		GGwaHUD->GetBaseWidget()->BindWidgetWithTooltip(Data);
+	if (IsLocalController()) {
+		OnAbilityDataAssetApplied.Broadcast(Data);
+	}
+}
+*/
+
+void AGGwaClient_PlayerController::Client_ReceiveBossData_Implementation(const FBossDataStruct& Data) {
+	if (IsLocalController()) {
+		OnBossDataReceived.Broadcast(Data);
 	}
 }
 
-void AGGwaClient_PlayerController::Client_ReceiveBossData_Implementation(const FBossDataStruct& Data) {
-	if (GGwaHUD && IsLocalController()) {
-		GGwaHUD->GetBossWidget()->UpdateWidget(Data);
+
+void AGGwaClient_PlayerController::NotifyClientStateChanged() {
+	if (IsLocalController()) {
+		GGwaHUD->GetBaseWidget()->OnPlayerStateChanged.Broadcast();
 	}
 }
+
 
 void AGGwaClient_PlayerController::PlayerTick(float DeltaTime) {
 	{
@@ -115,6 +129,7 @@ void AGGwaClient_PlayerController::PlayerTick(float DeltaTime) {
 		}
 	}
 }
+
 
 // void AGGwaClient_PlayerController::Client_ApplyAbilityDataAsset(UBaseDataAsset* Data) {
 // 	if (GGwaHUD && IsLocalController()) {

@@ -17,7 +17,7 @@ void USkillTargetBase::DebugSkillShape(const UWorld* World, const FVector& Start
 		FQuat::Identity,
 		FColor::Blue,
 		false,
-		1.0f,  // 지속 시간 (초)
+		2.0f,  // 지속 시간 (초)
 		0,
 		2.0f   // 선 두께
 	);
@@ -29,7 +29,7 @@ void USkillTargetBase::DebugSkillShape(const UWorld* World, const FVector& Start
 		12,            // 세그먼트 수
 		FColor::Green,
 		false,
-		1.0f,
+		2.0f,
 		0,
 		2.0f
 	);
@@ -40,7 +40,7 @@ void USkillTargetBase::DebugSkillShape(const UWorld* World, const FVector& Start
 		EndLocation,
 		FColor::Red,
 		false,
-		1.0f,
+		2.0f,
 		0,
 		1.0f
 	);
@@ -50,7 +50,7 @@ void USkillTargetBase::DebugSkillShape(const UWorld* World, const FVector& Start
 bool USkillTargetBase::HasASC(AActor* Actor) const {
 	//체크 판단에서 적을 정의해야한다. 현재는 character 모두 상속받는다면, 보스와 플레이어 모두 타격 대상이 된다.
 	if (AGGwaCharacter* Character =  Cast<AGGwaCharacter>(Actor)) {
-		if (Cast<AGGwaPlayerState>(Character->GetPlayerState())->Implements<UAbilitySystemInterface>()) {
+		if (Character->Implements<UAbilitySystemInterface>()) {
 			return true;
 		}
 		return false;
