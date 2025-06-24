@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "AbilitySystemInterface.h"
 #include "EnhancedInputComponent.h"
 #include "GameplayTagContainer.h"
 #include "GameFramework/Character.h"
@@ -16,7 +17,7 @@ class UGGwaAbilitySystemComponent;
 class UGameplayAbility;
 
 UCLASS()
-class MYGAME_API AGGwaCharacter : public ACharacter
+class MYGAME_API AGGwaCharacter : public ACharacter, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
 
@@ -45,7 +46,7 @@ public:
 	UPROPERTY(EditDefaultsOnly, category = "Abilities")
 	TArray<UAnimMontage*> SkillMontages;
 
-	
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void OnRep_PlayerState() override;
 	virtual void BeginPlay() override;
@@ -57,9 +58,9 @@ public:
 	void SetMoveData(const TArray<FVector>& Path, int32 PathIndex, bool bIsFollowing);
 
 	UPlayerReactionComponent* GetReactionComponent() const;
-protected:
 	UPROPERTY()
 	TObjectPtr<UGGwaAbilitySystemComponent> ASC;
+protected:
 	void InitASC();
 private:
 	void ExecuteAbility(const FGameplayEventData& EventData, int32 Index);

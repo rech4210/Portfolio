@@ -84,7 +84,7 @@ void AAttackProjectile::OnMeshBeginOverlap(UPrimitiveComponent* OverlappedCompon
 
     if (HasAuthority() && Projectile_GE) {
         if (auto Character = Cast<AGGwaCharacter>(OtherActor)) {
-            if (auto ASC = Cast<AGGwaPlayerState>(Character->GetPlayerState())->GetAbilitySystemComponent()) {
+            if (auto ASC = Character->GetAbilitySystemComponent()) {
                 FGameplayEffectContextHandle Context = ASC->MakeEffectContext();
                 FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(Projectile_GE, 1.f, Context);
                 //GC 적용을 위한 임시 처리. 추후 Duration 기반으로 처리

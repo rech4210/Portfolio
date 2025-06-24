@@ -7,57 +7,195 @@
 #include "Shared/GAS/GGwaAbilitySystemComponent.h"
 #include "Shared/GAS/SkillTargetPolicy/SkillTarget_TargetActor.h"
 
+#include "HttpModule.h"
+#include "Shared/Data/SkillDataAsset.h"
+#include "Shared/GAS/SkillTargetPolicy/SkillTargetActor_Mouse.h"
+#include "Shared/GAS/SkillTargetPolicy/SkillTarget_Self.h"
+#include "Shared/GAS/AbilityTask/GGwaPlayMontageAndWaitForEvent.h"
+#include "Shared/Data/EGasDataType.h"
+#include "Shared/GAS/Cue/ECueType.h"
+#include "Shared/GAS/SkillTargetPolicy/FSkillContext.h"
+#include "Shared/Mode/BaseGameMode.h"
+#include "Shared/Player/GGwaAnimInstance.h"
+#include "Shared/Player/GGwaCharacter.h"
+#include "Shared/Utill/UEnumTagMatchHelper.h"
 
-void UGA_Skill2::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
-                                 const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) {
-	const UAbilityTask_WaitTargetData* TargetDataTask = GetTargetDataTask();
-
-	
-	/*의문 : 여기서 어떤 기준으로 OnTargetDataReceived, OnTargetDataCancelled 호출하지?*/
-	// OnTargetDataReceived : HitData->HitResult.ImpactPoint;
+UGA_Skill2::UGA_Skill2()
+{
+	AbilityInputID    = EAbilityInputID::Skill2;
 }
 
+void UGA_Skill2::OnAvatarSet(
+	const FGameplayAbilityActorInfo* ActorInfo,
+	const FGameplayAbilitySpec& Spec)
+{
+	Super::OnAvatarSet(ActorInfo, Spec);
+}
 
-/*아래 내용들은 Interface에 정의하여, AbilityTask가 필요한 기술일 경우 필수 구현하도록 순수가상함수 설정.*/
-void UGA_Skill2::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Data) {
-	if (const FGameplayAbilityTargetData_SingleTargetHit* HitData = static_cast<const FGameplayAbilityTargetData_SingleTargetHit*>(Data.Get(0))){
-		/* 여기서 부모를 호출하는 이유는, Task가 성공 후에 해당 방향을 바라보도록 부모 로직을 처리하기 위해서임.*/
-		// PreProcessSkillStart(CurrentActorInfo);
-		SkillContext = BuildSkillContext(CurrentActorInfo);
-		SkillContext.SkillData = SkillDataAsset;
-		
-		FVector HitLocation = HitData->HitResult.ImpactPoint;
-		SkillContext.TargetLocation = HitLocation;
-		SkillContext.TargetActor = HitData->GetHitResult()->GetActor();
-		// 범위 공격일 경우 사용
-		SkillContext.DetectedActors = NewObject<USkillTarget_TargetActor>
-									(SkillDataAsset->TargetStrategyClass)
-									->DetectTargets(SkillContext);
-		FGameplayEffectSpecHandle SpecHandle = SkillContext.SourceASC->MakeOutgoingSpec(SkillDataAsset->GEClass,
-											1.f, SkillContext.SourceASC->MakeEffectContext());
-		if (SkillContext.TargetActor->Implements<UAbilitySystemInterface>()) {
-			UGGwaAbilitySystemComponent* TargetASC = Cast<UGGwaAbilitySystemComponent>(Cast<IAbilitySystemInterface>(SkillContext.TargetActor)->GetAbilitySystemComponent());
-			if (TargetASC && SpecHandle.IsValid()) {
-				SkillContext.SourceASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
+void UGA_Skill2::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
+	const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData*)
+{
+	FScopedPredictionWindow ScopedPredictionWindow(ActorInfo->AbilitySystemComponent.Get());
+
+	if (!CanActivateAbility(Handle, ActorInfo)) {
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+		return;
+	}
+	
+	if (!ActorInfo || !CommitAbility(Handle, ActorInfo, ActivationInfo)){
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+		return;
+	}
+
+	// AvatarActor 유효성 검사
+	AActor* AvatarActor = GetAvatarActorFromActorInfo();
+	if (!IsValid(AvatarActor)){
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+		return;
+	}
+
+	// 2) 타겟팅 Task
+	if (SkillDataAsset->TargetStrategyClass->IsChildOf(USkillTarget_Self::StaticClass())){
+		OnTargetDataReceived(FGameplayAbilityTargetDataHandle());
+	}
+	else
+	{
+		// 마우스 기반 위치 타겟팅
+		ASkillTargetActor_Mouse* TargetActor =
+			NewObject<ASkillTargetActor_Mouse>(this);
+
+		UAbilityTask_WaitTargetData* TargetTask =
+			UAbilityTask_WaitTargetData::WaitTargetDataUsingActor(
+				this,
+				FName("Skill2_Target"),
+				EGameplayTargetingConfirmation::Instant,
+				TargetActor
+			);
+		TargetTask->ValidData.AddDynamic(this, &UGA_Skill2::OnTargetDataReceived);
+		TargetTask->Cancelled.AddDynamic(this, &UGA_Skill2::OnTargetDataCancelled);
+		TargetTask->ReadyForActivation();
+	}
+}
+
+void UGA_Skill2::OnTargetDataCancelled(const FGameplayAbilityTargetDataHandle& Data)
+{
+	// 취소 시엔 Ability 종료
+	// GetActorInfo().AbilitySystemComponent->RemoveGameplayCue(UEnumTagMatchHelper::GetTagFromEnum(ECueType::DirectionPreview));
+	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, false, true);
+}
+
+void UGA_Skill2::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Data){
+	
+	if (!CurrentActorInfo){
+		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
+		return;
+	}
+	AActor* AvatarActor = GetAvatarActorFromActorInfo();
+	if (!IsValid(AvatarActor)){
+		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
+		return;
+	}
+	
+	if (Data.Num() > 0 && Data.Get(0)){
+		const FHitResult* Hit = Data.Get(0)->GetHitResult();
+		if (Hit){
+			HitPoint = Hit->ImpactPoint;
+			FVector Dir = Hit->ImpactPoint - AvatarActor->GetActorLocation();
+			AvatarActor->SetActorRotation(Dir.Rotation());
+			auto ASC = Cast<UGGwaAbilitySystemComponent>(GetActorInfo().AbilitySystemComponent);
+			if (ASC && SkillDataAsset->GE_CueClass) {
+				auto Context = ASC->MakeEffectContext();
+				Context.AddInstigator(AvatarActor, AvatarActor);
+				auto Spec = ASC->MakeOutgoingSpec(SkillDataAsset->GE_CueClass, 1.f, Context);
+				Spec.Data->SetSetByCallerMagnitude(UEnumTagMatchHelper::GetTagFromEnum(EGasDataType::CueDuration), SkillDataAsset->CueDuration);
+				ASC->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
 			}
 		}
 	}
 
-	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true,false);
+	if (GetActorInfo().AvatarActor->HasAuthority()) {
+		SendSkillLogToServer(SkillDataAsset->GEClass.Get()->GetName(), HitPoint);
+	}
+
+
+	// 4) 몽타주 Task
+	UGGwaPlayMontageAndWaitForEvent* MontageTask =
+		UGGwaPlayMontageAndWaitForEvent::PlayMontageAndWaitForEvent(
+			this,
+			NAME_None,
+			SkillDataAsset->CastMontage,
+			FGameplayTagContainer(),
+			1.0f,
+			NAME_None,
+			false
+		);
+
+	MontageTask->OnCompleted.AddDynamic(this, &UGA_Skill2::OnMontageCompleted);
+	MontageTask->OnBlendOut.AddDynamic(this, &UGA_Skill2::OnMontageCompleted);
+	MontageTask->OnInterrupted.AddDynamic(this, &UGA_Skill2::OnMontageInterrupted);
+	MontageTask->OnCancelled.AddDynamic(this, &UGA_Skill2::OnMontageInterrupted);
+
+	MontageTask->ReadyForActivation();
 }
 
-void UGA_Skill2::OnTargetDataCancelled(const FGameplayAbilityTargetDataHandle& Data) {
-	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true,true);
+void UGA_Skill2::OnMontageInterrupted(FGameplayTag /*EventTag*/, FGameplayEventData /*EventData*/)
+{
+	GetActorInfo().AbilitySystemComponent->RemoveGameplayCue(UEnumTagMatchHelper::GetTagFromEnum(ECueType::DirectionPreview));
+	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
 }
 
-UAbilityTask_WaitTargetData* UGA_Skill2::GetTargetDataTask() {
-	UAbilityTask_WaitTargetData* WaitTargetData = UAbilityTask_WaitTargetData::WaitTargetDataUsingActor(
-		this,
-		NAME_None,
-		EGameplayTargetingConfirmation::UserConfirmed,
-		AbilityTargetActorClass);
-	WaitTargetData->ValidData.AddDynamic(this, &UGA_Skill2::OnTargetDataReceived);
-	WaitTargetData->Cancelled.AddDynamic(this, &UGA_Skill2::OnTargetDataCancelled);
-	WaitTargetData->ReadyForActivation();
-	return WaitTargetData;
+
+void UGA_Skill2::OnMontageCompleted(FGameplayTag ,FGameplayEventData){
+	if (GetAvatarActorFromActorInfo()->HasAuthority())
+	{
+		SkillContext = BuildSkillContext(CurrentActorInfo);
+		SkillContext.SkillData = SkillDataAsset;
+		SkillContext.HitLocation =  HitPoint;
+		SkillContext.DetectedActors = NewObject<USkillTargetBase>(this, SkillDataAsset->TargetStrategyClass)->DetectTargets(SkillContext);
+
+		
+		auto* ASC = SkillContext.SourceASC.Get();
+		FGameplayEffectContextHandle Context = ASC->MakeEffectContext();
+		Context.AddInstigator(SkillContext.SourceActor, SkillContext.SourceActor);
+
+		FGameplayEffectSpecHandle Spec = ASC->MakeOutgoingSpec(SkillDataAsset->GEClass, 1.f, Context);
+
+		FGameplayEffectContextHandle CoolContext = ASC->MakeEffectContext();
+		CoolContext.AddInstigator(SkillContext.SourceActor, SkillContext.SourceActor);
+
+		FGameplayEffectSpecHandle CoolSpec = ASC->MakeOutgoingSpec(SkillDataAsset->GE_CoolTimeClass, 1.f, CoolContext);
+		CoolSpec.Data->SetSetByCallerMagnitude(
+			UEnumTagMatchHelper::GetTagFromEnum(EGasDataType::Cooldown),
+			SkillDataAsset->CoolTime
+		);
+		CoolSpec.Data->SetSetByCallerMagnitude(
+			SkillAssetTypeTag,
+			SkillDataAsset->SkillID
+		);
+
+		if (SkillDataAsset->TargetStrategyClass == USkillTarget_Self::StaticClass()){
+			ASC->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
+			ASC->ApplyGameplayEffectSpecToSelf(*CoolSpec.Data.Get());
+		}
+		else{
+			for (AActor* Target : SkillContext.DetectedActors){
+				if (UAbilitySystemComponent* TargetASC = GetTargetASC(Target) ){
+					ASC->ApplyGameplayEffectSpecToTarget(*Spec.Data.Get(), TargetASC);
+				}
+			}
+			ASC->ApplyGameplayEffectSpecToSelf(*CoolSpec.Data.Get());
+		}
+	}
+
+	EndAbility(
+		CurrentSpecHandle,
+		CurrentActorInfo,
+		CurrentActivationInfo,
+		true, 
+		false 
+	);
+}
+
+void UGA_Skill2::SendSkillLogToServer(const FString& SkillName, FVector SkillLocation) const{
+
 }

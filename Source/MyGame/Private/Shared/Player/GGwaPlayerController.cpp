@@ -20,13 +20,14 @@ void AGGwaPlayerController::BeginPlay() {
 	inputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 	inputMode.SetHideCursorDuringCapture(false);
 	SetInputMode(inputMode);
-
 	UE_LOG(LogTemp, Warning, TEXT("IsServer: %d | IsLocallyControlled: %d"), HasAuthority(), IsLocalController());
 }
 
-void AGGwaPlayerController::Client_ApplyAbilityDataAsset_Implementation(UBaseDataAsset* Data) {
-	UE_LOG(LogTemp, Log, TEXT("ApplyAbility Data Called From Server"));
-}
+
+// 해당 아래 RPC들이 OnReplicatedUsing에 비해 안정적인지 검토해봐야한다.
+// void AGGwaPlayerController::Client_ApplyAbilityDataAsset_Implementation(UBaseDataAsset* Data) {
+// 	UE_LOG(LogTemp, Log, TEXT("ApplyAbility Data Called From Server"));
+// }
 
 void AGGwaPlayerController::Client_ReceiveBossData_Implementation(const FBossDataStruct& BossCharacter) {
 	UE_LOG(LogTemp, Log, TEXT("BossData Called From Server"));
@@ -44,12 +45,11 @@ void AGGwaPlayerController::AcknowledgePossession(class APawn* PossessedPawn) {
 	}
 }
 
+
 void AGGwaPlayerController::Server_InitiateReward_Implementation(const FString& PlayerId, const FRewardRequest& Payload) {
 	IServerLogicBridge* Bridge = Cast<IServerLogicBridge>(GetWorld()->GetSubsystem<UWorldSubsystem>());
 	// Bridge->InitiateRewardFlow(PlayerId, Payload, FOnFlowComplete::CreateUObject(this, &AGGwaPlayerController::Client_OnRewardResult));
 }
-
 // void AGGwaPlayerController::Client_OnRewardResult_Implementation(bool bOK, const FRewardData& Data,const FString& Error) {
-	
 // }
 

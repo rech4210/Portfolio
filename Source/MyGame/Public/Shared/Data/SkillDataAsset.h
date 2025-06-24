@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "BaseDataAsset.h"
+#include "BuffDataAsset.h"
 #include "FSkillDataTypeContainer.h"
 #include "Shared/GAS/SkillInputSlot.h"
 #include "SkillDataAsset.generated.h"
@@ -19,11 +20,6 @@ class MYGAME_API USkillDataAsset : public UBaseDataAsset
 {
 	GENERATED_BODY()
 public:
-	// 쿨타임 (초 단위)
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Skill")
-	float CoolTime = 0.f;
-
-
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Skill")
 	FSkillShapeConfig SkillShapeConfig;
 
@@ -41,13 +37,23 @@ public:
 	// 실제로 적용되는 GameplayEffect 클래스
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Effect")
 	TSubclassOf<UGameplayEffect> GEClass;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Effect")
+	float CoolTime = 0.f;
 
 	// CoolTime GameplayEffect 클래스
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Effect")
-	TSubclassOf<UGameplayEffect> CoolTimeGEClass;
+	TSubclassOf<UGameplayEffect> GE_CoolTimeClass;
+
+	// CoolTime GameplayEffect 클래스
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Effect")
+	TSubclassOf<UGameplayEffect> GE_CueClass;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Skill")
-	TArray<FPrimaryAssetId> AppliedBuffs;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Effect")
+	float CueDuration = 0.f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Buff")
+	TArray<UBuffDataAsset*> AppliedBuffs;
 
 	// 시전 애니메이션
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Visual")

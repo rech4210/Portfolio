@@ -70,25 +70,16 @@ void ABossCharacter::BeginPlay(){
  * 5. 서버 → 클라이언트 RPC: Client_ReceiveBossData 
  * 6. 클라이언트에 데이터 동기화 
  */
+
 void ABossCharacter::UpdateDataFromBoss(FBossDataStruct& Data) {
 	if (HasAuthority()) {
-		// 데이터 미변경시에 강제 복제 실시
-		// if (CachedBossData == Data) {
-		// 	ForceNetUpdate();
-		//	CachedBossData = Data;
-		// }
-		if (CachedBossData != Data) {
-			CachedBossData = Data;
-			if (IEnemyDataReceiver* Receiver = Cast<IEnemyDataReceiver>(GetController())) {
-				Receiver->ReceiveEnemyData(Data);
-			}
+		if (IEnemyDataReceiver* Receiver = Cast<IEnemyDataReceiver>(GetController())) {
+			Receiver->ReceiveEnemyData(Data);
 		}
 	}
 }
 
-const FEnemyWidgetData& ABossCharacter::GetWidgetData() {
-	return WidgetData;
-}
+
 
 void ABossCharacter::OnRep_BossData() {
 	// Client Base Replication
@@ -98,9 +89,8 @@ void ABossCharacter::OnRep_BossData() {
 	}
 }
 
-void ABossCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const {
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	DOREPLIFETIME(ABossCharacter, CachedBossData);
+const FEnemyWidgetData& ABossCharacter::GetWidgetData() {
+	return WidgetData;
 }
 
 //Possesd와 Character의 Init 시점을 잘 고려할것.
@@ -111,6 +101,7 @@ void ABossCharacter::InitASC() {
 	}
 	if (E_ASC)
 	{
+		//보스도 owner를 controller로 지정해야하나?
 		E_ASC->InitAbilityActorInfo(this, this);
 	}
 }
@@ -161,4 +152,10 @@ void ABossCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+}
+
+
+void ABossCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const {
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(ABossCharacter, CachedBossData);
 }

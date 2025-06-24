@@ -44,6 +44,8 @@ void UGA_Base::PreProcessSkillStart(const FGameplayAbilityActorInfo* ActorInfo) 
 	// 	}
 	// }
 }
+
+// 추후 팀인지 적인지 판단하는 로직이 들어가야함.
 UAbilitySystemComponent* UGA_Base::GetTargetASC(AActor* Actor) const {
 	//캐릭터가 아닌 경우?
 	if (AGGwaCharacter* Character = Cast<AGGwaCharacter>(Actor)){

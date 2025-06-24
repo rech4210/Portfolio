@@ -13,14 +13,13 @@
 #include "Shared/GAS/SkillTargetPolicy/FSkillContext.h"
 #include "Shared/Mode/BaseGameMode.h"
 #include "Shared/Player/GGwaAnimInstance.h"
+#include "Shared/Player/GGwaCharacter.h"
 #include "Shared/Utill/UEnumTagMatchHelper.h"
 
 UGA_Skill1::UGA_Skill1()
 {
     AbilityInputID    = EAbilityInputID::Skill1;
-    InstancingPolicy    = EGameplayAbilityInstancingPolicy::InstancedPerExecution;
-    NetExecutionPolicy  = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
-    NetSecurityPolicy   = EGameplayAbilityNetSecurityPolicy::ClientOrServer;
+
 }
 
 void UGA_Skill1::OnAvatarSet(
@@ -83,7 +82,7 @@ void UGA_Skill1::ActivateAbility(
 void UGA_Skill1::OnTargetDataCancelled(const FGameplayAbilityTargetDataHandle& Data)
 {
     // 취소 시엔 Ability 종료
-    GetActorInfo().AbilitySystemComponent->RemoveGameplayCue(UEnumTagMatchHelper::GetTagFromEnum(ECueType::DirectionPreview));
+    // GetActorInfo().AbilitySystemComponent->RemoveGameplayCue(UEnumTagMatchHelper::GetTagFromEnum(ECueType::DirectionPreview));
     EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, false, true);
 }
 
@@ -105,16 +104,24 @@ void UGA_Skill1::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Da
             HitPoint = Hit->ImpactPoint;
             FVector Dir = Hit->ImpactPoint - AvatarActor->GetActorLocation();
             AvatarActor->SetActorRotation(Dir.Rotation());
-            FGameplayCueParameters CueParams;
-            CueParams.Location = HitPoint;
-            CueParams.Normal = HitPoint - GetAvatarActorFromActorInfo()->GetActorLocation(); // 방향성 시각화 지원용
-            CueParams.Instigator = GetAvatarActorFromActorInfo()->GetInstigator();
-            CueParams.EffectCauser = GetAvatarActorFromActorInfo()->GetInstigator();
-            CueParams.RawMagnitude = SkillDataAsset->SkillID;
-            GetActorInfo().AbilitySystemComponent->AddGameplayCue(
-                UEnumTagMatchHelper::GetTagFromEnum(ECueType::DirectionPreview),
-                CueParams
-            );
+            auto ASC = Cast<UGGwaAbilitySystemComponent>(GetActorInfo().AbilitySystemComponent);
+            if (ASC && SkillDataAsset->GE_CueClass) {
+                auto Context = ASC->MakeEffectContext();
+                Context.AddInstigator(AvatarActor, AvatarActor);
+                auto Spec = ASC->MakeOutgoingSpec(SkillDataAsset->GE_CueClass, 1.f, Context);
+                Spec.Data->SetSetByCallerMagnitude(UEnumTagMatchHelper::GetTagFromEnum(EGasDataType::CueDuration), SkillDataAsset->CueDuration);
+                ASC->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
+            }
+            // FGameplayCueParameters CueParams;
+            // CueParams.Location = HitPoint;
+            // CueParams.Normal = HitPoint - GetAvatarActorFromActorInfo()->GetActorLocation(); // 방향성 시각화 지원용
+            // CueParams.Instigator = GetAvatarActorFromActorInfo()->GetInstigator();
+            // CueParams.EffectCauser = GetAvatarActorFromActorInfo()->GetInstigator();
+            // CueParams.RawMagnitude = SkillDataAsset->SkillID;
+            // GetActorInfo().AbilitySystemComponent->AddGameplayCue(
+            //     UEnumTagMatchHelper::GetTagFromEnum(ECueType::DirectionPreview),
+            //     CueParams
+            // );
         }
     }
 
@@ -164,7 +171,7 @@ void UGA_Skill1::OnMontageCompleted(FGameplayTag ,FGameplayEventData){
         FGameplayEffectContextHandle Context = ASC->MakeEffectContext();
         Context.AddInstigator(SkillContext.SourceActor, SkillContext.SourceActor);
 
-        FGameplayEffectSpecHandle Spec = ASC->MakeOutgoingSpec(SkillContext.SkillData->GEClass, 1.f, Context);
+        FGameplayEffectSpecHandle Spec = ASC->MakeOutgoingSpec(SkillDataAsset->GEClass, 1.f, Context);
         // Spec.Data->SetSetByCallerMagnitude(
         //     FGameplayTag::RequestGameplayTag(SkillAssetTypeTag),
         //     SkillContext.SkillData->SkillID
@@ -172,17 +179,17 @@ void UGA_Skill1::OnMontageCompleted(FGameplayTag ,FGameplayEventData){
         FGameplayEffectContextHandle CoolContext = ASC->MakeEffectContext();
         CoolContext.AddInstigator(SkillContext.SourceActor, SkillContext.SourceActor);
 
-        FGameplayEffectSpecHandle CoolSpec = ASC->MakeOutgoingSpec(SkillContext.SkillData->CoolTimeGEClass, 1.f, CoolContext);
+        FGameplayEffectSpecHandle CoolSpec = ASC->MakeOutgoingSpec(SkillDataAsset->GE_CoolTimeClass, 1.f, CoolContext);
         CoolSpec.Data->SetSetByCallerMagnitude(
             UEnumTagMatchHelper::GetTagFromEnum(EGasDataType::Cooldown),
-            SkillContext.SkillData->CoolTime
+            SkillDataAsset->CoolTime
         );
         CoolSpec.Data->SetSetByCallerMagnitude(
             SkillAssetTypeTag,
-            SkillContext.SkillData->SkillID
+            SkillDataAsset->SkillID
         );
 
-        if (SkillContext.SkillData->TargetStrategyClass == USkillTarget_Self::StaticClass()){
+        if (SkillDataAsset->TargetStrategyClass == USkillTarget_Self::StaticClass()){
             ASC->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
             ASC->ApplyGameplayEffectSpecToSelf(*CoolSpec.Data.Get());
         }
@@ -197,7 +204,7 @@ void UGA_Skill1::OnMontageCompleted(FGameplayTag ,FGameplayEventData){
         }
     }
 
-    GetActorInfo().AbilitySystemComponent->RemoveGameplayCue(UEnumTagMatchHelper::GetTagFromEnum(ECueType::DirectionPreview));
+    // GetActorInfo().AbilitySystemComponent->RemoveGameplayCue(UEnumTagMatchHelper::GetTagFromEnum(ECueType::DirectionPreview));
 
     EndAbility(
         CurrentSpecHandle,

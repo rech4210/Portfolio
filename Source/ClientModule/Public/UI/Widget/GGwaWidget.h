@@ -19,16 +19,18 @@ class UPrimaryDataAsset;
 class UPlayerStatusWidget;
 class USkillSetWidget;
 class UItemSetWidget;
-
 class UGGwaAbilitySystemComponent;
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayerStateChanged);
 
 UCLASS()
 class CLIENTMODULE_API UGGwaWidget : public UUserWidget
 {
 	GENERATED_BODY()
 public:
+	FOnPlayerStateChanged OnPlayerStateChanged;
 
-	virtual void NativeConstruct() override;
+	// virtual void NativeConstruct() override;
 	/** Initialize the widget with the AbilitySystemComponent and GGwaAttributeSet */
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category="AbilitySystem")
@@ -64,6 +66,9 @@ public:
 	void OnHealthChanged(const FOnAttributeChangeData& Data) const;
 	void OnManaChanged(const FOnAttributeChangeData& Data) const;
 	void InitWidgetSetting();
+
+	UFUNCTION()
+	void DoWidgetWork();
 	// template<typename TDataAsset, typename TToolTip, typename TWidget>
 	// void UGGwaWidget::BindTooltip(TDataAsset* DataAsset, TSubclassOf<TToolTip> ToolTipClass, UUserWidget* ContainerWidget);
 };

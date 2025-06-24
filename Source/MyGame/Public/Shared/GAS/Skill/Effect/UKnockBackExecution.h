@@ -15,5 +15,11 @@ class MYGAME_API UKnockBackExecution : public UGameplayEffectExecutionCalculatio
 public:
 	UKnockBackExecution();
 
+	UPROPERTY(EditAnywhere)
+	float KnockbackStrength = 1000.f;
+	UPROPERTY(EditAnywhere)
+	float KnockbackDistance = 300.f;
+	UPROPERTY(EditAnywhere)
+	float KnockbackHeight = 30.f;
 	virtual void Execute_Implementation(const FGameplayEffectCustomExecutionParameters& ExecutionParams, FGameplayEffectCustomExecutionOutput& OutExecutionOutput) const override;
 };

@@ -18,6 +18,10 @@
 
 enum class ESkillType : uint8;
 
+UAbilitySystemComponent* AGGwaCharacter::GetAbilitySystemComponent() const {
+	return ASC.Get();
+}
+
 void AGGwaCharacter::PossessedBy(AController* NewController) {
 	Super::PossessedBy(NewController);
 	InitASC();
@@ -35,6 +39,7 @@ void AGGwaCharacter::PossessedBy(AController* NewController) {
 		}
 		ASC->RefreshAbilityActorInfo();
 	}
+	Cast<AGGwaPlayerState>(GetPlayerState())->InitPlayerState();
 }
 
 void AGGwaCharacter::OnRep_PlayerState() {
@@ -45,6 +50,7 @@ void AGGwaCharacter::OnRep_PlayerState() {
 			GGwaPC->InitClientWidget();
 		}
 	}
+	Cast<AGGwaPlayerState>(GetPlayerState())->InitPlayerState();
 }
 
 
@@ -67,11 +73,6 @@ void AGGwaCharacter::BeginPlay() {
 	}
 	bUseControllerRotationYaw = false;
 	GetCharacterMovement()->bOrientRotationToMovement = true;
-
-	if (AGGwaPlayerState* PS = Cast<AGGwaPlayerState>(GetPlayerState())) {
-		ReactionComponent->Initialize(ASC);
-		// PS->GetStateComponent()->Initialize(ASC);
-	}
 }
 
 void AGGwaCharacter::Tick(float DeltaSeconds) {

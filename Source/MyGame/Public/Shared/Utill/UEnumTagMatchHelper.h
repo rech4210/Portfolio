@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include "GameplayEffectTypes.h"
 #include "GameplayTagContainer.h"
 
 class MYGAME_API UEnumTagMatchHelper {

@@ -10,6 +10,9 @@ class UBaseDataAsset;
 
 
 class UCombinedAbilityDataAsset;
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEffectAssetApplied, UBaseDataAsset*, DataAsset);
+
 UCLASS()
 class MYGAME_API UGGwaAbilitySystemComponent : public UAbilitySystemComponent
 {
@@ -18,6 +21,10 @@ public:
 	
 	UGGwaAbilitySystemComponent();
 	virtual void BeginPlay() override;
+	
+	UPROPERTY()
+	FOnEffectAssetApplied OnEffectAssetApplied;
+
 	UPROPERTY()
 	TObjectPtr<ULocalDataBaseLoader> LocalDataBaseLoader;
 	

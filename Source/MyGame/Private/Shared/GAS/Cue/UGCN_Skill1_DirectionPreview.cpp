@@ -27,7 +27,15 @@ bool AUGCN_Skill1_DirectionPreview::OnActive_Implementation(AActor* MyTarget, co
 	FPrimaryAssetId AssetId;
 	LocalDataBaseLoader->GetPrimaryAssetId(Parameters.RawMagnitude, AssetId);
 	SkillDataAsset = LocalDataBaseLoader->GetDataFromAssetId<USkillDataAsset>(AssetId);
-	float MontageTimeRate = SkillDataAsset->CastMontage->GetPlayLength();
+	if (!SkillDataAsset) {
+		return false;
+	}
+	float MontageTimeRate = 0.f;
+	if (!SkillDataAsset->CastMontage) {
+		UE_LOG(LogTemp, Warning, TEXT("[Preview] CastMontage is null in SkillDataAsset"));
+		return false;
+	}
+	MontageTimeRate = SkillDataAsset->CastMontage->GetPlayLength();
 	ElapsedTime = 0.f;
 	Duration = FMath::Clamp(MontageTimeRate, 0.0f, 10.f);
 
@@ -76,7 +84,16 @@ bool AUGCN_Skill1_DirectionPreview::WhileActive_Implementation(AActor* MyTarget,
 	LocalDataBaseLoader->GetPrimaryAssetId(Parameters.RawMagnitude, AssetId);
 	SkillDataAsset = LocalDataBaseLoader->GetDataFromAssetId<USkillDataAsset>(AssetId);
 
-	float MontageTimeRate = SkillDataAsset->CastMontage->GetPlayLength();
+	if (!SkillDataAsset) {
+		return false;
+	}
+	float MontageTimeRate = 0.f;
+	if (!SkillDataAsset->CastMontage) {
+		UE_LOG(LogTemp, Warning, TEXT("[Preview] CastMontage is null in SkillDataAsset"));
+		return false;
+	}
+	
+	MontageTimeRate = SkillDataAsset->CastMontage->GetPlayLength();
 	Duration = FMath::Clamp(MontageTimeRate, 0.1f, 10.f);
 	ElapsedTime = 0.f;
 

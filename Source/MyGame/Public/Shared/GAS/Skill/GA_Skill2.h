@@ -3,33 +3,53 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "../AbilityInputID.h"
 #include "GA_Base.h"
-#include "Shared/GAS/Interface/ICustomAbilityTaskInterface.h"
+#include "Abilities/Tasks/AbilityTask_WaitTargetData.h"
+#include "Shared/GAS/AbilityTask/GGwaPlayMontageAndWaitForEvent.h"
 #include "GA_Skill2.generated.h"
 
-
-class UBuffDataAsset;
 class USkillDataAsset;
-class AGameplayAbilityTargetActor;
-UCLASS()
-class MYGAME_API UGA_Skill2 : public UGA_Base, public ICustomAbilityTaskInterface{
-	GENERATED_BODY()
-public:
-	UPROPERTY(EditAnywhere)
-	TObjectPtr<AGameplayAbilityTargetActor> AbilityTargetActorClass;
+class USkillTargetBase;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category= "Data")
+UCLASS()
+class MYGAME_API UGA_Skill2 : public UGA_Base
+{
+	GENERATED_BODY()
+
+public:
+	EAbilityInputID AbilityInputID;
+	UGA_Skill2();
+
+	/** 스킬 데이터 에셋 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Data")
 	TObjectPtr<USkillDataAsset> SkillDataAsset;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category= "Data")
-	TObjectPtr<UBuffDataAsset> BuffDataAsset;
-	
-	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
+	virtual void OnAvatarSet(
+		const FGameplayAbilityActorInfo* ActorInfo,
+		const FGameplayAbilitySpec& Spec
+	) override;
+
+	virtual void ActivateAbility(
+		const FGameplayAbilitySpecHandle Handle,
+		const FGameplayAbilityActorInfo* ActorInfo,
+		const FGameplayAbilityActivationInfo ActivationInfo,
+		const FGameplayEventData* TriggerEventData
+	) override;
+
 private:
-	virtual UAbilityTask_WaitTargetData* GetTargetDataTask() override;
+	UFUNCTION()
+	void OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Data);
+
+	UFUNCTION()
+	void OnTargetDataCancelled(const FGameplayAbilityTargetDataHandle& Data);
+
+	UFUNCTION()
+	void OnMontageCompleted(FGameplayTag EventTag, FGameplayEventData EventData);
 	
 	UFUNCTION()
-	virtual void OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Data) override;
-	UFUNCTION()
-	virtual void OnTargetDataCancelled(const FGameplayAbilityTargetDataHandle& Data) override;
+	void OnMontageInterrupted(FGameplayTag EventTag, FGameplayEventData EventData);
+	FVector HitPoint;
+
+	void SendSkillLogToServer(const FString& SkillName, FVector SkillLocation) const;
 };
