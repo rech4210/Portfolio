@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/AssetManager.h"
-#include "Shared/Data/BaseDataAsset.h"
+#include "GameSharedModule/Public/Data/BaseDataAsset.h"
 #include "LocalDataBaseLoader.generated.h"
 
 DECLARE_DELEGATE_OneParam(FOnSkillDataLoaded, UBaseDataAsset*);
@@ -19,8 +19,7 @@ class MYGAME_API ULocalDataBaseLoader : public UObject
 	GENERATED_BODY()
 public:
 	void Initialize();
-	bool GetPrimaryAssetId(int32 SkillID, FPrimaryAssetId& OutId) const;
-
+	bool CheckPrimaryAssetId(int32 SkillID, FPrimaryAssetId& OutId) const;
 	// AssetId 로부터 실제 DataAsset 꺼내기 (동기)
 	template<typename T>
 	T* GetDataFromAssetId(const FPrimaryAssetId& AssetId, bool bSync = true){

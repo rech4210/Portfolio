@@ -1,0 +1,76 @@
+name: Unreal Engine Windows CI - Self-Hosted
+
+env:
+  UE_REPO_TOKEN: ${{ secrets.UE_REPO_TOKEN }}
+
+on:
+  push:
+    branches: [ "KMS/Test/UE_CI" ]
+    paths:
+      - 'Source/**'
+      - 'Config/**'
+      - 'MyGame.uproject'
+      - '.github/workflows/windows_self_hosted_ci.yml'
+  pull_request:
+    branches: [ "KMS/Test/UE_CI" ]
+    paths:
+      - 'Source/**'
+      - 'Config/**'
+      - 'MyGame.uproject'
+      - '.github/workflows/windows_self_hosted_ci.yml'
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to build'
+        required: true
+        default: 'KMS/Test/UE_CI'
+
+jobs:
+  build-and-test-ue:
+    runs-on: [self-hosted, windows, x64]
+    env:
+      UE_REPO_TOKEN: ${{ secrets.UE_REPO_TOKEN }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.inputs.branch }}
+          lfs: true
+
+      - name: Run MySQL Database
+        shell: powershell
+        run: |
+          docker-compose down
+          docker-compose up -d
+          echo "Waiting for database to be ready..."
+          Start-Sleep -Seconds 15
+
+      - name: Export local UE_ROOT
+        shell: powershell
+        run: |
+          Add-Content -Path $Env:GITHUB_ENV -Value 'UE_ROOT=C:\Users\QWER\Git_indie\UnrealEngine'
+
+      - name: Build MyGame Project
+        shell: powershell
+        run: |
+          & "$Env:UE_ROOT\Engine\Build\BatchFiles\RunUAT.bat" BuildCookRun `
+            -project="C:\Users\QWER\Git_indie\MyGame\MyGame.uproject" `
+            -noP4 -platform=Win64 -clientconfig=Development `
+            -cook -stage -archive -archivedirectory="C:\Users\QWER\Git_indie\MyGame\Build"
+
+      - name: Run Automation Tests
+        shell: powershell
+        run: |
+          & "$Env:UE_ROOT\Engine\Build\BatchFiles\RunUAT.bat" RunTests `
+            -project="C:\Users\QWER\Git_indie\MyGame\MyGame.uproject" `
+            -test="MyGame.Database.Manager.SaveAndLoad" `
+            -platform=Win64 -configuration=Development `
+            -output="C:\Users\QWER\Git_indie\MyGame\TestResults.log"
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ue-test-results
+          path: C:/Users/QWER/Git_indie/MyGame/TestResults.log

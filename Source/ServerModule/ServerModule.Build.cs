@@ -11,6 +11,9 @@ public class ServerModule : ModuleRules
             {
                 "Core",
                 "MyGame",
+                "GameSharedModule",
+                "SkillModule",
+                "InventoryModule",
                 "AIModule",
                 "NavigationSystem",
                 "GameplayAbilities",

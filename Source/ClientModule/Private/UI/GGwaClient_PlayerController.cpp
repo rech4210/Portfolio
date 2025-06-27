@@ -3,15 +3,15 @@
 
 #include "UI/GGwaClient_PlayerController.h"
 
-#include "Shared/AI/BossCharacter.h"
-#include "Shared/AI/EnemyAbilitySystemComponent.h"
-#include "Shared/AI/EnemyAttributeSet.h"
+#include "MyGame/Public/Shared/AI/BossCharacter.h"
+#include "MyGame/Public/Shared/AI/EnemyAbilitySystemComponent.h"
+#include "MyGame/Public/Shared/AI/EnemyAttributeSet.h"
 #include "UI/Widget/GGwaWidget.h"
 #include "UI/GGwaHUD.h"
-#include "Shared/GAS/GGwaAttributeSet.h"
-#include "Shared/GAS/GGwaAbilitySystemComponent.h"
+#include "MyGame/Public/Shared/GAS/GGwaAttributeSet.h"
+#include "MyGame/Public/Shared/GAS/GGwaAbilitySystemComponent.h"
 #include "UI/Enemy/BossStatusWidget.h"
-#include "Shared/Player/GGwaPlayerState.h"
+#include "MyGame/Public/Shared/Player/GGwaPlayerState.h"
 
 
 void AGGwaClient_PlayerController::BeginPlay() {

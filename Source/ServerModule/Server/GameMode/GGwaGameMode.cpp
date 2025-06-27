@@ -9,6 +9,9 @@
 #include "Kismet/GameplayStatics.h"
 #include "DatabaseModule/Public/DatabaseManager.h"
 #include "DatabaseModule/Public/Data/FCharacterData.h"
+#include "MyGame/Public/Shared/Player/GGwaPlayerState.h"
+#include "MyGame/Public/Shared/Player/GGwaCharacter.h"
+#include "InventoryModule/Public/InventoryComponent.h" // 인벤토리 컴포넌트 헤더 추가
 
 AGGwaGameMode::AGGwaGameMode()
 {
@@ -75,16 +78,37 @@ void AGGwaGameMode::PostLogin(APlayerController* NewPlayer)
 
 void AGGwaGameMode::OnCharacterDataLoaded(const TOptional<FCharacterData>& CharacterData, APlayerController* NewPlayer)
 {
-	if (CharacterData.IsSet())
+	if (CharacterData.IsSet() && NewPlayer)
 	{
 		const FCharacterData& Data = CharacterData.GetValue();
-		UE_LOG(LogTemp, Log, TEXT("Character data loaded for UserId %d. Level: %d, Exp: %d"), Data.UserId, Data.Level, Data.Exp);
+		AGGwaPlayerState* MyPlayerState = NewPlayer->GetPlayerState<AGGwaPlayerState>();
+		if (MyPlayerState)
+		{
+			// 1. Initialize PlayerState with loaded data.
+			MyPlayerState->SetPlayerName(FString::FromInt(Data.CharacterId)); 
 
-		// TODO:
-		// 1. Spawn a pawn for the player.
-		// 2. Get the AbilitySystemComponent from the pawn.
-		// 3. Initialize attributes and grant abilities based on the loaded FCharacterData.
-		//    For example, parse Data.JsonData to grant items or skills.
+			// 2. Add and initialize InventoryComponent
+			UInventoryComponent* InventoryComponent = MyPlayerState->FindComponentByClass<UInventoryComponent>();
+			if (!InventoryComponent)
+			{
+				InventoryComponent = NewObject<UInventoryComponent>(MyPlayerState, "InventoryComponent");
+				InventoryComponent->RegisterComponent();
+			}
+
+			if (InventoryComponent)
+			{
+				// TODO: DB 로직이 구현되면 이 부분을 FCharacterData에서 읽어온 데이터로 채워야 합니다.
+				// For now, we are just adding items based on the data we have.
+				// This assumes the DB loading part will populate Data.Inventory.
+				// for(const UFInventoryItem& Item : Data.Inventory)
+				// {
+				// 	InventoryComponent->AddItem(Item.ItemData, Item.Quantity);
+				// }
+			}
+
+			// 3. Initialize attributes and grant abilities based on the loaded FCharacterData.
+			UE_LOG(LogTemp, Log, TEXT("Character data loaded for UserId %d. Level: %d, Exp: %d"), Data.UserId, Data.Level, Data.Exp);
+		}
 	}
 	else
 	{

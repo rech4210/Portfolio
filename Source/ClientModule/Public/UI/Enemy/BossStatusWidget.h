@@ -4,8 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "Shared/AI/EnemySystemCore/FBossDataStruct.h"
-#include "Shared/AI/EnemySystemCore/FEnemyWidgetData.h"
+#include "MyGame/Public/Shared/AI/EnemySystemCore/FBossDataStruct.h"
+#include "MyGame/Public/Shared/AI/EnemySystemCore/FEnemyWidgetData.h"
 #include "BossStatusWidget.generated.h"
 
 class UEnemyAttributeSet;

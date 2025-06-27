@@ -4,7 +4,7 @@
 #include "UI/ToolTip/BuffToolTip.h"
 
 #include "Components/Image.h"
-#include "Shared/Data/BuffDataAsset.h"
+#include "GameSharedModule/Public/Data/BuffDataAsset.h"
 #include "Components/TextBlock.h"
 
 

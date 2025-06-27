@@ -2,15 +2,16 @@
 
 
 #include "UI/Widget/SkillSlotWidget.h"
-#include "Shared/Data/SkillDataAsset.h"
+#include "SkillModule/Public/Data/SkillDataAsset.h"
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "TimerManager.h"
 #include "Kismet/GameplayStatics.h"
-#include "Shared/GAS/SkillInputSlot.h"
-#include "Shared/Utill/USkillHelper.h"
+#include "SkillModule/Public/Data/SkillInputSlot.h"
+#include "SkillModule/Public/Utill/USkillHelper.h"
 #include "UI/ToolTip/SkillToolTip.h"
+#include "Blueprint/WidgetBlueprintLibrary.h"
 
 // USkillSlotWidget::USkillSlotWidget() {
 //

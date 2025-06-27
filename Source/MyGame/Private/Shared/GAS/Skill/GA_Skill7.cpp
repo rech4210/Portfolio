@@ -1,16 +1,15 @@
 #include "Shared/GAS/Skill/GA_Skill7.h"
-
-#include "AbilitySystemComponent.h"
-#include "AbilitySystemInterface.h"
-#include "Abilities/Tasks/AbilityTask.h"
-#include "Shared/Player/GGwaPlayerController.h"
-#include "Shared/GAS/SkillTargetPolicy/SkillTarget_Directional.h"
-#include "MyGame/Public/Shared/GAS/SkillTargetPolicy/FSkillContext.h"
-
-#include "Shared/Data/BuffDataAsset.h"
-#include "Shared/Data/SkillDataAsset.h"
-#include "Shared/Utill/UEnumTagMatchHelper.h"
-#include "Shared/Data/EGasDataType.h"
+#include "Abilities/Tasks/AbilityTask_WaitTargetData.h"
+#include "Shared/GAS/GGwaAbilitySystemComponent.h"
+#include "SkillModule/Public/Data/SkillTargetActor_Mouse.h"
+#include "SkillModule/Public/Data/SkillTarget_Self.h"
+#include "Shared/GAS/AbilityTask/GGwaPlayMontageAndWaitForEvent.h"
+#include "SkillModule/Public/Data/FSkillContext.h"
+#include "Shared/Player/GGwaCharacter.h"
+#include "SkillModule/Public/Data/SkillDataAsset.h"
+#include "GameSharedModule/Public/Data/EGasDataType.h"
+#include "GameSharedModule/Public/Enum/ECueType.h"
+#include "GameSharedModule/Public/Utill/UEnumTagMatchHelper.h"
 
 UGA_Skill7::UGA_Skill7() {
 	AbilityInputID = EAbilityInputID::Skill7;
