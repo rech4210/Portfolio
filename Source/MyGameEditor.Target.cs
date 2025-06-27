@@ -9,13 +9,14 @@ public class MyGameEditorTarget : TargetRules
 	{
 		Type = TargetType.Editor;
 		DefaultBuildSettings = BuildSettingsVersion.V5;
+		// bPrintToolChainTimingInfo = true;
 
-		ExtraModuleNames.AddRange( new string[] { "MyGame" } );
+		ExtraModuleNames.AddRange( new string[] { "MyGame"} );
 		RegisterModulesCreatedByRider();
 	}
 
 	private void RegisterModulesCreatedByRider()
 	{
-		ExtraModuleNames.AddRange(new string[] { "ClientModule" });
+		ExtraModuleNames.AddRange(new string[] { "ClientModule",  "AuthClientModule", "DatabaseModule" });
 	}
 }

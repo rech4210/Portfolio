@@ -25,7 +25,8 @@ public class ClientModule : ModuleRules
                 "RenderCore",
                 "RHI",
                 "GameplayAbilities",
-                "GameplayTags"
+                "GameplayTags",
+                "AuthClientModule"
             }
         );
     }

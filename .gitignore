@@ -101,3 +101,4 @@ clang_build.txt
 *.pdb
 *.lastbuildstate
 *.recipe
+*.database/postgres/*

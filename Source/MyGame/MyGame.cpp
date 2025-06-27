@@ -9,4 +9,8 @@ void FMyGameModule::StartupModule()
 	UEnumTagMatchHelper::InitializeHelper();
 }
 
-IMPLEMENT_PRIMARY_GAME_MODULE( FMyGameModule, MyGame, "MyGame" );
+void FMyGameModule::ShutdownModule() {
+	UEnumTagMatchHelper::Shutdown();
+}
+
+IMPLEMENT_PRIMARY_GAME_MODULE(FMyGameModule, MyGame, "MyGame");

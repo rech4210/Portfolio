@@ -47,4 +47,4 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Shop")
 	bool SellItem(UInventoryComponent* SellerInventory, FName ItemID);
-}; 
+};

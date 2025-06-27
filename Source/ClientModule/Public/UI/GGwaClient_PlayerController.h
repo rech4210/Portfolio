@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "AuthClientModule/Public/AuthService.h"
 #include "Shared/Player/GGwaPlayerController.h"
 #include "GGwaClient_PlayerController.generated.h"
 
@@ -18,9 +19,8 @@ class CLIENTMODULE_API AGGwaClient_PlayerController : public AGGwaPlayerControll
 	GENERATED_BODY()
 public:
 	// This delegate is no longer needed.
-	// UPROPERTY(BlueprintAssignable, Category = "UI")
+	// UPROPERTY(BlueprintAssignable, Cegory = "UI")
 	// FOnAbilityDataAssetApplied OnAbilityDataAssetApplied;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widget")
 	TSubclassOf<UGGwaWidget> WidgetClass;
 	
@@ -38,4 +38,10 @@ public:
 private:
 	// hover 대상을 적으로 제어하기 위해, enemy base character 제공할것.
 	TWeakObjectPtr<ABossCharacter> LastHoveredEnemy;
+
+	UPROPERTY()
+	TObjectPtr<UAuthService> AuthService;
+
+	void OnLoginSuccess(const FString& Token);
+	void OnLoginFailure(const FString& ErrorReason);
 };
