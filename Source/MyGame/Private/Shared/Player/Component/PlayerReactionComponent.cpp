@@ -46,6 +46,9 @@ void UPlayerReactionComponent::HandleGameplayCue(const FGameplayTag EventTag/*ch
 	}
 }
 
+void UPlayerReactionComponent::Init(UGGwaAbilitySystemComponent* ASC) {
+}
+
 void UPlayerReactionComponent::ExecuteKnockback(const FGameplayTag& StateTag) {
 	// 서버 권한에서만 물리 이동
 	if (GetOwner()->HasAuthority()) {

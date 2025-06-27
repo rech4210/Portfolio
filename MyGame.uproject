@@ -34,6 +34,13 @@
 			"AdditionalDependencies": [
 				"AIModule"
 			]
+		},
+		{
+			"Name": "AuthClientModule",
+			"Type": "ClientOnly",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+			]
 		}
 	],
 	"Plugins": [
