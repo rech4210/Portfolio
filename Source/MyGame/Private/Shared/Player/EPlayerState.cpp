@@ -1,7 +1,5 @@
-// Fill out your copyright notice in the Description page of Project Settings.
 
-
-#include "Shared/Player/EPlayerState.h"
+#include "GameSharedModule/Public/Enum/EPlayerState.h"
 
 
 

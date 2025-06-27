@@ -2,7 +2,7 @@
 
 #include "MyGame.h"
 #include "Modules/ModuleManager.h"
-#include "Shared/Utill/UEnumTagMatchHelper.h"
+#include "GameSharedModule/Public/Utill/UEnumTagMatchHelper.h"
 
 void FMyGameModule::StartupModule()
 {

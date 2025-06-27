@@ -1,7 +1,7 @@
 #pragma once
 #include "CoreMinimal.h"
 #include "Abilities/GameplayAbility.h"
-#include "Shared/GAS/SkillTargetPolicy/FSkillContext.h"
+#include "SkillModule/Public/Data/FSkillContext.h"
 #include "GA_Base.generated.h"
 
 UCLASS(BlueprintType, Blueprintable)

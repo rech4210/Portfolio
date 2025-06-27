@@ -1,18 +1,19 @@
 #include "Shared/GAS/Skill/GA_BossAreaAttack.h"
 #include "GameplayEffect.h"
-#include "Shared/Data/SkillDataAsset.h"
+#include "SkillModule/Public/Data/SkillDataAsset.h"
 #include "GameFramework/Actor.h"
 #include "Abilities/Tasks/AbilityTask_WaitDelay.h"
 #include "GameplayCueManager.h"
 #include "Shared/AI/BossCharacter.h"
 #include "Shared/AI/EnemyAbilitySystemComponent.h"
-#include "Shared/Data/EGasDataType.h"
+#include "Data/EGasDataType.h"
 #include "Shared/Data/LocalDataBaseLoader.h"
-#include "Shared/GAS/SkillTargetPolicy/SkillTargetBase.h"
+#include "SkillModule/Public/Data/SkillTargetBase.h"
 #include "Shared/Player/GGwaCharacter.h"
 #include "Shared/Player/GGwaPlayerState.h"
-#include "Shared/Utill/UEnumTagMatchHelper.h"
+#include "Utill/UEnumTagMatchHelper.h"
 #include "Templates/Casts.h"
+#include "Enum/EPlayerState.h"
 
 UGA_BossAreaAttack::UGA_BossAreaAttack(){
     // 기본 속성 설정
@@ -53,7 +54,7 @@ void UGA_BossAreaAttack::ActivateAbility(const FGameplayAbilitySpecHandle Handle
         ULocalDataBaseLoader * Loader = NewObject<ULocalDataBaseLoader>(this);
         Loader->Initialize();
         FPrimaryAssetId ID;
-        Loader->GetPrimaryAssetId(115, ID);
+        Loader->CheckPrimaryAssetId(115, ID);
         SkillDataAsset = Loader->GetDataFromAssetId<USkillDataAsset>(ID);
     }
     FGameplayTag test = UEnumTagMatchHelper::GetTagFromEnum(EGasDataType::CueDuration);

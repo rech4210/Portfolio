@@ -3,18 +3,18 @@
 
 #include "Shared/GAS/GGwaAbilitySystemComponent.h"
 // #include "Shared/Data/BaseDataAsset.h"
-#include "Shared/Data/BuffDataAsset.h"
-#include "Shared/Data/ItemDataAsset.h"
-#include "Shared/Data/LocalDataBaseLoader.h"
-#include "Shared/Data/SkillDataAsset.h"
-#include "Shared/Player/GGwaPlayerController.h"
-#include "Shared/Player/GGwaPlayerState.h"
-#include "Shared/Data/BaseDataAsset.h"
-#include "Shared/Data/EGasDataType.h"
-#include "Shared/GAS/GGwaAttributeSet.h"
-#include "Shared/Player/GGwaCharacter.h"
-#include "Shared/Player/Component/PlayerReactionComponent.h"
-#include "Shared/Utill/UEnumTagMatchHelper.h"
+#include "GameSharedModule/Public/Data/BuffDataAsset.h"
+#include "GameSharedModule/Public/Data/ItemDataAsset.h"
+#include "MyGame/Public/Shared/Data/LocalDataBaseLoader.h"
+#include "SkillModule/Public/Data/SkillDataAsset.h"
+#include "MyGame/Public/Shared/Player/GGwaPlayerController.h"
+#include "MyGame/Public/Shared/Player/GGwaPlayerState.h"
+#include "GameSharedModule/Public/Data/BaseDataAsset.h"
+#include "GameSharedModule/Public/Data/EGasDataType.h"
+#include "MyGame/Public/Shared/GAS/GGwaAttributeSet.h"
+#include "MyGame/Public/Shared/Player/GGwaCharacter.h"
+#include "MyGame/Public/Shared/Player/Component/PlayerReactionComponent.h"
+#include "GameSharedModule/Public/Utill/UEnumTagMatchHelper.h"
 #include "AbilitySystemGlobals.h"
 #include "GameplayCueManager.h"
 #include "Kismet/GameplayStatics.h"
@@ -25,6 +25,10 @@ UGGwaAbilitySystemComponent::UGGwaAbilitySystemComponent()
     PrimaryComponentTick.bCanEverTick = true;
     SetIsReplicated(true);
     LocalDataBaseLoader = CreateDefaultSubobject<ULocalDataBaseLoader>(TEXT("LocalDataBaseLoader"));
+}
+
+bool UGGwaAbilitySystemComponent::CheckCost(const FGameplayEffectSpecHandle& CostSpecHandle) {
+    return true;
 }
 
 void UGGwaAbilitySystemComponent::BeginPlay()
@@ -75,7 +79,7 @@ void UGGwaAbilitySystemComponent::ProcessGameplayEffect(const FGameplayEffectSpe
     
     // 해당 로직을 점검..할것
     FPrimaryAssetId AssetId;
-    LocalDataBaseLoader->GetPrimaryAssetId(SkillID, AssetId);
+    LocalDataBaseLoader->CheckPrimaryAssetId(SkillID, AssetId);
     USkillDataAsset* SkillData = LocalDataBaseLoader->GetDataFromAssetId<USkillDataAsset>(AssetId, /*bSync=*/true);
         if (!SkillData){
             UE_LOG(LogTemp, Warning, TEXT("[ASC] Failed to load SkillData for ID %d"), SkillID);

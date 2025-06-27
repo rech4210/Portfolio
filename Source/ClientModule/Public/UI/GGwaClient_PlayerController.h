@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "AuthClientModule/Public/AuthService.h"
-#include "Shared/Player/GGwaPlayerController.h"
+#include "MyGame/Public/Shared/Player/GGwaPlayerController.h"
 #include "GGwaClient_PlayerController.generated.h"
 
 class UBossStatusWidget;

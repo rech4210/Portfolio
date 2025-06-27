@@ -3,16 +3,16 @@
 
 #include "Shared/GAS/Skill/GA_Base.h"
 #include "AbilitySystemInterface.h"
-#include "Shared/Player/GGwaCharacter.h"
-#include "Shared/GAS/GGwaAbilitySystemComponent.h"
-#include "Shared/Player/GGwaPlayerController.h"
+#include "MyGame/Public/Shared/Player/GGwaCharacter.h"
+#include "MyGame/Public/Shared/GAS/GGwaAbilitySystemComponent.h"
+#include "MyGame/Public/Shared/Player/GGwaPlayerController.h"
 #include "AbilitySystemBlueprintLibrary.h"
-#include "Shared/AI/BossCharacter.h"
-#include "Shared/AI/EnemyAbilitySystemComponent.h"
-#include "Shared/AI/EnemyAttributeSet.h"
-#include "Shared/Data/EGasDataType.h"
-#include "Shared/Player/GGwaPlayerState.h"
-#include "Shared/Utill/UEnumTagMatchHelper.h"
+#include "MyGame/Public/Shared/AI/BossCharacter.h"
+#include "MyGame/Public/Shared/AI/EnemyAbilitySystemComponent.h"
+#include "MyGame/Public/Shared/AI/EnemyAttributeSet.h"
+#include "GameSharedModule/Public/Data/EGasDataType.h"
+#include "MyGame/Public/Shared/Player/GGwaPlayerState.h"
+#include "GameSharedModule/Public/Utill/UEnumTagMatchHelper.h"
 
 const FGameplayTag UGA_Base::SkillAssetTypeTag = UEnumTagMatchHelper::GetTagFromEnum(EGasDataType::SkillID);
 

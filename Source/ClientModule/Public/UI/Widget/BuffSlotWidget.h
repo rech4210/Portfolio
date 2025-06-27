@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "Shared/Data/BuffDataAsset.h"
+#include "GameSharedModule/Public/Data/BuffDataAsset.h"
 #include "UI/ToolTip/BuffToolTip.h"
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"

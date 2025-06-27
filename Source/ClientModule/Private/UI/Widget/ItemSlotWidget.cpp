@@ -3,7 +3,7 @@
 
 #include "UI/Widget/ItemSlotWidget.h"
 #include "Blueprint/DragDropOperation.h"
-#include "Shared/Data/ItemDataAsset.h"
+#include "GameSharedModule/Public/Data/ItemDataAsset.h"
 
 FReply UItemSlotWidget::NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) {
 	return Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);

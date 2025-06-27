@@ -10,7 +10,9 @@ public class ClientModule : ModuleRules
             new string[]
             {
                 "Core",
-                "MyGame"
+                "MyGame",
+                "GameSharedModule",
+                "SkillModule"
             }
         );
 

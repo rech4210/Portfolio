@@ -4,8 +4,8 @@
 #include "Shared/AI/BossCharacter.h"
 #include "GameplayTags.h"
 #include "Shared/AI/EnemyAbilitySystemComponent.h"
-#include "Shared/GAS/EGasEventType.h"
-#include "Shared/Utill/UEnumTagMatchHelper.h"
+#include "GameSharedModule/Public/Enum/EGasEventType.h"
+#include "GameSharedModule/Public/Utill/UEnumTagMatchHelper.h"
 #include "BehaviorTree/BehaviorTreeComponent.h"
 
 EBTNodeResult::Type UBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)

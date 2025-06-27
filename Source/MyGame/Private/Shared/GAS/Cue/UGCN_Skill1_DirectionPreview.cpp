@@ -1,5 +1,5 @@
 #include "Shared/GAS/Cue/UGCN_Skill1_DirectionPreview.h"
-#include "Shared/Data/SkillDataAsset.h"
+#include "SkillModule/Public/Data/SkillDataAsset.h"
 #include "Shared/Data/LocalDataBaseLoader.h"
 #include "DrawDebugHelpers.h"
 #include "Engine/Engine.h"
@@ -25,7 +25,7 @@ bool AUGCN_Skill1_DirectionPreview::OnActive_Implementation(AActor* MyTarget, co
 	LocalDataBaseLoader->Initialize();
 
 	FPrimaryAssetId AssetId;
-	LocalDataBaseLoader->GetPrimaryAssetId(Parameters.RawMagnitude, AssetId);
+	LocalDataBaseLoader->CheckPrimaryAssetId(Parameters.RawMagnitude, AssetId);
 	SkillDataAsset = LocalDataBaseLoader->GetDataFromAssetId<USkillDataAsset>(AssetId);
 	if (!SkillDataAsset) {
 		return false;
@@ -81,7 +81,7 @@ bool AUGCN_Skill1_DirectionPreview::WhileActive_Implementation(AActor* MyTarget,
 	LocalDataBaseLoader->Initialize();
 
 	FPrimaryAssetId AssetId;
-	LocalDataBaseLoader->GetPrimaryAssetId(Parameters.RawMagnitude, AssetId);
+	LocalDataBaseLoader->CheckPrimaryAssetId(Parameters.RawMagnitude, AssetId);
 	SkillDataAsset = LocalDataBaseLoader->GetDataFromAssetId<USkillDataAsset>(AssetId);
 
 	if (!SkillDataAsset) {
