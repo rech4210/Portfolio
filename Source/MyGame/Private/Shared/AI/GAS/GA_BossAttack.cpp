@@ -5,12 +5,12 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AIController.h"
 #include "GameplayTags.h"
-#include "Shared/AI/GAS/AttackProjectile.h"
+#include "MyGame/Public/Shared/AI/GAS/AttackProjectile.h"
 #include "Abilities/GameplayAbilityTypes.h"
 #include "BehaviorTree/BlackboardComponent.h"
-#include "Shared/AI/BossCharacter.h"
-#include "Shared/GAS/EGasEventType.h"
-#include "Shared/Utill/UEnumTagMatchHelper.h"
+#include "MyGame/Public/Shared/AI/BossCharacter.h"
+#include "GameSharedModule/Public/Enum/EGasEventType.h"
+#include "GameSharedModule/Public/Utill/UEnumTagMatchHelper.h"
 
 void UGA_BossAttack::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
                                      const FGameplayAbilityActorInfo* ActorInfo,

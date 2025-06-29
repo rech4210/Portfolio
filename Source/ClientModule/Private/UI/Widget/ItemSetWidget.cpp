@@ -2,7 +2,7 @@
 
 
 #include "UI/Widget/ItemSetWidget.h"
-#include "Shared/Data/ItemDataAsset.h"
+#include "GameSharedModule/Public/Data/ItemDataAsset.h"
 
 void UItemSetWidget::InitWidget() {
 }

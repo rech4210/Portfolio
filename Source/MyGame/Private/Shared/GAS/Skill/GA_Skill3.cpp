@@ -1,16 +1,17 @@
 // GA_Skill3.cpp
 
 #include "Shared/GAS/Skill/GA_Skill3.h"
-#include "Shared/Data/SkillDataAsset.h"
-#include "Shared/GAS/SkillTargetPolicy/SkillTargetActor_Mouse.h"
-#include "Shared/GAS/SkillTargetPolicy/SkillTarget_Self.h"
-#include "Shared/GAS/AbilityTask/GGwaPlayMontageAndWaitForEvent.h"
 #include "Abilities/Tasks/AbilityTask_WaitTargetData.h"
-#include "Shared/Data/EGasDataType.h"
-#include "Shared/GAS/Cue/ECueType.h"
-#include "Shared/GAS/SkillTargetPolicy/FSkillContext.h"
+#include "Shared/GAS/GGwaAbilitySystemComponent.h"
+#include "SkillModule/Public/Data/SkillTargetActor_Mouse.h"
+#include "SkillModule/Public/Data/SkillTarget_Self.h"
+#include "Shared/GAS/AbilityTask/GGwaPlayMontageAndWaitForEvent.h"
+#include "SkillModule/Public/Data/FSkillContext.h"
 #include "Shared/Player/GGwaCharacter.h"
-#include "Shared/Utill/UEnumTagMatchHelper.h"
+#include "SkillModule/Public/Data/SkillDataAsset.h"
+#include "GameSharedModule/Public/Data/EGasDataType.h"
+#include "GameSharedModule/Public/Enum/ECueType.h"
+#include "GameSharedModule/Public/Utill/UEnumTagMatchHelper.h"
 
 UGA_Skill3::UGA_Skill3()
 {

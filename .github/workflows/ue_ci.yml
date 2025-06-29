@@ -6,7 +6,7 @@ env:
 on:
   push:
     #branches: [ "main", "KMS/Feature/Server" ]
-    branches: [ "KMS/Test/UE_CI" ]
+    #branches: [ "KMS/Test/UE_CI" ]
     paths:
       - 'Source/**'
       - 'Config/**'
@@ -14,7 +14,7 @@ on:
       - '.github/workflows/ue_ci.yml'
   pull_request:
     #branches: [ "main", "KMS/Feature/Server" ]
-    branches: [ "KMS/Test/UE_CI" ]
+    #branches: [ "KMS/Test/UE_CI" ]
     paths:
       - 'Source/**'
       - 'Config/**'
@@ -25,12 +25,12 @@ on:
       branch:
         description: 'Branch to build'
         required: true
-        default: 'KMS/Feature/Server'
+        default: 'KMS/Test/UE_CI'
 
 # linux-latest or self-hosted, linux, x64
 jobs:
   build-and-test-ue:
-    runs-on: [self-hosted, linux, x64] 
+    runs-on: [self-hosted, linux, x64]
     env:
       UE_REPO_TOKEN: ${{ secrets.UE_REPO_TOKEN }}
 
@@ -43,9 +43,10 @@ jobs:
 
       - name: Run MySQL Database
         run: |
-          docker compose up -d
-          echo "Waiting for database to be ready..."
-          sleep 15
+            docker compose down
+            docker compose up -d
+            echo "Waiting for database to be ready..."
+            sleep 15
 
       - name: Restore Unreal Engine cache
         id: restore-engine

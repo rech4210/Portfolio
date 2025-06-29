@@ -7,6 +7,7 @@
 #include "Components/ProgressBar.h"
 #include "UI/Widget/BuffSlotWidget.h"
 #include "UI/ToolTip/BuffToolTip.h"
+#include "GameSharedModule/Public/Data/BuffDataAsset.h"
 
 
 void UPlayerStatusWidget::InitWidget() {
