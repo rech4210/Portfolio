@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "Shared/GAS/SkillInputSlot.h"
+#include "SkillModule/Public/Data/SkillInputSlot.h"
 #include "SkillSlotWidget.generated.h"
 
 class USkillDataAsset;

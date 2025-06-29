@@ -1,14 +1,14 @@
-
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "UI/SetWidgetDataInterface.h"
-#include "Shared/GAS/GGwaAttributeSet.h"
+#include "MyGame/Public/Shared/GAS/GGwaAttributeSet.h"
 #include "UI/ToolTip/BaseToolTip.h"
 #include "UObject/Object.h"
 #include "GGwaWidget.generated.h"
 
+class USkillDataAsset;
 class UBaseDataAsset;
 class UItemToolTip;
 class USkillToolTip;

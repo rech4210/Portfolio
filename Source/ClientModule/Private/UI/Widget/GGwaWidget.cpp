@@ -8,10 +8,10 @@
 #include "UI/Widget/ItemSetWidget.h"
 #include "UI/Widget/SkillSetWidget.h"
 
-#include "Shared/Data/BuffDataAsset.h"
-#include "Shared/Data/ItemDataAsset.h"
-#include "Shared/Data/SkillDataAsset.h"
-#include "Shared/Data/BaseDataAsset.h"
+#include "GameSharedModule/Public/Data/BuffDataAsset.h"
+#include "GameSharedModule/Public/Data/ItemDataAsset.h"
+#include "SkillModule/Public/Data/SkillDataAsset.h"
+#include "GameSharedModule/Public/Data/BaseDataAsset.h"
 #include "Shared/GAS/GGwaAbilitySystemComponent.h"
 
 #include "UI/ToolTip/BuffToolTip.h"

@@ -1,19 +1,19 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Shared/AI/BossCharacter.h"
+#include "MyGame/Public/Shared/AI/BossCharacter.h"
 #include "AbilitySystemComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Net/UnrealNetwork.h"
-#include "Shared/AI/EnemyAbilitySystemComponent.h"
-#include "Shared/AI/EnemyAttributeSet.h"
-#include "Shared/AI/BossComponent/BossAttributeObserverComponent.h"
-#include "Shared/AI/BossComponent/BossSkillComponent.h"
-#include "Shared/AI/Interface/EnemyDataReceiver.h"
-#include "Shared/Player/GGwaCharacter.h"
-#include "Shared/Player/GGwaPlayerController.h"
-#include "Shared/AI/EnemySystemCore/EnemyDataAsset.h"
+#include "MyGame/Public/Shared/AI/EnemyAbilitySystemComponent.h"
+#include "MyGame/Public/Shared/AI/EnemyAttributeSet.h"
+#include "MyGame/Public/Shared/AI/BossComponent/BossAttributeObserverComponent.h"
+#include "MyGame/Public/Shared/AI/BossComponent/BossSkillComponent.h"
+#include "MyGame/Public/Shared/AI/Interface/EnemyDataReceiver.h"
+#include "MyGame/Public/Shared/Player/GGwaCharacter.h"
+#include "MyGame/Public/Shared/Player/GGwaPlayerController.h"
+#include "MyGame/Public/Shared/AI/EnemySystemCore/EnemyDataAsset.h"
 
 static constexpr int MAX_FLOAT = 9999.f;
 

@@ -3,9 +3,9 @@
 #include "Shared/GAS/GGwaAbilitySystemComponent.h"
 #include "GameFramework/Character.h"
 #include "Kismet/GameplayStatics.h"
-#include "Shared/GAS/Cue/ECueType.h"
-#include "Shared/Utill/UEnumTagMatchHelper.h"
-#include "Shared/Player/EPlayerState.h"
+#include "GameSharedModule/Public/Utill/UEnumTagMatchHelper.h"
+#include "GameSharedModule/Public/Enum/ECueType.h"
+#include "GameSharedModule/Public/Enum/EPlayerState.h"
 #include "Shared/Player/GGwaCharacter.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -44,6 +44,9 @@ void UPlayerReactionComponent::HandleGameplayCue(const FGameplayTag EventTag/*ch
 			this, /* 사운드 어셋 참조 */ nullptr,
 			GetOwner()->GetActorLocation());
 	}
+}
+
+void UPlayerReactionComponent::Init(UGGwaAbilitySystemComponent* ASC) {
 }
 
 void UPlayerReactionComponent::ExecuteKnockback(const FGameplayTag& StateTag) {

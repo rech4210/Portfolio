@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/HUD.h"
 #include "UI/Widget/GGwaWidget.h"
-#include "Shared/AI/EnemySystemCore/FBossDataStruct.h"
+#include "MyGame/Public/Shared/AI/EnemySystemCore/FBossDataStruct.h"
 #include "GGwaHUD.generated.h"
 
 class UBossStatusWidget;

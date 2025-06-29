@@ -10,7 +10,9 @@ public class ClientModule : ModuleRules
             new string[]
             {
                 "Core",
-                "MyGame"
+                "MyGame",
+                "GameSharedModule",
+                "SkillModule"
             }
         );
 
@@ -25,7 +27,8 @@ public class ClientModule : ModuleRules
                 "RenderCore",
                 "RHI",
                 "GameplayAbilities",
-                "GameplayTags"
+                "GameplayTags",
+                "AuthClientModule"
             }
         );
     }

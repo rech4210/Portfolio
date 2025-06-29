@@ -3,11 +3,13 @@
 
 #include "UI/Widget/SkillSetWidget.h"
 #include "Blueprint/DragDropOperation.h"
-#include "Shared/Data/SkillDataAsset.h"
+#include "SkillModule/Public/Data/SkillDataAsset.h"
 #include "UI/Widget/SkillSlotWidget.h"
 #include "Components/HorizontalBox.h"
-#include "Shared/GAS/SkillInputSlot.h"
-#include "Shared/Utill/USkillHelper.h"
+#include "SkillModule/Public/Data/SkillInputSlot.h"
+#include "SkillModule/Public/Utill/USkillHelper.h"
+#include "Components/Image.h"
+#include "Components/TextBlock.h"
 // #include "Shared/Utill/USkillHelper.h"
 
 #define MAX_SKILL_SLOT 8
