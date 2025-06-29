@@ -8,7 +8,25 @@ public class MyGame : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "GameplayAbilities", "GameplayTasks", "GameplayTags", "EnhancedInput","AIModule","NavigationSystem", "HTTP"});
+		PublicDependencyModuleNames.AddRange(new string[] { 
+			"Core", 
+			"CoreUObject", 
+			"Engine", 
+			"InputCore", 
+			"EnhancedInput",
+			"GameplayAbilities",
+			"GameplayTags",
+			"GameplayTasks",
+			"UMG",
+			"AIModule",
+			"Niagara",
+			"NavigationSystem",
+			"GameSharedModule",
+			"SkillModule",
+			"ShopModule",
+			"InventoryModule",
+			"LoggingModule"
+		});
 
 		
 		//Circular dependency

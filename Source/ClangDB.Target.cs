@@ -8,7 +8,8 @@ public class ClangDBTarget : TargetRules
 		Type = TargetType.Program;
 		DefaultBuildSettings = BuildSettingsVersion.V5;
 		LaunchModuleName = "ClangDB";
+		bPrintToolChainTimingInfo = true;
 
-		ExtraModuleNames.AddRange(new string[] { "MyGame", "ClientModule", "ServerModule" });
+		ExtraModuleNames.AddRange(new string[] { "MyGame", "ClientModule", "ServerModule", "DatabaseModule", "AuthClientModule" });
 	}
 }

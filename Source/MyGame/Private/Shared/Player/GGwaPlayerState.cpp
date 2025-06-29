@@ -2,14 +2,14 @@
 
 #include "Shared/Player/GGwaPlayerState.h"
 
-#include "Shared/Data/BuffDataAsset.h"
-#include "Shared/Data/SkillDataAsset.h"
-#include "Shared/GAS/GGwaAttributeSet.h"
-#include "Shared/GAS/GGwaAbilitySystemComponent.h"
-#include "Shared/Player/GGwaCharacter.h"
-#include "Shared/Player/GGwaPlayerController.h"
-#include "Shared/Player/Component/UPlayerStateComponent.h"
-#include "Shared/Utill/UEnumTagMatchHelper.h"
+#include "MyGame/Public/Shared/GAS/GGwaAbilitySystemComponent.h"
+#include "MyGame/Public/Shared/GAS/GGwaAttributeSet.h"
+#include "GameSharedModule/Public/Data/BuffDataAsset.h"
+#include "SkillModule/Public/Data/SkillDataAsset.h"
+#include "MyGame/Public/Shared/Player/GGwaCharacter.h"
+#include "MyGame/Public/Shared/Player/GGwaPlayerController.h"
+#include "MyGame/Public/Shared/Player/Component/UPlayerStateComponent.h"
+#include "GameSharedModule/Public/Utill/UEnumTagMatchHelper.h"
 
 
 

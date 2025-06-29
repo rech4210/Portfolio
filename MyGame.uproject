@@ -29,10 +29,17 @@
 		},
 		{
 			"Name": "ServerModule",
-			"Type": "ServerOnly",
+			"Type": "Runtime",
 			"LoadingPhase": "Default",
 			"AdditionalDependencies": [
 				"AIModule"
+			]
+		},
+		{
+			"Name": "AuthClientModule",
+			"Type": "ClientOnly",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
 			]
 		}
 	],

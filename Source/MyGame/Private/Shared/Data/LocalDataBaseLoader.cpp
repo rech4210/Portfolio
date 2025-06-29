@@ -2,7 +2,7 @@
 
 #include "Shared/Data/LocalDataBaseLoader.h"
 #include "Engine/AssetManager.h"
-#include "Shared/Data/SkillDataAsset.h"
+#include "SkillModule/Public/Data/SkillDataAsset.h"
 
 void ULocalDataBaseLoader::Initialize()
 {
@@ -43,7 +43,7 @@ void ULocalDataBaseLoader::Initialize()
 }
 
 
-bool ULocalDataBaseLoader::GetPrimaryAssetId(int32 SkillID, FPrimaryAssetId& OutId) const {
+bool ULocalDataBaseLoader::CheckPrimaryAssetId(int32 SkillID, FPrimaryAssetId& OutId) const {
 	if (const FPrimaryAssetId* Found = SkillIdToAssetId.Find(SkillID))
 	{
 		OutId = *Found;

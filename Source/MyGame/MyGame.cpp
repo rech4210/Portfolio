@@ -2,11 +2,15 @@
 
 #include "MyGame.h"
 #include "Modules/ModuleManager.h"
-#include "Shared/Utill/UEnumTagMatchHelper.h"
+#include "GameSharedModule/Public/Utill/UEnumTagMatchHelper.h"
 
 void FMyGameModule::StartupModule()
 {
 	UEnumTagMatchHelper::InitializeHelper();
 }
 
-IMPLEMENT_PRIMARY_GAME_MODULE( FMyGameModule, MyGame, "MyGame" );
+void FMyGameModule::ShutdownModule() {
+	UEnumTagMatchHelper::Shutdown();
+}
+
+IMPLEMENT_PRIMARY_GAME_MODULE(FMyGameModule, MyGame, "MyGame");

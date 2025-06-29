@@ -3,7 +3,7 @@
 
 #include "GGwaAssetManager.h"
 
-#include "Shared/Data/LocalDataBaseLoader.h"
+#include "MyGame/Public/Shared/Data/LocalDataBaseLoader.h"
 
 const FPrimaryAssetType UGGwaAssetManager::SkillType = TEXT("Skill");
 
@@ -25,7 +25,7 @@ void UGGwaAssetManager::FinishInitialLoading() {
 	// 	for (int32 SkillID : PrefetchSkillIDs)
 	// 	{
 	// 		FPrimaryAssetId IdPtr;
-	// 		Loader->GetPrimaryAssetId(SkillID, IdPtr);
+	// 		Loader->CheckPrimaryAssetId(SkillID, IdPtr);
 	// 		if (IdPtr.IsValid()){
 	// 			LoadPrimaryAsset(IdPtr, {}, FStreamableDelegate());
 	// 			SkillAssets.Add(IdPtr);

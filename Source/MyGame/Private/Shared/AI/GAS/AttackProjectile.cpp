@@ -9,8 +9,8 @@
 #include "Animation/AnimTrace.h"
 #include "Concepts/Iterable.h"
 #include "Net/UnrealNetwork.h"
-#include "Shared/Player/GGwaCharacter.h"
-#include "Shared/Player/GGwaPlayerState.h"
+#include "MyGame/Public/Shared/Player/GGwaCharacter.h"
+#include "MyGame/Public/Shared/Player/GGwaPlayerState.h"
 
 AAttackProjectile::AAttackProjectile() {
     PrimaryActorTick.bCanEverTick = true;

@@ -4,17 +4,17 @@
 #include "Shared/Player/GGwaPlayerState.h"
 #include "Shared/GAS/Skill/GA_Skill1.h"
 
-#include "AbilitySystemComponent.h"
+// #include "AbilitySystemComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "EnhancedInputSubsystems.h"
-#include "InputMappingContext.h"
 #include "InputAction.h"
-#include "Shared/GAS/Skill/ESkillType.h"
+#include "GameSharedModule/Public/Utill/UEnumTagMatchHelper.h"
+#include "GameSharedModule/Public/Enum/ESkillType.h"
+#include "Shared/GAS/GGwaAbilitySystemComponent.h"
 #include "Shared/Player/GGwaPlayerController.h"
 #include "Shared/Player/Component/PlayerReactionComponent.h"
 #include "Shared/Player/Component/UPlayerStateComponent.h"
-#include "Shared/Utill/UEnumTagMatchHelper.h"
 
 enum class ESkillType : uint8;
 

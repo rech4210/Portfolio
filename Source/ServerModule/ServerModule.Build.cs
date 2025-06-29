@@ -10,7 +10,14 @@ public class ServerModule : ModuleRules
             new string[]
             {
                 "Core",
-                "MyGame"
+                "MyGame",
+                "GameSharedModule",
+                "SkillModule",
+                "InventoryModule",
+                "AIModule",
+                "NavigationSystem",
+                "GameplayAbilities",
+                "AuthServerModule"
             }
         );
 
@@ -21,12 +28,9 @@ public class ServerModule : ModuleRules
                 "Engine",
                 "Slate",
                 "SlateCore",
-                "AIModule",
-                "NavigationSystem",
-                "GameplayAbilities",
-                "GameplayTags",
                 "HTTP",
-                "MyGame"
+                "GameplayTags",
+                "DatabaseModule"
             }
         );
         if (Target.bBuildEditor)

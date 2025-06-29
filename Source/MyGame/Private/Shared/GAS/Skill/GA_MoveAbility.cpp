@@ -8,7 +8,7 @@
 #include "GameFramework/Pawn.h"
 #include "TimerManager.h"
 #include "Abilities/Tasks/AbilityTask_WaitTargetData.h"
-#include "Shared/GAS/SkillTargetPolicy/SkillTargetActor_Mouse.h"
+#include "SkillModule/Public/Data/SkillTargetActor_Mouse.h"
 
 
 UGA_MoveAbility::UGA_MoveAbility() {

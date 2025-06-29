@@ -2,9 +2,9 @@
 
 
 #include "Shared/AI/BossComponent/BossAttributeObserverComponent.h"
-#include "Shared/AI/BossCharacter.h"
-#include "Shared/AI/EnemyAttributeSet.h"
-#include "Shared/AI/EnemySystemCore/EObservedAttribute.h"
+#include "MyGame/Public/Shared/AI/BossCharacter.h"
+#include "MyGame/Public/Shared/AI/EnemyAttributeSet.h"
+#include "MyGame/Public/Shared/AI/EnemySystemCore/EObservedAttribute.h"
 
 
 UBossAttributeObserverComponent::UBossAttributeObserverComponent() {

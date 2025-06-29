@@ -21,7 +21,9 @@ public:
 	
 	UGGwaAbilitySystemComponent();
 	virtual void BeginPlay() override;
-	
+	// check cost for variable cost with tag or enum
+	bool CheckCost(const FGameplayEffectSpecHandle& CostSpecHandle);
+
 	UPROPERTY()
 	FOnEffectAssetApplied OnEffectAssetApplied;
 

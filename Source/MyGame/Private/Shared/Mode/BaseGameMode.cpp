@@ -4,7 +4,7 @@
 #include "Shared/Player/GGwaCharacter.h"
 #include "Shared/Player/GGwaPlayerController.h"
 #include "Shared/Player/GGwaPlayerState.h"
-#include "Shared/Utill/UEnumTagMatchHelper.h"
+#include "GameSharedModule/Public/Utill/UEnumTagMatchHelper.h"
 
 ABaseGameMode::ABaseGameMode()
 {
