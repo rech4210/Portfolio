@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Shared/Mode/BaseGameMode.h"
-#include "Shared/Mode/ModeType.h"
+#include "MyGame/Public/Shared/Mode/BaseGameMode.h"
+#include "MyGame/Public/Shared/Mode/ModeType.h"
 #include "GameFramework/GameMode.h"
 #include "GGwaGameMode.generated.h"
 

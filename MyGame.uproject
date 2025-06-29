@@ -29,7 +29,7 @@
 		},
 		{
 			"Name": "ServerModule",
-			"Type": "ServerOnly",
+			"Type": "Runtime",
 			"LoadingPhase": "Default",
 			"AdditionalDependencies": [
 				"AIModule"

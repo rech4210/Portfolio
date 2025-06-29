@@ -4,10 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "AbilitySystemInterface.h"
-#include "EPlayerState.h"
+#include "GameSharedModule/Public/Enum/EPlayerState.h"
 #include "GameplayEffectTypes.h"
 #include "GameFramework/PlayerState.h"
-#include "Shared/Data/SkillDataAsset.h"
+#include "SkillModule/Public/Data/SkillDataAsset.h"
 #include "GGwaPlayerState.generated.h"
 
 class AGGwaCharacter;

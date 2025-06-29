@@ -3,10 +3,10 @@
 
 #include "Shared/GAS/Skill/Effect/UKnockBackExecution.h"
 #include "AbilitySystemComponent.h"
-#include "Shared/Data/EGasDataType.h"
-#include "Shared/Player/EPlayerState.h"
-#include "Shared/Player/GGwaCharacter.h"
-#include "Shared/Utill/UEnumTagMatchHelper.h"
+#include "GameSharedModule/Public/Data/EGasDataType.h"
+#include "GameSharedModule/Public/Enum/EPlayerState.h"
+#include "MyGame/Public/Shared/Player/GGwaCharacter.h"
+#include "GameSharedModule/Public/Utill/UEnumTagMatchHelper.h"
 
 UKnockBackExecution::UKnockBackExecution() {
 	

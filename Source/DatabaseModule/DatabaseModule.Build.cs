@@ -11,6 +11,10 @@ public class DatabaseModule : ModuleRules
 			new string[]
 			{
 				"Core",
+				"CoreUObject",
+				"Engine",
+				"InventoryModule",
+				"GameSharedModule"
 			}
 		);
 			

@@ -4,7 +4,7 @@
 #include "UI/ToolTip/SkillToolTip.h"
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
-#include "Shared/Data/SkillDataAsset.h"
+#include "SkillModule/Public/Data/SkillDataAsset.h"
 
 void USkillToolTip::SetToolTipData(UPrimaryDataAsset* Data) {
 	// Super::SetToolTipData(ToolTip);
