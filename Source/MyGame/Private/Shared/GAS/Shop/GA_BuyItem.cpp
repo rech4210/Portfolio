@@ -13,10 +13,11 @@ UGA_BuyItem::UGA_BuyItem()
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::ServerOnly;
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 
-	// Default error tags
-	ErrorTag_ItemNotFound = FGameplayTag::RequestGameplayTag(FName("Shop.Error.ItemNotFound"));
-	ErrorTag_NotEnoughGold = FGameplayTag::RequestGameplayTag(FName("Shop.Error.NotEnoughGold"));
-	ErrorTag_InventoryFull = FGameplayTag::RequestGameplayTag(FName("Shop.Error.InventoryFull"));
+	//TODO: ADD Tag Data ini.
+	// // Default error tags
+	// ErrorTag_ItemNotFound = FGameplayTag::RequestGameplayTag(FName("Shop.Error.ItemNotFound"));
+	// ErrorTag_NotEnoughGold = FGameplayTag::RequestGameplayTag(FName("Shop.Error.NotEnoughGold"));
+	// ErrorTag_InventoryFull = FGameplayTag::RequestGameplayTag(FName("Shop.Error.InventoryFull"));
 }
 
 bool UGA_BuyItem::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags, FGameplayTagContainer* OptionalRelevantTags) const

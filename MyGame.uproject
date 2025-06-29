@@ -38,9 +38,32 @@
 		{
 			"Name": "AuthClientModule",
 			"Type": "ClientOnly",
-			"LoadingPhase": "Default",
-			"AdditionalDependencies": [
-			]
+			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "AuthServerModule",
+			"Type": "ServerOnly",
+			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "DatabaseModule",
+			"Type": "ServerOnly",
+			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "GameSharedModule",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "InventoryModule",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "SkillModule",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
 		}
 	],
 	"Plugins": [

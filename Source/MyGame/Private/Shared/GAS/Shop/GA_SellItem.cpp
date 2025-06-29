@@ -11,9 +11,9 @@ UGA_SellItem::UGA_SellItem()
 {
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::ServerOnly;
-
-	ErrorTag_ItemNotOwned = FGameplayTag::RequestGameplayTag(FName("Shop.Error.ItemNotOwned"));
-	ErrorTag_CannotBeSold = FGameplayTag::RequestGameplayTag(FName("Shop.Error.CannotBeSold"));
+	// TODO: Add Tag Data ini.
+	// ErrorTag_ItemNotOwned = FGameplayTag::RequestGameplayTag(FName("Shop.Error.ItemNotOwned"));
+	// ErrorTag_CannotBeSold = FGameplayTag::RequestGameplayTag(FName("Shop.Error.CannotBeSold"));
 }
 
 bool UGA_SellItem::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags, FGameplayTagContainer* OptionalRelevantTags) const

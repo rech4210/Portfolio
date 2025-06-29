@@ -1,14 +1,12 @@
   #pragma once
 
   #include "CoreMinimal.h"
-  #include "UObject/NoExportTypes.h"
   #include "AuthVerificationService.generated.h"
 
   UCLASS()
   class AUTHSERVERMODULE_API UAuthVerificationService : public UObject
   {
       GENERATED_BODY()
-
   public:
       /**
        * Verifies a JWT and extracts the user ID.
