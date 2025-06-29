@@ -1,97 +1,97 @@
-name: Unreal Engine CI
+# name: Unreal Engine CI
 
-env:
-  UE_REPO_TOKEN: ${{ secrets.UE_REPO_TOKEN }}
+# env:
+#   UE_REPO_TOKEN: ${{ secrets.UE_REPO_TOKEN }}
 
-on:
-  push:
-    #branches: [ "main", "KMS/Feature/Server" ]
-    #branches: [ "KMS/Test/UE_CI" ]
-    paths:
-      - 'Source/**'
-      - 'Config/**'
-      - 'MyGame.uproject'
-      - '.github/workflows/ue_ci.yml'
-  pull_request:
-    #branches: [ "main", "KMS/Feature/Server" ]
-    #branches: [ "KMS/Test/UE_CI" ]
-    paths:
-      - 'Source/**'
-      - 'Config/**'
-      - 'MyGame.uproject'
-      - '.github/workflows/ue_ci.yml'
-  workflow_dispatch:
-    inputs:
-      branch:
-        description: 'Branch to build'
-        required: true
-        default: 'KMS/Test/UE_CI'
+# on:
+#   push:
+#     #branches: [ "main", "KMS/Feature/Server" ]
+#     #branches: [ "KMS/Test/UE_CI" ]
+#     paths:
+#       - 'Source/**'
+#       - 'Config/**'
+#       - 'MyGame.uproject'
+#       - '.github/workflows/ue_ci.yml'
+#   pull_request:
+#     #branches: [ "main", "KMS/Feature/Server" ]
+#     #branches: [ "KMS/Test/UE_CI" ]
+#     paths:
+#       - 'Source/**'
+#       - 'Config/**'
+#       - 'MyGame.uproject'
+#       - '.github/workflows/ue_ci.yml'
+#   workflow_dispatch:
+#     inputs:
+#       branch:
+#         description: 'Branch to build'
+#         required: true
+#         default: 'KMS/Test/UE_CI'
 
-# linux-latest or self-hosted, linux, x64
-jobs:
-  build-and-test-ue:
-    runs-on: [self-hosted, linux, x64]
-    env:
-      UE_REPO_TOKEN: ${{ secrets.UE_REPO_TOKEN }}
+# # linux-latest or self-hosted, linux, x64
+# jobs:
+#   build-and-test-ue:
+#     runs-on: [self-hosted, linux, x64]
+#     env:
+#       UE_REPO_TOKEN: ${{ secrets.UE_REPO_TOKEN }}
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ github.event.inputs.branch }}
-          lfs: true
+#     steps:
+#       - name: Checkout repository
+#         uses: actions/checkout@v3
+#         with:
+#           ref: ${{ github.event.inputs.branch }}
+#           lfs: true
 
-      - name: Run MySQL Database
-        run: |
-            docker compose down
-            docker compose up -d
-            echo "Waiting for database to be ready..."
-            sleep 15
+#       - name: Run MySQL Database
+#         run: |
+#             docker compose down
+#             docker compose up -d
+#             echo "Waiting for database to be ready..."
+#             sleep 15
 
-      - name: Restore Unreal Engine cache
-        id: restore-engine
-        uses: actions/cache@v4
-        with:
-          path: .ue-cache
-          key: ${{ runner.os }}-ue-${{ hashFiles('MyGame.uproject') }}
-          restore-keys: |
-            ${{ runner.os }}-ue-
+#       - name: Restore Unreal Engine cache
+#         id: restore-engine
+#         uses: actions/cache@v4
+#         with:
+#           path: .ue-cache
+#           key: ${{ runner.os }}-ue-${{ hashFiles('MyGame.uproject') }}
+#           restore-keys: |
+#             ${{ runner.os }}-ue-
 
-      - name: Clone Unreal Engine source
-        if: steps.restore-engine.outputs.cache-hit != 'true'
-        run: |
-          git clone https://x-access-token:${{ env.UE_REPO_TOKEN }}@github.com/EpicGames/UnrealEngine.git \
-            --branch 5.5 --depth 1 .ue-cache
+#       - name: Clone Unreal Engine source
+#         if: steps.restore-engine.outputs.cache-hit != 'true'
+#         run: |
+#           git clone https://x-access-token:${{ env.UE_REPO_TOKEN }}@github.com/EpicGames/UnrealEngine.git \
+#             --branch 5.5 --depth 1 .ue-cache
 
-      - name: Setup Unreal Engine
-        if: steps.restore-engine.outputs.cache-hit != 'true'
-        run: |
-          cd .ue-cache
-          ./Setup.sh
-          ./GenerateProjectFiles.sh
-          make -j$(nproc)
+#       - name: Setup Unreal Engine
+#         if: steps.restore-engine.outputs.cache-hit != 'true'
+#         run: |
+#           cd .ue-cache
+#           ./Setup.sh
+#           ./GenerateProjectFiles.sh
+#           make -j$(nproc)
 
-      - name: Export UE_ROOT
-        run: echo "UE_ROOT=${{ github.workspace }}/.ue-cache" >> $GITHUB_ENV
+#       - name: Export UE_ROOT
+#         run: echo "UE_ROOT=${{ github.workspace }}/.ue-cache" >> $GITHUB_ENV
 
-      - name: Build MyGame Project
-        run: |
-          ${{ env.UE_ROOT }}/Engine/Build/BatchFiles/RunUAT.sh BuildCookRun \
-            -project="${{ github.workspace }}/MyGame.uproject" \
-            -noP4 -platform=Linux -clientconfig=Development \
-            -cook -stage -archive -archivedirectory="${{ github.workspace }}/Build"
+#       - name: Build MyGame Project
+#         run: |
+#           ${{ env.UE_ROOT }}/Engine/Build/BatchFiles/RunUAT.sh BuildCookRun \
+#             -project="${{ github.workspace }}/MyGame.uproject" \
+#             -noP4 -platform=Linux -clientconfig=Development \
+#             -cook -stage -archive -archivedirectory="${{ github.workspace }}/Build"
 
-      - name: Run Automation Tests
-        run: |
-          ${{ env.UE_ROOT }}/Engine/Build/BatchFiles/RunUAT.sh RunTests \
-            -project="${{ github.workspace }}/MyGame.uproject" \
-            -test="MyGame.Database.Manager.SaveAndLoad" \
-            -platform=Linux -configuration=Development \
-            -output="${{ github.workspace }}/TestResults.log"
+#       - name: Run Automation Tests
+#         run: |
+#           ${{ env.UE_ROOT }}/Engine/Build/BatchFiles/RunUAT.sh RunTests \
+#             -project="${{ github.workspace }}/MyGame.uproject" \
+#             -test="MyGame.Database.Manager.SaveAndLoad" \
+#             -platform=Linux -configuration=Development \
+#             -output="${{ github.workspace }}/TestResults.log"
 
-      - name: Upload Test Results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: ue-test-results
-          path: ${{ github.workspace }}/TestResults.log
+#       - name: Upload Test Results
+#         if: always()
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: ue-test-results
+#           path: ${{ github.workspace }}/TestResults.log
