@@ -132,6 +132,14 @@ void UDatabaseManager::Initialize(FSubsystemCollectionBase& Collection)
 		return;
 	}
 
+	// [디버그 로그 추가] 어떤 설정으로 접속을 시도하는지 확인합니다.
+	UE_LOG(LogTemp, Log, TEXT("Attempting DB connection with the following settings:"));
+	UE_LOG(LogTemp, Log, TEXT(" - Host: %s"), *Settings->DBHost);
+	UE_LOG(LogTemp, Log, TEXT(" - Port: %d"), Settings->DBPort);
+	UE_LOG(LogTemp, Log, TEXT(" - User: %s"), *Settings->DBUser);
+	UE_LOG(LogTemp, Log, TEXT(" - Schema: %s"), *Settings->DBSchema);
+	// 경고: 보안을 위해 비밀번호는 절대 로그로 출력하지 마세요.
+
 	try
 	{
 		Impl->Driver = sql::mysql::get_driver_instance();
@@ -282,4 +290,4 @@ void UDatabaseManager::LogToExternalServer(const FString& Message)
 	HttpRequest->SetContentAsString(RequestBody);
 	
 	HttpRequest->ProcessRequest();
-} 
+}

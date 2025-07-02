@@ -16,6 +16,6 @@
       // A real implementation would decode the token and get the payload.
       OutUserId = TEXT("VerifiedUser_From_") + Token.RightChop(7); // Remove "Bearer "
       
-      UE_LOG(LogTemp, Log, TEXT("Token verification successful for user: %s"), *OutUserId);
+      UE_LOG(LogTemp, Warning, TEXT("Token verification successful for user: %s"), *OutUserId);
       return true;
   }

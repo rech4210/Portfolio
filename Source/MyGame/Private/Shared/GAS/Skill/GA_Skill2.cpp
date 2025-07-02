@@ -14,18 +14,6 @@
 #include "GameSharedModule/Public/Enum/ECueType.h"
 #include "GameSharedModule/Public/Utill/UEnumTagMatchHelper.h"
 
-UGA_Skill2::UGA_Skill2()
-{
-	AbilityInputID    = EAbilityInputID::Skill2;
-}
-
-void UGA_Skill2::OnAvatarSet(
-	const FGameplayAbilityActorInfo* ActorInfo,
-	const FGameplayAbilitySpec& Spec)
-{
-	Super::OnAvatarSet(ActorInfo, Spec);
-}
-
 void UGA_Skill2::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
 	const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData*)
 {
@@ -55,11 +43,9 @@ void UGA_Skill2::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const 
 	else
 	{
 		// 마우스 기반 위치 타겟팅
-		ASkillTargetActor_Mouse* TargetActor =
-			NewObject<ASkillTargetActor_Mouse>(this);
+		ASkillTargetActor_Mouse* TargetActor = NewObject<ASkillTargetActor_Mouse>(this);
 
-		UAbilityTask_WaitTargetData* TargetTask =
-			UAbilityTask_WaitTargetData::WaitTargetDataUsingActor(
+		UAbilityTask_WaitTargetData* TargetTask = UAbilityTask_WaitTargetData::WaitTargetDataUsingActor(
 				this,
 				FName("Skill2_Target"),
 				EGameplayTargetingConfirmation::Instant,
@@ -89,7 +75,8 @@ void UGA_Skill2::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Da
 		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
 		return;
 	}
-	
+
+	//Cue 시각 효과 적용
 	if (Data.Num() > 0 && Data.Get(0)){
 		const FHitResult* Hit = Data.Get(0)->GetHitResult();
 		if (Hit){
@@ -106,11 +93,6 @@ void UGA_Skill2::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Da
 			}
 		}
 	}
-
-	if (GetActorInfo().AvatarActor->HasAuthority()) {
-		SendSkillLogToServer(SkillDataAsset->GEClass.Get()->GetName(), HitPoint);
-	}
-
 
 	// 4) 몽타주 Task
 	UGGwaPlayMontageAndWaitForEvent* MontageTask =
@@ -181,15 +163,5 @@ void UGA_Skill2::OnMontageCompleted(FGameplayTag ,FGameplayEventData){
 		}
 	}
 
-	EndAbility(
-		CurrentSpecHandle,
-		CurrentActorInfo,
-		CurrentActivationInfo,
-		true, 
-		false 
-	);
-}
-
-void UGA_Skill2::SendSkillLogToServer(const FString& SkillName, FVector SkillLocation) const{
-
+	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo,true, false );
 }

@@ -31,7 +31,8 @@ public class ServerModule : ModuleRules
                 "SlateCore",
                 "HTTP",
                 "GameplayTags",
-                "ShopModule"
+                "ShopModule",
+                "OnlineSubsystem",
             }
         );
         if (Target.bBuildEditor)

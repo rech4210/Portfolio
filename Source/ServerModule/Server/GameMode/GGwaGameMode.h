@@ -35,6 +35,7 @@ protected:
 	virtual void RequestFlowControllerInit(EModeType ModeType) override;
 	virtual void PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage) override;
 
+	virtual void Tick(float DeltaSeconds) override;
 private:
 	UPROPERTY()
 	UBattleFlowController* BattleFlowController;
@@ -55,4 +56,7 @@ private:
 	TScriptInterface<IShopRepositoryInterface> ShopRepository;
 
 	TArray<USkillDataAsset*> LoadedSkillDefinitions;
+
+	// PreLogin에서 인증에 성공한 유저 정보를 임시 저장하는 맵
+	TMap<FUniqueNetIdRepl, FString> PendingPlayers;
 };

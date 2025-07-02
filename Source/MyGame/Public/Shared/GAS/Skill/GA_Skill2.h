@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "../../../../../SkillModule/Public/Data/AbilityInputID.h"
+#include "SkillModule/Public/Data/AbilityInputID.h"
 #include "GA_Base.h"
 #include "Abilities/Tasks/AbilityTask_WaitTargetData.h"
 #include "Shared/GAS/AbilityTask/GGwaPlayMontageAndWaitForEvent.h"
@@ -18,18 +18,9 @@ class MYGAME_API UGA_Skill2 : public UGA_Base
 	GENERATED_BODY()
 
 public:
-	EAbilityInputID AbilityInputID;
-	UGA_Skill2();
-
 	/** 스킬 데이터 에셋 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Data")
 	TObjectPtr<USkillDataAsset> SkillDataAsset;
-
-	virtual void OnAvatarSet(
-		const FGameplayAbilityActorInfo* ActorInfo,
-		const FGameplayAbilitySpec& Spec
-	) override;
-
 	virtual void ActivateAbility(
 		const FGameplayAbilitySpecHandle Handle,
 		const FGameplayAbilityActorInfo* ActorInfo,
@@ -50,6 +41,4 @@ private:
 	UFUNCTION()
 	void OnMontageInterrupted(FGameplayTag EventTag, FGameplayEventData EventData);
 	FVector HitPoint;
-
-	void SendSkillLogToServer(const FString& SkillName, FVector SkillLocation) const;
 };

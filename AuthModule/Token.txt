@@ -1,0 +1,8 @@
+curl -X POST http://localhost:3000/login \
+  -H "Content-Type: application/json" \
+  -d '{"userId":"testuser", "roles":["player"]}'
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   233  100   192  100    41  29121   6218 --:--:-- --:--:-- --:--:-- 46600{"token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ0ZXN0dXNlciIsInJvbGVzIjpbInBsYXllciJdLCJpYXQiOjE3NTE0NzY4NDIsImV4cCI6MTc1MTQ4MDQ0Mn0.BG78jDZ-OooKk1UVgX6zFjjhLLRnuYIaT0LBB3Hfdkc"}
+
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJSZWdhY3kiLCJyb2xlcyI6WyJwbGF5ZXIiXSwiaWF0IjoxNzUxNTM0MDkyLCJleHAiOjE3NTE1Mzc2OTJ9.CvYRYdm_YeeQU10t0vhjgoYxENET41bKTkN0IieYsDQ

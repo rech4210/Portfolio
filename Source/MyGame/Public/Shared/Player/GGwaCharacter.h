@@ -25,7 +25,8 @@ class MYGAME_API AGGwaCharacter : public ACharacter, public IAbilitySystemInterf
 	GENERATED_BODY()
 
 public:
-	
+
+	AGGwaCharacter();
 	UPROPERTY(EditAnywhere)
 	float AcceptanceRadius = 50.0f;
 	UPROPERTY(VisibleAnywhere)

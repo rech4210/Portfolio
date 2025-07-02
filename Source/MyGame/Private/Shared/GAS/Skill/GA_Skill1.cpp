@@ -13,19 +13,6 @@
 #include "GameSharedModule/Public/Utill/UEnumTagMatchHelper.h"
 #include "Shared/GAS/GGwaAbilitySystemComponent.h"
 
-UGA_Skill1::UGA_Skill1()
-{
-    AbilityInputID    = EAbilityInputID::Skill1;
-
-}
-
-void UGA_Skill1::OnAvatarSet(
-    const FGameplayAbilityActorInfo* ActorInfo,
-    const FGameplayAbilitySpec& Spec)
-{
-    Super::OnAvatarSet(ActorInfo, Spec);
-}
-
 void UGA_Skill1::ActivateAbility(
     const FGameplayAbilitySpecHandle Handle,
     const FGameplayAbilityActorInfo* ActorInfo,
@@ -109,24 +96,8 @@ void UGA_Skill1::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Da
                 Spec.Data->SetSetByCallerMagnitude(UEnumTagMatchHelper::GetTagFromEnum(EGasDataType::CueDuration), SkillDataAsset->CueDuration);
                 ASC->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
             }
-            // FGameplayCueParameters CueParams;
-            // CueParams.Location = HitPoint;
-            // CueParams.Normal = HitPoint - GetAvatarActorFromActorInfo()->GetActorLocation(); // 방향성 시각화 지원용
-            // CueParams.Instigator = GetAvatarActorFromActorInfo()->GetInstigator();
-            // CueParams.EffectCauser = GetAvatarActorFromActorInfo()->GetInstigator();
-            // CueParams.RawMagnitude = SkillDataAsset->SkillID;
-            // GetActorInfo().AbilitySystemComponent->AddGameplayCue(
-            //     UEnumTagMatchHelper::GetTagFromEnum(ECueType::DirectionPreview),
-            //     CueParams
-            // );
         }
     }
-
-    if (GetActorInfo().AvatarActor->HasAuthority()) {
-        SendSkillLogToServer(SkillDataAsset->GEClass.Get()->GetName(), HitPoint);
-    }
-
-
     // 4) 몽타주 Task
     UGGwaPlayMontageAndWaitForEvent* MontageTask =
         UGGwaPlayMontageAndWaitForEvent::PlayMontageAndWaitForEvent(
@@ -210,9 +181,4 @@ void UGA_Skill1::OnMontageCompleted(FGameplayTag ,FGameplayEventData){
         true, 
         false 
     );
-}
-
-//Replace To Server Module Logic
-void UGA_Skill1::SendSkillLogToServer(const FString& SkillName, FVector SkillLocation) const{
-
 }

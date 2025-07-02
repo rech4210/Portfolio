@@ -13,18 +13,6 @@
 #include "GameSharedModule/Public/Enum/ECueType.h"
 #include "GameSharedModule/Public/Utill/UEnumTagMatchHelper.h"
 
-UGA_Skill3::UGA_Skill3()
-{
-    AbilityInputID    = EAbilityInputID::Skill3;
-}
-
-void UGA_Skill3::OnAvatarSet(
-    const FGameplayAbilityActorInfo* ActorInfo,
-    const FGameplayAbilitySpec& Spec)
-{
-    Super::OnAvatarSet(ActorInfo, Spec);
-}
-
 void UGA_Skill3::ActivateAbility(
     const FGameplayAbilitySpecHandle Handle,
     const FGameplayAbilityActorInfo* ActorInfo,
@@ -98,10 +86,6 @@ void UGA_Skill3::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Da
                 ASC->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
             }
         }
-    }
-
-    if (GetActorInfo().AvatarActor->HasAuthority()) {
-        SendSkillLogToServer(SkillDataAsset->GEClass.Get()->GetName(), HitPoint);
     }
 
     UGGwaPlayMontageAndWaitForEvent* MontageTask = UGGwaPlayMontageAndWaitForEvent::PlayMontageAndWaitForEvent(
@@ -180,8 +164,4 @@ void UGA_Skill3::OnMontageCompleted(FGameplayTag ,FGameplayEventData){
         true, 
         false 
     );
-}
-
-void UGA_Skill3::SendSkillLogToServer(const FString& SkillName, FVector SkillLocation) const{
-
 }

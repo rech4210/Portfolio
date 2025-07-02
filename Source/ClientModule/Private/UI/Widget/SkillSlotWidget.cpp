@@ -92,6 +92,22 @@ void USkillSlotWidget::ApplySkillData(USkillDataAsset* NewData) {
 	// SkillWidgetToolTip =
 }
 
+// void USkillSlotWidget::NativeOnDragEnter(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent,
+// 	UDragDropOperation* InOperation) {
+// 	Super::NativeOnDragEnter(InGeometry, InDragDropEvent, InOperation);
+// 	
+// }
+//
+// void USkillSlotWidget::NativeOnDragCancelled(const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation) {
+// 	Super::NativeOnDragCancelled(InDragDropEvent, InOperation);
+// 	
+// }
+//
+// void USkillSlotWidget::NativeOnDragLeave(const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation) {
+// 	Super::NativeOnDragLeave(InDragDropEvent, InOperation);
+// 	
+// }
+
 void USkillSlotWidget::TickCoolDown() {
 	CurrentCoolTime += 0.05f;
 	float Percent = FMath::Clamp(CurrentCoolTime / CoolTime, 0.f, 1.f);

@@ -25,11 +25,7 @@ public class MyGame : ModuleRules
 			"SkillModule",
 			"ShopModule",
 			"LoggingModule",
-			"ClientModule",
-			"ServerModule",
 			"DatabaseModule",
-			"AuthServerModule",
-			"AuthClientModule",
 			"InventoryModule"
 		});
 

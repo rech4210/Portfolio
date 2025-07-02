@@ -11,6 +11,9 @@ UAuthService::UAuthService()
 
 void UAuthService::RequestToken(const FString& UserId, const TArray<FString>& Roles, FLoginSuccessDelegate OnSuccess, FLoginFailureDelegate OnFailure)
 {
+    UE_LOG(LogTemp, Warning, TEXT("[Auth Service] Requesting token for user: %s"), *UserId);
+    UE_LOG(LogTemp, Warning, TEXT("[Auth Service] Server URL: %s"), *AuthServerUrl);
+
     TSharedPtr<FJsonObject> RequestObj = MakeShareable(new FJsonObject);
     RequestObj->SetStringField(TEXT("userId"), UserId);
 

@@ -19,6 +19,14 @@
 #include "SkillModule/Public/Data/AbilityInputID.h"
 #include "Shared/Player/Component/UPlayerStateComponent.h"
 
+AGGwaCharacter::AGGwaCharacter() {
+	ReactionComponent = CreateDefaultSubobject<UPlayerReactionComponent>("ReactionComponent");
+	SkillComponent = CreateDefaultSubobject<USkillComponent>("SkillComponent");
+	SkillCastingService = NewObject<USkillCastingService>(this, "SkillCastingService");
+	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>("InventoryComponent");
+	// EquipmentComponent = CreateDefaultSubobject<UEquipmentComponent>("EquipmentComponent");
+}
+
 UAbilitySystemComponent* AGGwaCharacter::GetAbilitySystemComponent() const {
 	return ASC.Get();
 }
@@ -30,7 +38,7 @@ void AGGwaCharacter::PossessedBy(AController* NewController) {
 		for (int32 i = 0; i < SkillAbilities.Num(); ++i){
 			if (SkillAbilities[i]){
 				//skillrepo 기반으로 초기화 수행해야 함. 스킬 등록 변경시 동적으로 Ability의 등록 내용을 변경시켜줘야한다.
-				FGameplayAbilitySpec Spec(SkillAbilities[i], 1, static_cast<int32>(EAbilityInputID::Move) + i, this);
+				FGameplayAbilitySpec Spec(SkillAbilities[i], 1, static_cast<int32>(EAbilityInputID::Skill1) + i, this);
 				ASC->GiveAbility(Spec);
 			}
 		}
@@ -68,11 +76,7 @@ void AGGwaCharacter::InitASC() {
 
 void AGGwaCharacter::PostInitializeComponents() {
 	Super::PostInitializeComponents();
-	ReactionComponent = CreateDefaultSubobject<UPlayerReactionComponent>("ReactionComponent");
-	SkillComponent = CreateDefaultSubobject<USkillComponent>("SkillComponent");
-	SkillCastingService = NewObject<USkillCastingService>(this, "SkillCastingService");
-	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>("InventoryComponent");
-	// EquipmentComponent = CreateDefaultSubobject<UEquipmentComponent>("EquipmentComponent");
+
 }
 
 

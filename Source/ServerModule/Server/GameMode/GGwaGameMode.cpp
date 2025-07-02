@@ -25,24 +25,38 @@
 // TODO: The concrete implementation class headers would be here.
 // For example: #include "DatabaseModule/Public/MySQLInventoryRepository.h"
 
+constexpr static float GAME_MODE_FREQUENCY = 3.0f;
+
 AGGwaGameMode::AGGwaGameMode()
 {
 	// 서비스 인스턴스 생성
 	AuthVerificationService = NewObject<UAuthVerificationService>(this, TEXT("AuthVerificationService"));
+	
+	// 레포지토리 인스턴스 생성
 	InventoryRepository = NewObject<UInventoryRepository>(this, TEXT("InventoryRepository"));
 	SkillStateRepository = NewObject<USkillStateRepository>(this, TEXT("SkillStateRepository"));
 	SkillConfigRepository = NewObject<USkillConfigRepository>(this, TEXT("SkillConfigRepository"));
 	ShopRepository = NewObject<UShopRepository>(this, TEXT("ShopRepository"));
-	// EquipmentRepository = NewObject<>()
+
+	// TODO: EquipmentRepository의 구체적인 구현 클래스로 초기화해야 합니다.
+	// EquipmentRepository = NewObject<UEquipmentRepositoryImpl>(this, TEXT("EquipmentRepository")); 
+	
+	// TODO: DatabaseManager는 별도의 초기화 방식(예: 싱글톤 또는 서비스 로케이터)을 사용할 수 있습니다.
+	// DatabaseManager = ...;
 }
 
 void AGGwaGameMode::PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage)
 {
 	Super::PreLogin(Options, Address, UniqueId, ErrorMessage);
+	UE_LOG(LogTemp, Warning, TEXT("[Game Server] PreLogin attempt"));
+	UE_LOG(LogTemp, Warning, TEXT("[Game Server] Connection from address: %s"), *Address);
+	UE_LOG(LogTemp, Warning, TEXT("[Game Server] Options: %s"), *Options);
+	// UE_LOG(LogTemp, Warning, TEXT("[Game Server] UniqueId: %s"), *UniqueId);
 
 	// Options 문자열에서 토큰 파싱
 	// 클라이언트가 OpenLevel 시 "?token=...“ 형태로 보냈다고 가정
 	const FString Token = UGameplayStatics::ParseOption(Options, TEXT("token"));
+	UE_LOG(LogTemp, Warning, TEXT("Token: %s"), *Token);
 
 	if (Token.IsEmpty())
 	{
@@ -56,13 +70,26 @@ void AGGwaGameMode::PreLogin(const FString& Options, const FString& Address, con
 	{
 		// 인증 성공!
 		UE_LOG(LogTemp, Log, TEXT("PreLogin successful for user: %s"), *UserId);
-		// 필요하다면, 여기서 플레이어의 UniqueNetId를 UserId와 매핑하여 관리할 수 있습니다.
+		// PostLogin에서 맵 이동을 처리하기 위해 플레이어 정보를 임시 저장합니다.
+		PendingPlayers.Add(UniqueId, UserId);
 	}
 	else
 	{
 		// 인증 실패
 		ErrorMessage = TEXT("Invalid authentication token.");
 		UE_LOG(LogTemp, Warning, TEXT("PreLogin failed: %s"), *ErrorMessage);
+	}
+}
+
+void AGGwaGameMode::Tick(float DeltaSeconds) {
+	Super::Tick(DeltaSeconds);
+	// 1초에 한 번씩만 로그를 출력하여 로그 창이 너무 빨리 올라가는 것을 방지합니다.
+	static float LogTimer = 0.0f;
+	LogTimer += DeltaSeconds;
+	if (LogTimer >= GAME_MODE_FREQUENCY)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Server is ALIVE. Current GameMode is [ %s ] running in map [ %s ]"), *GetName(), *GetWorld()->GetName());
+		LogTimer = 0.0f;
 	}
 }
 
@@ -75,19 +102,17 @@ void AGGwaGameMode::InitializeServerManagers()
 		// BattleFlowController creation
 		BattleFlowController = NewObject<UBattleFlowController>(this, TEXT("BattleFlowController"));
 
-		// Initialize Repositories
-		// Here, we would create concrete instances of our repository implementations.
-		// Since we don't have them yet, this is where they would be instantiated.
-		// For example:
-		// InventoryRepository = NewObject<UMySQLInventoryRepository>(this);
-		// ShopRepository = NewObject<UMySQLShopRepository>(this);
-		// SkillConfigRepository = NewObject<UMySkillConfigRepository>(this);
-		// SkillStateRepository = NewObject<UMySkillStateRepository>(this);
+		// 레포지토리 초기화는 생성자에서 수행됩니다.
+		// 이곳에서는 필요 시 추가적인 초기화 로직을 수행할 수 있습니다.
 		
 		// After initialization, load all shop data.
 		if (ShopRepository)
 		{
 			ShopRepository->LoadAllShops(this);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("AGGwaGameMode: ShopRepository is not initialized!"));
 		}
 	}
 }
@@ -95,26 +120,80 @@ void AGGwaGameMode::InitializeServerManagers()
 void AGGwaGameMode::PostLogin(APlayerController* NewPlayer)
 {
 	Super::PostLogin(NewPlayer);
-	
-	if (NewPlayer && InventoryRepository)
+
+	if (!NewPlayer || !NewPlayer->PlayerState)
 	{
-		// Use the repository to load the player's inventory.
-		// The repository will handle finding the PlayerState and its InventoryComponent.
-		
+		UE_LOG(LogTemp, Error, TEXT("AGGwaGameMode: NewPlayer or PlayerState is not available on PostLogin!"));
+		return;
+	}
+
+	// PreLogin에서 인증된 플레이어인지 확인
+	if (FString* UserId = PendingPlayers.Find(NewPlayer->PlayerState->GetUniqueId()))
+	{
+		UE_LOG(LogTemp, Log, TEXT("Player %s (%s) has logged in. Initializing player data."), *NewPlayer->PlayerState->GetPlayerName(), **UserId);
+
+		// The player is already on the correct map. We don't need to travel again.
+		// NewPlayer->ClientTravel(TEXT("/Game/ThirdPerson/Maps/ThirdPersonMap"), ETravelType::TRAVEL_Absolute);
+
+		// 임시 맵에서 플레이어 정보 제거
+		PendingPlayers.Remove(NewPlayer->PlayerState->GetUniqueId());
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Player %s is not authenticated. Kicking player."), *NewPlayer->PlayerState->GetPlayerName());
+		// 인증되지 않은 플레이어는 연결을 종료시킵니다.
+		NewPlayer->ClientTravel(TEXT("/Game/Login/LoginLevel"), ETravelType::TRAVEL_Absolute); // 로그인 화면으로 돌려보내기
+		// 혹은 바로 연결을 끊을 수도 있습니다.
+		// UKismetSystemLibrary::ExecuteConsoleCommand(GetWorld(), FString::Printf(TEXT("kick %s"), *NewPlayer->PlayerState->GetPlayerName()));
+		return; // 데이터 로딩 로직을 실행하지 않고 종료
+	}
+	
+	// 인벤토리 로드
+	if (InventoryRepository)
+	{
 		InventoryRepository->LoadInventoryForPlayer(NewPlayer->PlayerState);
-		// EquipmentRepository->LoadPlayerEquipment(NewPlayer);
-		auto SkillComponent = Cast<AGGwaCharacter>(NewPlayer->GetCharacter())->GetSkillComponent();
-		auto PlayerID = NewPlayer->PlayerState->GetPlayerId();
-		// 전체 스킬을 로딩.
-		SkillConfigRepository->LoadSkillDefinitions(LoadedSkillDefinitions);
-		//8개의 스킬 슬롯에 대한 정보 로드. 정의되지 않은 슬롯의 경우 default, 내부에서 RegisterSkill 호출
-		SkillStateRepository->LoadSkillState(PlayerID, SkillComponent);
-		SkillStateRepository->SaveSkillState(PlayerID, SkillComponent);
-		// Skill 구성의 초기화를 담당. by job type
 	}
 	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("AGGwaGameMode: InventoryRepository is not available on PostLogin!"));
+	}
+
+	// 캐릭터 및 스킬 정보 로드 (안전한 접근 방식으로 변경)
+	if (AGGwaCharacter* PlayerCharacter = Cast<AGGwaCharacter>(NewPlayer->GetCharacter()))
+	{
+		USkillComponent* SkillComponent = PlayerCharacter->GetSkillComponent();
+		const int32 PlayerID = NewPlayer->PlayerState->GetPlayerId();
+
+		if (SkillComponent)
+		{
+			if (SkillConfigRepository)
+			{
+				SkillConfigRepository->LoadSkillDefinitions(LoadedSkillDefinitions);
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("AGGwaGameMode: SkillConfigRepository is not available!"));
+			}
+
+			if (SkillStateRepository)
+			{
+				SkillStateRepository->LoadSkillState(PlayerID, SkillComponent);
+				// TODO: 로드 직후 바로 저장하는 로직이 의도된 것인지 확인이 필요합니다. (예: 신규 유저의 기본 상태 저장)
+				SkillStateRepository->SaveSkillState(PlayerID, SkillComponent);
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("AGGwaGameMode: SkillStateRepository is not available!"));
+			}
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("AGGwaGameMode: SkillComponent is not available for %s!"), *PlayerCharacter->GetName());
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("AGGwaGameMode: Failed to get AGGwaCharacter for NewPlayer!"));
 	}
 }
 

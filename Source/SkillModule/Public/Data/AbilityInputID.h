@@ -6,10 +6,6 @@
 UENUM(BlueprintType)
 enum class EAbilityInputID : uint8
 {
-    None UMETA(displayname = "None"),
-    Confirm UMETA(displayname = "Confirm"),
-    Cancel UMETA(displayname = "Cancel"),
-    Move UMETA(displayname = "Move"),
     Skill1 UMETA(displayname = "Skill1"),
     Skill2 UMETA(displayname = "Skill2"),
     Skill3 UMETA(displayname = "Skill3"),

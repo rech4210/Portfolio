@@ -6,6 +6,7 @@ public class DatabaseModule : ModuleRules
 	public DatabaseModule(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
+		bEnableExceptions = true;
 
 		PublicDependencyModuleNames.AddRange(
 			new string[]
@@ -14,7 +15,8 @@ public class DatabaseModule : ModuleRules
 				"CoreUObject",
 				"Engine",
 				"InventoryModule",
-				"GameSharedModule"
+				"GameSharedModule",
+				"Settings"
 			}
 		);
 			
@@ -27,7 +29,7 @@ public class DatabaseModule : ModuleRules
 				"SlateCore",
 				"HTTP",
 				"Json",
-				"JsonUtilities",
+				"JsonUtilities"
 			}
 		);
 
