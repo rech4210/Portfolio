@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "../AbilityInputID.h"
+#include "../../../../../SkillModule/Public/Data/AbilityInputID.h"
 #include "GA_Base.h"
 #include "GA_Skill7.generated.h"
 

@@ -34,9 +34,9 @@ void UGA_Skill3::ActivateAbility(
     FScopedPredictionWindow ScopedPredictionWindow(ActorInfo->AbilitySystemComponent.Get());
 
     if (!CanActivateAbility(Handle, ActorInfo)) {
-        EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
-        return;
-    }
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+		return;
+	}
     
     if (!ActorInfo || !CommitAbility(Handle, ActorInfo, ActivationInfo)){
         EndAbility(Handle, ActorInfo, ActivationInfo, true, true);

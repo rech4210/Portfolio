@@ -30,7 +30,8 @@ public class ServerModule : ModuleRules
                 "Slate",
                 "SlateCore",
                 "HTTP",
-                "GameplayTags"
+                "GameplayTags",
+                "ShopModule"
             }
         );
         if (Target.bBuildEditor)

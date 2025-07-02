@@ -9,6 +9,9 @@
 #include "GameFramework/Character.h"
 #include "GGwaCharacter.generated.h"
 
+class USkillCastingService;
+class UInventoryComponent;
+class USkillComponent;
 class UPlayerReactionComponent;
 struct FGameplayEventData;
 class UInputMappingContext;
@@ -52,20 +55,25 @@ public:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
-	UFUNCTION(Server, Reliable, WithValidation)
-	void OnSkillTriggered(const FGameplayEventData& EventData, int32 Index);
+	void CustomKeySet(UInputAction* Action, FKey CustomKey);
+
 	UFUNCTION(client, reliable)
 	void SetMoveData(const TArray<FVector>& Path, int32 PathIndex, bool bIsFollowing);
 
 	UPlayerReactionComponent* GetReactionComponent() const;
+	USkillComponent* GetSkillComponent() const;
 	UPROPERTY()
 	TObjectPtr<UGGwaAbilitySystemComponent> ASC;
 protected:
 	void InitASC();
 private:
-	void ExecuteAbility(const FGameplayEventData& EventData, int32 Index);
+	virtual void PostInitializeComponents() override;
 	void OnLocalSkillInput(const FInputActionInstance& Instance, int32 Index);
 	TObjectPtr<UPlayerReactionComponent> ReactionComponent;
+	TObjectPtr<USkillComponent> SkillComponent;
+	TObjectPtr<UInventoryComponent> InventoryComponent;
+	TObjectPtr<UInventoryComponent> EquipmentComponent;
+	TObjectPtr<USkillCastingService> SkillCastingService;
 };
 
 

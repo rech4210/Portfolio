@@ -19,7 +19,10 @@ public class ShopModule : ModuleRules
                PrivateDependencyModuleNames.AddRange(
             new string[]
             {
-                "GameSharedModule"
+                "GameSharedModule",
+                "GameplayAbilities",
+                "GameplayTags",
+			    "GameplayTasks",
             }
         );
     }

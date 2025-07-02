@@ -24,8 +24,13 @@ public class MyGame : ModuleRules
 			"GameSharedModule",
 			"SkillModule",
 			"ShopModule",
-			"InventoryModule",
-			"LoggingModule"
+			"LoggingModule",
+			"ClientModule",
+			"ServerModule",
+			"DatabaseModule",
+			"AuthServerModule",
+			"AuthClientModule",
+			"InventoryModule"
 		});
 
 		

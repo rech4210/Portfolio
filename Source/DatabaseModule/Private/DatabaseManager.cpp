@@ -145,6 +145,7 @@ void UDatabaseManager::Initialize(FSubsystemCollectionBase& Collection)
 
 		for (int32 i = 0; i < Impl->PoolSize; ++i)
 		{
+			//connectionPool의 초기화가 이루어졌는가?
 			Impl->ConnectionPool.Enqueue(Impl->Driver->connect(Impl->ConnectionProperties));
 		}
 		UE_LOG(LogTemp, Log, TEXT("Database connection pool initialized with %d connections."), Impl->PoolSize);

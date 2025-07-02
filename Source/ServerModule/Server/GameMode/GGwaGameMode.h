@@ -3,11 +3,14 @@
 #include "MyGame/Public/Shared/Mode/BaseGameMode.h"
 #include "MyGame/Public/Shared/Mode/ModeType.h"
 #include "GameFramework/GameMode.h"
+#include "Repositories/ISkillRepositoryInterface.h"
 #include "GGwaGameMode.generated.h"
 
 class UAuthVerificationService;
 class UBattleFlowController;
 class UDatabaseManager;
+class IInventoryRepositoryInterface;
+class IShopRepositoryInterface;
 
 UCLASS()
 class SERVERMODULE_API AGGwaGameMode : public ABaseGameMode
@@ -39,4 +42,17 @@ private:
 	TObjectPtr<UAuthVerificationService> AuthVerificationService;
 	UPROPERTY()
 	TObjectPtr<UDatabaseManager> DatabaseManager;
+
+	UPROPERTY()
+	TScriptInterface<IInventoryRepositoryInterface> InventoryRepository;
+	UPROPERTY()
+	TScriptInterface<IInventoryRepositoryInterface> EquipmentRepository;
+	UPROPERTY()
+	TScriptInterface<ISkillStateRepositoryInterface> SkillStateRepository;
+	UPROPERTY()
+	TScriptInterface<ISkillConfigRepositoryInterface> SkillConfigRepository;
+	UPROPERTY()
+	TScriptInterface<IShopRepositoryInterface> ShopRepository;
+
+	TArray<USkillDataAsset*> LoadedSkillDefinitions;
 };

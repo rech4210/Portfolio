@@ -63,12 +63,12 @@ void UGA_SellItem::ActivateAbility(const FGameplayAbilitySpecHandle Handle, cons
 	}
 
 	// 2. Check with ShopManager if the item can be sold
-	if (!ShopManager->CanSellItem(SellerCharacter, ItemToSell))
-	{
-		// ASC->ClientSendGameplayEventToActor(ActorInfo->AvatarActor.Get(), ErrorTag_CannotBeSold, FGameplayEventData());
-		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
-		return;
-	}
+	// if (!ShopManager->CanSellItem(SellerCharacter, ItemToSell))
+	// {
+	// 	// ASC->ClientSendGameplayEventToActor(ActorInfo->AvatarActor.Get(), ErrorTag_CannotBeSold, FGameplayEventData());
+	// 	EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+	// 	return;
+	// }
 
 	// 3. Apply the gold effect to the player
 	if (GE_SellItem)

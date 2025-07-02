@@ -18,5 +18,12 @@ public class SkillModule : ModuleRules
                 "GameSharedModule"
             }
         );
+        PrivateDependencyModuleNames.AddRange(
+            new string[]
+            {
+                "EnhancedInput",
+                "InputCore"
+            }
+        );
     }
 } 

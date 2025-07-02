@@ -7,6 +7,8 @@
 #include "GameSharedModule/Public/Data/BuffDataAsset.h"
 #include "FSkillShapeConfig.h"
 #include "SkillInputSlot.h"
+#include "Animation/AnimMontage.h"
+#include "AttributeSet.h"
 #include "SkillDataAsset.generated.h"
 
 class USkillTargetBase;
@@ -51,6 +53,14 @@ public:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Effect")
 	float CueDuration = 0.f;
+
+	/** The attribute to use as a cost for this skill (e.g., Mana, Stamina). */
+	// UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Cost")
+	// FGameplayAttribute CostAttribute;
+
+	/** The amount of the attribute to consume. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Cost")
+	float CostAmount = 10.f;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Buff")
 	TArray<UBuffDataAsset*> AppliedBuffs;
@@ -63,16 +73,16 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Visual")
 	USoundBase* CastSound;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Skill")
 	FGameplayTag SkillTag;
 	//
 	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
 	// TArray<FSkillDataTypeContainer> SkillData;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Skill")
 	TObjectPtr<UBuffDataAsset> BuffData;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Skill")
 	ESkillInputSlot InputSlot;
 
 	virtual FPrimaryAssetId GetPrimaryAssetId() const override {

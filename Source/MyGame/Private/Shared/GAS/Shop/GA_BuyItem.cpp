@@ -7,6 +7,7 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "GameFramework/Character.h"
 #include "LoggingModule/Public/LoggingManager.h"
+#include "ShopModule/Public/TradingService.h"
 
 UGA_BuyItem::UGA_BuyItem()
 {
@@ -27,9 +28,8 @@ bool UGA_BuyItem::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, co
 		return false;
 	}
 
-	const AGGwaPlayerState* PlayerState = Cast<AGGwaPlayerState>(ActorInfo->OwnerActor.Get());
-	const UInventoryComponent* InventoryComponent = PlayerState ? PlayerState->FindComponentByClass<UInventoryComponent>() : nullptr;
-	if (!PlayerState || !InventoryComponent)
+	// Basic checks to ensure we have the necessary actors.
+	if (!ActorInfo || !ActorInfo->OwnerActor.IsValid() || !ActorInfo->AvatarActor.IsValid())
 	{
 		return false;
 	}
@@ -39,58 +39,32 @@ bool UGA_BuyItem::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, co
 
 void UGA_BuyItem::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
-	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
-
-	const UItemDataAsset* ItemToBuy = Cast<UItemDataAsset>(TriggerEventData->OptionalObject);
-	const AShopManager* ShopManager = Cast<AShopManager>(TriggerEventData->Target);
-
-	if (!ItemToBuy || !ShopManager)
-	{
-		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
-		return;
-	}
-
 	ACharacter* BuyerCharacter = Cast<ACharacter>(ActorInfo->AvatarActor.Get());
-	UInventoryComponent* InventoryComponent = ActorInfo->OwnerActor->FindComponentByClass<UInventoryComponent>();
-	UGGwaAbilitySystemComponent* ASC = Cast<UGGwaAbilitySystemComponent>(ActorInfo->AbilitySystemComponent.Get());
+	const AShopManager* ShopManager = Cast<AShopManager>(TriggerEventData->Target.Get());
+	const UItemDataAsset* ItemToBuy = Cast<UItemDataAsset>(TriggerEventData->OptionalObject);
 
-	if (!BuyerCharacter || !InventoryComponent || !ASC)
+	if (!BuyerCharacter || !ShopManager || !ItemToBuy)
 	{
-		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+		// Cancel ability if prerequisites are not met.
+		CancelAbility(Handle, ActorInfo, ActivationInfo, true);
 		return;
 	}
 
-	if (!ShopManager->CanBuyItem(BuyerCharacter, ItemToBuy))
+	// Create an instance of the Domain Service to handle the transaction.
+	UTradingService* TradingService = NewObject<UTradingService>();
+	
+	// Delegate the complex logic to the domain service.
+	const bool bSuccess = TradingService->AttemptToBuyItem(BuyerCharacter, ShopManager, ItemToBuy, 1);
+
+	if (!bSuccess)
 	{
-		// ASC->ClientSendGameplayEventToActor(ActorInfo->AvatarActor.Get(), ErrorTag_ItemNotFound, FGameplayEventData());
-		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+		// The TradingService is responsible for logging details.
+		// The ability's job is just to end and possibly send a feedback tag to the UI.
+		// For example: SendGameplayEvent(ErrorTag_...);
+		CancelAbility(Handle, ActorInfo, ActivationInfo, true);
 		return;
 	}
 
-	if (!InventoryComponent->HasEnoughSpace(ItemToBuy, 1))
-	{
-		// ASC->ClientSendGameplayEventToActor(ActorInfo->AvatarActor.Get(), ErrorTag_InventoryFull, FGameplayEventData());
-		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
-		return;
-	}
-
-	FGameplayEffectSpecHandle CostSpecHandle = ASC->MakeOutgoingSpec(ItemToBuy->CostGE, GetAbilityLevel(), MakeEffectContext(Handle, ActorInfo));
-	if (!CostSpecHandle.IsValid() || !ASC->CheckCost(CostSpecHandle))
-	{
-		// ASC->ClientSendGameplayEventToActor(ActorInfo->AvatarActor.Get(), ErrorTag_NotEnoughGold, FGameplayEventData());
-		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
-		return;
-	}
-
-	ASC->ApplyGameplayEffectSpecToSelf(*CostSpecHandle.Data.Get());
-	InventoryComponent->AddItem(ItemToBuy->GetClass(), 1);
-
-	// if (ULoggingManager* LoggingManager = ActorInfo->GameInstance->GetSubsystem<ULoggingManager>())
-	// {
-		// const FString PlayerID = BuyerCharacter->GetName(); 
-		// const FString Message = FString::Printf(TEXT("Player '%s' bought item '%s'."), *PlayerID, *ItemToBuy->GetName());
-		// LoggingManager->LogInfo(Message);
-	// }
-
+	// End the ability successfully.
 	EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
 } 

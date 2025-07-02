@@ -10,15 +10,30 @@
 // #include "DatabaseModule/Public/DatabaseManager.h"
 // #include "DatabaseModule/Public/Data/FCharacterData.h"
 #include "DatabaseManager.h"
+#include "InventoryRepository.h"
+#include "IShopRepositoryInterface.h"
+#include "ShopRepository.h"
+#include "Components/SkillComponent.h"
 #include "Data/FCharacterData.h"
 #include "MyGame/Public/Shared/Player/GGwaPlayerState.h"
 #include "MyGame/Public/Shared/Player/GGwaCharacter.h"
-#include "InventoryModule/Public/InventoryComponent.h" // 인벤토리 컴포넌트 헤더 추가
+#include "InventoryModule/Public/InventoryRepositoryInterface.h" // Add repository interface
+#include "Repositories/SkillConfigRepository.h"
+#include "Repositories/SkillStateRepository.h"
+#include "ShopModule/Public/IShopRepositoryInterface.h" // Add shop repository interface
+
+// TODO: The concrete implementation class headers would be here.
+// For example: #include "DatabaseModule/Public/MySQLInventoryRepository.h"
 
 AGGwaGameMode::AGGwaGameMode()
 {
 	// 서비스 인스턴스 생성
-	AuthVerificationService = CreateDefaultSubobject<UAuthVerificationService>(TEXT("AuthVerificationService"));
+	AuthVerificationService = NewObject<UAuthVerificationService>(this, TEXT("AuthVerificationService"));
+	InventoryRepository = NewObject<UInventoryRepository>(this, TEXT("InventoryRepository"));
+	SkillStateRepository = NewObject<USkillStateRepository>(this, TEXT("SkillStateRepository"));
+	SkillConfigRepository = NewObject<USkillConfigRepository>(this, TEXT("SkillConfigRepository"));
+	ShopRepository = NewObject<UShopRepository>(this, TEXT("ShopRepository"));
+	// EquipmentRepository = NewObject<>()
 }
 
 void AGGwaGameMode::PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage)
@@ -51,113 +66,81 @@ void AGGwaGameMode::PreLogin(const FString& Options, const FString& Address, con
 	}
 }
 
+void AGGwaGameMode::InitializeServerManagers()
+{
+	Super::InitializeServerManagers();
+	
+	if (HasAuthority())
+	{
+		// BattleFlowController creation
+		BattleFlowController = NewObject<UBattleFlowController>(this, TEXT("BattleFlowController"));
+
+		// Initialize Repositories
+		// Here, we would create concrete instances of our repository implementations.
+		// Since we don't have them yet, this is where they would be instantiated.
+		// For example:
+		// InventoryRepository = NewObject<UMySQLInventoryRepository>(this);
+		// ShopRepository = NewObject<UMySQLShopRepository>(this);
+		// SkillConfigRepository = NewObject<UMySkillConfigRepository>(this);
+		// SkillStateRepository = NewObject<UMySkillStateRepository>(this);
+		
+		// After initialization, load all shop data.
+		if (ShopRepository)
+		{
+			ShopRepository->LoadAllShops(this);
+		}
+	}
+}
+
 void AGGwaGameMode::PostLogin(APlayerController* NewPlayer)
 {
 	Super::PostLogin(NewPlayer);
 	
-	if (!DatabaseManager)
+	if (NewPlayer && InventoryRepository)
 	{
-		if (UGameInstance* GameInstance = GetGameInstance())
-		{
-			DatabaseManager = GameInstance->GetSubsystem<UDatabaseManager>();
-		}
-	}
-	
-	if (DatabaseManager)
-	{
-		// For now, hardcode a user ID. Later, this should come from the verified JWT.
-		const int32 UserIdToLoad = 1; 
-	
-		FCharacterDataLoadDelegate Delegate;
-		Delegate.BindUObject(this, &AGGwaGameMode::OnCharacterDataLoaded, NewPlayer);
-		DatabaseManager->LoadCharacterInfo(UserIdToLoad, Delegate);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("AGGwaGameMode: DatabaseManager is not available!"));
-	}
-}
-
-void AGGwaGameMode::OnCharacterDataLoaded(const TOptional<FCharacterData>& CharacterData, APlayerController* NewPlayer)
-{
-	if (CharacterData.IsSet() && NewPlayer)
-	{
-		const FCharacterData& Data = CharacterData.GetValue();
-		AGGwaPlayerState* MyPlayerState = NewPlayer->GetPlayerState<AGGwaPlayerState>();
-		if (MyPlayerState)
-		{
-			// 1. Initialize PlayerState with loaded data.
-			MyPlayerState->SetPlayerName(FString::FromInt(Data.CharacterId)); 
-	
-			// 2. Add and initialize InventoryComponent
-			UInventoryComponent* InventoryComponent = MyPlayerState->FindComponentByClass<UInventoryComponent>();
-			if (!InventoryComponent)
-			{
-				InventoryComponent = NewObject<UInventoryComponent>(MyPlayerState, "InventoryComponent");
-				InventoryComponent->RegisterComponent();
-			}
-			
-			if (InventoryComponent)
-			{
-				// TODO: DB 로직이 구현되면 이 부분을 FCharacterData에서 읽어온 데이터로 채워야 합니다.
-				// For now, we are just adding items based on the data we have.
-				// This assumes the DB loading part will populate Data.Inventory.
-				// for(const UFInventoryItem& Item : Data.Inventory)
-				// {
-				// 	InventoryComponent->AddItem(Item.ItemData, Item.Quantity);
-				// }
-			}
-	
-			// 3. Initialize attributes and grant abilities based on the loaded FCharacterData.
-			UE_LOG(LogTemp, Log, TEXT("Character data loaded for UserId %d. Level: %d, Exp: %d"), Data.UserId, Data.Level, Data.Exp);
-		}
+		// Use the repository to load the player's inventory.
+		// The repository will handle finding the PlayerState and its InventoryComponent.
+		
+		InventoryRepository->LoadInventoryForPlayer(NewPlayer->PlayerState);
+		// EquipmentRepository->LoadPlayerEquipment(NewPlayer);
+		auto SkillComponent = Cast<AGGwaCharacter>(NewPlayer->GetCharacter())->GetSkillComponent();
+		auto PlayerID = NewPlayer->PlayerState->GetPlayerId();
+		// 전체 스킬을 로딩.
+		SkillConfigRepository->LoadSkillDefinitions(LoadedSkillDefinitions);
+		//8개의 스킬 슬롯에 대한 정보 로드. 정의되지 않은 슬롯의 경우 default, 내부에서 RegisterSkill 호출
+		SkillStateRepository->LoadSkillState(PlayerID, SkillComponent);
+		SkillStateRepository->SaveSkillState(PlayerID, SkillComponent);
+		// Skill 구성의 초기화를 담당. by job type
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Failed to load character data for player. Kicking player."));
-		// Handle failure, e.g., kick the player.
-		if(NewPlayer)
-		{
-			NewPlayer->ClientTravel(TEXT("/Game/ThirdPerson/Maps/ThirdPersonMap"), ETravelType::TRAVEL_Absolute);
-		}
+		UE_LOG(LogTemp, Error, TEXT("AGGwaGameMode: InventoryRepository is not available on PostLogin!"));
 	}
 }
 
 void AGGwaGameMode::Logout(AController* Exiting)
 {
 	Super::Logout(Exiting);
-	
-	UE_LOG(LogTemp, Log, TEXT("Player logging out. Attempting to save data."));
-	
-	if (DatabaseManager)
-	{
-		// This is a placeholder. In a real scenario, you would retrieve the
-		// FCharacterData from the player's state or a component.
-		FCharacterData DataToSave;
-		DataToSave.UserId = 1; // Hardcoded to match the PostLogin UserId for now.
-		DataToSave.Level = 10; // Example data
-		DataToSave.Exp = 5000; // Example data
-		DataToSave.JsonData = TEXT("{\"message\":\"Player Logged Out\"}");
-	
-		FCharacterDataSaveDelegate Delegate;
-		Delegate.BindUObject(this, &AGGwaGameMode::OnCharacterDataSaved);
-		DatabaseManager->SaveCharacterInfo(DataToSave, Delegate);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("AGGwaGameMode: DatabaseManager is not available on Logout!"));
-	}
-}
 
-void AGGwaGameMode::OnCharacterDataSaved(bool bSuccess)
-{
-	if (bSuccess)
+	if (Exiting && InventoryRepository)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Character data saved successfully."));
+		APlayerController* PC = Cast<APlayerController>(Exiting);
+		if(PC && PC->PlayerState)
+		{
+			// Use the repository to save the player's inventory.
+			UE_LOG(LogTemp, Log, TEXT("Player logging out. Saving inventory data for %s."), *PC->PlayerState->GetPlayerName());
+			if (auto PlayerCharacter = Cast<AGGwaCharacter>(PC->GetCharacter())) {
+				InventoryRepository->SaveInventoryForPlayer(PC->PlayerState);
+				// EquipmentRepository->SavePlayerEquipment(PC);
+
+				SkillStateRepository->SaveSkillState(PC->PlayerState->GetPlayerId(), PlayerCharacter->GetSkillComponent());
+			}
+			// Unload Repo, Clear Component.
+		}
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Failed to save character data."));
+		UE_LOG(LogTemp, Error, TEXT("AGGwaGameMode: InventoryRepository is not available on Logout!"));
 	}
 }
 
@@ -178,18 +161,6 @@ void AGGwaGameMode::Server_SkillLog(FString Name, const FString& SkillName, FVec
 	Request->SetContentAsString(Payload);
 	Request->ProcessRequest();
 }
-
-void AGGwaGameMode::InitializeServerManagers()
-{
-	if (HasAuthority())
-	{
-		// BattleFlowController 생성
-		BattleFlowController = NewObject<UBattleFlowController>(this,
-																 TEXT("BattleFlowController"));
-		// 추가 서버 매니저 초기화 (RoomInit, PVPManager 등)을 여기에…
-	}
-}
-
 
 void AGGwaGameMode::RequestFlowControllerInit(EModeType ModeType)
 {

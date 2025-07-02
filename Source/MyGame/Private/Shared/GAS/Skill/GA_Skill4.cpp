@@ -1,63 +1,73 @@
 #include "Shared/GAS/Skill/GA_Skill4.h"
-#include "Abilities/Tasks/AbilityTask_WaitTargetData.h"
-#include "Shared/GAS/GGwaAbilitySystemComponent.h"
-#include "SkillModule/Public/Data/SkillTargetActor_Mouse.h"
-#include "SkillModule/Public/Data/SkillTarget_Self.h"
-#include "Shared/GAS/AbilityTask/GGwaPlayMontageAndWaitForEvent.h"
-#include "SkillModule/Public/Data/FSkillContext.h"
+#include "AbilitySystemComponent.h"
+#include "AbilitySystemInterface.h"
 #include "Shared/Player/GGwaCharacter.h"
+#include "SkillModule/Public/Data/FSkillContext.h"
 #include "SkillModule/Public/Data/SkillDataAsset.h"
-#include "GameSharedModule/Public/Data/EGasDataType.h"
-#include "GameSharedModule/Public/Enum/ECueType.h"
-#include "GameSharedModule/Public/Utill/UEnumTagMatchHelper.h"
+#include "SkillModule/Public/Data/SkillTargetBase.h"
 
-UGA_Skill4::UGA_Skill4() {
+UGA_Skill4::UGA_Skill4()
+{
 	AbilityInputID = EAbilityInputID::Skill4;
+
+	// In a real scenario, the SkillDataAsset would be assigned in a Blueprint subclass of this C++ class.
 }
 
 void UGA_Skill4::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
-	const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
+                                 const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
-	if (!CheckCooldown(Handle, ActorInfo)) {
+	// Cooldown, resource, and other domain checks are now handled by the USkillCastingService
+	// before this ability is ever activated. We can proceed directly to the skill's effects.
+
+	if (!SkillDataAsset)
+	{
+		UE_LOG(LogTemp, Error, TEXT("%s: SkillDataAsset is not set! This should be set in the Blueprint child class."), *GetName());
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}
-	TWeakObjectPtr<AActor> AvatarActor = ActorInfo ? ActorInfo->AvatarActor : nullptr;
 
-		// if (auto PC = Cast<AGGwaPlayerController>(ActorInfo->PlayerController); nullptr != PC) {
-		// 	PC->Client_ApplyAbilityDataAsset(BuffDataAsset);
-		// 	PC->Client_ApplyAbilityDataAsset(SkillDataAsset);
-		// }
-	
-	if (AvatarActor->HasAuthority()) {
-		SkillContext = BuildSkillContext(ActorInfo);
-		SkillContext.SkillData = SkillDataAsset;
-		SkillContext.DetectedActors = NewObject<USkillTargetBase>(this, SkillDataAsset->TargetStrategyClass)->DetectTargets(SkillContext);
-		FGameplayEffectSpecHandle Spec = SkillContext.SourceASC->MakeOutgoingSpec(SkillDataAsset->GEClass, 1.f, SkillContext.SourceASC->MakeEffectContext());
-		Spec.Data->SetSetByCallerMagnitude(UEnumTagMatchHelper::GetTagFromEnum<EGasDataType>(EGasDataType::Cooldown), SkillDataAsset->CoolTime);
-		if (Spec.IsValid()) {
-			for (auto& target: SkillContext.DetectedActors)
+	if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
+	{
+		UE_LOG(LogTemp, Log, TEXT("%s: Failed to commit ability."), *GetName());
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+		return;
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("%s: Activating. This GA now only handles presentation (montages, cues) and the final GE application."), *GetName());
+
+	// --- Main Skill Logic ---
+	// This is where the presentation (montage, sounds, particles) and direct gameplay consequences happen.
+	// For brevity, we are keeping the core logic of applying the effect to targets.
+
+	if (ActorInfo->IsNetAuthority())
+	{
+		if (SkillDataAsset->TargetStrategyClass && SkillDataAsset->GEClass)
+		{
+			// 1. Detect Targets
+			SkillContext.SourceActor = GetAvatarActorFromActorInfo();
+			SkillContext.SourceASC = GetAbilitySystemComponentFromActorInfo();
+			SkillContext.SkillData = SkillDataAsset;
+
+			USkillTargetBase* TargetStrategy = NewObject<USkillTargetBase>(this, SkillDataAsset->TargetStrategyClass);
+			const TArray<AActor*> DetectedTargets = TargetStrategy->DetectTargets(SkillContext);
+
+			// 2. Prepare GameplayEffect Spec
+			FGameplayEffectSpecHandle EffectSpecHandle = MakeOutgoingGameplayEffectSpec(SkillDataAsset->GEClass, GetAbilityLevel());
+
+			// 3. Apply to all detected targets
+			if (EffectSpecHandle.IsValid())
 			{
-				if (target->Implements<UAbilitySystemInterface>()){
-					auto* TargetASC = Cast<IAbilitySystemInterface>(target)->GetAbilitySystemComponent();
-					SkillContext.SourceASC->ApplyGameplayEffectSpecToTarget(*Spec.Data.Get(), TargetASC);
+				for (AActor* TargetActor : DetectedTargets)
+				{
+					if (IAbilitySystemInterface* TargetASCInterface = Cast<IAbilitySystemInterface>(TargetActor))
+					{
+						SkillContext.SourceASC->ApplyGameplayEffectSpecToTarget(*EffectSpecHandle.Data.Get(), TargetASCInterface->GetAbilitySystemComponent());
+					}
 				}
 			}
 		}
 	}
-	
-	UE_LOG(LogTemp, Log, TEXT("SkillContext:\n SourceActor: %s\n TargetActor: %s\n TargetLocation: %s\n SkillData: %s\n ComboIndex: %d\n StartTime: %f\n DetectedActors.Num: %d"),
-		*GetNameSafe(SkillContext.SourceActor),
-		*GetNameSafe(SkillContext.TargetActor),
-		*SkillContext.TargetLocation.ToString(),
-		*GetNameSafe(SkillContext.SkillData),
-		SkillContext.ComboIndex,
-		SkillContext.StartTime,
-		SkillContext.DetectedActors.Num());
-	
-	const FGameplayAbilitySpec* Spec = GetCurrentAbilitySpec();
-	if (Spec && Spec->IsActive())
-	{
-		EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
-	}
+
+	// The ability's work is done.
+	EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
 }
