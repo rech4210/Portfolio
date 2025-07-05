@@ -7,7 +7,7 @@
 #include "Shared/AI/BossCharacter.h"
 #include "Shared/AI/EnemyAbilitySystemComponent.h"
 #include "Data/EGasDataType.h"
-#include "Shared/Data/LocalDataBaseLoader.h"
+#include "SkillModule/Public/Utill/LocalDataBaseLoader.h"
 #include "SkillModule/Public/Data/SkillTargetBase.h"
 #include "Shared/Player/GGwaCharacter.h"
 #include "Shared/Player/GGwaPlayerState.h"
@@ -46,16 +46,13 @@ void UGA_BossAreaAttack::ActivateAbility(const FGameplayAbilitySpecHandle Handle
         return;
     }
 
-    // 서버 모듈에서 그냥 BP 만 넣어주면 되는줄 알았는데!!!!!
-    // 에디터에서 BP를 넣어도 실질적인 데이터는 못찾아와서 메모리 예외가 뜨나보다
-    // 서버 모듈 빌드에 포함? 시키면 되는것 같긴 하던데...
-
+    // Static 등 공유되는 helper는 선언과 정의에 링커 의존성이 있다는 점을 명심할것.
+    // 서버 모듈에서 런타임에 스킬 데이터 로드
     if (!SkillDataAsset) {
-        ULocalDataBaseLoader * Loader = NewObject<ULocalDataBaseLoader>(this);
-        Loader->Initialize();
         FPrimaryAssetId ID;
-        Loader->CheckPrimaryAssetId(115, ID);
-        SkillDataAsset = Loader->GetDataFromAssetId<USkillDataAsset>(ID);
+        if (ULocalDataBaseLoader::CheckPrimaryAssetId(115, ID)) {
+            SkillDataAsset = ULocalDataBaseLoader::GetDataFromAssetId<USkillDataAsset>(ID);
+        }
     }
     FGameplayTag test = UEnumTagMatchHelper::GetTagFromEnum(EGasDataType::CueDuration);
     

@@ -62,7 +62,6 @@ public:
 	void SetMoveData(const TArray<FVector>& Path, int32 PathIndex, bool bIsFollowing);
 
 	UPlayerReactionComponent* GetReactionComponent() const;
-	USkillComponent* GetSkillComponent() const;
 	UPROPERTY()
 	TObjectPtr<UGGwaAbilitySystemComponent> ASC;
 protected:
@@ -71,9 +70,6 @@ private:
 	virtual void PostInitializeComponents() override;
 	void OnLocalSkillInput(const FInputActionInstance& Instance, int32 Index);
 	TObjectPtr<UPlayerReactionComponent> ReactionComponent;
-	TObjectPtr<USkillComponent> SkillComponent;
-	TObjectPtr<UInventoryComponent> InventoryComponent;
-	TObjectPtr<UInventoryComponent> EquipmentComponent;
 	TObjectPtr<USkillCastingService> SkillCastingService;
 };
 

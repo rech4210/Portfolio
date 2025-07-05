@@ -5,7 +5,7 @@
 // #include "Shared/Data/BaseDataAsset.h"
 #include "GameSharedModule/Public/Data/BuffDataAsset.h"
 #include "GameSharedModule/Public/Data/ItemDataAsset.h"
-#include "MyGame/Public/Shared/Data/LocalDataBaseLoader.h"
+#include "SkillModule/Public/Utill/LocalDataBaseLoader.h"
 #include "SkillModule/Public/Data/SkillDataAsset.h"
 #include "MyGame/Public/Shared/Player/GGwaPlayerController.h"
 #include "MyGame/Public/Shared/Player/GGwaPlayerState.h"
@@ -24,7 +24,6 @@ UGGwaAbilitySystemComponent::UGGwaAbilitySystemComponent()
 {
     PrimaryComponentTick.bCanEverTick = true;
     SetIsReplicated(true);
-    LocalDataBaseLoader = CreateDefaultSubobject<ULocalDataBaseLoader>(TEXT("LocalDataBaseLoader"));
 }
 
 bool UGGwaAbilitySystemComponent::CheckCost(const FGameplayEffectSpecHandle& CostSpecHandle) {
@@ -42,8 +41,6 @@ void UGGwaAbilitySystemComponent::BeginPlay()
             this, &UGGwaAbilitySystemComponent::OnGameplayAppliedCallback
         );
     }
-
-    LocalDataBaseLoader->Initialize();
 
     /**
      *스탯 초기 설정을 위한 GE, CurveTable.
@@ -79,8 +76,8 @@ void UGGwaAbilitySystemComponent::ProcessGameplayEffect(const FGameplayEffectSpe
     
     // 해당 로직을 점검..할것
     FPrimaryAssetId AssetId;
-    LocalDataBaseLoader->CheckPrimaryAssetId(SkillID, AssetId);
-    USkillDataAsset* SkillData = LocalDataBaseLoader->GetDataFromAssetId<USkillDataAsset>(AssetId, /*bSync=*/true);
+    ULocalDataBaseLoader::CheckPrimaryAssetId(SkillID, AssetId);
+    USkillDataAsset* SkillData = ULocalDataBaseLoader::GetDataFromAssetId<USkillDataAsset>(AssetId, /*bSync=*/true);
         if (!SkillData){
             UE_LOG(LogTemp, Warning, TEXT("[ASC] Failed to load SkillData for ID %d"), SkillID);
             return;

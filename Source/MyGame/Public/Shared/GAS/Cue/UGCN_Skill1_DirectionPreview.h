@@ -38,7 +38,6 @@ private:
 	UPROPERTY()
 	UMaterialInstanceDynamic* DynMaterial;
 
-	TObjectPtr<ULocalDataBaseLoader> LocalDataBaseLoader;
 	TObjectPtr<USkillDataAsset> SkillDataAsset;
 	
 	FTimerHandle ProgressUpdateTimerHandle;

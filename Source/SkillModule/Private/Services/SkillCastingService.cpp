@@ -25,7 +25,7 @@ bool USkillCastingService::TryCastSkill(AActor* Caster, const FGuid& SlotId){
 		return false;
 	}
 	
-	USkillSlot* Slot = SkillComp->GetSkillSlot(SlotId);
+	USkillSlot* Slot = SkillComp->GetSkillSlotByGuid(SlotId);
 	if (!Slot || !Slot->SkillData || !Slot->AbilityClass)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("SkillCastingService: Invalid Slot or SkillData for SlotId, AbilityClass %s"), *SlotId.ToString());
@@ -50,12 +50,13 @@ bool USkillCastingService::TryCastSkill(AActor* Caster, const FGuid& SlotId){
 
 				if (PlayerId != -1)
 				{
-					if (!StateRepo->SaveSkillState(PlayerId, SkillComp))
-					{
-						UE_LOG(LogTemp, Error, TEXT("SkillCastingService: FAILED to save skill state! Rolling back domain state."));
-						// Slot->SetLastUsedTime(FDateTime::MinValue()); 
-						return false; // 트랜잭션 실패
-					}
+					//TODO 현재 스킬상태를 DB에 저장하는것이 필요한지 검증.
+					// if (!StateRepo->SaveSkillState(PlayerId, SkillComp, TODO))
+					// {
+					UE_LOG(LogTemp, Error, TEXT("SkillCastingService: FAILED to save skill state! Rolling back domain state."));
+					// Slot->SetLastUsedTime(FDateTime::MinValue()); 
+					return false; // 트랜잭션 실패
+					// }
 				}
 			}
 		}

@@ -30,10 +30,11 @@ public:
 	TObjectPtr<AGGwaHUD> GGwaHUD;
 	
 	virtual void BeginPlay() override;
-	virtual void InitClientWidget() override;
+	virtual void InitClientWidget(const USkillComponent* SkillCompoent) override;
 	virtual void Client_ReceiveBossData_Implementation(const FBossDataStruct& Data) override;
 	virtual void PlayerTick(float DeltaTime) override;
 	virtual void NotifyClientStateChanged() override;
+	virtual void Client_ReceiveSkillData_Implementation(const USkillComponent* SkillComponent) override;
 
 private:
 	// hover 대상을 적으로 제어하기 위해, enemy base character 제공할것.

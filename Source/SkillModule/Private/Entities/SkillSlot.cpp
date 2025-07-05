@@ -1,7 +1,19 @@
 #include "Entities/SkillSlot.h"
 #include "Data/SkillDataAsset.h"
+#include "Net/UnrealNetwork.h"
 
-void USkillSlot::Initialize(const USkillDataAsset* InSkillData, TSubclassOf<UGameplayAbility> InAbilityClass)
+void USkillSlot::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+    Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+    DOREPLIFETIME(USkillSlot, SlotId);
+    DOREPLIFETIME(USkillSlot, SkillData);
+    DOREPLIFETIME(USkillSlot, AbilityClass);
+}
+
+
+
+void USkillSlot::Initialize(USkillDataAsset* InSkillData, TSubclassOf<UGameplayAbility> InAbilityClass)
 {
 	SlotId = FGuid::NewGuid();
 	SkillData = InSkillData;

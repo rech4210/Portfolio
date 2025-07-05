@@ -3,12 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-// #include "GameSharedModule/Public/Data/BaseDataAsset.h"
 #include "GameSharedModule/Public/Data/BuffDataAsset.h"
 #include "FSkillShapeConfig.h"
 #include "SkillInputSlot.h"
 #include "Animation/AnimMontage.h"
-#include "AttributeSet.h"
+#include "Abilities/GameplayAbility.h"
 #include "SkillDataAsset.generated.h"
 
 class USkillTargetBase;
@@ -36,6 +35,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Targeting")
 	TSubclassOf<USkillTargetBase> TargetStrategyClass;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GA")
+	TSubclassOf<UGameplayAbility> AbilityClass;
+	
 	// 실제로 적용되는 GameplayEffect 클래스
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Effect")
 	TSubclassOf<UGameplayEffect> GEClass;

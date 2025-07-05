@@ -1,6 +1,6 @@
 #include "Shared/GAS/Cue/UGCN_Skill1_DirectionPreview.h"
 #include "SkillModule/Public/Data/SkillDataAsset.h"
-#include "Shared/Data/LocalDataBaseLoader.h"
+#include "SkillModule/Public/Utill/LocalDataBaseLoader.h"
 #include "DrawDebugHelpers.h"
 #include "Engine/Engine.h"
 
@@ -21,12 +21,9 @@ bool AUGCN_Skill1_DirectionPreview::OnActive_Implementation(AActor* MyTarget, co
 		return false;
 	}
 	
-	LocalDataBaseLoader = NewObject<ULocalDataBaseLoader>(this);
-	LocalDataBaseLoader->Initialize();
-
 	FPrimaryAssetId AssetId;
-	LocalDataBaseLoader->CheckPrimaryAssetId(Parameters.RawMagnitude, AssetId);
-	SkillDataAsset = LocalDataBaseLoader->GetDataFromAssetId<USkillDataAsset>(AssetId);
+	ULocalDataBaseLoader::CheckPrimaryAssetId(Parameters.RawMagnitude, AssetId);
+	SkillDataAsset = ULocalDataBaseLoader::GetDataFromAssetId<USkillDataAsset>(AssetId);
 	if (!SkillDataAsset) {
 		return false;
 	}
@@ -77,12 +74,9 @@ bool AUGCN_Skill1_DirectionPreview::WhileActive_Implementation(AActor* MyTarget,
 		return false;
 	}
 
-	LocalDataBaseLoader = NewObject<ULocalDataBaseLoader>(this);
-	LocalDataBaseLoader->Initialize();
-
 	FPrimaryAssetId AssetId;
-	LocalDataBaseLoader->CheckPrimaryAssetId(Parameters.RawMagnitude, AssetId);
-	SkillDataAsset = LocalDataBaseLoader->GetDataFromAssetId<USkillDataAsset>(AssetId);
+	ULocalDataBaseLoader::CheckPrimaryAssetId(Parameters.RawMagnitude, AssetId);
+	SkillDataAsset = ULocalDataBaseLoader::GetDataFromAssetId<USkillDataAsset>(AssetId);
 
 	if (!SkillDataAsset) {
 		return false;

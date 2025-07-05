@@ -7,7 +7,6 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputAction.h"
-#include "InventoryComponent.h"
 #include "Components/SkillComponent.h"
 #include "GameSharedModule/Public/Utill/UEnumTagMatchHelper.h"
 #include "GameSharedModule/Public/Enum/ESkillType.h"
@@ -21,10 +20,7 @@
 
 AGGwaCharacter::AGGwaCharacter() {
 	ReactionComponent = CreateDefaultSubobject<UPlayerReactionComponent>("ReactionComponent");
-	SkillComponent = CreateDefaultSubobject<USkillComponent>("SkillComponent");
 	SkillCastingService = NewObject<USkillCastingService>(this, "SkillCastingService");
-	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>("InventoryComponent");
-	// EquipmentComponent = CreateDefaultSubobject<UEquipmentComponent>("EquipmentComponent");
 }
 
 UAbilitySystemComponent* AGGwaCharacter::GetAbilitySystemComponent() const {
@@ -57,7 +53,7 @@ void AGGwaCharacter::OnRep_PlayerState() {
 	InitASC();
 	if (auto PC = GetController()) {
 		if (auto GGwaPC = Cast<AGGwaPlayerController>(PC))	{
-			GGwaPC->InitClientWidget();
+			GGwaPC->InitClientWidget(Cast<AGGwaPlayerState>(GetPlayerState())->GetSkillComponent());
 		}
 	}
 	Cast<AGGwaPlayerState>(GetPlayerState())->InitPlayerState();
@@ -76,7 +72,6 @@ void AGGwaCharacter::InitASC() {
 
 void AGGwaCharacter::PostInitializeComponents() {
 	Super::PostInitializeComponents();
-
 }
 
 
@@ -84,7 +79,9 @@ void AGGwaCharacter::BeginPlay() {
 	Super::BeginPlay();
 	if (APlayerController * PC = Cast<APlayerController>(GetController()); nullptr != PC) {
 		UEnhancedInputLocalPlayerSubsystem * Subsystem = PC->GetLocalPlayer()->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>();
-		Subsystem->AddMappingContext(MappingContext, 0);
+		if (MappingContext) {
+			Subsystem->AddMappingContext(MappingContext, 0);
+		}
 	}
 	bUseControllerRotationYaw = false;
 	GetCharacterMovement()->bOrientRotationToMovement = true;
@@ -136,7 +133,8 @@ void AGGwaCharacter::CustomKeySet(UInputAction* Action, FKey CustomKey) {
 void AGGwaCharacter::OnLocalSkillInput(const FInputActionInstance& Instance, int32 Index)
 {
 	//HOW Get FGuid For Find Getskillslot..?,
-	FGuid ID = SkillComponent->GetSkillSlotIDByIndex(Index);
+	auto State = GetPlayerState<AGGwaPlayerState>();
+	FGuid ID = State->GetSkillComponent()->GetSkillSlotGuidByIndex(Index);
 	auto bisSucces  = SkillCastingService->TryCastSkill(this, ID);
 	if (bisSucces) {
 		UE_LOG(LogTemp, Log, TEXT("OnLocalSkillInput: Skill cast successful for index %d"), Index);
@@ -157,12 +155,6 @@ void AGGwaCharacter::SetMoveData_Implementation(const TArray<FVector>& Path, int
 UPlayerReactionComponent* AGGwaCharacter::GetReactionComponent() const {
 	return ReactionComponent.Get();
 }
-
-USkillComponent* AGGwaCharacter::GetSkillComponent() const {
-	return SkillComponent.Get();
-}
-
-
 
 void AGGwaCharacter::Tick(float DeltaSeconds) {
 	Super::Tick(DeltaSeconds);

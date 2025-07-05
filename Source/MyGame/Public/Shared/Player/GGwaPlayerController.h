@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Components/SkillComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "Shared/AI/EnemySystemCore/FBossDataStruct.h"
 #include "Shared/Utill/FRewardRequest.h"
@@ -33,12 +34,14 @@ public:
 	FOnBossDataReceived OnBossDataReceived;
 
 	/* 클라이언트 모듈 UI 설정을 위한 함수*/
-	virtual void InitClientWidget(){}
+	virtual void InitClientWidget(const USkillComponent* SkillCompoent){}
 
 	// UFUNCTION(Client ,Reliable)
 	// virtual void Client_ApplyAbilityDataAsset(UBaseDataAsset* Data);
 	UFUNCTION(Client ,Reliable)
 	virtual void Client_ReceiveBossData(const FBossDataStruct& BossCharacter);
+	UFUNCTION(Client ,Reliable)
+	virtual void Client_ReceiveSkillData(const USkillComponent* SkillComponent);
 
 	virtual void NotifyClientStateChanged(){}
 

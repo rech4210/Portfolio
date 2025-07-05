@@ -4,7 +4,7 @@
 #include "GA_Base.h"
 #include "GA_BossAreaAttack.generated.h"
 
-class UBossSkillDataAsset;
+class USkillDataAsset;
 
 UCLASS()
 class MYGAME_API UGA_BossAreaAttack : public UGA_Base

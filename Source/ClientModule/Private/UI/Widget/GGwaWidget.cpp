@@ -4,9 +4,11 @@
 #include "UI/Widget/GGwaWidget.h"
 #include "AbilitySystemComponent.h"
 #include "Chaos/Deformable/MuscleActivationConstraints.h"
+#include "Entities/SkillSlot.h"
 #include "UI/Widget/PlayerStatusWidget.h"
 #include "UI/Widget/ItemSetWidget.h"
 #include "UI/Widget/SkillSetWidget.h"
+#include "SkillModule/Public/Components/SkillComponent.h"
 
 #include "GameSharedModule/Public/Data/BuffDataAsset.h"
 #include "GameSharedModule/Public/Data/ItemDataAsset.h"
@@ -75,6 +77,13 @@ void UGGwaWidget::DoWidgetWork() {
 }
 
 
+void UGGwaWidget::UpdateSkillWidgetFromServer(const USkillComponent* Data) {
+	for (USkillSlot* SkillSlot : Data->GetAllSkillSlots()) {
+		BindWidgetWithTooltip(SkillSlot->SkillData.Get());
+	}
+}
+
+
 void UGGwaWidget::InitWidget(UGGwaAbilitySystemComponent* AbilitySystemComponent, const UGGwaAttributeSet* AttributeSet) {
 	if (!AbilitySystemComponent || !AttributeSet) return;
 
@@ -91,9 +100,6 @@ void UGGwaWidget::InitWidget(UGGwaAbilitySystemComponent* AbilitySystemComponent
 	BP_PlayerStatusWidget->UpdateHealthBar(AttributeSet->GetHealth(), AttributeSet->GetMaxHealth());
 	BP_PlayerStatusWidget->UpdateManaBar(AttributeSet->GetMana(), AttributeSet->GetMaxMana());
 
-	for (auto& SkillData : InitSkillDataAssets) {
-		BindWidgetWithTooltip(SkillData);
-	}
 	ASC->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetHealthAttribute())
 		.AddUObject(this, &UGGwaWidget::OnHealthChanged);
 

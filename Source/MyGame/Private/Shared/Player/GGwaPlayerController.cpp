@@ -33,6 +33,9 @@ void AGGwaPlayerController::Client_ReceiveBossData_Implementation(const FBossDat
 	UE_LOG(LogTemp, Log, TEXT("BossData Called From Server"));
 }
 
+void AGGwaPlayerController::Client_ReceiveSkillData_Implementation(const USkillComponent* SkillComponent) {
+}
+
 void AGGwaPlayerController::AcknowledgePossession(class APawn* PossessedPawn) {
 	Super::AcknowledgePossession(PossessedPawn);
 	AGGwaCharacter * MyCharacter = Cast<AGGwaCharacter>(PossessedPawn);

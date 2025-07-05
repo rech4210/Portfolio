@@ -2,40 +2,41 @@
 
 
 #include "GGwaAssetManager.h"
-
-#include "MyGame/Public/Shared/Data/LocalDataBaseLoader.h"
+#include "SkillModule/Public/Utill/LocalDataBaseLoader.h"
 
 const FPrimaryAssetType UGGwaAssetManager::SkillType = TEXT("Skill");
 
 void UGGwaAssetManager::StartInitialLoading()
 {
 	Super::StartInitialLoading();
-
+	
+	// Initialize LocalDataBaseLoader before any asset loading
 }
 
 void UGGwaAssetManager::FinishInitialLoading() {
 	Super::FinishInitialLoading();
-	// TArray<FPrimaryAssetId> SkillAssets;
-	//
-	// // 1) 매핑 먼저 완료
-	// if (ULocalDataBaseLoader* Loader = NewObject<ULocalDataBaseLoader>(this))
-	// {
-	// 	Loader->Initialize();
-	// 	TArray<int32> PrefetchSkillIDs = { 15,101,102 };
-	// 	for (int32 SkillID : PrefetchSkillIDs)
-	// 	{
-	// 		FPrimaryAssetId IdPtr;
-	// 		Loader->CheckPrimaryAssetId(SkillID, IdPtr);
-	// 		if (IdPtr.IsValid()){
-	// 			LoadPrimaryAsset(IdPtr, {}, FStreamableDelegate());
-	// 			SkillAssets.Add(IdPtr);
-	// 		}
-	// 		else {
-	// 			UE_LOG(LogTemp, Warning, TEXT("Loading skill %d failed"), SkillID);
-	// 		}
-	// 	}
-	// }
-	//
-	// GetPrimaryAssetIdList(FPrimaryAssetType("Skill"), SkillAssets);
-	// UE_LOG(LogTemp, Warning, TEXT("[디버깅] 스캔된 Skill 에셋 수: %d"), SkillAssets.Num());
+	
+	// Initialize check
+	ULocalDataBaseLoader::Initialize();
+	if (!ULocalDataBaseLoader::IsInitialized())
+	{
+		UE_LOG(LogTemp, Error, TEXT("LocalDataBaseLoader is not initialized! Skipping prefetch."));
+		return;
+	}
+
+	// 프리페치할 스킬 ID들
+	// 해당 부분을 관리하기 쉽도록 Enum 또는 Map으로 설정.
+	TArray<int32> PrefetchSkillIDs = { 100,101,102,103,104,105,106,107 };
+	for (int32 SkillID : PrefetchSkillIDs)
+	{
+		FPrimaryAssetId IdPtr;
+		if (ULocalDataBaseLoader::CheckPrimaryAssetId(SkillID, IdPtr))
+		{
+			LoadPrimaryAsset(IdPtr, {}, FStreamableDelegate());
+		}
+		else 
+		{
+	 			UE_LOG(LogTemp, Warning, TEXT("Loading skill %d failed"), SkillID);
+	 	}
+	}
 }

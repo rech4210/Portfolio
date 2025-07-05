@@ -6,16 +6,19 @@
 #include "AbilitySystemInterface.h"
 #include "GameSharedModule/Public/Enum/EPlayerState.h"
 #include "GameplayEffectTypes.h"
+#include "InventoryComponent.h"
+#include "Components/SkillComponent.h"
 #include "GameFramework/PlayerState.h"
-#include "SkillModule/Public/Data/SkillDataAsset.h"
 #include "GGwaPlayerState.generated.h"
 
+class USkillDataAsset;
 class AGGwaCharacter;
 class UPlayerStateComponent;
 class UGGwaAttributeSet;
 class UGGwaAbilitySystemComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnAttributeChanged, FGameplayAttribute, Attribute, float, NewValue, USkillDataAsset*, SkillData);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSkillsUpdated);
 
 /**
  * 
@@ -30,10 +33,22 @@ public:
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	
 	UFUNCTION(BlueprintCallable)
-	UPlayerStateComponent* GetStateComponent() const; 
+	UPlayerStateComponent* GetStateComponent() const;
+	
+	UFUNCTION(BlueprintCallable)
+	USkillComponent* GetSkillComponent() const;
+	
+	UFUNCTION(BlueprintCallable)
+	void SetSkillComponent(USkillComponent* NewComponent);
+
+	UFUNCTION()
+	void OnSkillSlotsUpdated() const;
 
 	UPROPERTY(BlueprintAssignable, Category = "GAS")
 	FOnAttributeChanged OnAttributeChanged;
+
+	UPROPERTY(BlueprintAssignable, Category = "Skills")
+	FOnSkillsUpdated OnSkillsUpdated;
 
 	void BroadcastAttributeChange(const FGameplayAttribute& Attribute, float NewValue) const;
 	void InitPlayerState();
@@ -44,8 +59,15 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UGGwaAttributeSet> AttributeSet;
 	
-	UPROPERTY(VisibleAnywhere, Category="State")
+	UPROPERTY(VisibleAnywhere, Category="Component")
 	TObjectPtr<UPlayerStateComponent> StateComponent;
+	UPROPERTY(VisibleAnywhere, Category="Component")
+	TObjectPtr<UInventoryComponent> InventoryComponent;
+	UPROPERTY(VisibleAnywhere, Category="Component")
+	TObjectPtr<USkillComponent> SkillComponent;
+	//TODO: EquipMentComponent 만들기
+	UPROPERTY(VisibleAnywhere, Category="Component")
+	TObjectPtr<UInventoryComponent> EquipmentComponent;
 private:
 	UPROPERTY()
 	TObjectPtr<AGGwaCharacter> Character;

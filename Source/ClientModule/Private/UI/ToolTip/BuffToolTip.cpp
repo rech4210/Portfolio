@@ -12,7 +12,7 @@ void UBuffToolTip::SetToolTipData(UPrimaryDataAsset* Data) {
 	// Super::SetToolTipData(ToolTip);
 	AddToViewport(999);
 	SetVisibility(ESlateVisibility::Collapsed);
-	if (UBuffDataAsset* BuffData = Cast<UBuffDataAsset>(Data)) {
+	if (const UBuffDataAsset* BuffData = Cast<UBuffDataAsset>(Data)) {
 		if (ToolTipTitle) {
 			ToolTipTitle->SetText(BuffData->DisplayName);
 		}

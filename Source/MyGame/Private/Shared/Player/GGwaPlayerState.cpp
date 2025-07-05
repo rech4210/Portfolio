@@ -4,11 +4,11 @@
 
 #include "MyGame/Public/Shared/GAS/GGwaAbilitySystemComponent.h"
 #include "MyGame/Public/Shared/GAS/GGwaAttributeSet.h"
-#include "GameSharedModule/Public/Data/BuffDataAsset.h"
-#include "SkillModule/Public/Data/SkillDataAsset.h"
+#include "InventoryModule/Public/InventoryComponent.h"
 #include "MyGame/Public/Shared/Player/GGwaCharacter.h"
 #include "MyGame/Public/Shared/Player/GGwaPlayerController.h"
 #include "MyGame/Public/Shared/Player/Component/UPlayerStateComponent.h"
+#include "SkillModule/Public/Components/SkillComponent.h"
 #include "GameSharedModule/Public/Utill/UEnumTagMatchHelper.h"
 
 
@@ -20,6 +20,9 @@ AGGwaPlayerState::AGGwaPlayerState() {
 	ASC->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
 	AttributeSet = CreateDefaultSubobject<UGGwaAttributeSet>("AttributeSet");
 	StateComponent = CreateDefaultSubobject<UPlayerStateComponent>("PlayerStateComponent");
+	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>("InventoryComponent");
+	SkillComponent = CreateDefaultSubobject<USkillComponent>("SkillComponent");
+	// EquipmentComponent = CreateDefaultSubobject<UEquipmentComponent>("EquipmentComponent");
 }
 
 void AGGwaPlayerState::InitPlayerState() {
@@ -27,14 +30,29 @@ void AGGwaPlayerState::InitPlayerState() {
 	StateComponent->InitComponent(ASC);
 }
 
-
-
 UAbilitySystemComponent* AGGwaPlayerState::GetAbilitySystemComponent() const {
 	return ASC.Get() ? ASC.Get() : nullptr;
 }
 
 UPlayerStateComponent* AGGwaPlayerState::GetStateComponent() const {
 	return StateComponent.Get();
+}
+
+USkillComponent* AGGwaPlayerState::GetSkillComponent() const {
+	return SkillComponent.Get();
+}
+
+void AGGwaPlayerState::OnSkillSlotsUpdated() const{
+	auto* Controller = Cast<AGGwaPlayerController>(GetPlayerController());
+	if (!Controller || !SkillComponent)
+	{
+		return;
+	}
+	Controller->Client_ReceiveSkillData(SkillComponent);
+}
+
+void AGGwaPlayerState::SetSkillComponent(USkillComponent* NewComponent) {
+    SkillComponent = NewComponent;
 }
 
 void AGGwaPlayerState::BroadcastAttributeChange(const FGameplayAttribute& Attribute, float NewValue) const{

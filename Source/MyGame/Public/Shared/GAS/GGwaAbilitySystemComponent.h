@@ -27,8 +27,7 @@ public:
 	UPROPERTY()
 	FOnEffectAssetApplied OnEffectAssetApplied;
 
-	UPROPERTY()
-	TObjectPtr<ULocalDataBaseLoader> LocalDataBaseLoader;
+	
 	
 	void ExecuteGameplayCueLocal(const FGameplayTag& GameplayCueTag, const FGameplayCueParameters& Parameters);
 	

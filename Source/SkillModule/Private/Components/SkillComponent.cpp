@@ -2,10 +2,28 @@
 #include "Entities/SkillSlot.h"
 #include "Data/SkillDataAsset.h"
 #include "Abilities/GameplayAbility.h"
+#include "Net/UnrealNetwork.h"
 
 USkillComponent::USkillComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
+	SetIsReplicatedByDefault(true);
+}
+
+void USkillComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+    Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+    DOREPLIFETIME(USkillComponent, SkillSlots);
+}
+
+void USkillComponent::OnRep_SkillSlots()
+{
+	// 스킬 상태가 변경되었음을 알림 (현재 전체 스킬 목록과 함께)
+	OnSkillStateChanged.Broadcast(SkillSlots);
+}
+
+int32 USkillComponent::GetMaxSlotCount() const {
+	return MaxSkillSlots;
 }
 
 void USkillComponent::BeginPlay()
@@ -13,9 +31,9 @@ void USkillComponent::BeginPlay()
 	Super::BeginPlay();
 }
 
-bool USkillComponent::RegisterSkill(const USkillDataAsset* SkillData, TSubclassOf<UGameplayAbility> AbilityClass)
+bool USkillComponent::RegisterSkill(USkillDataAsset* SkillData)
 {
-	if (!SkillData || !AbilityClass)
+	if (!SkillData || !SkillData->AbilityClass)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("SkillComponent: Cannot register skill with null SkillData or AbilityClass."));
 		return false;
@@ -28,7 +46,7 @@ bool USkillComponent::RegisterSkill(const USkillDataAsset* SkillData, TSubclassO
 	}
 
 	USkillSlot* NewSlot = NewObject<USkillSlot>(this);
-	NewSlot->Initialize(SkillData, AbilityClass);
+	NewSlot->Initialize(SkillData, SkillData->AbilityClass);
 	SkillSlots.Add(NewSlot);
 
 	UE_LOG(LogTemp, Log, TEXT("SkillComponent: Registered skill '%s' with SlotId %s"), *SkillData->GetName(), *NewSlot->SlotId.ToString());
@@ -63,9 +81,9 @@ void USkillComponent::SwapSkills(const FGuid& SlotIdA, const FGuid& SlotIdB)
 	}
 }
 
-USkillSlot* USkillComponent::GetSkillSlot(const FGuid& SlotId) const
+USkillSlot* USkillComponent::GetSkillSlotByGuid(const FGuid& SlotId) const
 {
-	const TObjectPtr<USkillSlot>* FoundSlot = SkillSlots.FindByPredicate([&](const USkillSlot* Slot)
+	USkillSlot* const* FoundSlot = SkillSlots.FindByPredicate([&](const USkillSlot* Slot)
 	{
 		return Slot && Slot->SlotId == SlotId;
 	});
@@ -73,7 +91,7 @@ USkillSlot* USkillComponent::GetSkillSlot(const FGuid& SlotId) const
 	return FoundSlot ? *FoundSlot : nullptr;
 }
 
-FGuid USkillComponent::GetSkillSlotIDByIndex(int32 index) const {
+FGuid USkillComponent::GetSkillSlotGuidByIndex(int32 index) const {
 	return SkillSlots[index]->SlotId;
 }
 

@@ -40,7 +40,7 @@ class SKILLMODULE_API ISkillStateRepositoryInterface
 	GENERATED_BODY()
 
 public:
-	virtual bool LoadSkillState(int32 PlayerId, USkillComponent* SkillComponentToPopulate) = 0;
+	virtual bool LoadSkillState(int32 PlayerInformation, USkillComponent& SkillComponentToPopulate, TArray<int32> fetchedSkillList) = 0;
 
-	virtual bool SaveSkillState(int32 PlayerId, const USkillComponent* SkillComponentToSave) = 0;
+	virtual bool SaveSkillState(int32 PlayerInformation, const USkillComponent* SkillComponentToSave, TArray<int32> SkillPayloadList) = 0;
 }; 

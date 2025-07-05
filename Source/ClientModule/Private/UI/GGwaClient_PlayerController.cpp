@@ -19,7 +19,7 @@ void AGGwaClient_PlayerController::BeginPlay() {
 	bEnableMouseOverEvents  = true;
 }
 
-void AGGwaClient_PlayerController::InitClientWidget() {
+void AGGwaClient_PlayerController::InitClientWidget(const USkillComponent* SkillCompoent) {
 	if (HasAuthority()) {
 		UE_LOG(LogTemp, Warning, TEXT("server Controller"));
 		return;
@@ -47,6 +47,7 @@ void AGGwaClient_PlayerController::InitClientWidget() {
 				auto ASC = PS->GetAbilitySystemComponent();
 				UGGwaAbilitySystemComponent* GGawASC = CastChecked<UGGwaAbilitySystemComponent>(ASC);
 				const UGGwaAttributeSet* GGwaAttributeSet = Cast<UGGwaAttributeSet>(GGawASC->GetAttributeSet(UGGwaAttributeSet::StaticClass()));
+				Widget->UpdateSkillWidgetFromServer(SkillCompoent);
 				Widget->InitWidget(GGawASC, GGwaAttributeSet);
 			}
 		}
@@ -72,12 +73,19 @@ void AGGwaClient_PlayerController::Client_ReceiveBossData_Implementation(const F
 	}
 }
 
+void AGGwaClient_PlayerController::Client_ReceiveSkillData_Implementation(const USkillComponent* SkillComponent) {
+	if (IsLocalController() && GGwaHUD->GetBaseWidget()) {
+		GGwaHUD->GetBaseWidget()->UpdateSkillWidgetFromServer(SkillComponent);
+	}
+}
 
 void AGGwaClient_PlayerController::NotifyClientStateChanged() {
 	if (IsLocalController()) {
 		GGwaHUD->GetBaseWidget()->OnPlayerStateChanged.Broadcast();
 	}
 }
+
+
 
 void AGGwaClient_PlayerController::OnLoginSuccess(const FString& Token) {
 }

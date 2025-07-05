@@ -159,36 +159,33 @@ void AGGwaGameMode::PostLogin(APlayerController* NewPlayer)
 	}
 
 	// 캐릭터 및 스킬 정보 로드 (안전한 접근 방식으로 변경)
-	if (AGGwaCharacter* PlayerCharacter = Cast<AGGwaCharacter>(NewPlayer->GetCharacter()))
+	if (auto PlayerState = NewPlayer->GetPlayerState<AGGwaPlayerState>())
 	{
-		USkillComponent* SkillComponent = PlayerCharacter->GetSkillComponent();
 		const int32 PlayerID = NewPlayer->PlayerState->GetPlayerId();
 
-		if (SkillComponent)
+		if (SkillConfigRepository)
 		{
-			if (SkillConfigRepository)
-			{
-				SkillConfigRepository->LoadSkillDefinitions(LoadedSkillDefinitions);
-			}
-			else
-			{
-				UE_LOG(LogTemp, Error, TEXT("AGGwaGameMode: SkillConfigRepository is not available!"));
-			}
-
-			if (SkillStateRepository)
-			{
-				SkillStateRepository->LoadSkillState(PlayerID, SkillComponent);
-				// TODO: 로드 직후 바로 저장하는 로직이 의도된 것인지 확인이 필요합니다. (예: 신규 유저의 기본 상태 저장)
-				SkillStateRepository->SaveSkillState(PlayerID, SkillComponent);
-			}
-			else
-			{
-				UE_LOG(LogTemp, Error, TEXT("AGGwaGameMode: SkillStateRepository is not available!"));
-			}
+			//플레이어가 가질 수 있는 전체 스킬에 대한 정보 로드
+			SkillConfigRepository->LoadSkillDefinitions(LoadedSkillDefinitions);
 		}
 		else
 		{
-			UE_LOG(LogTemp, Error, TEXT("AGGwaGameMode: SkillComponent is not available for %s!"), *PlayerCharacter->GetName());
+			UE_LOG(LogTemp, Error, TEXT("AGGwaGameMode: SkillConfigRepository is not available!"));
+		}
+
+		if (SkillStateRepository)
+		{
+			USkillComponent* SkillComponent = nullptr;
+			//플레이어가 설정한 스킬에 대한 정보 로드.
+			TArray<int32> SkillList ={100,101,102,103,104,105,106,107};
+			SkillStateRepository->LoadSkillState(PlayerID, *SkillComponent, SkillList);
+			// TODO: 로드 직후 바로 저장하는 로직이 의도된 것인지 확인이 필요합니다. (예: 신규 유저의 기본 상태 저장)
+			SkillStateRepository->SaveSkillState(PlayerID, SkillComponent, SkillList);
+			PlayerState->SetSkillComponent(SkillComponent);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("AGGwaGameMode: SkillStateRepository is not available!"));
 		}
 	}
 	else
@@ -208,11 +205,11 @@ void AGGwaGameMode::Logout(AController* Exiting)
 		{
 			// Use the repository to save the player's inventory.
 			UE_LOG(LogTemp, Log, TEXT("Player logging out. Saving inventory data for %s."), *PC->PlayerState->GetPlayerName());
-			if (auto PlayerCharacter = Cast<AGGwaCharacter>(PC->GetCharacter())) {
+			if (auto PlayerState = PC->GetPlayerState<AGGwaPlayerState>()) {
 				InventoryRepository->SaveInventoryForPlayer(PC->PlayerState);
 				// EquipmentRepository->SavePlayerEquipment(PC);
-
-				SkillStateRepository->SaveSkillState(PC->PlayerState->GetPlayerId(), PlayerCharacter->GetSkillComponent());
+				// TODO: 저장 로직이 의도된 것인지 확인이 필요합니다. (예: 신규 유저의 기본 상태 저장)
+				// SkillStateRepository->SaveSkillState(PC->PlayerState->GetPlayerId(), PlayerState->GetSkillComponent(), TODO);
 			}
 			// Unload Repo, Clear Component.
 		}

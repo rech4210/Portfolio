@@ -16,6 +16,7 @@ class UBuffToolTip;
 class UBaseToolTip;
 class UPrimaryDataAsset;
 
+class USkillComponent;
 class UPlayerStatusWidget;
 class USkillSetWidget;
 class UItemSetWidget;
@@ -58,17 +59,18 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (BindWidget) ,Category= "Widget")
 	TObjectPtr<UItemSetWidget> BP_ItemBarWidget;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category= "Init Data")
-	TArray<USkillDataAsset*> InitSkillDataAssets;
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite,Category= "Init Data")
 	// virtual const UUserWidget* SetWidgetData(UPrimaryDataAsset* Data) override;
+	UFUNCTION()
 	void BindWidgetWithTooltip(UBaseDataAsset* Data);
 	void InitWidget(UGGwaAbilitySystemComponent * AbilitySystemComponent, const UGGwaAttributeSet * AttributeSet);
 	void OnHealthChanged(const FOnAttributeChangeData& Data) const;
 	void OnManaChanged(const FOnAttributeChangeData& Data) const;
-	void InitWidgetSetting();
-
+	void UpdateSkillWidgetFromServer(const USkillComponent* Data);
 	UFUNCTION()
 	void DoWidgetWork();
+private:
+	TArray<USkillDataAsset*> InitSkillDataAssets;
 	// template<typename TDataAsset, typename TToolTip, typename TWidget>
 	// void UGGwaWidget::BindTooltip(TDataAsset* DataAsset, TSubclassOf<TToolTip> ToolTipClass, UUserWidget* ContainerWidget);
 };
