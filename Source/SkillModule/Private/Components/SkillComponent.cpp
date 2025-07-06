@@ -3,6 +3,8 @@
 #include "Data/SkillDataAsset.h"
 #include "Abilities/GameplayAbility.h"
 #include "Net/UnrealNetwork.h"
+#include "SkillSubsystem.h"
+#include "Engine/World.h"
 
 USkillComponent::USkillComponent()
 {
@@ -20,6 +22,12 @@ void USkillComponent::OnRep_SkillSlots()
 {
 	// 스킬 상태가 변경되었음을 알림 (현재 전체 스킬 목록과 함께)
 	OnSkillStateChanged.Broadcast(SkillSlots);
+	
+	// 클라이언트에서 복제된 데이터를 받았을 때 SkillSubsystem에 알림
+	if (auto* SkillSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<USkillSubsystem>())
+	{
+		SkillSubsystem->Client_OnSkillStateUpdated(this);
+	}
 }
 
 int32 USkillComponent::GetMaxSlotCount() const {
@@ -89,9 +97,12 @@ USkillSlot* USkillComponent::GetSkillSlotByGuid(const FGuid& SlotId) const
 	});
 
 	return FoundSlot ? *FoundSlot : nullptr;
-}
+}	
 
 FGuid USkillComponent::GetSkillSlotGuidByIndex(int32 index) const {
+	if (index > MaxSkillSlots || SkillSlots.IsEmpty()) {
+		return  FGuid();
+	}
 	return SkillSlots[index]->SlotId;
 }
 

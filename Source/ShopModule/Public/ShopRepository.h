@@ -7,6 +7,8 @@
 #include "UObject/Object.h"
 #include "ShopRepository.generated.h"
 
+class UShopComponent;
+
 /**
  * 
  */
@@ -16,4 +18,6 @@ class SHOPMODULE_API UShopRepository : public UObject, public IShopRepositoryInt
 
 public:
 	virtual TFuture<void> LoadAllShops(const UObject* WorldContextObject) override;
+	virtual bool LoadShopData(int32 PlayerInformation, UShopComponent& ShopComponentToPopulate) override;
+	virtual bool SaveShopData(int32 PlayerInformation, const UShopComponent* ShopComponentToSave) override;
 };

@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -6,6 +6,8 @@
 #include "InventoryRepositoryInterface.h"
 #include "UObject/Object.h"
 #include "InventoryRepository.generated.h"
+
+class UInventoryComponent;
 
 /**
  * 
@@ -15,6 +17,12 @@ class INVENTORYMODULE_API UInventoryRepository : public UObject, public IInvento
 	GENERATED_BODY()
 
 public:
-	virtual void LoadInventoryForPlayer(const TObjectPtr<APlayerState>& Object) override;
-	virtual void SaveInventoryForPlayer(const TObjectPtr<APlayerState>& Object) override;
+	virtual void LoadInventoryForPlayer(APlayerState* PlayerState) override;
+	virtual void SaveInventoryForPlayer(APlayerState* PlayerState) override;
+
+	/** Applies loaded data to the server-side component. */
+	void Server_ApplyInventoryData(UInventoryComponent* InventoryComponent, const TArray<struct FInventoryItemData>& LoadedItems);
+
+	/** Handles client-side updates after replication. */
+	void Client_OnInventoryUpdated(UInventoryComponent* InventoryComponent);
 };

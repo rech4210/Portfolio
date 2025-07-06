@@ -29,9 +29,6 @@ public:
 	bool TryCastSkill(AActor* Caster, const FGuid& SlotId);
 
 private:
-	// 실제 구현에서는 Service Locator나 DI 컨테이너를 통해 리포지토리 인스턴스를 주입받아야 합니다.
-	TScriptInterface<ISkillStateRepositoryInterface> GetSkillStateRepository(const UObject* WorldContextObject) const;
-
 	// 실제 구현에서는 Event Bus 시스템을 통해 이벤트를 발행해야 합니다.
 	// void PublishSkillUsedEvent(const FSkillUsedEvent& Event);
 	

@@ -2,6 +2,8 @@
 
 #include "Shared/Player/GGwaPlayerState.h"
 
+#include "Data/SkillDataAsset.h"
+#include "Entities/SkillSlot.h"
 #include "MyGame/Public/Shared/GAS/GGwaAbilitySystemComponent.h"
 #include "MyGame/Public/Shared/GAS/GGwaAttributeSet.h"
 #include "InventoryModule/Public/InventoryComponent.h"
@@ -9,9 +11,13 @@
 #include "MyGame/Public/Shared/Player/GGwaPlayerController.h"
 #include "MyGame/Public/Shared/Player/Component/UPlayerStateComponent.h"
 #include "SkillModule/Public/Components/SkillComponent.h"
+#include "ShopModule/Public/Components/ShopComponent.h"
+#include "EquipmentModule/Public/Components/EquipmentComponent.h"
 #include "GameSharedModule/Public/Utill/UEnumTagMatchHelper.h"
-
-
+#include "InventorySubsystem.h"
+#include "SkillModule/Public/SkillSubsystem.h"
+#include "ShopModule/Public/ShopSubsystem.h"
+#include "EquipmentModule/Public/EquipmentSubsystem.h"
 
 
 AGGwaPlayerState::AGGwaPlayerState() {
@@ -22,7 +28,36 @@ AGGwaPlayerState::AGGwaPlayerState() {
 	StateComponent = CreateDefaultSubobject<UPlayerStateComponent>("PlayerStateComponent");
 	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>("InventoryComponent");
 	SkillComponent = CreateDefaultSubobject<USkillComponent>("SkillComponent");
-	// EquipmentComponent = CreateDefaultSubobject<UEquipmentComponent>("EquipmentComponent");
+	ShopComponent = CreateDefaultSubobject<UShopComponent>("ShopComponent");
+	EquipmentComponent = CreateDefaultSubobject<UEquipmentComponent>("EquipmentComponent");
+}
+
+void AGGwaPlayerState::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (HasAuthority())
+	{
+		if (UInventorySubsystem* InventorySubsystem = GetGameInstance()->GetSubsystem<UInventorySubsystem>())
+		{
+			InventorySubsystem->RequestLoadInventory(this);
+		}
+
+		if (USkillSubsystem* SkillSubsystem = GetGameInstance()->GetSubsystem<USkillSubsystem>())
+		{
+			SkillSubsystem->RequestLoadSkillData(this);
+		}
+
+		if (UShopSubsystem* ShopSubsystem = GetGameInstance()->GetSubsystem<UShopSubsystem>())
+		{
+			ShopSubsystem->RequestLoadShopData(this);
+		}
+
+		if (UEquipmentSubsystem* EquipmentSubsystem = GetGameInstance()->GetSubsystem<UEquipmentSubsystem>())
+		{
+			EquipmentSubsystem->RequestLoadEquipmentData(this);
+		}
+	}
 }
 
 void AGGwaPlayerState::InitPlayerState() {
@@ -42,6 +77,14 @@ USkillComponent* AGGwaPlayerState::GetSkillComponent() const {
 	return SkillComponent.Get();
 }
 
+UShopComponent* AGGwaPlayerState::GetShopComponent() const {
+	return ShopComponent.Get();
+}
+
+UEquipmentComponent* AGGwaPlayerState::GetEquipmentComponent() const {
+	return EquipmentComponent.Get();
+}
+
 void AGGwaPlayerState::OnSkillSlotsUpdated() const{
 	auto* Controller = Cast<AGGwaPlayerController>(GetPlayerController());
 	if (!Controller || !SkillComponent)
@@ -53,6 +96,12 @@ void AGGwaPlayerState::OnSkillSlotsUpdated() const{
 
 void AGGwaPlayerState::SetSkillComponent(USkillComponent* NewComponent) {
     SkillComponent = NewComponent;
+	if (!SkillComponent) {
+		return;
+	}
+    for (auto Element : SkillComponent->GetAllSkillSlots()) {
+    	UE_LOG(LogTemp, Warning, TEXT("===SkillComponent SetSkillComponent: SkillSlot %d, Id %s ==="), Element->SkillData->InputSlot, *Element->SkillData->Description.ToString());
+    }
 }
 
 void AGGwaPlayerState::BroadcastAttributeChange(const FGameplayAttribute& Attribute, float NewValue) const{

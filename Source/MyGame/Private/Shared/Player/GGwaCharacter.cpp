@@ -134,6 +134,9 @@ void AGGwaCharacter::OnLocalSkillInput(const FInputActionInstance& Instance, int
 {
 	//HOW Get FGuid For Find Getskillslot..?,
 	auto State = GetPlayerState<AGGwaPlayerState>();
+	if (!State->GetSkillComponent()) {
+		return;
+	}
 	FGuid ID = State->GetSkillComponent()->GetSkillSlotGuidByIndex(Index);
 	auto bisSucces  = SkillCastingService->TryCastSkill(this, ID);
 	if (bisSucces) {

@@ -10,6 +10,7 @@
 #include "AbilitySystemInterface.h"
 #include "GameFramework/PlayerState.h"
 #include "GameFramework/Pawn.h"
+#include "SkillSubsystem.h"
 
 bool USkillCastingService::TryCastSkill(AActor* Caster, const FGuid& SlotId){
 	if (!Caster || !Caster->HasAuthority()){
@@ -42,21 +43,28 @@ bool USkillCastingService::TryCastSkill(AActor* Caster, const FGuid& SlotId){
 			// 도메인 이벤트 발행 -> GA 내부에서 결과에 따른 콜백을 사용합니다.
 			// 상태 변경 (MarkUsed) -> GA에서 상태를 처리하므로 로직을 삭제.
 			// 5. 영속화 (Repository)
-			TScriptInterface<ISkillStateRepositoryInterface> StateRepo = GetSkillStateRepository(Caster);
-			if (StateRepo)
+			if (Caster->GetGameInstance())
 			{
-				APawn* Pawn = Cast<APawn>(Caster);
-				int32 PlayerId = Pawn && Pawn->GetPlayerState() ? Pawn->GetPlayerState()->GetPlayerId() : -1;
-
-				if (PlayerId != -1)
+				USkillSubsystem* SkillSubsystem = Caster->GetGameInstance()->GetSubsystem<USkillSubsystem>();
+				if (SkillSubsystem)
 				{
-					//TODO 현재 스킬상태를 DB에 저장하는것이 필요한지 검증.
-					// if (!StateRepo->SaveSkillState(PlayerId, SkillComp, TODO))
-					// {
-					UE_LOG(LogTemp, Error, TEXT("SkillCastingService: FAILED to save skill state! Rolling back domain state."));
-					// Slot->SetLastUsedTime(FDateTime::MinValue()); 
-					return false; // 트랜잭션 실패
-					// }
+					TScriptInterface<ISkillStateRepositoryInterface> StateRepo = SkillSubsystem->GetSkillStateRepository();
+					if (StateRepo)
+					{
+						APawn* Pawn = Cast<APawn>(Caster);
+						int32 PlayerId = Pawn && Pawn->GetPlayerState() ? Pawn->GetPlayerState()->GetPlayerId() : -1;
+
+						if (PlayerId != -1)
+						{
+							//TODO 현재 스킬상태를 DB에 저장하는것이 필요한지 검증.
+							// if (!StateRepo->SaveSkillState(PlayerId, SkillComp, TODO))
+							// {
+							UE_LOG(LogTemp, Error, TEXT("SkillCastingService: FAILED to save skill state! Rolling back domain state."));
+							// Slot->SetLastUsedTime(FDateTime::MinValue()); 
+							return false; // 트랜잭션 실패
+							// }
+						}
+					}
 				}
 			}
 		}
@@ -66,31 +74,4 @@ bool USkillCastingService::TryCastSkill(AActor* Caster, const FGuid& SlotId){
 	}
 	
 	return true;
-}
-
-// 캐릭터에서 호출될거니까, 
-TScriptInterface<ISkillStateRepositoryInterface> USkillCastingService::GetSkillStateRepository(const UObject* WorldContextObject) const
-{
-	// 실제 구현에서는 게임 인스턴스 서브시스템이나 다른 서비스 로케이터를 통해
-	// ISkillStateRepository를 구현하는 구체 클래스의 인스턴스를 찾아야 합니다.
-	if (GEngine)
-	{
-		// 예시: UGameInstance가 리포지토리 인터페이스를 구현한 경우
-		// if (auto* GI = GEngine->GetGamePlayer(WorldContextObject, 0)->GetGameInstance())
-		// {
-		//	 if (GI->Implements<USkillStateRepository>())
-		//	 {
-		//		 return GI;
-		//	 }
-		// }
-	}
-	return nullptr;
-}
-//
-// void USkillCastingService::PublishSkillUsedEvent(const FSkillUsedEvent& Event)
-// {
-// 	// 실제 구현에서는 등록된 모든 리스너에게 이벤트를 전달하는 이벤트 버스 시스템을 사용해야 합니다.
-// 	// 이 부분은 GA의 태그 설정과 연동하도록 합시다.
-// 	UE_LOG(LogTemp, Log, TEXT("SkillCastingService: Publishing FSkillUsedEvent for SlotId %s."), *Event.SlotId.ToString());
-// 	// Example: FGameEventBus::Get().Publish(Event);
-// } 
+} 

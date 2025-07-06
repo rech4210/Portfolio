@@ -44,16 +44,6 @@ private:
 	UPROPERTY()
 	TObjectPtr<UDatabaseManager> DatabaseManager;
 
-	UPROPERTY()
-	TScriptInterface<IInventoryRepositoryInterface> InventoryRepository;
-	UPROPERTY()
-	TScriptInterface<IInventoryRepositoryInterface> EquipmentRepository;
-	UPROPERTY()
-	TScriptInterface<ISkillStateRepositoryInterface> SkillStateRepository;
-	UPROPERTY()
-	TScriptInterface<ISkillConfigRepositoryInterface> SkillConfigRepository;
-	UPROPERTY()
-	TScriptInterface<IShopRepositoryInterface> ShopRepository;
 
 	TArray<USkillDataAsset*> LoadedSkillDefinitions;
 

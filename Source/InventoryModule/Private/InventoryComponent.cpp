@@ -1,6 +1,10 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "InventoryComponent.h"
+#include "Net/UnrealNetwork.h"
+#include "Engine/ActorChannel.h"
+#include "InventorySubsystem.h"
+#include "GameFramework/PlayerState.h"
 
 UInventoryComponent::UInventoryComponent()
 {
@@ -11,60 +15,56 @@ UInventoryComponent::UInventoryComponent()
 void UInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	DOREPLIFETIME(UInventoryComponent, Items);
+	// Only replicate the inventory to the owning client
+	DOREPLIFETIME_CONDITION(UInventoryComponent, Items, COND_OwnerOnly);
 }
 
-void UInventoryComponent::AddItem(TSubclassOf<UItemDataAsset> ItemDataClass, int32 Quantity)
+void UInventoryComponent::Server_SetInventoryItems(const TArray<UFInventoryItem*>& InItems)
 {
-	if (GetOwnerRole() < ROLE_Authority || !ItemDataClass || Quantity <= 0)
+	if (GetOwnerRole() == ROLE_Authority)
 	{
-		return;
-	}
-
-	// TODO: Add logic for stacking with existing items
-
-	UFInventoryItem* NewItem = NewObject<UFInventoryItem>();
-	NewItem->ItemData =  GetDefault<UItemDataAsset>(ItemDataClass);
-	NewItem->Quantity = Quantity;
-	for (auto it : Items) {
-		// 수량 체크를 따로 함수로 + max 제한까지 stacking
-		// do operation override here.
-		 if (it->ItemData == NewItem->ItemData && (it->ItemData->MaxStackCount > (it->Quantity + NewItem->Quantity))) {
-		 	it->Quantity += NewItem->Quantity;
-		 }
-		 else {
-		 	Items.Add(NewItem);
-		 }
-	}
-
-	OnRep_Items();
-}
-
-void UInventoryComponent::RemoveItem(TSubclassOf<UItemDataAsset> ItemDataClass, int32 Quantity)
-{
-	if (GetOwnerRole() < ROLE_Authority || !ItemDataClass || Quantity <= 0)
-	{
-		return;
-	}
-
-	// TODO: Implement actual item removal logic (finding the item, reducing quantity, etc.)
-}
-
-bool UInventoryComponent::HasItem(const UItemDataAsset* ItemToSell, int Quantity) const {
-	for (auto item : Items) {
-		if (item->ItemData == ItemToSell) {
-			return true;
+		Items.Empty();
+		for (UFInventoryItem* Item : InItems)
+		{
+			if (Item)
+			{
+				// The component now takes ownership of the item objects.
+				Items.Add(Item);
+			}
 		}
+		// For the server, we can directly call the OnRep function or the delegate.
+		// This ensures server-side logic that depends on the inventory state is also executed.
+		OnRep_Items();
 	}
-	return false;
-}
-
-bool UInventoryComponent::HasEnoughSpace(const UItemDataAsset* ItemToBuy, int I) {
-	//check Items array's remain place for add item. if (I > MaxStackCount) -> add new stack area
-	return true;
 }
 
 void UInventoryComponent::OnRep_Items()
 {
-	// TODO: UI 바인딩 - Broadcast OnInventoryChanged delegate here
+	// This is called on the client when the 'Items' array is replicated.
+	// We notify the subsystem to handle any client-side logic.
+	if (GetOwner())
+	{
+		if (UInventorySubsystem* InventorySubsystem = GetOwner()->GetGameInstance()->GetSubsystem<UInventorySubsystem>())
+		{
+			InventorySubsystem->Client_OnInventoryUpdated(this);
+		}
+	}
+
+	// Broadcast the delegate for UI updates.
+	OnInventoryUpdated.Broadcast();
+}
+
+bool UActorComponent::ReplicateSubobjects(class UActorChannel* Channel, class FOutBunch* Bunch, FReplicationFlags* RepFlags)
+{
+    bool bWroteSomething = Super::ReplicateSubobjects(Channel, Bunch, RepFlags);
+
+    for (UFInventoryItem* Item : Items)
+    {
+        if (Item)
+        {
+            bWroteSomething |= Channel->ReplicateSubobject(Item, *Bunch, *RepFlags);
+        }
+    }
+
+    return bWroteSomething;
 }

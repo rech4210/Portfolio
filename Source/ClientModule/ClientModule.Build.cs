@@ -12,7 +12,8 @@ public class ClientModule : ModuleRules
                 "Core",
                 "MyGame",
                 "GameSharedModule",
-                "SkillModule"
+                "SkillModule",
+                "EquipmentModule"
             }
         );
 

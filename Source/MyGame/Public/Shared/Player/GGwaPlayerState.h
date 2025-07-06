@@ -8,6 +8,8 @@
 #include "GameplayEffectTypes.h"
 #include "InventoryComponent.h"
 #include "Components/SkillComponent.h"
+#include "ShopModule/Public/Components/ShopComponent.h"
+#include "EquipmentModule/Public/Components/EquipmentComponent.h"
 #include "GameFramework/PlayerState.h"
 #include "GGwaPlayerState.generated.h"
 
@@ -39,6 +41,12 @@ public:
 	USkillComponent* GetSkillComponent() const;
 	
 	UFUNCTION(BlueprintCallable)
+	UShopComponent* GetShopComponent() const;
+	
+	UFUNCTION(BlueprintCallable)
+	UEquipmentComponent* GetEquipmentComponent() const;
+	
+	UFUNCTION(BlueprintCallable)
 	void SetSkillComponent(USkillComponent* NewComponent);
 
 	UFUNCTION()
@@ -52,7 +60,9 @@ public:
 
 	void BroadcastAttributeChange(const FGameplayAttribute& Attribute, float NewValue) const;
 	void InitPlayerState();
+
 protected:
+	virtual void BeginPlay() override;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="GAS")
 	TObjectPtr<UGGwaAbilitySystemComponent> ASC;
 	
@@ -65,9 +75,10 @@ protected:
 	TObjectPtr<UInventoryComponent> InventoryComponent;
 	UPROPERTY(VisibleAnywhere, Category="Component")
 	TObjectPtr<USkillComponent> SkillComponent;
-	//TODO: EquipMentComponent 만들기
 	UPROPERTY(VisibleAnywhere, Category="Component")
-	TObjectPtr<UInventoryComponent> EquipmentComponent;
+	TObjectPtr<UShopComponent> ShopComponent;
+	UPROPERTY(VisibleAnywhere, Category="Component")
+	TObjectPtr<UEquipmentComponent> EquipmentComponent;
 private:
 	UPROPERTY()
 	TObjectPtr<AGGwaCharacter> Character;

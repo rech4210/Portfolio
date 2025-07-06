@@ -17,7 +17,8 @@ public class ServerModule : ModuleRules
                 "NavigationSystem",
                 "GameplayAbilities",
                 "AuthServerModule",
-                "DatabaseModule"
+                "DatabaseModule",
+                "EquipmentModule"
             }
         );
 

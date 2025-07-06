@@ -4,31 +4,16 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "Net/UnrealNetwork.h"
-#include "GameSharedModule/Public/Data/ItemDataAsset.h"
+#include "InventoryItem.h" // Use the new separated header
 #include "InventoryComponent.generated.h"
 
-/**
- * Represents a single item in the inventory.
- */
-UCLASS(BlueprintType)
-class UFInventoryItem : public UObject
-{
-	GENERATED_BODY()
-public:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	TObjectPtr<const UItemDataAsset> ItemData;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	int32 Quantity;
-
-    // Add other properties like instance-specific data
-};
-
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnInventoryUpdated);
 
 /**
  * A component for managing a character's inventory. Designed to be added to PlayerState.
  * The inventory is server-authoritative and replicates to the owning client.
+ * This component is responsible for holding and replicating the inventory state.
+ * All modification logic should go through the InventoryRepository.
  */
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class INVENTORYMODULE_API UInventoryComponent : public UActorComponent
@@ -39,25 +24,23 @@ public:
 	UInventoryComponent();
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-	// TODO: UI 바인딩 - This delegate should be bound by the inventory UI to update on changes.
-	// FOnInventoryChanged OnInventoryChanged;
+	/** Called on the server by the repository to update the inventory state. */
+	void Server_SetInventoryItems(const TArray<UFInventoryItem*>& InItems);
 
-	/** Adds an item to the inventory. Should only be called on the server. */
-	UFUNCTION(BlueprintCallable, Category = "Inventory")
-	void AddItem(TSubclassOf<UItemDataAsset> ItemDataClass, int32 Quantity);
+	/** Provides read-only access to the inventory items. */
+	const TArray<UFInventoryItem*>& GetItems() const { return Items; }
 
-	/** Removes an item from the inventory. Should only be called on the server. */
-	UFUNCTION(BlueprintCallable, Category = "Inventory")
-	void RemoveItem(TSubclassOf<UItemDataAsset> ItemDataClass, int32 Quantity);
-	bool HasItem(const UItemDataAsset* ItemToSell, int Quantity) const;
-	bool HasEnoughSpace(const UItemDataAsset* ItemToBuy, int I);
+	UPROPERTY(BlueprintAssignable, Category = "Inventory")
+	FOnInventoryUpdated OnInventoryUpdated;
+
+	virtual bool ReplicateSubobjects(class UActorChannel* Channel, class FOutBunch* Bunch, FReplicationFlags* RepFlags) override;
 
 protected:
-	/** The actual list of items in the inventory. */
+	/** The actual list of items in the inventory. Replicated to the owning client. */
 	UPROPERTY(ReplicatedUsing = OnRep_Items)
-	TArray<UFInventoryItem*> Items;
+	TArray<TObjectPtr<UFInventoryItem>> Items;
 
 	/** Called on the client when the Items array is replicated. */
 	UFUNCTION()
 	void OnRep_Items();
-}; 
+};

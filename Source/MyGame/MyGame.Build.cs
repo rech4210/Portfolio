@@ -26,7 +26,8 @@ public class MyGame : ModuleRules
 			"ShopModule",
 			"LoggingModule",
 			"DatabaseModule",
-			"InventoryModule"
+			"InventoryModule",
+			"EquipmentModule"
 		});
 
 		
