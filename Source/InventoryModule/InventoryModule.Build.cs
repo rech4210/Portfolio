@@ -12,15 +12,20 @@ public class InventoryModule : ModuleRules
                 "Core",
                 "CoreUObject",
                 "Engine",
-                "GameSharedModule"
+                "GameSharedModule",
+                "DatabaseModule",
+                "Json",
+                "JsonUtilities"
             }
         );
-        //     PrivateDependencyModuleNames.AddRange(
-        //     new string[]
-        //     {
-        //         "GameSharedModule"
-        //     }
-        // );
 
+        PrivateDependencyModuleNames.AddRange(
+            new string[]
+            {
+                "GameplayAbilities",
+                "GameplayTags",
+                "HTTP"
+            }
+        );
     }
 } 

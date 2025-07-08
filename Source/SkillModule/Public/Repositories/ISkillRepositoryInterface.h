@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Interface/BaseRepositoryInterface.h"
 #include "UObject/Interface.h"
 #include "ISkillRepositoryInterface.generated.h"
 
@@ -13,12 +14,12 @@ class USkillComponent;
  * 스킬의 정의(DataAsset)를 로드하기 위한 리포지토리 인터페이스입니다.
  */
 UINTERFACE(MinimalAPI, Blueprintable)
-class USkillConfigRepositoryInterface : public UInterface
+class USkillConfigRepositoryInterface : public UBaseRepositoryInterface
 {
 	GENERATED_BODY()
 };
 
-class SKILLMODULE_API ISkillConfigRepositoryInterface
+class SKILLMODULE_API ISkillConfigRepositoryInterface : public IBaseRepositoryInterface
 {
 	GENERATED_BODY()
 
@@ -30,17 +31,18 @@ public:
  * 플레이어의 스킬 상태(슬롯 정보, 쿨다운 등)를 로드하고 저장하기 위한 리포지토리 인터페이스입니다.
  */
 UINTERFACE(MinimalAPI, Blueprintable)
-class USkillStateRepositoryInterface : public UInterface
+class USkillStateRepositoryInterface : public UBaseRepositoryInterface
 {
 	GENERATED_BODY()
 };
 
-class SKILLMODULE_API ISkillStateRepositoryInterface
+class SKILLMODULE_API ISkillStateRepositoryInterface : public IBaseRepositoryInterface
 {
 	GENERATED_BODY()
 
 public:
 	virtual bool LoadSkillState(int32 PlayerInformation, USkillComponent& SkillComponentToPopulate, TArray<int32> fetchedSkillList) = 0;
+	virtual bool LoadSkillStateFromDB_Temp(int32 PlayerInformation, const TArray<int32>& fetchedSkillList) = 0;
 
 	virtual bool SaveSkillState(int32 PlayerInformation, const USkillComponent* SkillComponentToSave, TArray<int32> SkillPayloadList) = 0;
 }; 

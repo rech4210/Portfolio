@@ -25,7 +25,13 @@ class GAMESHAREDMODULE_API UItemDataAsset : public UBaseDataAsset
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item")
+	int32 ItemID;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item")
 	EItemType ItemType;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item")
+	int32 CurrentCount;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item")
 	int32 MaxStackCount;
@@ -41,4 +47,14 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Buff")
 	TArray<FPrimaryAssetId> AppliedBuffs;
+
+	/**
+	 * Get the item ID as FName for database operations
+	 * @return Item ID as FName
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Item")
+	FName GetItemID() const
+	{
+		return FName(*FString::FromInt(ItemID));
+	}
 }; 

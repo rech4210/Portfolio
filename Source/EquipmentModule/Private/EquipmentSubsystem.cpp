@@ -1,14 +1,18 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "EquipmentSubsystem.h"
+
+#include "DatabaseManager.h"
 #include "EquipmentRepository.h"
 #include "Components/EquipmentComponent.h"
 #include "GameFramework/PlayerState.h"
 
 void UEquipmentSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
+	Collection.InitializeDependency(UDatabaseManager::StaticClass());
 	Super::Initialize(Collection);
 	EquipmentRepository = NewObject<UEquipmentRepository>(this, TEXT("EquipmentRepository"));
+	EquipmentRepository->Initialize();
 }
 
 void UEquipmentSubsystem::Deinitialize()

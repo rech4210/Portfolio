@@ -2,6 +2,14 @@
 
 
 #include "Repositories/SkillConfigRepository.h"
+#include "DatabaseModule/Public/DatabaseManager.h"
+
+void USkillConfigRepository::Initialize() {
+	DBManager = GetWorld()->GetGameInstance()->GetSubsystem<UDatabaseManager>();
+	if (!DBManager) {
+		UE_LOG(LogTemp, Error, TEXT("SkillStateRepository: DatabaseManager is not available!"));
+	}
+}
 
 void USkillConfigRepository::LoadSkillDefinitions(TArray<USkillDataAsset*>& OutSkillDefinitions) {
 	//

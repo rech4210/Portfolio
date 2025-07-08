@@ -7,6 +7,7 @@
 #include "UObject/Object.h"
 #include "SkillConfigRepository.generated.h"
 
+class UDatabaseManager;
 /**
  * 
  */
@@ -15,5 +16,9 @@ class SKILLMODULE_API USkillConfigRepository : public UObject, public ISkillConf
 	GENERATED_BODY()
 
 public:
+	virtual void Initialize() override;
 	virtual void LoadSkillDefinitions(TArray<USkillDataAsset*>& OutSkillDefinitions) override;
+private:
+	UPROPERTY()
+	TObjectPtr<UDatabaseManager> DBManager;
 };

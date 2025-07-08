@@ -6,7 +6,7 @@
 #include "GA_SellItem.generated.h"
 
 class UItemDataAsset;
-class AShopManager;
+class AShopSeller;
 
 /**
  * Handles the logic for a player to sell an item to a shop.

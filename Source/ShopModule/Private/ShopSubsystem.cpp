@@ -2,14 +2,18 @@
 
 
 #include "ShopSubsystem.h"
+
+#include "DatabaseManager.h"
 #include "ShopRepository.h"
 #include "Components/ShopComponent.h"
 #include "GameFramework/PlayerState.h"
 
 void UShopSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
+	Collection.InitializeDependency(UDatabaseManager::StaticClass());
 	Super::Initialize(Collection);
 	ShopRepository = NewObject<UShopRepository>(this, TEXT("ShopRepository"));
+	ShopRepository->Initialize();
 }
 
 void UShopSubsystem::Deinitialize()

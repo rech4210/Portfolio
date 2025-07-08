@@ -2,11 +2,20 @@
 
 
 #include "Repositories/SkillStateRepository.h"
+#include "DatabaseModule/Public/DatabaseManager.h"
 #include "SkillModule/Public/Utill/LocalDataBaseLoader.h"
 #include "Components/SkillComponent.h"
 
+void USkillStateRepository::Initialize() {
+	DBManager = GetWorld()->GetGameInstance()->GetSubsystem<UDatabaseManager>();
+	if (!DBManager) {
+		UE_LOG(LogTemp, Error, TEXT("SkillStateRepo: DatabaseManager is not available!"));
+	}
+}
+
 bool USkillStateRepository::LoadSkillState(int32 PlayerInformation, USkillComponent& SkillComponentToPopulate, TArray<int32> fetchedSkillList) {
 	// 서버 권한이 있을 때만 복제된 프로퍼티를 수정
+	// 아래 내용은 repo가 관리하기엔 애매한내용.
 	if (!SkillComponentToPopulate.GetOwner() || !SkillComponentToPopulate.GetOwner()->HasAuthority())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("SkillStateRepository: LoadSkillState can only be called on server authority"));
@@ -41,5 +50,10 @@ bool USkillStateRepository::LoadSkillState(int32 PlayerInformation, USkillCompon
 }
 
 bool USkillStateRepository::SaveSkillState(int32 PlayerInformation, const USkillComponent* SkillComponentToSave, TArray<int32> SkillPayloadList) {
+	return true;
+}
+
+bool USkillStateRepository::LoadSkillStateFromDB_Temp(int32 PlayerInformation, const TArray<int32>& fetchedSkillList) {
+	
 	return true;
 }

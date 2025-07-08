@@ -29,13 +29,16 @@ void UShopComponent::OnRep_ShopItems()
 	}
 }
 
+FShopItemState* UShopComponent::GetShopItem(int32 ItemID) {
+	return nullptr;
+}
+
 void UShopComponent::BeginPlay()
 {
 	Super::BeginPlay();
 }
 
-bool UShopComponent::AddShopItem(const FShopItemState& ItemState)
-{
+bool UShopComponent::AddShopItem(const FShopItemState& ItemState) {
 	if (!GetOwner() || !GetOwner()->HasAuthority())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("ShopComponent: AddShopItem can only be called on server authority"));
@@ -76,7 +79,8 @@ bool UShopComponent::RemoveShopItem(int32 ItemID)
 	return false;
 }
 
-bool UShopComponent::UpdateItemStock(int32 ItemID, int32 NewStock)
+
+bool UShopComponent::UpdateShopItem(int32 ItemID, int32 NewStock, int32 NewPrice)
 {
 	if (!GetOwner() || !GetOwner()->HasAuthority())
 	{
@@ -86,7 +90,8 @@ bool UShopComponent::UpdateItemStock(int32 ItemID, int32 NewStock)
 
 	if (FShopItemState* Item = GetShopItem(ItemID))
 	{
-		Item->Stock = NewStock;
+		Item->Stock += NewStock;
+		Item->Price += NewPrice;
 		UE_LOG(LogTemp, Log, TEXT("ShopComponent: Updated stock for item %d to %d"), ItemID, NewStock);
 		return true;
 	}
@@ -94,28 +99,21 @@ bool UShopComponent::UpdateItemStock(int32 ItemID, int32 NewStock)
 	return false;
 }
 
-bool UShopComponent::UpdateItemPrice(int32 ItemID, float NewPrice)
-{
-	if (!GetOwner() || !GetOwner()->HasAuthority())
-	{
-		UE_LOG(LogTemp, Warning, TEXT("ShopComponent: UpdateItemPrice can only be called on server authority"));
-		return false;
-	}
-
-	if (FShopItemState* Item = GetShopItem(ItemID))
-	{
-		Item->Price = NewPrice;
-		UE_LOG(LogTemp, Log, TEXT("ShopComponent: Updated price for item %d to %.2f"), ItemID, NewPrice);
-		return true;
-	}
-
-	return false;
+bool UShopComponent::ShopItemRuleCheck(const FShopItemState* Item, int32 Quantity) const {
+	// if (!Item || !Item->CurrentCount > 0) {
+	// 	return false;
+	// }
+	// // 개수 판단은 클라이언트 단에서 현재 수 이상으로 살 수 없도록 제한.
+	// if (!Item->CurrentCount >= Quantity) {
+	// 	return false;
+	// }
+	return true;
 }
-
-FShopItemState* UShopComponent::GetShopItem(int32 ItemID)
-{
-	return ShopItems.FindByPredicate([ItemID](const FShopItemState& Item)
-	{
-		return Item.ItemID == ItemID;
-	});
-}
+//
+// UItemDataAsset* UShopComponent::GetShopItem(int32 ItemID)
+// {
+// 	return ShopItems.FindByPredicate([ItemID](const UItemDataAsset Item)
+// 	{
+// 		return Item->ItemID == ItemID;
+// 	});
+// }

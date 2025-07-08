@@ -2,6 +2,14 @@
 
 #include "EquipmentRepository.h"
 #include "Components/EquipmentComponent.h"
+#include "DatabaseModule/Public/DatabaseManager.h"
+
+void UEquipmentRepository::Initialize() {
+	DBManager = GetWorld()->GetGameInstance()->GetSubsystem<UDatabaseManager>();
+	if (!DBManager) {
+		UE_LOG(LogTemp, Error, TEXT("EquipmentRepo : DatabaseManager is not available!"));
+	}
+}
 
 bool UEquipmentRepository::LoadEquipmentData(int32 PlayerInformation, UEquipmentComponent& EquipmentComponentToPopulate)
 {

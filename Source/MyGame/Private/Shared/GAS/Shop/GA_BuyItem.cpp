@@ -3,7 +3,7 @@
 #include "Shared/Player/GGwaPlayerState.h"
 #include "InventoryModule/Public/InventoryComponent.h"
 #include "Shared/GAS/GGwaAbilitySystemComponent.h"
-#include "ShopModule/Public/ShopManager.h"
+#include "ShopModule/Public/ShopSeller.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "GameFramework/Character.h"
 #include "LoggingModule/Public/LoggingManager.h"
@@ -40,10 +40,10 @@ bool UGA_BuyItem::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, co
 void UGA_BuyItem::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
 	ACharacter* BuyerCharacter = Cast<ACharacter>(ActorInfo->AvatarActor.Get());
-	const AShopManager* ShopManager = Cast<AShopManager>(TriggerEventData->Target.Get());
+	const AShopSeller* ShopSeller = Cast<AShopSeller>(TriggerEventData->Target);
 	const UItemDataAsset* ItemToBuy = Cast<UItemDataAsset>(TriggerEventData->OptionalObject);
 
-	if (!BuyerCharacter || !ShopManager || !ItemToBuy)
+	if (!BuyerCharacter || !ItemToBuy)
 	{
 		// Cancel ability if prerequisites are not met.
 		CancelAbility(Handle, ActorInfo, ActivationInfo, true);
@@ -54,7 +54,7 @@ void UGA_BuyItem::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const
 	UTradingService* TradingService = NewObject<UTradingService>();
 	
 	// Delegate the complex logic to the domain service.
-	const bool bSuccess = TradingService->AttemptToBuyItem(BuyerCharacter, ShopManager, ItemToBuy, 1);
+	const bool bSuccess = TradingService->AttemptToBuyItem(BuyerCharacter, ShopSeller, ItemToBuy, 1);
 
 	if (!bSuccess)
 	{

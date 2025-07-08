@@ -28,6 +28,7 @@ struct FShopItemState
 
 /**
  * 상점 아이템들을 관리하는 컴포넌트입니다.
+ *  실질적으로 ItemDataAsset이 아닌, 표면적인 데이터를 다룬다. ItemDataAsset은 부가 기능이 많기 때문.
  */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnShopStateChanged, const TArray<FShopItemState>&, UpdatedItems);
 
@@ -51,12 +52,12 @@ public:
 	// 상점 아이템 관리
 	bool AddShopItem(const FShopItemState& ItemState);
 	bool RemoveShopItem(int32 ItemID);
-	bool UpdateItemStock(int32 ItemID, int32 NewStock);
-	bool UpdateItemPrice(int32 ItemID, float NewPrice);
-	
+	bool UpdateShopItem(int32 ItemID, int32 NewStock, int32 NewPrice);
+
 	const TArray<FShopItemState>& GetAllShopItems() const { return ShopItems; }
 	FShopItemState* GetShopItem(int32 ItemID);
 
+	bool ShopItemRuleCheck(const FShopItemState* Item, int32 Quantity) const;
 protected:
 	virtual void BeginPlay() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;

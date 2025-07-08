@@ -2,6 +2,8 @@
 
 
 #include "SkillSubsystem.h"
+
+#include "DatabaseManager.h"
 #include "Repositories/SkillConfigRepository.h"
 #include "Repositories/SkillStateRepository.h"
 #include "Components/SkillComponent.h"
@@ -9,9 +11,13 @@
 
 void USkillSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
+	//db를 우선 초기화 진행
+	Collection.InitializeDependency(UDatabaseManager::StaticClass());
 	Super::Initialize(Collection);
 	SkillConfigRepository = NewObject<USkillConfigRepository>(this, TEXT("SkillConfigRepository"));
+	SkillConfigRepository->Initialize();
 	SkillStateRepository = NewObject<USkillStateRepository>(this, TEXT("SkillStateRepository"));
+	SkillStateRepository->Initialize();
 }
 
 void USkillSubsystem::Deinitialize()
@@ -23,6 +29,7 @@ void USkillSubsystem::Deinitialize()
 
 TScriptInterface<ISkillConfigRepositoryInterface> USkillSubsystem::GetSkillConfigRepository() const
 {
+	auto DB = GetGameInstance()->GetSubsystem<UDatabaseManager>();
 	return SkillConfigRepository;
 }
 

@@ -19,6 +19,9 @@
 
 // 3) 언리얼 코어 헤더로 매크로 복원
 #include "CoreMinimal.h"
+#include "Tasks/Task.h"
+#include "HAL/PlatformProcess.h"
+#include "Misc/ScopeExit.h"
 
 #include "Data/DatabaseSettings.h"
 // 4) 그 뒤에 나머지 UE4 헤더들
@@ -114,6 +117,107 @@ struct FDatabaseManagerImpl
 		FScopeLock Lock(&PoolMutex);
 		ConnectionPool.Enqueue(Con);
 	}
+
+	// Transaction wrapper with RAII
+	class FTransactionGuard
+	{
+	public:
+		sql::Connection* Connection;
+		bool bCommitted;
+
+		FTransactionGuard(sql::Connection* Con) : Connection(Con), bCommitted(false)
+		{
+			if (Connection)
+			{
+				try
+				{
+					Connection->setAutoCommit(false);
+				}
+				catch (const sql::SQLException& e)
+				{
+					UE_LOG(LogTemp, Error, TEXT("Failed to begin transaction: %s"), UTF8_TO_TCHAR(e.what()));
+					Connection = nullptr;
+				}
+			}
+		}
+
+		~FTransactionGuard()
+		{
+			if (Connection && !bCommitted)
+			{
+				try
+				{
+					Connection->rollback();
+					Connection->setAutoCommit(true);
+				}
+				catch (const sql::SQLException& e)
+				{
+					UE_LOG(LogTemp, Error, TEXT("Failed to rollback in destructor: %s"), UTF8_TO_TCHAR(e.what()));
+				}
+			}
+		}
+
+		bool Commit()
+		{
+			if (Connection && !bCommitted)
+			{
+				try
+				{
+					Connection->commit();
+					Connection->setAutoCommit(true);
+					bCommitted = true;
+					return true;
+				}
+				catch (const sql::SQLException& e)
+				{
+					UE_LOG(LogTemp, Error, TEXT("Failed to commit transaction: %s"), UTF8_TO_TCHAR(e.what()));
+					return false;
+				}
+			}
+			return false;
+		}
+	};
+
+	sql::Connection* BeginTransaction()
+	{
+		sql::Connection* Con = GetConnection();
+		return Con; // FTransactionGuard will handle transaction setup
+	}
+
+	void CommitTransaction(sql::Connection* Con)
+	{
+		// Deprecated: Use FTransactionGuard instead
+		if (Con)
+		{
+			try
+			{
+				Con->commit();
+				Con->setAutoCommit(true);
+			}
+			catch (const sql::SQLException& e)
+			{
+				UE_LOG(LogTemp, Error, TEXT("Failed to commit transaction: %s"), UTF8_TO_TCHAR(e.what()));
+				throw;
+			}
+		}
+	}
+
+	void RollbackTransaction(sql::Connection* Con)
+	{
+		// Deprecated: Use FTransactionGuard instead
+		if (Con)
+		{
+			try
+			{
+				Con->rollback();
+				Con->setAutoCommit(true);
+			}
+			catch (const sql::SQLException& e)
+			{
+				UE_LOG(LogTemp, Error, TEXT("Failed to rollback transaction: %s"), UTF8_TO_TCHAR(e.what()));
+			}
+		}
+	}
 };
 
 UDatabaseManager::UDatabaseManager(): Impl(new FDatabaseManagerImpl()){}
@@ -158,6 +262,7 @@ void UDatabaseManager::Initialize(FSubsystemCollectionBase& Collection)
 		}
 		UE_LOG(LogTemp, Log, TEXT("Database connection pool initialized with %d connections."), Impl->PoolSize);
 	}
+	
 	catch (const sql::SQLException &e)
 	{
 		UE_LOG(LogTemp, Fatal, TEXT("Failed to initialize database connection: %s"), UTF8_TO_TCHAR(e.what()));
@@ -211,7 +316,6 @@ void UDatabaseManager::LoadCharacterInfo(int32 UserId, FCharacterDataLoadDelegat
 			{
 				UE_LOG(LogTemp, Error, TEXT("LoadCharacterInfo failed: %s"), UTF8_TO_TCHAR(e.what()));
 			}
-			
 			Impl->ReturnConnection(Con);
 		}
 
@@ -290,4 +394,231 @@ void UDatabaseManager::LogToExternalServer(const FString& Message)
 	HttpRequest->SetContentAsString(RequestBody);
 	
 	HttpRequest->ProcessRequest();
+}
+
+template<typename F>
+UE::Tasks::TTask<bool> UDatabaseManager::WithTransaction(F&& Function, const TCHAR* TaskLabel)
+{
+	return UE::Tasks::Launch(TaskLabel, [this, Function = Forward<F>(Function)]() mutable -> bool
+	{
+		if (!Impl)
+		{
+			UE_LOG(LogTemp, Error, TEXT("DatabaseManager not initialized"));
+			return false;
+		}
+
+		sql::Connection* Con = Impl->GetConnection();
+		if (!Con)
+		{
+			UE_LOG(LogTemp, Error, TEXT("Failed to get database connection"));
+			return false;
+		}
+
+		// RAII connection management with SCOPE_EXIT
+		ON_SCOPE_EXIT
+		{
+			if (Con)
+			{
+				Impl->ReturnConnection(Con);
+			}
+		};
+
+		// RAII transaction management
+		FDatabaseManagerImpl::FTransactionGuard TransactionGuard(Con);
+		if (!TransactionGuard.Connection)
+		{
+			UE_LOG(LogTemp, Error, TEXT("Failed to begin transaction"));
+			return false;
+		}
+
+		bool bSuccess = false;
+		try
+		{
+			bSuccess = Function(Con);
+			if (bSuccess)
+			{
+				if (!TransactionGuard.Commit())
+				{
+					UE_LOG(LogTemp, Error, TEXT("Failed to commit transaction"));
+					return false;
+				}
+			}
+			// If not successful, destructor will handle rollback
+		}
+		catch (const sql::SQLException& e)
+		{
+			UE_LOG(LogTemp, Error, TEXT("Transaction failed with SQL exception: %s"), UTF8_TO_TCHAR(e.what()));
+			// Destructor will handle rollback
+		}
+		catch (...)
+		{
+			UE_LOG(LogTemp, Error, TEXT("Transaction failed with unknown exception"));
+			// Destructor will handle rollback
+		}
+
+		return bSuccess;
+	});
+}
+
+UE::Tasks::TTask<TArray<FInventoryItemDTO>> UDatabaseManager::LoadInventoryForPlayer(int32 PlayerId)
+{
+	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerId]() -> TArray<FInventoryItemDTO>
+	{
+		TArray<FInventoryItemDTO> ResultItems;
+		
+		if (!Impl)
+		{
+			UE_LOG(LogTemp, Error, TEXT("DatabaseManager not initialized"));
+			return ResultItems;
+		}
+
+		sql::Connection* Con = Impl->GetConnection();
+		if (!Con)
+		{
+			return ResultItems;
+		}
+
+		// RAII connection management with SCOPE_EXIT
+		ON_SCOPE_EXIT
+		{
+			if (Con)
+			{
+				Impl->ReturnConnection(Con);
+			}
+		};
+
+		try
+		{
+			TUniquePtr<sql::PreparedStatement> Pstmt(Con->prepareStatement(
+				"SELECT item_id, quantity, item_data FROM inventory WHERE player_id = ?"
+			));
+			Pstmt->setInt(1, PlayerId);
+
+			TUniquePtr<sql::ResultSet> Res(Pstmt->executeQuery());
+			while (Res->next())
+			{
+				FInventoryItemDTO Item;
+				Item.ItemID = FName(UTF8_TO_TCHAR(Res->getString("item_id").c_str()));
+				Item.Quantity = Res->getInt("quantity");
+				Item.ItemData = UTF8_TO_TCHAR(Res->getString("item_data").c_str());
+				ResultItems.Add(Item);
+			}
+		}
+		catch (const sql::SQLException& e)
+		{
+			UE_LOG(LogTemp, Error, TEXT("LoadInventoryForPlayer failed: %s"), UTF8_TO_TCHAR(e.what()));
+		}
+
+		return ResultItems;
+	});
+}
+
+UE::Tasks::TTask<bool> UDatabaseManager::SaveInventoryForPlayer(int32 PlayerId, const TArray<FInventoryItemDTO>& Items)
+{
+	return WithTransaction([PlayerId, Items](sql::Connection* Con) -> bool
+	{
+		try
+		{
+			// Clear existing inventory
+			TUniquePtr<sql::PreparedStatement> DeleteStmt(Con->prepareStatement(
+				"DELETE FROM inventory WHERE player_id = ?"
+			));
+			DeleteStmt->setInt(1, PlayerId);
+			DeleteStmt->executeUpdate();
+
+			// Insert new items
+			TUniquePtr<sql::PreparedStatement> InsertStmt(Con->prepareStatement(
+				"INSERT INTO inventory (player_id, item_id, quantity, item_data) VALUES (?, ?, ?, ?)"
+			));
+
+			for (const FInventoryItemDTO& Item : Items)
+			{
+				InsertStmt->setInt(1, PlayerId);
+				InsertStmt->setString(2, TCHAR_TO_UTF8(*Item.ItemID.ToString()));
+				InsertStmt->setInt(3, Item.Quantity);
+				InsertStmt->setString(4, TCHAR_TO_UTF8(*Item.ItemData));
+				InsertStmt->executeUpdate();
+			}
+
+			return true;
+		}
+		catch (const sql::SQLException& e)
+		{
+			UE_LOG(LogTemp, Error, TEXT("SaveInventoryForPlayer failed: %s"), UTF8_TO_TCHAR(e.what()));
+			return false;
+		}
+	}, TEXT("Inventory/SaveItems"));
+}
+
+UE::Tasks::TTask<bool> UDatabaseManager::AddInventoryItem(int32 PlayerId, const FInventoryItemDTO& Item)
+{
+	return WithTransaction([PlayerId, Item](sql::Connection* Con) -> bool
+	{
+		try
+		{
+			// Try to update existing item first
+			TUniquePtr<sql::PreparedStatement> UpdateStmt(Con->prepareStatement(
+				"UPDATE inventory SET quantity = quantity + ? WHERE player_id = ? AND item_id = ?"
+			));
+			UpdateStmt->setInt(1, Item.Quantity);
+			UpdateStmt->setInt(2, PlayerId);
+			UpdateStmt->setString(3, TCHAR_TO_UTF8(*Item.ItemID.ToString()));
+			
+			int32 UpdatedRows = UpdateStmt->executeUpdate();
+			
+			// If no rows were updated, insert new item
+			if (UpdatedRows == 0)
+			{
+				TUniquePtr<sql::PreparedStatement> InsertStmt(Con->prepareStatement(
+					"INSERT INTO inventory (player_id, item_id, quantity, item_data) VALUES (?, ?, ?, ?)"
+				));
+				InsertStmt->setInt(1, PlayerId);
+				InsertStmt->setString(2, TCHAR_TO_UTF8(*Item.ItemID.ToString()));
+				InsertStmt->setInt(3, Item.Quantity);
+				InsertStmt->setString(4, TCHAR_TO_UTF8(*Item.ItemData));
+				InsertStmt->executeUpdate();
+			}
+
+			return true;
+		}
+		catch (const sql::SQLException& e)
+		{
+			UE_LOG(LogTemp, Error, TEXT("AddInventoryItem failed: %s"), UTF8_TO_TCHAR(e.what()));
+			return false;
+		}
+	}, TEXT("Inventory/AddItem"));
+}
+
+UE::Tasks::TTask<bool> UDatabaseManager::RemoveInventoryItem(int32 PlayerId, const FName& ItemID, int32 Quantity)
+{
+	return WithTransaction([PlayerId, ItemID, Quantity](sql::Connection* Con) -> bool
+	{
+		try
+		{
+			// Update quantity, but don't let it go below 0
+			TUniquePtr<sql::PreparedStatement> UpdateStmt(Con->prepareStatement(
+				"UPDATE inventory SET quantity = GREATEST(0, quantity - ?) WHERE player_id = ? AND item_id = ?"
+			));
+			UpdateStmt->setInt(1, Quantity);
+			UpdateStmt->setInt(2, PlayerId);
+			UpdateStmt->setString(3, TCHAR_TO_UTF8(*ItemID.ToString()));
+			
+			int32 UpdatedRows = UpdateStmt->executeUpdate();
+			
+			// Remove items with 0 quantity
+			TUniquePtr<sql::PreparedStatement> DeleteStmt(Con->prepareStatement(
+				"DELETE FROM inventory WHERE player_id = ? AND item_id = ? AND quantity <= 0"
+			));
+			DeleteStmt->setInt(1, PlayerId);
+			DeleteStmt->setString(2, TCHAR_TO_UTF8(*ItemID.ToString()));
+			DeleteStmt->executeUpdate();
+
+			return UpdatedRows > 0;
+		}
+		catch (const sql::SQLException& e)
+		{
+			UE_LOG(LogTemp, Error, TEXT("RemoveInventoryItem failed: %s"), UTF8_TO_TCHAR(e.what()));
+			return false;
+		}
+	}, TEXT("Inventory/RemoveItem"));
 }

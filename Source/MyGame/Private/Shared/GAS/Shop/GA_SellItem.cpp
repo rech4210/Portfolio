@@ -3,7 +3,7 @@
 #include "Shared/Player/GGwaPlayerState.h"
 #include "InventoryModule/Public/InventoryComponent.h"
 #include "Shared/GAS/GGwaAbilitySystemComponent.h"
-#include "ShopModule/Public/ShopManager.h"
+#include "ShopModule/Public/ShopSeller.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "GameFramework/Character.h"
 
@@ -36,7 +36,7 @@ bool UGA_SellItem::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, c
 void UGA_SellItem::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
 	const UItemDataAsset* ItemToSell = Cast<UItemDataAsset>(TriggerEventData->OptionalObject);
-	const AShopManager* ShopManager = Cast<AShopManager>(TriggerEventData->Target);
+	const AShopSeller* ShopManager = Cast<AShopSeller>(TriggerEventData->Target);
 
 	if (!ItemToSell || !ShopManager)
 	{
@@ -55,12 +55,12 @@ void UGA_SellItem::ActivateAbility(const FGameplayAbilitySpecHandle Handle, cons
 	}
 	
 	// 1. Check if player owns the item
-	if (!InventoryComponent->HasItem(ItemToSell, 1))
-	{
-		// ASC->ClientSendGameplayEventToActor(ActorInfo->AvatarActor.Get(), ErrorTag_ItemNotOwned, FGameplayEventData());
-		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
-		return;
-	}
+	// if (!InventoryComponent->HasItem(ItemToSell->GetItemID()))
+	// {
+	// 	// ASC->ClientSendGameplayEventToActor(ActorInfo->AvatarActor.Get(), ErrorTag_ItemNotOwned, FGameplayEventData());
+	// 	EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+	// 	return;
+	// }
 
 	// 2. Check with ShopManager if the item can be sold
 	// if (!ShopManager->CanSellItem(SellerCharacter, ItemToSell))
@@ -81,7 +81,7 @@ void UGA_SellItem::ActivateAbility(const FGameplayAbilitySpecHandle Handle, cons
 	}
 	
 	// 4. Remove the item from inventory
-	InventoryComponent->RemoveItem(ItemToSell->GetClass(), 1);
+	// InventoryComponent->RemoveItem(ItemToSell->GetItemID());
 
 	// TODO: Add logging for sale
 

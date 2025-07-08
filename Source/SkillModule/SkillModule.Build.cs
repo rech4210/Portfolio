@@ -15,7 +15,8 @@ public class SkillModule : ModuleRules
                 "GameplayAbilities",
                 "GameplayTags",
                 "GameplayTasks",
-                "GameSharedModule"
+                "GameSharedModule",
+                "DatabaseModule"
             }
         );
         PrivateDependencyModuleNames.AddRange(

@@ -7,7 +7,7 @@
 #include "TradingService.generated.h"
 
 class ACharacter;
-class AShopManager;
+class AShopSeller;
 class UItemDataAsset;
 
 /**
@@ -32,7 +32,7 @@ public:
      * @return True if the transaction was successful.
      */
     UFUNCTION(BlueprintCallable, Category = "Trading")
-    bool AttemptToBuyItem(ACharacter* Buyer, const AShopManager* Shop, const UItemDataAsset* ItemData, int32 Quantity);
+    bool AttemptToBuyItem(ACharacter* Buyer, const AShopSeller* Shop, const UItemDataAsset* ItemData, int32 Quantity);
     
     // UFUNCTION(BlueprintCallable, Category = "Trading")
     // bool AttemptToSellItem(ACharacter* Seller, AShopManager* Shop, const UItemDataAsset* ItemData, int32 Quantity);

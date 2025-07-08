@@ -1,23 +1,13 @@
-#include "ShopManager.h"
+#include "ShopSeller.h"
 #include "InventoryModule/Public/InventoryComponent.h"
 #include "GameSharedModule/Public/Data/ItemDataAsset.h"
 #include "GameFramework/Character.h"
 
-AShopManager::AShopManager()
+AShopSeller::AShopSeller()
 {
 	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = true;
 
-	ShopInventory = CreateDefaultSubobject<UInventoryComponent>(TEXT("ShopInventory"));
-	ShopInventory->SetIsReplicated(true);
-}
-
-bool AShopManager::HasItemForSale(const UItemDataAsset* ItemToBuy, int32 Quantity) const
-{
-	if (!ItemToBuy || !ShopInventory)
-	{
-		return false;
-	}
-
-	return ShopInventory->HasItem(ItemToBuy, Quantity);
+	ShopComponent = CreateDefaultSubobject<UShopComponent>(TEXT("ShopComponent"));
+	ShopComponent->SetIsReplicated(true);
 }

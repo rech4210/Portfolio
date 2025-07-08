@@ -9,9 +9,12 @@
 
 class UInventoryComponent;
 class UInventoryRepository;
+class UInventoryDomainService;
 
 /**
- * 
+ * Inventory Subsystem - Pure Repository Management
+ * Responsibility: Only manages repository instances and provides DI for domain services
+ * Does NOT contain business logic, validation, or event handling
  */
 UCLASS()
 class INVENTORYMODULE_API UInventorySubsystem : public UGameInstanceSubsystem
@@ -22,15 +25,43 @@ public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
 
+	/**
+	 * Get the current repository interface (for dependency injection)
+	 * @return Current repository implementation
+	 */
 	TScriptInterface<IInventoryRepositoryInterface> GetInventoryRepository() const;
 
-	/** Entry point for loading player inventory data. Can be called from PlayerState's BeginPlay. */
+	/**
+	 * Set repository implementation (Dependency Injection)
+	 * @param Repository The repository implementation to use (MySQL/NoSQL/etc)
+	 */
+	void SetInventoryRepository(TScriptInterface<IInventoryRepositoryInterface> Repository);
+
+	/**
+	 * Create and configure a Domain Service instance
+	 * @return Configured domain service with repository dependency injected
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	UInventoryDomainService* CreateDomainService();
+
+	/**
+	 * Legacy support: Entry point for loading player inventory data
+	 * @deprecated Use InventoryDomainService instead
+	 */
 	void RequestLoadInventory(APlayerState* PlayerState);
 
-	/** Called by the InventoryComponent on clients when inventory data is replicated. */
+	/**
+	 * Legacy support: Called by InventoryComponent on clients when inventory data is replicated
+	 * @deprecated Use InventoryDomainService instead
+	 */
 	void Client_OnInventoryUpdated(UInventoryComponent* InventoryComponent);
 
 private:
+	// Repository interface for Dependency Injection
 	UPROPERTY()
-	UInventoryRepository* InventoryRepository;
+	TScriptInterface<IInventoryRepositoryInterface> InventoryRepositoryInterface;
+
+	// Default concrete implementation
+	UPROPERTY()
+	UInventoryRepository* DefaultInventoryRepository;
 };

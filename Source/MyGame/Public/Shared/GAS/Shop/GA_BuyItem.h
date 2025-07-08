@@ -6,7 +6,7 @@
 #include "GA_BuyItem.generated.h"
 
 class UItemDataAsset;
-class AShopManager;
+class AShopSeller;
 
 /**
  * Handles the logic for a player to buy an item from a shop.

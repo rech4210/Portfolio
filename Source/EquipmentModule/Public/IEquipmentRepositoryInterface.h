@@ -5,20 +5,21 @@
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
 #include "Async/Future.h"
+#include "Interface/BaseRepositoryInterface.h"
 #include "IEquipmentRepositoryInterface.generated.h"
 
 class UEquipmentComponent;
 
 // This class does not need to be modified.
 UINTERFACE()
-class UEquipmentRepositoryInterface : public UInterface {
+class UEquipmentRepositoryInterface : public UBaseRepositoryInterface {
 	GENERATED_BODY()
 };
 
 /**
  * 
  */
-class EQUIPMENTMODULE_API IEquipmentRepositoryInterface {
+class EQUIPMENTMODULE_API IEquipmentRepositoryInterface : public IBaseRepositoryInterface {
 	GENERATED_BODY()
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.

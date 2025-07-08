@@ -7,6 +7,7 @@
 #include "UObject/Object.h"
 #include "EquipmentRepository.generated.h"
 
+class UDatabaseManager;
 class UEquipmentComponent;
 
 /**
@@ -17,6 +18,11 @@ class EQUIPMENTMODULE_API UEquipmentRepository : public UObject, public IEquipme
 	GENERATED_BODY()
 
 public:
+	virtual void Initialize() override;
 	virtual bool LoadEquipmentData(int32 PlayerInformation, UEquipmentComponent& EquipmentComponentToPopulate) override;
 	virtual bool SaveEquipmentData(int32 PlayerInformation, const UEquipmentComponent* EquipmentComponentToSave) override;
+
+private:
+	UPROPERTY()
+	TObjectPtr<UDatabaseManager> DBManager;
 };

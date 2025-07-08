@@ -5,24 +5,28 @@
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
 #include "Async/Future.h"
+#include "Interface/BaseRepositoryInterface.h"
 #include "IShopRepositoryInterface.generated.h"
 
 class UShopComponent;
 
 // This class does not need to be modified.
 UINTERFACE()
-class UShopRepositoryInterface : public UInterface {
+class UShopRepositoryInterface : public UBaseRepositoryInterface {
 	GENERATED_BODY()
+
+public:
 };
 
 /**
  * 
  */
-class SHOPMODULE_API IShopRepositoryInterface {
+class SHOPMODULE_API IShopRepositoryInterface : public IBaseRepositoryInterface{
 	GENERATED_BODY()
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
+	
 	/**
 	 * Asynchronously loads all shop data for a given world/level.
 	 * This should find all AShopManager actors and populate their inventories.

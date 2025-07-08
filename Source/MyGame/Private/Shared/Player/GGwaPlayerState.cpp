@@ -21,6 +21,7 @@
 
 
 AGGwaPlayerState::AGGwaPlayerState() {
+	/*실질적인 플레이어가 사용하게 될 컴포넌트 게임 로직 체크와 메모리 변경을 담당*/
 	ASC = CreateDefaultSubobject<UGGwaAbilitySystemComponent>("ASC");
 	ASC->SetIsReplicated(true);
 	ASC->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
@@ -30,34 +31,35 @@ AGGwaPlayerState::AGGwaPlayerState() {
 	SkillComponent = CreateDefaultSubobject<USkillComponent>("SkillComponent");
 	ShopComponent = CreateDefaultSubobject<UShopComponent>("ShopComponent");
 	EquipmentComponent = CreateDefaultSubobject<UEquipmentComponent>("EquipmentComponent");
+	/*그 외 영속성, DB 추상 계층은 SubSystem - Repository (var DBmanager) 로 처리할 것.*/
 }
 
 void AGGwaPlayerState::BeginPlay()
 {
 	Super::BeginPlay();
-
-	if (HasAuthority())
-	{
-		if (UInventorySubsystem* InventorySubsystem = GetGameInstance()->GetSubsystem<UInventorySubsystem>())
-		{
-			InventorySubsystem->RequestLoadInventory(this);
-		}
-
-		if (USkillSubsystem* SkillSubsystem = GetGameInstance()->GetSubsystem<USkillSubsystem>())
-		{
-			SkillSubsystem->RequestLoadSkillData(this);
-		}
-
-		if (UShopSubsystem* ShopSubsystem = GetGameInstance()->GetSubsystem<UShopSubsystem>())
-		{
-			ShopSubsystem->RequestLoadShopData(this);
-		}
-
-		if (UEquipmentSubsystem* EquipmentSubsystem = GetGameInstance()->GetSubsystem<UEquipmentSubsystem>())
-		{
-			EquipmentSubsystem->RequestLoadEquipmentData(this);
-		}
-	}
+	//
+	// if (HasAuthority())
+	// {
+	// 	if (UInventorySubsystem* InventorySubsystem = GetGameInstance()->GetSubsystem<UInventorySubsystem>())
+	// 	{
+	// 		InventorySubsystem->RequestLoadInventory(this);
+	// 	}
+	//
+	// 	if (USkillSubsystem* SkillSubsystem = GetGameInstance()->GetSubsystem<USkillSubsystem>())
+	// 	{
+	// 		SkillSubsystem->RequestLoadSkillData(this);
+	// 	}
+	//
+	// 	if (UShopSubsystem* ShopSubsystem = GetGameInstance()->GetSubsystem<UShopSubsystem>())
+	// 	{
+	// 		ShopSubsystem->RequestLoadShopData(this);
+	// 	}
+	//
+	// 	if (UEquipmentSubsystem* EquipmentSubsystem = GetGameInstance()->GetSubsystem<UEquipmentSubsystem>())
+	// 	{
+	// 		EquipmentSubsystem->RequestLoadEquipmentData(this);
+	// 	}
+	// }
 }
 
 void AGGwaPlayerState::InitPlayerState() {

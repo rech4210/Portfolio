@@ -8,6 +8,7 @@
 #include "ShopRepository.generated.h"
 
 class UShopComponent;
+class UDatabaseManager;
 
 /**
  * 
@@ -17,7 +18,11 @@ class SHOPMODULE_API UShopRepository : public UObject, public IShopRepositoryInt
 	GENERATED_BODY()
 
 public:
+	virtual void Initialize() override;
 	virtual TFuture<void> LoadAllShops(const UObject* WorldContextObject) override;
 	virtual bool LoadShopData(int32 PlayerInformation, UShopComponent& ShopComponentToPopulate) override;
 	virtual bool SaveShopData(int32 PlayerInformation, const UShopComponent* ShopComponentToSave) override;
+private:
+	UPROPERTY()
+	TObjectPtr<UDatabaseManager> DBManager;
 };

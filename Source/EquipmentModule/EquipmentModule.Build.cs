@@ -12,7 +12,8 @@ public class EquipmentModule : ModuleRules
                 "Core",
                 "CoreUObject",
                 "Engine",
-                "GameSharedModule"
+                "GameSharedModule",
+                "DatabaseModule"
             }
         );
 
