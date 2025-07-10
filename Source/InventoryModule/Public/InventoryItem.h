@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Object.h"
-#include "Data/ItemDataAsset.h"
+#include "GameSharedModule/Public/Data/ItemDataAsset.h"
 #include "InventoryItem.generated.h"
 
 /**

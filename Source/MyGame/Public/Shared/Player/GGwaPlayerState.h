@@ -45,6 +45,9 @@ public:
 	
 	UFUNCTION(BlueprintCallable)
 	UEquipmentComponent* GetEquipmentComponent() const;
+
+	UFUNCTION(BlueprintCallable)
+	UInventoryComponent* GetInventoryComponent() const;
 	
 	UFUNCTION(BlueprintCallable)
 	void SetSkillComponent(USkillComponent* NewComponent);
@@ -52,17 +55,24 @@ public:
 	UFUNCTION()
 	void OnSkillSlotsUpdated() const;
 
+	void BroadcastAttributeChange(const FGameplayAttribute& Attribute, float NewValue) const;
+	void InitPlayerState();
+
 	UPROPERTY(BlueprintAssignable, Category = "GAS")
 	FOnAttributeChanged OnAttributeChanged;
 
 	UPROPERTY(BlueprintAssignable, Category = "Skills")
 	FOnSkillsUpdated OnSkillsUpdated;
 
-	void BroadcastAttributeChange(const FGameplayAttribute& Attribute, float NewValue) const;
-	void InitPlayerState();
-
 protected:
 	virtual void BeginPlay() override;
+
+	// Domain Service Event Handlers
+	UFUNCTION()
+	void OnSkillLoadCompleted(APlayerState* PlayerState);
+
+	UFUNCTION()
+	void OnSkillOperationFailed(APlayerState* PlayerState, const FString& Reason);
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="GAS")
 	TObjectPtr<UGGwaAbilitySystemComponent> ASC;
 	

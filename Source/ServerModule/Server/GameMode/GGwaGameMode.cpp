@@ -9,15 +9,11 @@
 #include "Kismet/GameplayStatics.h"
 // #include "DatabaseModule/Public/DatabaseManager.h"
 // #include "DatabaseModule/Public/Data/FCharacterData.h"
-#include "DatabaseManager.h"
+#include "InventoryDomainService.h"
 #include "InventorySubsystem.h"
 #include "ShopSubsystem.h"
 #include "SkillSubsystem.h"
-
-#include "Components/SkillComponent.h"
-#include "Data/FCharacterData.h"
 #include "MyGame/Public/Shared/Player/GGwaPlayerState.h"
-#include "MyGame/Public/Shared/Player/GGwaCharacter.h"
 
 
 #include "Utill/LocalDataBaseLoader.h"
@@ -145,16 +141,15 @@ void AGGwaGameMode::PostLogin(APlayerController* NewPlayer)
 		// UKismetSystemLibrary::ExecuteConsoleCommand(GetWorld(), FString::Printf(TEXT("kick %s"), *NewPlayer->PlayerState->GetPlayerName()));
 		
 		UE_LOG(LogTemp, Warning, TEXT("=== PostLogin End (Failed) ==="));
-		return; // 데이터 로딩 로직을 실행하지 않고 종료
+		return;
 	}
 	
 	UE_LOG(LogTemp, Warning, TEXT("Loading inventory..."));
-	// 인벤토리 로드
-	
-	if (auto InventoryRepository = GetGameInstance()->GetSubsystem<UInventorySubsystem>()->GetInventoryRepository())
+	if (auto InventorySubsystem = GetGameInstance()->GetSubsystem<UInventorySubsystem>())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[START] Loading inventory for player %s"), *NewPlayer->PlayerState->GetPlayerName());
-		InventoryRepository->RequestLoadInventoryForPlayer(NewPlayer->PlayerState);
+		UInventoryDomainService* DomainService = InventorySubsystem->CreateDomainService();
+		DomainService->LoadInventory(NewPlayer->PlayerState);
 		UE_LOG(LogTemp, Warning, TEXT("[SUCCESS] Inventory loaded"));
 	}
 	else
@@ -235,15 +230,22 @@ void AGGwaGameMode::Logout(AController* Exiting)
 	if (Exiting && InventoryRepository)
 	{
 		APlayerController* PC = Cast<APlayerController>(Exiting);
+
+		
 		if(PC && PC->PlayerState)
 		{
 			// Use the repository to save the player's inventory.
 			UE_LOG(LogTemp, Log, TEXT("Player logging out. Saving inventory data for %s."), *PC->PlayerState->GetPlayerName());
-			if (auto PlayerState = PC->GetPlayerState<AGGwaPlayerState>()) {
-				InventoryRepository->RequestSaveInventoryForPlayer(PC->PlayerState);
-				// EquipmentRepository->SavePlayerEquipment(PC);
+			if (auto InventorySubsystem = GetGameInstance()->GetSubsystem<UInventorySubsystem>())
+			{
+				UE_LOG(LogTemp, Warning, TEXT("[START] Save inventory for player %s"), *PC->PlayerState->GetPlayerName());
+				// UInventoryDomainService* DomainService = InventorySubsystem->CreateDomainService();
+				// PC->PlayerState->GetComponentByClass<UInventoryComponent>()->GetItems();
+				// DomainService->SaveInventory(PC->PlayerState, DomainService->LoadInventory(PC->PlayerState).InventoryData);
 				// TODO: 저장 로직이 의도된 것인지 확인이 필요합니다. (예: 신규 유저의 기본 상태 저장)
 				// SkillStateRepository->SaveSkillState(PC->PlayerState->GetPlayerId(), PlayerState->GetSkillComponent(), TODO);
+				
+				UE_LOG(LogTemp, Warning, TEXT("[SUCCESS] Inventory Saved"));
 			}
 			// Unload Repo, Clear Component.
 		}

@@ -443,7 +443,7 @@ UE::Tasks::TTask<bool> UDatabaseManager::WithTransaction(F&& Function, const TCH
 					return false;
 				}
 			}
-			// If not successful, destructor will handle rollback
+			//Try가 성공하면 TransactionGuard의 종료자가 호출되지 않는건가?
 		}
 		catch (const sql::SQLException& e)
 		{

@@ -7,10 +7,12 @@
 #include "MyGame/Public/Shared/GAS/GGwaAbilitySystemComponent.h"
 #include "MyGame/Public/Shared/GAS/GGwaAttributeSet.h"
 #include "InventoryModule/Public/InventoryComponent.h"
+#include "InventoryModule/Public/InventoryDomainService.h"
 #include "MyGame/Public/Shared/Player/GGwaCharacter.h"
 #include "MyGame/Public/Shared/Player/GGwaPlayerController.h"
 #include "MyGame/Public/Shared/Player/Component/UPlayerStateComponent.h"
 #include "SkillModule/Public/Components/SkillComponent.h"
+#include "SkillModule/Public/SkillDomainService.h"
 #include "ShopModule/Public/Components/ShopComponent.h"
 #include "EquipmentModule/Public/Components/EquipmentComponent.h"
 #include "GameSharedModule/Public/Utill/UEnumTagMatchHelper.h"
@@ -34,32 +36,36 @@ AGGwaPlayerState::AGGwaPlayerState() {
 	/*그 외 영속성, DB 추상 계층은 SubSystem - Repository (var DBmanager) 로 처리할 것.*/
 }
 
-void AGGwaPlayerState::BeginPlay()
-{
+void AGGwaPlayerState::BeginPlay() {
 	Super::BeginPlay();
-	//
-	// if (HasAuthority())
-	// {
-	// 	if (UInventorySubsystem* InventorySubsystem = GetGameInstance()->GetSubsystem<UInventorySubsystem>())
-	// 	{
-	// 		InventorySubsystem->RequestLoadInventory(this);
-	// 	}
-	//
-	// 	if (USkillSubsystem* SkillSubsystem = GetGameInstance()->GetSubsystem<USkillSubsystem>())
-	// 	{
-	// 		SkillSubsystem->RequestLoadSkillData(this);
-	// 	}
-	//
-	// 	if (UShopSubsystem* ShopSubsystem = GetGameInstance()->GetSubsystem<UShopSubsystem>())
-	// 	{
-	// 		ShopSubsystem->RequestLoadShopData(this);
-	// 	}
-	//
-	// 	if (UEquipmentSubsystem* EquipmentSubsystem = GetGameInstance()->GetSubsystem<UEquipmentSubsystem>())
-	// 	{
-	// 		EquipmentSubsystem->RequestLoadEquipmentData(this);
-	// 	}
-	// }
+	
+	if (HasAuthority())
+	{
+		// Use DDD-style domain services instead of direct subsystem calls
+		if (UInventorySubsystem* InventorySubsystem = GetGameInstance()->GetSubsystem<UInventorySubsystem>())
+		{
+			if (UInventoryDomainService* InventoryDomainService = InventorySubsystem->CreateDomainService())
+			{
+				// Use domain service for inventory operations
+				auto LoadTask = InventoryDomainService->LoadInventory(this);
+				// Task will handle completion callbacks automatically
+			}
+		}
+
+		if (USkillSubsystem* SkillSubsystem = GetGameInstance()->GetSubsystem<USkillSubsystem>())
+		{
+			if (USkillDomainService* SkillDomainService = SkillSubsystem->CreateDomainService())
+			{
+				// Use domain service for skill operations
+				auto LoadTask = SkillDomainService->LoadSkills(this);
+				// Task will handle completion callbacks automatically
+				
+				// Subscribe to domain service events
+				SkillDomainService->OnSkillLoadCompleted.AddUObject(this, &AGGwaPlayerState::OnSkillLoadCompleted);
+				SkillDomainService->OnSkillOperationFailed.AddUObject(this, &AGGwaPlayerState::OnSkillOperationFailed);
+			}
+		}
+	}
 }
 
 void AGGwaPlayerState::InitPlayerState() {
@@ -85,6 +91,10 @@ UShopComponent* AGGwaPlayerState::GetShopComponent() const {
 
 UEquipmentComponent* AGGwaPlayerState::GetEquipmentComponent() const {
 	return EquipmentComponent.Get();
+}
+
+UInventoryComponent* AGGwaPlayerState::GetInventoryComponent() const {
+	return InventoryComponent.Get();
 }
 
 void AGGwaPlayerState::OnSkillSlotsUpdated() const{
@@ -131,3 +141,22 @@ void AGGwaPlayerState::BroadcastAttributeChange(const FGameplayAttribute& Attrib
 	// 	Character->GetReactionComponent()->ExecuteDeadReaction();
 	// }
 // }
+
+void AGGwaPlayerState::OnSkillLoadCompleted(APlayerState* PlayerState)
+{
+	if (PlayerState == this)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Skills loaded successfully for player %s"), *GetPlayerName());
+		// Notify UI or other systems that skills are ready
+		OnSkillsUpdated.Broadcast();
+	}
+}
+
+void AGGwaPlayerState::OnSkillOperationFailed(APlayerState* PlayerState, const FString& Reason)
+{
+	if (PlayerState == this)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Skill operation failed for player %s: %s"), *GetPlayerName(), *Reason);
+		// Handle skill operation failure (show UI notification, etc.)
+	}
+}

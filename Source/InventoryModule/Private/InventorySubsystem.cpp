@@ -53,31 +53,3 @@ UInventoryDomainService* UInventorySubsystem::CreateDomainService()
 	UE_LOG(LogTemp, Log, TEXT("InventorySubsystem: Created new InventoryDomainService"));
 	return DomainService;
 }
-
-void UInventorySubsystem::RequestLoadInventory(APlayerState* PlayerState)
-{
-	UE_LOG(LogTemp, Warning, TEXT("InventorySubsystem::RequestLoadInventory is deprecated. Use InventoryDomainService instead."));
-	
-	if (GetGameInstance()->GetWorld()->GetNetMode() == NM_Client)
-	{
-		// Clients don't load data from the database. They wait for replication.
-		return;
-	}
-
-	if (InventoryRepositoryInterface.GetInterface() && PlayerState)
-	{
-		// Legacy support - just call repository directly
-		InventoryRepositoryInterface->RequestLoadInventoryForPlayer(PlayerState);
-	}
-}
-
-void UInventorySubsystem::Client_OnInventoryUpdated(UInventoryComponent* InventoryComponent)
-{
-	UE_LOG(LogTemp, Warning, TEXT("InventorySubsystem::Client_OnInventoryUpdated is deprecated. Use InventoryDomainService instead."));
-	
-	// Legacy support - minimal implementation
-	if (InventoryRepositoryInterface.GetInterface())
-	{
-		// The repository can perform any client-side logic, like updating local caches or data assets.
-	}
-}

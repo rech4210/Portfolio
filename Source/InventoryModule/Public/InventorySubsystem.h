@@ -44,18 +44,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	UInventoryDomainService* CreateDomainService();
 
-	/**
-	 * Legacy support: Entry point for loading player inventory data
-	 * @deprecated Use InventoryDomainService instead
-	 */
-	void RequestLoadInventory(APlayerState* PlayerState);
-
-	/**
-	 * Legacy support: Called by InventoryComponent on clients when inventory data is replicated
-	 * @deprecated Use InventoryDomainService instead
-	 */
-	void Client_OnInventoryUpdated(UInventoryComponent* InventoryComponent);
-
 private:
 	// Repository interface for Dependency Injection
 	UPROPERTY()

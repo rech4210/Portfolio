@@ -40,27 +40,26 @@ void UInventoryDomainService::Initialize(TScriptInterface<IInventoryRepositoryIn
 		Repository.GetInterface() ? TEXT("parameter") : TEXT("subsystem"));
 }
 
-UE::Tasks::TTask<bool> UInventoryDomainService::AddItemToInventory(APlayerState* PlayerState, const FInventoryItemDTO& Item)
+UE::Tasks::TTask<void> UInventoryDomainService::AddItemToInventory(APlayerState* PlayerState, const FInventoryItemDTO& Item)
 {
 	if (!PlayerState || !InventoryRepository.GetInterface())
 	{
-		return UE::Tasks::MakeCompletedTask<bool>(false);
+		OnInventoryOperationFailed.Broadcast(PlayerState, TEXT("Invalid parameters for AddItemToInventory"));
+		return UE::Tasks::MakeCompletedTask<void>();
 	}
 
 	UInventoryComponent* InventoryComponent = PlayerState->FindComponentByClass<UInventoryComponent>();
-	TScriptInterface<IInventoryRepositoryInterface> InventoryRepoInterface = PlayerState->GetGameInstance()->
-		GetSubsystem<UInventorySubsystem>()->GetInventoryRepository();
 	
-	if (!InventoryComponent || !InventoryRepoInterface)
+	if (!InventoryComponent)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("No InventoryComponent found on PlayerState"));
 		
 		AsyncTask(ENamedThreads::GameThread, [this, PlayerState]()
 		{
-			OnInventoryOperationFailed.Broadcast(PlayerState, TEXT("No InventoryComponent or Interface found"));
+			OnInventoryOperationFailed.Broadcast(PlayerState, TEXT("No InventoryComponent found"));
 		});
 		
-		return UE::Tasks::MakeCompletedTask<bool>(false);
+		return UE::Tasks::MakeCompletedTask<void>();
 	}
 
 	// Subscribe to domain events if not already subscribed
@@ -73,7 +72,7 @@ UE::Tasks::TTask<bool> UInventoryDomainService::AddItemToInventory(APlayerState*
 		{
 			OnInventoryOperationFailed.Broadcast(PlayerState, TEXT("Cannot add item - domain rules violation"));
 		});
-		return UE::Tasks::MakeCompletedTask<bool>(false);
+		return UE::Tasks::MakeCompletedTask<void>();
 	}
 
 	// 2. Apply change to aggregate first (optimistic update)
@@ -84,51 +83,34 @@ UE::Tasks::TTask<bool> UInventoryDomainService::AddItemToInventory(APlayerState*
 		{
 			OnInventoryOperationFailed.Broadcast(PlayerState, TEXT("Failed to apply optimistic update"));
 		});
-		return UE::Tasks::MakeCompletedTask<bool>(false);
+		return UE::Tasks::MakeCompletedTask<void>();
 	}
 
 	// 3. Persist to database through repository
-	if (InventoryRepoInterface)
+	if (UInventoryRepository* ConcreteRepo = Cast<UInventoryRepository>(InventoryRepository.GetObject()))
 	{
-		// Create async task chain using AddNested for proper task dependency
-		auto PersistTask = InventoryRepoInterface->AddItemToPlayer(PlayerState, Item);
+		const int32 PlayerId = PlayerState->GetPlayerId();
 		
-		// Create continuation task with Prerequisites
-		auto ContinuationTask = UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerState, Item, InventoryComponent]() -> bool
+		// Execute add and reload asynchronously
+		AsyncTask(ENamedThreads::AnyBackgroundHiPriTask, [this, ConcreteRepo, PlayerId, Item, PlayerState, InventoryComponent]()
 		{
-			// This will be executed on GameThread after PersistTask completes
-			bool bPersistSuccess = false; // PersistTask result will be available here
+			UE::Tasks::TTask<FInventoryRepositoryResult> RepoTask = ConcreteRepo->AddItemByPlayerId(PlayerId, Item);
+			FInventoryRepositoryResult Result = RepoTask.GetResult();
 			
-			// We need to check the actual result from the persist task
-			// For now, we'll handle success/failure in a different pattern
-			return true;
-		}, ENamedThreads::GameThread);
-		
-		// Set up proper task dependency
-		ContinuationTask.AddPrerequisites(PersistTask);
-		
-		// Handle the result in a simpler way using nested tasks
-		return UE::Tasks::Launch(UE_SOURCE_LOCATION, [PersistTask = MoveTemp(PersistTask), this, PlayerState, Item, InventoryComponent]() mutable -> bool
-		{
-			bool bSuccess = PersistTask.GetResult(); // Wait for completion and get result
-			
-			// Execute UI updates on GameThread
-			UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerState, Item, InventoryComponent, bSuccess]()
+			AsyncTask(ENamedThreads::GameThread, [this, PlayerState, Item, InventoryComponent, Result]()
 			{
-				if (bSuccess)
+				if (Result.bSuccess)
 				{
 					OnInventoryOperationSucceeded.Broadcast(PlayerState, TEXT("Add Item"));
 				}
 				else
 				{
-					// Rollback optimistic update
 					InventoryComponent->RemoveItemDirect(Item.ItemID);
 					OnInventoryOperationFailed.Broadcast(PlayerState, TEXT("Failed to persist item to database"));
 				}
-			}, ENamedThreads::GameThread);
-			
-			return bSuccess;
+			});
 		});
+		return UE::Tasks::MakeCompletedTask<void>();
 	}
 
 	// Fallback for interface-only access
@@ -136,19 +118,18 @@ UE::Tasks::TTask<bool> UInventoryDomainService::AddItemToInventory(APlayerState*
 	{
 		OnInventoryOperationFailed.Broadcast(PlayerState, TEXT("Repository does not support async operations"));
 	});
-	return UE::Tasks::MakeCompletedTask<bool>(false);
+	return UE::Tasks::MakeCompletedTask<void>();
 }
 
-UE::Tasks::TTask<bool> UInventoryDomainService::RemoveItemFromInventory(APlayerState* PlayerState, const FName& ItemID, int32 Quantity)
+UE::Tasks::TTask<void> UInventoryDomainService::RemoveItemFromInventory(APlayerState* PlayerState, const FName& ItemID, int32 Quantity)
 {
-	if (!PlayerState || !InventoryRepository.GetInterface())
+	if (!PlayerState || !InventoryRepository.GetInterface() || Quantity <= 0 || ItemID.IsNone())
 	{
-		return UE::Tasks::MakeCompletedTask<bool>(false);
+		OnInventoryOperationFailed.Broadcast(PlayerState, TEXT("Invalid parameters for RemoveItemFromInventory"));
+		return UE::Tasks::MakeCompletedTask<void>();
 	}
 
 	UInventoryComponent* InventoryComponent = PlayerState->FindComponentByClass<UInventoryComponent>();
-	TScriptInterface<IInventoryRepositoryInterface> InventoryRepoInterface = PlayerState->GetGameInstance()->
-	GetSubsystem<UInventorySubsystem>()->GetInventoryRepository();
 	
 	if (!InventoryComponent)
 	{
@@ -158,8 +139,7 @@ UE::Tasks::TTask<bool> UInventoryDomainService::RemoveItemFromInventory(APlayerS
 		{
 			OnInventoryOperationFailed.Broadcast(PlayerState, TEXT("No InventoryComponent found"));
 		});
-		
-		return UE::Tasks::MakeCompletedTask<bool>(false);
+		return UE::Tasks::MakeCompletedTask<void>();
 	}
 
 	// Subscribe to domain events if not already subscribed
@@ -172,7 +152,7 @@ UE::Tasks::TTask<bool> UInventoryDomainService::RemoveItemFromInventory(APlayerS
 		{
 			OnInventoryOperationFailed.Broadcast(PlayerState, TEXT("Cannot remove item - domain rules violation"));
 		});
-		return UE::Tasks::MakeCompletedTask<bool>(false);
+		return UE::Tasks::MakeCompletedTask<void>();
 	}
 
 	// 2. Apply change to aggregate first (optimistic update)
@@ -183,22 +163,23 @@ UE::Tasks::TTask<bool> UInventoryDomainService::RemoveItemFromInventory(APlayerS
 		{
 			OnInventoryOperationFailed.Broadcast(PlayerState, TEXT("Failed to apply optimistic update"));
 		});
-		return UE::Tasks::MakeCompletedTask<bool>(false);
+		return UE::Tasks::MakeCompletedTask<void>();
 	}
 
 	// 3. Persist to database through repository
-	if (InventoryRepoInterface)
+	if (UInventoryRepository* ConcreteRepo = Cast<UInventoryRepository>(InventoryRepository.GetObject()))
 	{
 		// Handle task chain using proper UE::Tasks pattern
-		return UE::Tasks::Launch(UE_SOURCE_LOCATION, [InventoryRepoInterface, PlayerState, ItemID, Quantity, this, InventoryComponent]() mutable -> bool
+		auto PersistTask = ConcreteRepo->RemoveItemByPlayerId(PlayerState->GetPlayerId(), ItemID, Quantity);
+		
+		return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerState, ItemID, Quantity, InventoryComponent, PersistTask]() mutable -> void
 		{
-			auto PersistTask = InventoryRepoInterface->RemoveItemFromPlayer(PlayerState, ItemID, Quantity);
-			bool bSuccess = PersistTask.GetResult(); // Wait for completion and get result
+			FInventoryRepositoryResult& Result = PersistTask.GetResult(); // Wait for completion and get result
 			
-			// Execute UI updates on GameThread
-			UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerState, ItemID, Quantity, InventoryComponent, bSuccess]()
+			// Execute UI updates on GameThread using AsyncTask
+			AsyncTask(ENamedThreads::GameThread, [this, PlayerState, ItemID, Quantity, InventoryComponent, Result]()
 			{
-				if (bSuccess)
+				if (Result.bSuccess)
 				{
 					OnInventoryOperationSucceeded.Broadcast(PlayerState, TEXT("Remove Item"));
 				}
@@ -211,52 +192,51 @@ UE::Tasks::TTask<bool> UInventoryDomainService::RemoveItemFromInventory(APlayerS
 					InventoryComponent->AddItemDirect(RollbackItem);
 					OnInventoryOperationFailed.Broadcast(PlayerState, TEXT("Failed to persist removal to database"));
 				}
-			}, ENamedThreads::GameThread);
-			
-			return bSuccess;
-		});
+			});
+		}, PersistTask); // Set prerequisite
 	}
 
-	// Fallback for interface-only access
 	AsyncTask(ENamedThreads::GameThread, [this, PlayerState]()
 	{
 		OnInventoryOperationFailed.Broadcast(PlayerState, TEXT("Repository does not support async operations"));
 	});
-	return UE::Tasks::MakeCompletedTask<bool>(false);
+	return UE::Tasks::MakeCompletedTask<void>();
 }
 
-UE::Tasks::TTask<bool> UInventoryDomainService::LoadInventory(APlayerState* PlayerState)
+UE::Tasks::TTask<void> UInventoryDomainService::LoadInventory(APlayerState* PlayerState)
 {
 	if (!PlayerState || !InventoryRepository.GetInterface())
 	{
-		return UE::Tasks::MakeCompletedTask<bool>(false);
+		AsyncTask(ENamedThreads::GameThread, [this, PlayerState]() {
+			OnInventoryOperationFailed.Broadcast(PlayerState, TEXT("Invalid parameters for LoadInventory"));
+		});
+		return UE::Tasks::MakeCompletedTask<void>();
 	}
 
 	UInventoryComponent* InventoryComponent = PlayerState->FindComponentByClass<UInventoryComponent>();
-	TScriptInterface<IInventoryRepositoryInterface> InventoryRepoInterface = PlayerState->GetGameInstance()->
-	GetSubsystem<UInventorySubsystem>()->GetInventoryRepository();
 	
 	if (!InventoryComponent)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("No InventoryComponent found on PlayerState"));
-		return UE::Tasks::MakeCompletedTask<bool>(false);
+		AsyncTask(ENamedThreads::GameThread, [this, PlayerState]() {
+			OnInventoryOperationFailed.Broadcast(PlayerState, TEXT("No InventoryComponent found on PlayerState"));
+        });
+		return UE::Tasks::MakeCompletedTask<void>();
 	}
 
-	// Subscribe to domain events
 	SubscribeToDomainEvents(InventoryComponent);
 
-	// Load through repository
-	if (InventoryRepoInterface)
+	if (UInventoryRepository* ConcreteRepo = Cast<UInventoryRepository>(InventoryRepository.GetObject()))
 	{
-		return UE::Tasks::Launch(UE_SOURCE_LOCATION, [InventoryRepoInterface, PlayerState, this]() -> bool
+		UE::Tasks::TTask<FInventoryRepositoryResult> LoadTask = ConcreteRepo->LoadInventoryByPlayerId(PlayerState->GetPlayerId());
+		
+		return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerState, LoadTask]() mutable -> void
 		{
-			auto LoadTask = InventoryRepoInterface->LoadInventoryForPlayer(PlayerState);
-			bool bSuccess = LoadTask.GetResult(); // Wait for completion and get result
+			FInventoryRepositoryResult Result = LoadTask.GetResult(); // Wait for completion and get result
 			
-			// Execute UI updates on GameThread
-			UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerState, bSuccess]()
+			// Execute UI updates on GameThread using AsyncTask
+			AsyncTask(ENamedThreads::GameThread, [this, PlayerState, Result]()
 			{
-				if (bSuccess)
+				if (Result.bSuccess)
 				{
 					OnInventoryLoadCompleted.Broadcast(PlayerState);
 					OnInventoryOperationSucceeded.Broadcast(PlayerState, TEXT("Load Inventory"));
@@ -265,39 +245,47 @@ UE::Tasks::TTask<bool> UInventoryDomainService::LoadInventory(APlayerState* Play
 				{
 					OnInventoryOperationFailed.Broadcast(PlayerState, TEXT("Failed to load inventory from database"));
 				}
-			}, ENamedThreads::GameThread);
-			
-			return bSuccess;
-		});
+			});
+		}, LoadTask); // Set prerequisite
 	}
 
 	// Fallback for interface-only access
-	InventoryRepository->RequestLoadInventoryForPlayer(PlayerState);
-	return UE::Tasks::MakeCompletedTask<bool>(true);
+	// InventoryRepository->LoadInventoryByPlayerId(PlayerState->GetPlayerId());
+	return UE::Tasks::MakeCompletedTask<void>();
 }
 
-UE::Tasks::TTask<bool> UInventoryDomainService::SaveInventory(APlayerState* PlayerState)
-{
-	if (!PlayerState || !InventoryRepository.GetInterface())
-	{
-		return UE::Tasks::MakeCompletedTask<bool>(false);
-	}
+/*
+ * 1. 도메인 서비스 라인의 호출은 반환값을 가지지 않도록 한다.
+ * 2. 영속 계층의 작업은 WorkerThread로 이어지게 하고, 도메인 서비스 내부에서 GameThread를 호출하여 작업을 마무리한다.
+ * 3. Save와 Load 기능을 다시 살펴보기.
+ */
 
-	TScriptInterface<IInventoryRepositoryInterface> InventoryRepoInterface = PlayerState->GetGameInstance()->
-	GetSubsystem<UInventorySubsystem>()->GetInventoryRepository();
+UE::Tasks::TTask<void> UInventoryDomainService::SaveInventory(APlayerState* PlayerState, const FInventoryDomain& InventoryData)
+{
+	if (!InventoryData.IsValid() || !InventoryRepository.GetInterface())
+	{
+		AsyncTask(ENamedThreads::GameThread, [this, PlayerState, InventoryData]() {
+			OnInventoryOperationFailed.Broadcast(PlayerState, TEXT("Invalid parameters for SaveInventory"));
+			if (!InventoryData.IsValid()) {
+				OnInventoryOperationFailed.Broadcast(PlayerState, TEXT("InventoryData is not valid"));
+			}
+		});
+		return UE::Tasks::MakeCompletedTask<void>();
+	}
 	
 	// Save through repository
-	if (InventoryRepoInterface)
+	if (UInventoryRepository* ConcreteRepo = Cast<UInventoryRepository>(InventoryRepository.GetObject()))
 	{
-		return UE::Tasks::Launch(UE_SOURCE_LOCATION, [InventoryRepoInterface, PlayerState, this]() -> bool
+		auto SaveTask = ConcreteRepo->SaveInventoryData(InventoryData);
+		
+		return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerState, SaveTask]() mutable -> void
 		{
-			auto SaveTask = InventoryRepoInterface->SaveInventoryForPlayer(PlayerState);
-			bool bSuccess = SaveTask.GetResult(); // Wait for completion and get result
+			auto Result = SaveTask.GetResult(); // Wait for completion and get result
 			
-			// Execute UI updates on GameThread
-			UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerState, bSuccess]()
+			// Execute UI updates on GameThread using AsyncTask
+			AsyncTask(ENamedThreads::GameThread, [this, PlayerState, Result]()
 			{
-				if (bSuccess)
+				if (Result.bSuccess)
 				{
 					OnInventorySaveCompleted.Broadcast(PlayerState);
 					OnInventoryOperationSucceeded.Broadcast(PlayerState, TEXT("Save Inventory"));
@@ -306,15 +294,10 @@ UE::Tasks::TTask<bool> UInventoryDomainService::SaveInventory(APlayerState* Play
 				{
 					OnInventoryOperationFailed.Broadcast(PlayerState, TEXT("Failed to save inventory to database"));
 				}
-			}, ENamedThreads::GameThread);
-			
-			return bSuccess;
-		});
+			});
+		}, SaveTask); // Set prerequisite
 	}
-
-	// Fallback for interface-only access
-	InventoryRepository->RequestSaveInventoryForPlayer(PlayerState);
-	return UE::Tasks::MakeCompletedTask<bool>(true);
+	return UE::Tasks::MakeCompletedTask<void>();
 }
 
 void UInventoryDomainService::SubscribeToDomainEvents(UInventoryComponent* InventoryComponent)
@@ -342,6 +325,10 @@ void UInventoryDomainService::UnsubscribeFromDomainEvents(UInventoryComponent* I
 	InventoryComponent->OnInventoryItemRemoved.RemoveAll(this);
 	InventoryComponent->OnInventoryChanged.RemoveAll(this);
 }
+
+
+/*deprecated*/
+
 
 void UInventoryDomainService::OnDomainItemAdded(UFInventoryItem* AddedItem)
 {

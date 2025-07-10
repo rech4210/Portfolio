@@ -2,7 +2,6 @@
 
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
-#include "Data/FCharacterData.h"
 #include "Tasks/Task.h"
 #include "DatabaseManager.generated.h"
 
@@ -14,6 +13,7 @@ DECLARE_DELEGATE_OneParam(FInventoryDataSaveDelegate, bool /* bSuccess */);
 
 // Forward declaration for the implementation class (PIMPL pattern)
 struct FDatabaseManagerImpl;
+
 
 // DTO for inventory items
 USTRUCT(BlueprintType)
@@ -37,6 +37,77 @@ struct DATABASEMODULE_API FInventoryItemDTO
 	FInventoryItemDTO(const FName& InItemID, int32 InQuantity, const FString& InItemData)
 		: ItemID(InItemID), Quantity(InQuantity), ItemData(InItemData)
 	{}
+};
+
+
+USTRUCT(BlueprintType)
+struct DATABASEMODULE_API FCharacterData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Data")
+	int32 UserId;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Data")
+	int32 CharacterId;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Data")
+	int32 Level;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Data")
+	int32 Exp;
+
+	// JSONB data from the database, can be parsed into another USTRUCT if needed
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Data")
+	FString JsonData; 
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Data")
+	TArray<FInventoryItemDTO> Inventory;
+
+	FCharacterData()
+		: UserId(0), CharacterId(0), Level(1), Exp(0)
+	{}
+};
+
+// DTO for skill slots
+USTRUCT(BlueprintType)
+struct DATABASEMODULE_API FSkillSlotDTO
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	FGuid SlotId;
+
+	UPROPERTY()
+	int32 SkillID;
+
+	UPROPERTY()
+	int32 SlotIndex;
+
+	UPROPERTY()
+	FDateTime LastUsedTime;
+
+	UPROPERTY()
+	float RemainingCooldown;
+
+	UPROPERTY()
+	bool bIsActive;
+
+	UPROPERTY()
+	FString SkillData; // JSON serialized data
+
+	FSkillSlotDTO()
+		: SkillID(0), SlotIndex(-1), RemainingCooldown(0.0f), bIsActive(true)
+	{
+		SlotId = FGuid::NewGuid();
+		LastUsedTime = FDateTime::Now();
+	}
+
+	FSkillSlotDTO(const FGuid& InSlotId, int32 InSkillID, int32 InSlotIndex)
+		: SlotId(InSlotId), SkillID(InSkillID), SlotIndex(InSlotIndex), RemainingCooldown(0.0f), bIsActive(true)
+	{
+		LastUsedTime = FDateTime::Now();
+	}
 };
 
 UCLASS()
@@ -103,6 +174,51 @@ public:
 	 * @return Task that completes when item is removed
 	 */
 	UE::Tasks::TTask<bool> RemoveInventoryItem(int32 PlayerId, const FName& ItemID, int32 Quantity);
+
+	// ========================================================================
+	// SKILL MANAGEMENT METHODS
+	// ========================================================================
+
+	/**
+	 * Load skill slots for a specific player
+	 * @param PlayerId The player's unique ID
+	 * @return Task that returns loaded skill slots
+	 */
+	UE::Tasks::TTask<TArray<FSkillSlotDTO>> LoadSkillsForPlayer(int32 PlayerId);
+
+	/**
+	 * Save skill slots for a specific player
+	 * @param PlayerId The player's unique ID
+	 * @param SkillSlots The skill slots to save
+	 * @return Task that completes when save finishes
+	 */
+	UE::Tasks::TTask<bool> SaveSkillsForPlayer(int32 PlayerId, const TArray<FSkillSlotDTO>& SkillSlots);
+
+	/**
+	 * Register a single skill to player's skill slots
+	 * @param PlayerId The player's unique ID
+	 * @param SkillSlot The skill slot to register
+	 * @return Task that completes when skill is registered
+	 */
+	UE::Tasks::TTask<bool> RegisterSkill(int32 PlayerId, const FSkillSlotDTO& SkillSlot);
+
+	/**
+	 * Unregister a skill from player's skill slots
+	 * @param PlayerId The player's unique ID
+	 * @param SlotId The slot ID to unregister
+	 * @return Task that completes when skill is unregistered
+	 */
+	UE::Tasks::TTask<bool> UnregisterSkill(int32 PlayerId, const FGuid& SlotId);
+
+	/**
+	 * Update skill cooldown state
+	 * @param PlayerId The player's unique ID
+	 * @param SlotId The slot ID to update
+	 * @param LastUsedTime When the skill was last used
+	 * @param RemainingCooldown Remaining cooldown time
+	 * @return Task that completes when cooldown is updated
+	 */
+	UE::Tasks::TTask<bool> UpdateSkillCooldown(int32 PlayerId, const FGuid& SlotId, const FDateTime& LastUsedTime, float RemainingCooldown);
 
 private:
 	// Pointer to the implementation

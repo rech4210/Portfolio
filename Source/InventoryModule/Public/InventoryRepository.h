@@ -21,13 +21,36 @@ class INVENTORYMODULE_API UInventoryRepository : public UObject, public IInvento
 	GENERATED_BODY()
 
 public:
+	// IInventoryRepositoryInterface implementation
 	virtual void Initialize() override;
-	virtual void RequestLoadInventoryForPlayer(APlayerState* PlayerState) override;
-	virtual void RequestSaveInventoryForPlayer(APlayerState* PlayerState) override;
-	virtual UE::Tasks::TTask<bool> LoadInventoryForPlayer(APlayerState* PlayerState) override;
-	virtual UE::Tasks::TTask<bool> SaveInventoryForPlayer(APlayerState* PlayerState) override;
-	virtual UE::Tasks::TTask<bool> AddItemToPlayer(APlayerState* PlayerState, const FInventoryItemDTO& Item) override;
-	virtual UE::Tasks::TTask<bool> RemoveItemFromPlayer(APlayerState* PlayerState, const FName& ItemID, int32 Quantity) override;
+
+	// ========================================================================
+	// PURE REPOSITORY METHODS - NO ENGINE DEPENDENCIES (RECOMMENDED)
+	// ========================================================================
+	virtual UE::Tasks::TTask<FInventoryRepositoryResult> LoadInventoryByPlayerId(int32 PlayerId) override;
+	virtual UE::Tasks::TTask<FInventoryRepositoryResult> SaveInventoryData(const FInventoryDomain& InventoryData) override;
+	virtual UE::Tasks::TTask<FInventoryRepositoryResult> AddItemByPlayerId(
+		int32 PlayerId, const FInventoryItemDTO& Item) override;
+	virtual UE::Tasks::TTask<FInventoryRepositoryResult> RemoveItemByPlayerId(
+		int32 PlayerId, const FName& ItemID, int32 Quantity) override;
+
+	// Legacy support methods
+	// virtual void RequestLoadInventoryForPlayer(APlayerState* PlayerState) override;
+	// virtual void RequestSaveInventoryForPlayer(APlayerState* PlayerState) override;
+	// virtual UE::Tasks::TTask<bool> LoadInventoryForPlayer(APlayerState* PlayerState);
+	// virtual UE::Tasks::TTask<bool> SaveInventoryForPlayer(APlayerState* PlayerState);
+	// virtual UE::Tasks::TTask<bool> AddItemToPlayer(APlayerState* PlayerState, const FInventoryItemDTO& Item);
+	// virtual UE::Tasks::TTask<bool> RemoveItemFromPlayer(APlayerState* PlayerState, const FName& ItemID, int32 Quantity);
+
+	// ========================================================================
+	// DEPRECATED METHODS - ENGINE OBJECT DEPENDENCIES (LEGACY SUPPORT)
+	// ========================================================================
+	// virtual void RequestLoadInventoryForPlayer(APlayerState* PlayerState) override;
+	// virtual void RequestSaveInventoryForPlayer(APlayerState* PlayerState) override;
+	// virtual UE::Tasks::TTask<bool> LoadInventoryForPlayer(APlayerState* PlayerState) override;
+	// virtual UE::Tasks::TTask<bool> SaveInventoryForPlayer(APlayerState* PlayerState) override;
+	// virtual UE::Tasks::TTask<bool> AddItemToPlayer(APlayerState* PlayerState, const FInventoryItemDTO& Item) override;
+	// virtual UE::Tasks::TTask<bool> RemoveItemFromPlayer(APlayerState* PlayerState, const FName& ItemID, int32 Quantity) override;
 
 private:
 	UPROPERTY()

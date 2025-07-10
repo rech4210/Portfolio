@@ -14,9 +14,10 @@ public class DatabaseModule : ModuleRules
 				"Core",
 				"CoreUObject",
 				"Engine",
-				"InventoryModule",
 				"GameSharedModule",
-				"Settings"
+				"Settings",
+				"Json",
+				"JsonUtilities"
 			}
 		);
 			
@@ -28,8 +29,6 @@ public class DatabaseModule : ModuleRules
 				"Slate",
 				"SlateCore",
 				"HTTP",
-				"Json",
-				"JsonUtilities"
 			}
 		);
 

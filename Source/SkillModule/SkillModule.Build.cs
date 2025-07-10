@@ -23,7 +23,8 @@ public class SkillModule : ModuleRules
             new string[]
             {
                 "EnhancedInput",
-                "InputCore"
+                "InputCore",
+                "Json"
             }
         );
     }

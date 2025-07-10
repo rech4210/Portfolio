@@ -30,10 +30,6 @@ void USkillComponent::OnRep_SkillSlots()
 	}
 }
 
-int32 USkillComponent::GetMaxSlotCount() const {
-	return MaxSkillSlots;
-}
-
 void USkillComponent::BeginPlay()
 {
 	Super::BeginPlay();
@@ -91,7 +87,7 @@ void USkillComponent::SwapSkills(const FGuid& SlotIdA, const FGuid& SlotIdB)
 
 USkillSlot* USkillComponent::GetSkillSlotByGuid(const FGuid& SlotId) const
 {
-	USkillSlot* const* FoundSlot = SkillSlots.FindByPredicate([&](const USkillSlot* Slot)
+	const TObjectPtr<USkillSlot>* FoundSlot = SkillSlots.FindByPredicate([&](const USkillSlot* Slot)
 	{
 		return Slot && Slot->SlotId == SlotId;
 	});

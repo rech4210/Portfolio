@@ -2,7 +2,6 @@
 #include "Misc/AutomationTest.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "DatabaseModule/Public/DatabaseManager.h"
-#include "DatabaseModule/Public/Data/FCharacterData.h"
 #include "Tests/AutomationCommon.h"
 
 // Latent command for waiting on an async task

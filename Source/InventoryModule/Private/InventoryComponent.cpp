@@ -59,15 +59,6 @@ void UInventoryComponent::OnRep_Items()
 {
 	// This is called on the client when the 'Items' array is replicated.
 	// We notify the subsystem to handle any client-side logic.
-	if (GetOwner())
-	{
-		if (UInventorySubsystem* InventorySubsystem = GetOwner()->GetGameInstance()->GetSubsystem<UInventorySubsystem>())
-		{
-			InventorySubsystem->Client_OnInventoryUpdated(this);
-		}
-	}
-
-	// Broadcast the delegate for UI updates.
 	OnInventoryUpdated.Broadcast();
 }
 

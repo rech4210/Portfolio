@@ -3,6 +3,7 @@
 #include "InventoryRepository.h"
 #include "InventoryComponent.h"
 #include "InventoryItem.h"
+#include "InventoryDomain.h"
 #include "DatabaseModule/Public/DatabaseManager.h"
 #include "InventoryItemData.h"
 #include "GameFramework/PlayerState.h"
@@ -12,6 +13,8 @@
 #include "GameSharedModule/Public/Data/ItemDataAsset.h"
 #include "Json.h"
 #include "JsonUtilities.h"
+#include "Experimental/Coroutine/Coroutine.h"
+using namespace UE::Tasks;
 
 void UInventoryRepository::Initialize() 
 {
@@ -22,214 +25,401 @@ void UInventoryRepository::Initialize()
 	}
 }
 
-UE::Tasks::TTask<bool> UInventoryRepository::LoadInventoryForPlayer(APlayerState* PlayerState)
+// ============================================================================
+// PURE REPOSITORY METHODS - NO ENGINE DEPENDENCIES
+// ============================================================================
+
+UE::Tasks::TTask<FInventoryRepositoryResult> UInventoryRepository::LoadInventoryByPlayerId(int32 PlayerId)
 {
-	if (!DBManager || !PlayerState)
+	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerId]() -> FInventoryRepositoryResult
 	{
-		return UE::Tasks::MakeCompletedTask<bool>(false);
-	}
-
-	UInventoryComponent* InventoryComponent = PlayerState->FindComponentByClass<UInventoryComponent>();
-	if (!InventoryComponent)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("InventoryRepository: No InventoryComponent found on PlayerState"));
-		return UE::Tasks::MakeCompletedTask<bool>(false);
-	}
-
-	const int32 PlayerId = PlayerState->GetPlayerId();
-	
-	return DBManager->LoadInventoryForPlayer(PlayerId)
-		.AddNested(UE_SOURCE_LOCATION, ENamedThreads::GameThread, [this, InventoryComponent](TArray<FInventoryItemDTO> LoadedItems) -> bool
+		if (!DBManager)
 		{
-			// Convert DTOs to inventory items on game thread (safe for UObject creation)
-			TArray<UFInventoryItem*> InventoryItems;
-			
-			for (const FInventoryItemDTO& ItemDTO : LoadedItems)
-			{
-				// Create inventory item from DTO
-				UFInventoryItem* NewItem = NewObject<UFInventoryItem>(InventoryComponent);
-				if (NewItem)
-				{
-					// Load ItemData from AssetManager using ItemID
-					if (UAssetManager* AssetManager = UAssetManager::GetIfValid())
-					{
-						// Convert ItemID to Primary Asset Id for loading
-						FPrimaryAssetId AssetId(TEXT("ItemData"), ItemDTO.ItemID);
-						if (UItemDataAsset* ItemData = AssetManager->GetPrimaryAssetObject<UItemDataAsset>(AssetId))
-						{
-							NewItem->ItemData = ItemData;
-						}
-					}
-					
-					NewItem->Quantity = ItemDTO.Quantity;
-					// Deserialize additional JSON data if needed
-					// TODO: Parse ItemDTO.ItemData JSON for extended properties
-					InventoryItems.Add(NewItem);
-				}
-			}
-
-			// Apply loaded items to component (already on game thread)
-			InventoryComponent->Server_SetInventoryItems(InventoryItems);
-			return true;
-		});
-}
-
-UE::Tasks::TTask<bool> UInventoryRepository::SaveInventoryForPlayer(APlayerState* PlayerState)
-{
-	if (!DBManager || !PlayerState)
-	{
-		return UE::Tasks::MakeCompletedTask<bool>(false);
-	}
-
-	UInventoryComponent* InventoryComponent = PlayerState->FindComponentByClass<UInventoryComponent>();
-	if (!InventoryComponent)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("InventoryRepository: No InventoryComponent found on PlayerState"));
-		return UE::Tasks::MakeCompletedTask<bool>(false);
-	}
-
-	const int32 PlayerId = PlayerState->GetPlayerId();
-	const TArray<UFInventoryItem*>& Items = InventoryComponent->GetItems();
-
-	// Convert inventory items to DTOs
-	TArray<FInventoryItemDTO> ItemDTOs;
-	for (UFInventoryItem* Item : Items)
-	{
-		if (Item && Item->ItemData)
-		{
-			FInventoryItemDTO DTO;
-			DTO.ItemID = Item->ItemData->GetItemID();
-			DTO.Quantity = Item->Quantity;
-			
-			// Serialize additional item data to JSON (worker thread safe)
-			TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
-			JsonObject->SetStringField(TEXT("ItemType"), StaticEnum<EItemType>()->GetNameStringByValue((int64)Item->ItemData->ItemType));
-			JsonObject->SetNumberField(TEXT("CurrentCount"), Item->ItemData->CurrentCount);
-			JsonObject->SetNumberField(TEXT("MaxStackCount"), Item->ItemData->MaxStackCount);
-			JsonObject->SetNumberField(TEXT("Price"), Item->ItemData->Price);
-			
-			FString JsonString;
-			TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&JsonString);
-			FJsonSerializer::Serialize(JsonObject.ToSharedRef(), Writer);
-			DTO.ItemData = JsonString;
-			
-			ItemDTOs.Add(DTO);
+			return FInventoryRepositoryResult::Failure(TEXT("DatabaseManager not available"));
 		}
-	}
 
-	return DBManager->SaveInventoryForPlayer(PlayerId, ItemDTOs);
-}
-
-UE::Tasks::TTask<bool> UInventoryRepository::AddItemToPlayer(APlayerState* PlayerState, const FInventoryItemDTO& Item)
-{
-	if (!DBManager || !PlayerState)
-	{
-		return UE::Tasks::MakeCompletedTask<bool>(false);
-	}
-
-	const int32 PlayerId = PlayerState->GetPlayerId();
-
-	// Remove problematic code that doesn't compile
-	// UE::Tasks::FTask TEST;
-	// TEST.
-	
-	// Use proper task chaining without Then method
-	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, DBManager = this->DBManager, PlayerId, PlayerState, Item]() -> bool
-	{
-		auto AddTask = DBManager->AddInventoryItem(PlayerId, Item);
-		bool bAddSuccess = AddTask.GetResult();
-		
-		if (bAddSuccess)
+		if (PlayerId <= 0)
 		{
-			// Create nested task for reload
-			auto ReloadTask = UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerState]() -> bool
-			{
-				auto LoadTask = LoadInventoryForPlayer(PlayerState);
-				return LoadTask.GetResult();
-			}, ENamedThreads::GameThread);
-			
-			return ReloadTask.GetResult();
+			return FInventoryRepositoryResult::Failure(TEXT("Invalid PlayerId"));
 		}
-		return false;
+
+		// Execute database operation on worker thread
+		auto LoadTask = DBManager->LoadInventoryForPlayer(PlayerId);
+		TArray<FInventoryItemDTO> LoadedItems = LoadTask.GetResult();
+
+		// Create domain object
+		FInventoryDomain InventoryData(PlayerId, LoadedItems);
+		return FInventoryRepositoryResult::Success(InventoryData);
 	});
 }
 
-UE::Tasks::TTask<bool> UInventoryRepository::RemoveItemFromPlayer(APlayerState* PlayerState, const FName& ItemID, int32 Quantity)
+UE::Tasks::TTask<FInventoryRepositoryResult> UInventoryRepository::SaveInventoryData(const FInventoryDomain& InventoryData)
 {
-	if (!DBManager || !PlayerState)
+	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, InventoryData]() -> FInventoryRepositoryResult
 	{
-		return UE::Tasks::MakeCompletedTask<bool>(false);
-	}
-
-	const int32 PlayerId = PlayerState->GetPlayerId();
-	
-	// Use proper task chaining without Then method
-	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, DBManager = this->DBManager, PlayerId, PlayerState, ItemID, Quantity]() -> bool
-	{
-		auto RemoveTask = DBManager->RemoveInventoryItem(PlayerId, ItemID, Quantity);
-		bool bRemoveSuccess = RemoveTask.GetResult();
-		
-		if (bRemoveSuccess)
+		if (!DBManager)
 		{
-			// Create nested task for reload
-			auto ReloadTask = UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerState]() -> bool
-			{
-				auto LoadTask = LoadInventoryForPlayer(PlayerState);
-				return LoadTask.GetResult();
-			}, ENamedThreads::GameThread);
-			
-			return ReloadTask.GetResult();
+			return FInventoryRepositoryResult::Failure(TEXT("DatabaseManager not available"));
 		}
-		return false;
-	});
-}
 
-void UInventoryRepository::RequestLoadInventoryForPlayer(APlayerState* PlayerState)
-{
-	// Legacy method - now uses the new async implementation
-	UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerState]()
-	{
-		auto LoadTask = LoadInventoryForPlayer(PlayerState);
-		bool bSuccess = LoadTask.GetResult();
-		
-		// Execute logging on GameThread
-		UE::Tasks::Launch(UE_SOURCE_LOCATION, [PlayerState, bSuccess]()
+		if (!InventoryData.IsValid())
 		{
-			if (bSuccess)
-			{
-				UE_LOG(LogTemp, Log, TEXT("Successfully loaded inventory for player %s"), 
-					PlayerState ? *PlayerState->GetPlayerName() : TEXT("Unknown"));
-			}
-			else
-			{
-				UE_LOG(LogTemp, Error, TEXT("Failed to load inventory for player %s"), 
-					PlayerState ? *PlayerState->GetPlayerName() : TEXT("Unknown"));
-			}
-		}, ENamedThreads::GameThread);
-	});
-}
+			return FInventoryRepositoryResult::Failure(TEXT("Invalid inventory data"));
+		}
 
-void UInventoryRepository::RequestSaveInventoryForPlayer(APlayerState* PlayerState)
-{
-	// Legacy method - now uses the new async implementation
-	UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerState]()
-	{
-		auto SaveTask = SaveInventoryForPlayer(PlayerState);
+		// Execute database operation on worker thread
+		auto SaveTask = DBManager->SaveInventoryForPlayer(InventoryData.PlayerId, InventoryData.Items);
 		bool bSuccess = SaveTask.GetResult();
-		
-		// Execute logging on GameThread
-		UE::Tasks::Launch(UE_SOURCE_LOCATION, [PlayerState, bSuccess]()
+
+		if (bSuccess)
 		{
-			if (bSuccess)
-			{
-				UE_LOG(LogTemp, Log, TEXT("Successfully saved inventory for player %s"), 
-					PlayerState ? *PlayerState->GetPlayerName() : TEXT("Unknown"));
-			}
-			else
-			{
-				UE_LOG(LogTemp, Error, TEXT("Failed to save inventory for player %s"), 
-					PlayerState ? *PlayerState->GetPlayerName() : TEXT("Unknown"));
-			}
-		}, ENamedThreads::GameThread);
+			return FInventoryRepositoryResult::Success(InventoryData);
+		}
+		else
+		{
+			return FInventoryRepositoryResult::Failure(TEXT("Failed to save inventory to database"));
+		}
 	});
 }
+
+UE::Tasks::TTask<FInventoryRepositoryResult> UInventoryRepository::AddItemByPlayerId(
+	int32 PlayerId, const FInventoryItemDTO& Item)
+{
+	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerId, Item]() -> FInventoryRepositoryResult {
+		//Use CO_RETURN if c++20 is enabled
+		if (!DBManager)
+		{
+			return FInventoryRepositoryResult::Failure(TEXT("DatabaseManager not available"));
+		}
+
+		if (PlayerId <= 0)
+		{
+			return FInventoryRepositoryResult::Failure(TEXT("Invalid PlayerId"));
+		}
+		
+		auto bSuccess = DBManager->AddInventoryItem(PlayerId, Item).GetResult();
+		if (bSuccess) {
+			FInventoryRepositoryResult& Result = LoadInventoryByPlayerId(PlayerId).GetResult();
+			return FInventoryRepositoryResult::Success(Result.InventoryData);
+		}
+		
+		// or Use PrerequisitesTask DAG 
+		auto PrerequisitesTask = DBManager->AddInventoryItem(PlayerId, Item);
+		Launch(UE_SOURCE_LOCATION, [this, PlayerId, PrerequisitesTask]() mutable ->FInventoryRepositoryResult {
+			auto Ok = PrerequisitesTask.GetResult();
+			if (Ok) {
+				TTask<FInventoryRepositoryResult> Result = LoadInventoryByPlayerId(PlayerId);
+				return FInventoryRepositoryResult::Success(Result.GetResult().InventoryData);
+			}
+			else {
+				return FInventoryRepositoryResult::Failure(TEXT("Failed to load inventory"));
+			}
+		},PrerequisitesTask);
+		
+		return FInventoryRepositoryResult::Failure(TEXT("Failed to add inventory item"));
+	});
+}
+
+UE::Tasks::TTask<FInventoryRepositoryResult> UInventoryRepository::RemoveItemByPlayerId(
+	int32 PlayerId, const FName& ItemID, int32 Quantity)
+{
+	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerId, ItemID, Quantity]() -> FInventoryRepositoryResult
+	{
+		if (!DBManager)
+		{
+			return FInventoryRepositoryResult::Failure(TEXT("DatabaseManager not available"));
+		}
+
+		if (PlayerId <= 0)
+		{
+			return FInventoryRepositoryResult::Failure(TEXT("Invalid PlayerId"));
+		}
+
+		// Execute database operation on worker thread
+		auto RemoveTask = DBManager->RemoveInventoryItem(PlayerId, ItemID, Quantity);
+		bool bSuccess = RemoveTask.GetResult();
+
+		if (bSuccess)
+		{
+			// Return updated inventory data
+			auto ReloadTask = LoadInventoryByPlayerId(PlayerId);
+			return ReloadTask.GetResult();
+		}
+		return FInventoryRepositoryResult::Failure(TEXT("Failed to remove item from database"));
+	});
+}
+
+
+
+// ============================================================================
+// DEPRECATED METHODS - ENGINE OBJECT DEPENDENCIES
+// ============================================================================
+//
+// void UInventoryRepository::RequestLoadInventoryForPlayer(APlayerState* PlayerState)
+// {
+// 	// Legacy method - use AsyncTask for non-blocking operation
+// 	AsyncTask(ENamedThreads::AnyBackgroundHiPriTask, [this, WeakPlayerState = TWeakObjectPtr<APlayerState>(PlayerState)]()
+// 	{
+// 		if (WeakPlayerState.IsValid())
+// 		{
+// 			auto LoadTask = LoadInventoryForPlayer(WeakPlayerState.Get());
+// 			bool bSuccess = LoadTask.GetResult();
+// 			
+// 			// Log result on GameThread
+// 			AsyncTask(ENamedThreads::GameThread, [WeakPlayerState, bSuccess]()
+// 			{
+// 				if (WeakPlayerState.IsValid())
+// 				{
+// 					if (bSuccess)
+// 					{
+// 						UE_LOG(LogTemp, Log, TEXT("Successfully loaded inventory for player %s"), 
+// 							*WeakPlayerState->GetPlayerName());
+// 					}
+// 					else
+// 					{
+// 						UE_LOG(LogTemp, Error, TEXT("Failed to load inventory for player %s"), 
+// 							*WeakPlayerState->GetPlayerName());
+// 					}
+// 				}
+// 			});
+// 		}
+// 	});
+// }
+//
+// void UInventoryRepository::RequestSaveInventoryForPlayer(APlayerState* PlayerState)
+// {
+// 	// Legacy method - use AsyncTask for non-blocking operation
+// 	AsyncTask(ENamedThreads::AnyBackgroundHiPriTask, [this, WeakPlayerState = TWeakObjectPtr<APlayerState>(PlayerState)]()
+// 	{
+// 		if (WeakPlayerState.IsValid())
+// 		{
+// 			auto SaveTask = SaveInventoryForPlayer(WeakPlayerState.Get());
+// 			bool bSuccess = SaveTask.GetResult();
+// 			
+// 			// Log result on GameThread
+// 			AsyncTask(ENamedThreads::GameThread, [WeakPlayerState, bSuccess]()
+// 			{
+// 				if (WeakPlayerState.IsValid())
+// 				{
+// 					if (bSuccess)
+// 					{
+// 						UE_LOG(LogTemp, Log, TEXT("Successfully saved inventory for player %s"), 
+// 							*WeakPlayerState->GetPlayerName());
+// 					}
+// 					else
+// 					{
+// 						UE_LOG(LogTemp, Error, TEXT("Failed to save inventory for player %s"), 
+// 							*WeakPlayerState->GetPlayerName());
+// 					}
+// 				}
+// 			});
+// 		}
+// 	});
+// }
+//
+// UE::Tasks::TTask<bool> UInventoryRepository::LoadInventoryForPlayer(APlayerState* PlayerState)
+// {
+// 	if (!PlayerState)
+// 	{
+// 		return UE::Tasks::MakeCompletedTask<bool>(false);
+// 	}
+//
+// 	// Convert to pure repository call and handle UI updates via AsyncTask
+// 	const int32 PlayerId = PlayerState->GetPlayerId();
+// 	TWeakObjectPtr<APlayerState> WeakPlayerState = PlayerState;
+//
+// 	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerId, WeakPlayerState]() -> bool
+// 	{
+// 		// Execute pure repository operation on worker thread
+// 		auto RepositoryTask = LoadInventoryByPlayerId(PlayerId);
+// 		FInventoryRepositoryResult Result = RepositoryTask.GetResult();
+//
+// 		if (Result.bSuccess)
+// 		{
+// 			// Update UI components on game thread using AsyncTask
+// 			AsyncTask(ENamedThreads::GameThread, [WeakPlayerState, Result]()
+// 			{
+// 				if (WeakPlayerState.IsValid())
+// 				{
+// 					if (UInventoryComponent* InventoryComponent = WeakPlayerState->FindComponentByClass<UInventoryComponent>())
+// 					{
+// 						// Convert domain data back to engine objects
+// 						TArray<UFInventoryItem*> InventoryItems;
+// 						
+// 						for (const FInventoryItemDTO& ItemDTO : Result.InventoryData.Items)
+// 						{
+// 							UFInventoryItem* NewItem = NewObject<UFInventoryItem>(InventoryComponent);
+// 							if (NewItem)
+// 							{
+// 								// Load ItemData from AssetManager
+// 								if (UAssetManager* AssetManager = UAssetManager::GetIfValid())
+// 								{
+// 									FPrimaryAssetId AssetId(TEXT("ItemData"), ItemDTO.ItemID);
+// 									if (UItemDataAsset* ItemData = AssetManager->GetPrimaryAssetObject<UItemDataAsset>(AssetId))
+// 									{
+// 										NewItem->ItemData = ItemData;
+// 									}
+// 								}
+// 								
+// 								NewItem->Quantity = ItemDTO.Quantity;
+// 								InventoryItems.Add(NewItem);
+// 							}
+// 						}
+//
+// 						// Apply loaded items to component
+// 						InventoryComponent->Server_SetInventoryItems(InventoryItems);
+// 					}
+// 				}
+// 			});
+// 		}
+//
+// 		return Result.bSuccess;
+// 	});
+// }
+// }
+//
+// UE::Tasks::TTask<bool> UInventoryRepository::SaveInventoryForPlayer(APlayerState* PlayerState)
+// {
+// 	if (!PlayerState)
+// 	{
+// 		return UE::Tasks::MakeCompletedTask<bool>(false);
+// 	}
+//
+// 	TWeakObjectPtr<APlayerState> WeakPlayerState = PlayerState;
+// 	const int32 PlayerId = PlayerState->GetPlayerId();
+//
+// 	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, WeakPlayerState, PlayerId]() -> bool
+// 	{
+// 		// Get inventory data from component on game thread
+// 		TArray<FInventoryItemDTO> ItemDTOs;
+// 		bool bDataRetrieved = false;
+//
+// 		// Use AsyncTask to safely access game thread objects
+// 		FEvent* DataRetrievedEvent = FPlatformProcess::GetSynchEventFromPool();
+// 		AsyncTask(ENamedThreads::GameThread, [WeakPlayerState, &ItemDTOs, &bDataRetrieved, DataRetrievedEvent]()
+// 		{
+// 			if (WeakPlayerState.IsValid())
+// 			{
+// 				if (UInventoryComponent* InventoryComponent = WeakPlayerState->FindComponentByClass<UInventoryComponent>())
+// 				{
+// 					const TArray<UFInventoryItem*>& Items = InventoryComponent->GetItems();
+//
+// 					// Convert inventory items to DTOs
+// 					for (UFInventoryItem* Item : Items)
+// 					{
+// 						if (Item && Item->ItemData)
+// 						{
+// 							FInventoryItemDTO DTO;
+// 							DTO.ItemID = Item->ItemData->GetItemID();
+// 							DTO.Quantity = Item->Quantity;
+// 							
+// 							// Serialize additional item data to JSON
+// 							TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+// 							JsonObject->SetStringField(TEXT("ItemType"), StaticEnum<EItemType>()->GetNameStringByValue((int64)Item->ItemData->ItemType));
+// 							JsonObject->SetNumberField(TEXT("CurrentCount"), Item->ItemData->CurrentCount);
+// 							JsonObject->SetNumberField(TEXT("MaxStackCount"), Item->ItemData->MaxStackCount);
+// 							JsonObject->SetNumberField(TEXT("Price"), Item->ItemData->Price);
+// 							
+// 							FString JsonString;
+// 							TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&JsonString);
+// 							FJsonSerializer::Serialize(JsonObject.ToSharedRef(), Writer);
+// 							DTO.ItemData = JsonString;
+// 							
+// 							ItemDTOs.Add(DTO);
+// 						}
+// 					}
+// 					bDataRetrieved = true;
+// 				}
+// 			}
+// 			DataRetrievedEvent->Trigger();
+// 		});
+//
+// 		// Wait for data retrieval to complete
+// 		DataRetrievedEvent->Wait();
+// 		FPlatformProcess::ReturnSynchEventToPool(DataRetrievedEvent);
+//
+// 		if (!bDataRetrieved)
+// 		{
+// 			return false;
+// 		}
+//
+// 		// Create domain object and save via pure repository
+// 		FInventoryDomain InventoryData(PlayerId, ItemDTOs);
+// 		auto SaveTask = SaveInventoryData(InventoryData);
+// 		FInventoryRepositoryResult Result = SaveTask.GetResult();
+//
+// 		return Result.bSuccess;
+// 	});
+// }
+//
+// UE::Tasks::TTask<bool> UInventoryRepository::AddItemToPlayer(APlayerState* PlayerState, const FInventoryItemDTO& Item)
+// {
+// 	if (!PlayerState)
+// 	{
+// 		return UE::Tasks::MakeCompletedTask<bool>(false);
+// 	}
+//
+// 	const int32 PlayerId = PlayerState->GetPlayerId();
+// 	TWeakObjectPtr<APlayerState> WeakPlayerState = PlayerState;
+//
+// 	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerId, Item, WeakPlayerState]() -> bool
+// 	{
+// 		// Execute pure repository operation on worker thread
+// 		auto AddTask = AddItemByPlayerId(PlayerId, Item);
+// 		FInventoryRepositoryResult Result = AddTask.GetResult();
+//
+// 		if (Result.bSuccess)
+// 		{
+// 			// Update UI components on game thread using AsyncTask
+// 			AsyncTask(ENamedThreads::GameThread, [WeakPlayerState, Result]()
+// 			{
+// 				if (WeakPlayerState.IsValid())
+// 				{
+// 					if (UInventoryComponent* InventoryComponent = WeakPlayerState->FindComponentByClass<UInventoryComponent>())
+// 					{
+// 						// Reload inventory to reflect changes
+// 						// This should trigger domain events properly
+// 					}
+// 				}
+// 			});
+// 		}
+//
+// 		return Result.bSuccess;
+// 	});
+// }
+//
+// UE::Tasks::TTask<bool> UInventoryRepository::RemoveItemFromPlayer(APlayerState* PlayerState, const FName& ItemID, int32 Quantity)
+// {
+// 	if (!PlayerState)
+// 	{
+// 		return UE::Tasks::MakeCompletedTask<bool>(false);
+// 	}
+//
+// 	const int32 PlayerId = PlayerState->GetPlayerId();
+// 	TWeakObjectPtr<APlayerState> WeakPlayerState = PlayerState;
+//
+// 	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerId, ItemID, Quantity, WeakPlayerState]() -> bool
+// 	{
+// 		// Execute pure repository operation on worker thread
+// 		auto RemoveTask = RemoveItemByPlayerId(PlayerId, ItemID, Quantity);
+// 		FInventoryRepositoryResult Result = RemoveTask.GetResult();
+//
+// 		if (Result.bSuccess)
+// 		{
+// 			// Update UI components on game thread using AsyncTask
+// 			AsyncTask(ENamedThreads::GameThread, [WeakPlayerState, Result]()
+// 			{
+// 				if (WeakPlayerState.IsValid())
+// 				{
+// 					if (UInventoryComponent* InventoryComponent = WeakPlayerState->FindComponentByClass<UInventoryComponent>())
+// 					{
+// 						// Reload inventory to reflect changes
+// 						// This should trigger domain events properly
+// 					}
+// 				}
+// 			});
+// 		}
+//
+// 		return Result.bSuccess;
+// 	});
+// }

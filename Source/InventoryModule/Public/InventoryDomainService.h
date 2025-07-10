@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "InventoryDomain.h"
 #include "UObject/Object.h"
 #include "Tasks/Task.h"
 #include "InventoryDomainService.generated.h"
@@ -13,8 +14,8 @@ class APlayerState;
 struct FInventoryItemDTO;
 
 // Domain Events (발행: Aggregate/Component)
-DECLARE_MULTICAST_DELEGATE_TwoParams(FOnInventoryItemAdded, APlayerState* /* PlayerState */, const FInventoryItemDTO& /* Item */);
-DECLARE_MULTICAST_DELEGATE_ThreeParams(FOnInventoryItemRemoved, APlayerState* /* PlayerState */, const FName& /* ItemID */, int32 /* Quantity */);
+// DECLARE_MULTICAST_DELEGATE_TwoParams(FOnInventoryItemAdded, APlayerState* /* PlayerState */, const FInventoryItemDTO& /* Item */);
+// DECLARE_MULTICAST_DELEGATE_ThreeParams(FOnInventoryItemRemoved, APlayerState* /* PlayerState */, const FName& /* ItemID */, int32 /* Quantity */);
 
 // Application Events (발행: DomainService)
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnInventoryOperationSucceeded, APlayerState* /* PlayerState */, const FString& /* Operation */);
@@ -46,7 +47,7 @@ public:
 	 * @param Item Item to add
 	 * @return Task that completes when operation finishes
 	 */
-	UE::Tasks::TTask<bool> AddItemToInventory(APlayerState* PlayerState, const FInventoryItemDTO& Item);
+	UE::Tasks::TTask<void> AddItemToInventory(APlayerState* PlayerState, const FInventoryItemDTO& Item);
 
 	/**
 	 * Domain Service: Remove item from player's inventory with full business logic
@@ -55,21 +56,22 @@ public:
 	 * @param Quantity How many to remove
 	 * @return Task that completes when operation finishes
 	 */
-	UE::Tasks::TTask<bool> RemoveItemFromInventory(APlayerState* PlayerState, const FName& ItemID, int32 Quantity);
+	UE::Tasks::TTask<void> RemoveItemFromInventory(APlayerState* PlayerState, const FName& ItemID, int32 Quantity);
 
 	/**
 	 * Domain Service: Load player's inventory from persistence
 	 * @param PlayerState Target player
 	 * @return Task that completes when loading finishes
 	 */
-	UE::Tasks::TTask<bool> LoadInventory(APlayerState* PlayerState);
+	UE::Tasks::TTask<void> LoadInventory(APlayerState* PlayerState);
 
 	/**
 	 * Domain Service: Save player's current inventory state
 	 * @param PlayerState Target player
+	 * @param InventoryData
 	 * @return Task that completes when save finishes
 	 */
-	UE::Tasks::TTask<bool> SaveInventory(APlayerState* PlayerState);
+	UE::Tasks::TTask<void> SaveInventory(APlayerState* PlayerState, const FInventoryDomain& InventoryData);
 
 	// Application Events
 	FOnInventoryOperationSucceeded OnInventoryOperationSucceeded;
