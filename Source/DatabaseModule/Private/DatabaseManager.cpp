@@ -622,3 +622,173 @@ UE::Tasks::TTask<bool> UDatabaseManager::RemoveInventoryItem(int32 PlayerId, con
 		}
 	}, TEXT("Inventory/RemoveItem"));
 }
+
+// ============================================================================
+// SKILL REPOSITORY METHODS
+// ============================================================================
+
+UE::Tasks::TTask<TArray<FSkillSlotDTO>> UDatabaseManager::LoadSkillsForPlayer(int32 PlayerId)
+{
+	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerId]() -> TArray<FSkillSlotDTO>
+	{
+		TArray<FSkillSlotDTO> ResultSkills;
+
+		if (!Impl)
+		{
+			UE_LOG(LogTemp, Error, TEXT("DatabaseManager not initialized"));
+			return ResultSkills;
+		}
+
+		sql::Connection* Con = Impl->GetConnection();
+		if (!Con)
+		{
+			UE_LOG(LogTemp, Error, TEXT("Failed to get database connection"));
+			return ResultSkills;
+		}
+
+		try
+		{
+			TUniquePtr<sql::PreparedStatement> Stmt(Con->prepareStatement(
+				"SELECT slot_id, skill_id, last_used_time, remaining_cooldown FROM skill_slots WHERE player_id = ?"
+			));
+			Stmt->setInt(1, PlayerId);
+			
+			TUniquePtr<sql::ResultSet> Res(Stmt->executeQuery());
+			
+			while (Res->next())
+			{
+				FSkillSlotDTO Skill;
+				FString SlotIdString = UTF8_TO_TCHAR(Res->getString("slot_id").c_str());
+				Skill.SlotId.ParseExact(SlotIdString, EGuidFormats::DigitsWithHyphens);
+				Skill.SkillID = Res->getInt("skill_id");
+				
+				// Parse last used time
+				FString LastUsedString = UTF8_TO_TCHAR(Res->getString("last_used_time").c_str());
+				FDateTime::ParseIso8601(*LastUsedString, Skill.LastUsedTime);
+				
+				ResultSkills.Add(Skill);
+			}
+		}
+		catch (const sql::SQLException& e)
+		{
+			UE_LOG(LogTemp, Error, TEXT("LoadSkillsForPlayer failed: %s"), UTF8_TO_TCHAR(e.what()));
+		}
+
+		return ResultSkills;
+	});
+}
+
+UE::Tasks::TTask<bool> UDatabaseManager::SaveSkillsForPlayer(int32 PlayerId, const TArray<FSkillSlotDTO>& SkillSlots)
+{
+	return WithTransaction([PlayerId, SkillSlots](sql::Connection* Con) -> bool
+	{
+		try
+		{
+			// Clear existing skills
+			TUniquePtr<sql::PreparedStatement> DeleteStmt(Con->prepareStatement(
+				"DELETE FROM skill_slots WHERE player_id = ?"
+			));
+			DeleteStmt->setInt(1, PlayerId);
+			DeleteStmt->executeUpdate();
+
+			// Insert new skills
+			TUniquePtr<sql::PreparedStatement> InsertStmt(Con->prepareStatement(
+				"INSERT INTO skill_slots (player_id, slot_id, skill_id, last_used_time, remaining_cooldown) VALUES (?, ?, ?, ?, ?)"
+			));
+
+			for (const FSkillSlotDTO& Skill : SkillSlots)
+			{
+				InsertStmt->setInt(1, PlayerId);
+				InsertStmt->setString(2, TCHAR_TO_UTF8(*Skill.SlotId.ToString(EGuidFormats::DigitsWithHyphens)));
+				InsertStmt->setInt(3, Skill.SkillID);
+				InsertStmt->setString(4, TCHAR_TO_UTF8(*Skill.LastUsedTime.ToIso8601()));
+				InsertStmt->setDouble(5, 0.0); // RemainingCooldown placeholder
+				
+				InsertStmt->executeUpdate();
+			}
+
+			return true;
+		}
+		catch (const sql::SQLException& e)
+		{
+			UE_LOG(LogTemp, Error, TEXT("SaveSkillsForPlayer failed: %s"), UTF8_TO_TCHAR(e.what()));
+			return false;
+		}
+	}, TEXT("Skill/SaveSkills"));
+}
+
+UE::Tasks::TTask<bool> UDatabaseManager::RegisterSkill(int32 PlayerId, const FSkillSlotDTO& SkillSlot)
+{
+	return WithTransaction([PlayerId, SkillSlot](sql::Connection* Con) -> bool
+	{
+		try
+		{
+			TUniquePtr<sql::PreparedStatement> InsertStmt(Con->prepareStatement(
+				"INSERT INTO skill_slots (player_id, slot_id, skill_id, last_used_time, remaining_cooldown) VALUES (?, ?, ?, ?, ?) "
+				"ON DUPLICATE KEY UPDATE skill_id = VALUES(skill_id), last_used_time = VALUES(last_used_time)"
+			));
+			
+			InsertStmt->setInt(1, PlayerId);
+			InsertStmt->setString(2, TCHAR_TO_UTF8(*SkillSlot.SlotId.ToString(EGuidFormats::DigitsWithHyphens)));
+			InsertStmt->setInt(3, SkillSlot.SkillID);
+			InsertStmt->setString(4, TCHAR_TO_UTF8(*SkillSlot.LastUsedTime.ToIso8601()));
+			InsertStmt->setDouble(5, 0.0); // RemainingCooldown placeholder
+			
+			int32 AffectedRows = InsertStmt->executeUpdate();
+			return AffectedRows > 0;
+		}
+		catch (const sql::SQLException& e)
+		{
+			UE_LOG(LogTemp, Error, TEXT("RegisterSkill failed: %s"), UTF8_TO_TCHAR(e.what()));
+			return false;
+		}
+	}, TEXT("Skill/RegisterSkill"));
+}
+
+UE::Tasks::TTask<bool> UDatabaseManager::UnregisterSkill(int32 PlayerId, const FGuid& SlotId)
+{
+	return WithTransaction([PlayerId, SlotId](sql::Connection* Con) -> bool
+	{
+		try
+		{
+			TUniquePtr<sql::PreparedStatement> DeleteStmt(Con->prepareStatement(
+				"DELETE FROM skill_slots WHERE player_id = ? AND slot_id = ?"
+			));
+			DeleteStmt->setInt(1, PlayerId);
+			DeleteStmt->setString(2, TCHAR_TO_UTF8(*SlotId.ToString(EGuidFormats::DigitsWithHyphens)));
+			
+			int32 AffectedRows = DeleteStmt->executeUpdate();
+			return AffectedRows > 0;
+		}
+		catch (const sql::SQLException& e)
+		{
+			UE_LOG(LogTemp, Error, TEXT("UnregisterSkill failed: %s"), UTF8_TO_TCHAR(e.what()));
+			return false;
+		}
+	}, TEXT("Skill/UnregisterSkill"));
+}
+
+UE::Tasks::TTask<bool> UDatabaseManager::UpdateSkillCooldown(int32 PlayerId, const FGuid& SlotId, const FDateTime& LastUsedTime, float RemainingCooldown)
+{
+	return WithTransaction([PlayerId, SlotId, LastUsedTime, RemainingCooldown](sql::Connection* Con) -> bool
+	{
+		try
+		{
+			TUniquePtr<sql::PreparedStatement> UpdateStmt(Con->prepareStatement(
+				"UPDATE skill_slots SET last_used_time = ?, remaining_cooldown = ? WHERE player_id = ? AND slot_id = ?"
+			));
+			UpdateStmt->setString(1, TCHAR_TO_UTF8(*LastUsedTime.ToIso8601()));
+			UpdateStmt->setDouble(2, RemainingCooldown);
+			UpdateStmt->setInt(3, PlayerId);
+			UpdateStmt->setString(4, TCHAR_TO_UTF8(*SlotId.ToString(EGuidFormats::DigitsWithHyphens)));
+			
+			int32 AffectedRows = UpdateStmt->executeUpdate();
+			return AffectedRows > 0;
+		}
+		catch (const sql::SQLException& e)
+		{
+			UE_LOG(LogTemp, Error, TEXT("UpdateSkillCooldown failed: %s"), UTF8_TO_TCHAR(e.what()));
+			return false;
+		}
+	}, TEXT("Skill/UpdateCooldown"));
+}

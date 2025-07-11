@@ -33,14 +33,6 @@ public:
 	virtual UE::Tasks::TTask<FSkillRepositoryResult> UnregisterSkillByPlayerId(int32 PlayerId, const FGuid& SlotId) override;
 	virtual UE::Tasks::TTask<FSkillRepositoryResult> UpdateSkillCooldown(int32 PlayerId, const FGuid& SlotId, const FDateTime& LastUsedTime, float RemainingCooldown) override;
 
-	// Legacy support methods
-	virtual void RequestLoadSkillsForPlayer(APlayerState* PlayerState) override;
-	virtual void RequestSaveSkillsForPlayer(APlayerState* PlayerState) override;
-	virtual UE::Tasks::TTask<bool> LoadSkillsForPlayer(APlayerState* PlayerState) override;
-	virtual UE::Tasks::TTask<bool> SaveSkillsForPlayer(APlayerState* PlayerState) override;
-	virtual UE::Tasks::TTask<bool> RegisterSkillForPlayer(APlayerState* PlayerState, const FSkillSlotDTO& SkillSlot) override;
-	virtual UE::Tasks::TTask<bool> UnregisterSkillForPlayer(APlayerState* PlayerState, const FGuid& SlotId) override;
-
 private:
 	UPROPERTY()
 	TObjectPtr<UDatabaseManager> DBManager;

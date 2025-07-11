@@ -14,17 +14,18 @@ class APlayerState;
 class USkillDataAsset;
 struct FSkillSlotDTO;
 
-// Application Events (발행: DomainService)
-DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSkillOperationSucceeded, APlayerState* /* PlayerState */, const FString& /* Operation */);
-DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSkillOperationFailed, APlayerState* /* PlayerState */, const FString& /* Reason */);
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnSkillLoadCompleted, APlayerState* /* PlayerState */);
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnSkillSaveCompleted, APlayerState* /* PlayerState */);
-DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSkillRegistered, APlayerState* /* PlayerState */, const FSkillSlotDTO& /* SkillSlot */);
-DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSkillUnregistered, APlayerState* /* PlayerState */, const FGuid& /* SlotId */);
+// Domain Events (발행: DomainService)
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSkillOperationSucceeded, int32 /* PlayerId */, const FString& /* Operation */);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSkillOperationFailed, int32 /* PlayerId */, const FString& /* Reason */);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnSkillLoadCompleted, int32 /* PlayerId */);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnSkillSaveCompleted, int32 /* PlayerId */);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSkillRegistered, int32 /* PlayerId */, const FSkillSlotDTO& /* SkillSlot */);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSkillUnregistered, int32 /* PlayerId */, const FGuid& /* SlotId */);
 
 /**
  * Domain Service for Skill operations
- * Handles business logic orchestration and coordinates between Aggregates and Repositories
+ * Handles business logic orchestration with atomic transactions
+ * Uses void return types with domain events for UI updates
  */
 UCLASS(BlueprintType)
 class SKILLMODULE_API USkillDomainService : public UObject
@@ -42,54 +43,55 @@ public:
 
 	/**
 	 * Domain Service: Register skill to player's skill slots with full business logic
-	 * @param PlayerState Target player
+	 * Uses atomic transaction - triggers domain events for success/failure
+	 * @param PlayerId Target player ID
 	 * @param SkillData Skill data to register
-	 * @return Task that completes when operation finishes
 	 */
-	UE::Tasks::TTask<bool> RegisterSkillToPlayer(APlayerState* PlayerState, USkillDataAsset* SkillData);
+	void RegisterSkillToPlayer(int32 PlayerId, USkillDataAsset* SkillData);
 
 	/**
 	 * Domain Service: Unregister skill from player's skill slots with full business logic
-	 * @param PlayerState Target player
+	 * Uses atomic transaction - triggers domain events for success/failure
+	 * @param PlayerId Target player ID
 	 * @param SlotId Slot ID to unregister
-	 * @return Task that completes when operation finishes
 	 */
-	UE::Tasks::TTask<bool> UnregisterSkillFromPlayer(APlayerState* PlayerState, const FGuid& SlotId);
+	void UnregisterSkillFromPlayer(int32 PlayerId, const FGuid& SlotId);
 
 	/**
 	 * Domain Service: Swap skills between two slots with full business logic
-	 * @param PlayerState Target player
+	 * Uses atomic transaction - triggers domain events for success/failure
+	 * @param PlayerId Target player ID
 	 * @param SlotIdA First slot ID
 	 * @param SlotIdB Second slot ID
-	 * @return Task that completes when operation finishes
 	 */
-	UE::Tasks::TTask<bool> SwapSkillSlots(APlayerState* PlayerState, const FGuid& SlotIdA, const FGuid& SlotIdB);
+	void SwapSkillSlots(int32 PlayerId, const FGuid& SlotIdA, const FGuid& SlotIdB);
 
 	/**
 	 * Domain Service: Update skill cooldown state
-	 * @param PlayerState Target player
+	 * Uses atomic transaction - triggers domain events for success/failure
+	 * @param PlayerId Target player ID
 	 * @param SlotId Slot ID
 	 * @param LastUsedTime When the skill was last used
 	 * @param RemainingCooldown Remaining cooldown time
-	 * @return Task that completes when operation finishes
 	 */
-	UE::Tasks::TTask<bool> UpdateSkillCooldown(APlayerState* PlayerState, const FGuid& SlotId, const FDateTime& LastUsedTime, float RemainingCooldown);
+	void UpdateSkillCooldown(int32 PlayerId, const FGuid& SlotId, const FDateTime& LastUsedTime, float RemainingCooldown);
 
 	/**
 	 * Domain Service: Load player's skills from persistence
-	 * @param PlayerState Target player
-	 * @return Task that completes when loading finishes
+	 * Triggers domain events for success/failure
+	 * @param PlayerId Target player ID
 	 */
-	UE::Tasks::TTask<bool> LoadSkills(APlayerState* PlayerState);
+	void LoadSkills(int32 PlayerId);
 
 	/**
 	 * Domain Service: Save player's current skill state
-	 * @param PlayerState Target player
-	 * @return Task that completes when save finishes
+	 * Uses atomic transaction - triggers domain events for success/failure
+	 * @param PlayerId Target player ID
+	 * @param SkillData The skill domain data to save
 	 */
-	UE::Tasks::TTask<bool> SaveSkills(APlayerState* PlayerState);
+	void SaveSkills(int32 PlayerId, const FSkillDomain& SkillData);
 
-	// Application Events
+	// Domain Events
 	FOnSkillOperationSucceeded OnSkillOperationSucceeded;
 	FOnSkillOperationFailed OnSkillOperationFailed;
 	FOnSkillLoadCompleted OnSkillLoadCompleted;
@@ -103,22 +105,11 @@ private:
 	TScriptInterface<ISkillRepositoryInterface> SkillRepository;
 
 	/**
-	 * Subscribe to domain events from SkillComponent
+	 * Execute repository operation with error handling and domain event emission
+	 * @param RepositoryTask The repository task to execute
+	 * @param PlayerId The player ID for event emission
+	 * @param OperationName The operation name for logging
 	 */
-	void SubscribeToDomainEvents(USkillComponent* SkillComponent);
-
-	/**
-	 * Unsubscribe from domain events
-	 */
-	void UnsubscribeFromDomainEvents(USkillComponent* SkillComponent);
-
-	// Domain event handlers
-	UFUNCTION()
-	void OnDomainSkillRegistered(USkillDataAsset* SkillData);
-
-	UFUNCTION()
-	void OnDomainSkillUnregistered(const FGuid& SlotId);
-
-	UFUNCTION()
-	void OnDomainSkillsChanged();
+	template<typename T>
+	void ExecuteWithEvents(UE::Tasks::TTask<T> RepositoryTask, int32 PlayerId, const FString& OperationName);
 };

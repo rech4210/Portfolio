@@ -29,7 +29,7 @@ void UShopComponent::OnRep_ShopItems()
 	}
 }
 
-FShopItemState* UShopComponent::GetShopItem(int32 ItemID) {
+FShopItemState UShopComponent::GetShopItem(int32 ItemID) {
 	return nullptr;
 }
 
@@ -99,7 +99,7 @@ bool UShopComponent::UpdateShopItem(int32 ItemID, int32 NewStock, int32 NewPrice
 	return false;
 }
 
-bool UShopComponent::ShopItemRuleCheck(const FShopItemState* Item, int32 Quantity) const {
+bool UShopComponent::ShopItemRuleCheck(const FShopItemState Item, int32 Quantity) const {
 	// if (!Item || !Item->CurrentCount > 0) {
 	// 	return false;
 	// }

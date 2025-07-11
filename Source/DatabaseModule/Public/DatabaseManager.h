@@ -220,6 +220,86 @@ public:
 	 */
 	UE::Tasks::TTask<bool> UpdateSkillCooldown(int32 PlayerId, const FGuid& SlotId, const FDateTime& LastUsedTime, float RemainingCooldown);
 
+	// ============================================================================
+	// Shop Data Management Methods
+	// ============================================================================
+
+	/**
+	 * Load shop data by shop ID
+	 * @param ShopID The shop identifier
+	 * @return Task that completes with shop data
+	 */
+	UE::Tasks::TTask<struct FShopDomain> LoadShopByID(int32 ShopID);
+
+	/**
+	 * Save shop data
+	 * @param ShopData The shop domain object to save
+	 * @return Task that completes when save operation finishes
+	 */
+	UE::Tasks::TTask<bool> SaveShop(const struct FShopDomain& ShopData);
+
+	/**
+	 * Load multiple shops by IDs
+	 * @param ShopIDs Array of shop identifiers
+	 * @return Task that completes with array of shop data
+	 */
+	UE::Tasks::TTask<TArray<struct FShopDomain>> LoadShopsByIDs(const TArray<int32>& ShopIDs);
+
+	/**
+	 * Load all shops for a specific area/region
+	 * @param AreaID The area identifier
+	 * @return Task that completes with array of shop data
+	 */
+	UE::Tasks::TTask<TArray<struct FShopDomain>> LoadShopsForArea(int32 AreaID);
+
+	/**
+	 * Delete a shop by ID
+	 * @param ShopID The shop identifier
+	 * @return Task that completes when delete operation finishes
+	 */
+	UE::Tasks::TTask<bool> DeleteShop(int32 ShopID);
+
+	/**
+	 * Check if a shop exists
+	 * @param ShopID The shop identifier
+	 * @return Task that completes with existence check result
+	 */
+	UE::Tasks::TTask<bool> CheckShopExists(int32 ShopID);
+
+	/**
+	 * Add item to shop
+	 * @param ShopID The shop identifier
+	 * @param ItemData The item data to add
+	 * @return Task that completes when item is added
+	 */
+	UE::Tasks::TTask<bool> AddItemToShop(int32 ShopID, const struct FShopItemDTO& ItemData);
+
+	/**
+	 * Remove item from shop
+	 * @param ShopID The shop identifier
+	 * @param ItemID The item to remove
+	 * @return Task that completes when item is removed
+	 */
+	UE::Tasks::TTask<bool> RemoveItemFromShop(int32 ShopID, int32 ItemID);
+
+	/**
+	 * Update item stock in shop
+	 * @param ShopID The shop identifier
+	 * @param ItemID The item to update
+	 * @param NewStock The new stock amount
+	 * @return Task that completes when stock is updated
+	 */
+	UE::Tasks::TTask<bool> UpdateShopItemStock(int32 ShopID, int32 ItemID, int32 NewStock);
+
+	/**
+	 * Update item price in shop
+	 * @param ShopID The shop identifier
+	 * @param ItemID The item to update
+	 * @param NewPrice The new price
+	 * @return Task that completes when price is updated
+	 */
+	UE::Tasks::TTask<bool> UpdateShopItemPrice(int32 ShopID, int32 ItemID, float NewPrice);
+
 private:
 	// Pointer to the implementation
 	FDatabaseManagerImpl* Impl;
