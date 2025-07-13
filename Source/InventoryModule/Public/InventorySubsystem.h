@@ -10,6 +10,9 @@
 class UInventoryComponent;
 class UInventoryRepository;
 class UInventoryDomainService;
+class APlayerState;
+struct FInventoryItemDTO;
+struct FInventoryDomain;
 
 /**
  * Inventory Subsystem - Pure Repository Management
@@ -42,7 +45,43 @@ public:
 	 * @return Configured domain service with repository dependency injected
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
-	UInventoryDomainService* CreateDomainService();
+	UInventoryDomainService* GetDomainService();
+
+	// ============================================================================
+	// Use Case Orchestration - App Layer Responsibilities Only
+	// ============================================================================
+
+	/**
+	 * Request item addition to inventory with full validation pipeline
+	 * Handles network authority, logging, and transaction boundaries
+	 * @param PlayerState Target player state containing InventoryComponent
+	 * @param Item Item data to add
+	 */
+	void RequestAddItemToInventory(APlayerState* PlayerState, const FInventoryItemDTO& Item);
+
+	/**
+	 * Request item removal from inventory with full validation pipeline
+	 * Handles network authority, logging, and transaction boundaries
+	 * @param PlayerState Target player state containing InventoryComponent
+	 * @param ItemID Item ID to remove
+	 * @param Quantity Quantity to remove
+	 */
+	void RequestRemoveItemFromInventory(APlayerState* PlayerState, const FName& ItemID, int32 Quantity);
+
+	/**
+	 * Request player inventory loading with full validation pipeline
+	 * Handles network authority, logging, and transaction boundaries
+	 * @param PlayerState Target player state containing InventoryComponent
+	 */
+	void RequestLoadPlayerInventory(APlayerState* PlayerState);
+
+	/**
+	 * Request player inventory saving with full validation pipeline
+	 * Handles network authority, logging, and transaction boundaries
+	 * @param PlayerState Target player state containing InventoryComponent
+	 * @param InventoryData The inventory domain data to save
+	 */
+	void RequestSavePlayerInventory(APlayerState* PlayerState, const FInventoryDomain& InventoryData);
 
 private:
 	// Repository interface for Dependency Injection
@@ -52,4 +91,7 @@ private:
 	// Default concrete implementation
 	UPROPERTY()
 	UInventoryRepository* DefaultInventoryRepository;
+
+	UPROPERTY()
+	UInventoryDomainService* DomainService;
 };

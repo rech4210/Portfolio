@@ -69,10 +69,10 @@ protected:
 
 	// Domain Service Event Handlers
 	UFUNCTION()
-	void OnSkillLoadCompleted(APlayerState* PlayerState);
+	void OnSkillLoadCompleted(int32 PlayerState);
 
 	UFUNCTION()
-	void OnSkillOperationFailed(APlayerState* PlayerState, const FString& Reason);
+	void OnSkillOperationFailed(int32 PlayerState, const FString& Reason);
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="GAS")
 	TObjectPtr<UGGwaAbilitySystemComponent> ASC;
 	

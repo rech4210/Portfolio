@@ -86,7 +86,7 @@ protected:
 
 public:
 	// ============================================================================
-	// Aggregate Root Methods with Business Rule Validation
+	// Core Shop Operations (Essential DDD Operations)
 	// ============================================================================
 
 	/**
@@ -96,34 +96,8 @@ public:
 	 * @param PlayerCurrency The player's available currency
 	 * @return True if purchase was successful
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Shop|Business Logic")
+	UFUNCTION(BlueprintCallable, Category = "Shop|Operations")
 	bool PurchaseItemWithValidation(int32 ItemID, int32 Quantity, float PlayerCurrency);
-
-	/**
-	 * Add shop item with business rule validation
-	 * @param ItemState The item state to add
-	 * @return True if addition was successful
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Shop|Management")
-	bool AddShopItem(const FShopItemState& ItemState);
-
-	/**
-	 * Remove shop item with business rule validation
-	 * @param ItemID The item ID to remove
-	 * @return True if removal was successful
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Shop|Management")
-	bool RemoveShopItem(int32 ItemID);
-
-	/**
-	 * Update shop item with business rule validation
-	 * @param ItemID The item ID to update
-	 * @param NewStock The new stock amount
-	 * @param NewPrice The new price
-	 * @return True if update was successful
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Shop|Management")
-	bool UpdateShopItem(int32 ItemID, int32 NewStock, float NewPrice);
 
 	/**
 	 * Update item stock with business rule validation
@@ -131,7 +105,7 @@ public:
 	 * @param NewStock The new stock amount
 	 * @return True if update was successful
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Shop|Management")
+	UFUNCTION(BlueprintCallable, Category = "Shop|Operations")
 	bool UpdateItemStock(int32 ItemID, int32 NewStock);
 
 	/**
@@ -140,27 +114,28 @@ public:
 	 * @param NewPrice The new price
 	 * @return True if update was successful
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Shop|Management")
+	UFUNCTION(BlueprintCallable, Category = "Shop|Operations")
 	bool UpdateItemPrice(int32 ItemID, float NewPrice);
 
 	// ============================================================================
-	// Getters and Query Methods
+	// Essential Query Methods
 	// ============================================================================
 
 	UFUNCTION(BlueprintCallable, Category = "Shop|Queries")
 	const TArray<FShopItemState>& GetAllShopItems() const { return ShopItems; }
 
 	UFUNCTION(BlueprintCallable, Category = "Shop|Queries")
-	FShopItemState GetShopItem(int32 ItemID);
+	bool GetShopItem(int32 ItemID, FShopItemState& OutItem) const;
+
+	// Non-UFUNCTION versions for C++ usage
+	const FShopItemState* GetShopItemPtr(int32 ItemID) const;
+	FShopItemState* GetShopItemPtr(int32 ItemID);
 
 	UFUNCTION(BlueprintCallable, Category = "Shop|Queries")
 	int32 GetShopID() const { return ShopID; }
 
 	UFUNCTION(BlueprintCallable, Category = "Shop|Queries")
 	bool IsShopOpen() const { return bIsShopOpen; }
-
-	UFUNCTION(BlueprintCallable, Category = "Shop|Queries")
-	float GetGlobalPriceModifier() const { return GlobalPriceModifier; }
 
 	/**
 	 * Check if an item can be purchased
@@ -172,54 +147,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Shop|Queries")
 	bool CanPurchaseItem(int32 ItemID, int32 Quantity, float PlayerCurrency) const;
 
-	/**
-	 * Get the effective price of an item (including global modifier)
-	 * @param ItemID The item ID
-	 * @return The effective price, or 0.0 if item not found
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Shop|Queries")
-	float GetItemEffectivePrice(int32 ItemID) const;
-
-	/**
-	 * Get available items (in stock and available)
-	 * @return Array of available items
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Shop|Queries")
-	TArray<FShopItemState> GetAvailableItems() const;
-
 	// ============================================================================
-	// Business Rule Validation
-	// ============================================================================
-
-	/**
-	 * Validate if a shop item follows business rules
-	 * @param Item The item to validate
-	 * @param Quantity The quantity for validation
-	 * @return True if item passes validation
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Shop|Validation")
-	bool ShopItemRuleCheck(FShopItemState Item, int32 Quantity) const;
-
-	/**
-	 * Validate purchase transaction rules
-	 * @param ItemID The item to purchase
-	 * @param Quantity The quantity to purchase
-	 * @param PlayerCurrency The player's available currency
-	 * @return True if purchase is valid
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Shop|Validation")
-	bool ValidatePurchaseRules(int32 ItemID, int32 Quantity, float PlayerCurrency) const;
-
-	/**
-	 * Validate item addition rules
-	 * @param ItemState The item to add
-	 * @return True if addition is valid
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Shop|Validation")
-	bool ValidateItemAdditionRules(const FShopItemState& ItemState) const;
-
-	// ============================================================================
-	// Shop Configuration
+	// Essential Configuration
 	// ============================================================================
 
 	/**
@@ -236,15 +165,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Shop|Configuration")
 	void SetShopOpenStatus(bool bNewIsOpen);
 
-	/**
-	 * Set global price modifier (server authority required)
-	 * @param NewModifier The new price modifier (0.1 to 10.0)
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Shop|Configuration")
-	void SetGlobalPriceModifier(float NewModifier);
-
 	// ============================================================================
-	// Domain Integration
+	// Domain Integration (Essential for DDD)
 	// ============================================================================
 
 	/**
@@ -272,29 +194,7 @@ protected:
 	UFUNCTION()
 	virtual void OnRep_ShopOpenStatus();
 
-	UFUNCTION()
-	virtual void OnRep_GlobalPriceModifier();
-
 private:
-	// Maximum number of items this shop can hold
-	UPROPERTY(EditDefaultsOnly, Category = "Shop|Configuration")
-	int32 MaxShopItems = 50;
-
-	// Minimum price for any item
-	UPROPERTY(EditDefaultsOnly, Category = "Shop|Configuration")
-	float MinItemPrice = 1.0f;
-
-	// Maximum price for any item
-	UPROPERTY(EditDefaultsOnly, Category = "Shop|Configuration")
-	float MaxItemPrice = 999999.0f;
-
-	/**
-	 * Publish domain event safely on GameThread
-	 * @param EventFunction The event function to execute
-	 */
-	template<typename Func>
-	void PublishDomainEvent(Func&& EventFunction);
-
 	/**
 	 * Validate server authority for operations
 	 * @return True if server has authority
@@ -305,4 +205,20 @@ private:
 	 * Notify state change and trigger replication
 	 */
 	void NotifyStateChanged();
+
+	/**
+	 * Validate purchase transaction rules (internal)
+	 * @param ItemID The item to purchase
+	 * @param Quantity The quantity to purchase
+	 * @param PlayerCurrency The player's available currency
+	 * @return True if purchase is valid
+	 */
+	bool ValidatePurchaseRules(int32 ItemID, int32 Quantity, float PlayerCurrency) const;
+
+	/**
+	 * Publish domain event safely on GameThread
+	 * @param EventFunction The event function to execute
+	 */
+	template<typename Func>
+	void PublishDomainEvent(Func&& EventFunction);
 };

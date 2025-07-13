@@ -44,52 +44,52 @@ public:
 	/**
 	 * Domain Service: Register skill to player's skill slots with full business logic
 	 * Uses atomic transaction - triggers domain events for success/failure
-	 * @param PlayerId Target player ID
+	 * @param PlayerState Target player state containing SkillComponent
 	 * @param SkillData Skill data to register
 	 */
-	void RegisterSkillToPlayer(int32 PlayerId, USkillDataAsset* SkillData);
+	void RegisterSkillToPlayer(APlayerState* PlayerState, USkillDataAsset* SkillData);
 
 	/**
 	 * Domain Service: Unregister skill from player's skill slots with full business logic
 	 * Uses atomic transaction - triggers domain events for success/failure
-	 * @param PlayerId Target player ID
+	 * @param PlayerState Target player state containing SkillComponent
 	 * @param SlotId Slot ID to unregister
 	 */
-	void UnregisterSkillFromPlayer(int32 PlayerId, const FGuid& SlotId);
+	void UnregisterSkillFromPlayer(APlayerState* PlayerState, const FGuid& SlotId);
 
 	/**
 	 * Domain Service: Swap skills between two slots with full business logic
 	 * Uses atomic transaction - triggers domain events for success/failure
-	 * @param PlayerId Target player ID
+	 * @param PlayerState Target player state containing SkillComponent
 	 * @param SlotIdA First slot ID
 	 * @param SlotIdB Second slot ID
 	 */
-	void SwapSkillSlots(int32 PlayerId, const FGuid& SlotIdA, const FGuid& SlotIdB);
+	void SwapSkillSlots(APlayerState* PlayerState, const FGuid& SlotIdA, const FGuid& SlotIdB);
 
 	/**
 	 * Domain Service: Update skill cooldown state
 	 * Uses atomic transaction - triggers domain events for success/failure
-	 * @param PlayerId Target player ID
+	 * @param PlayerState Target player state containing SkillComponent
 	 * @param SlotId Slot ID
 	 * @param LastUsedTime When the skill was last used
 	 * @param RemainingCooldown Remaining cooldown time
 	 */
-	void UpdateSkillCooldown(int32 PlayerId, const FGuid& SlotId, const FDateTime& LastUsedTime, float RemainingCooldown);
+	void UpdateSkillCooldown(APlayerState* PlayerState, const FGuid& SlotId, const FDateTime& LastUsedTime, float RemainingCooldown);
 
 	/**
 	 * Domain Service: Load player's skills from persistence
 	 * Triggers domain events for success/failure
-	 * @param PlayerId Target player ID
+	 * @param PlayerState Target player state containing SkillComponent
 	 */
-	void LoadSkills(int32 PlayerId);
+	void LoadSkills(APlayerState* PlayerState);
 
 	/**
 	 * Domain Service: Save player's current skill state
 	 * Uses atomic transaction - triggers domain events for success/failure
-	 * @param PlayerId Target player ID
+	 * @param PlayerState Target player state containing SkillComponent
 	 * @param SkillData The skill domain data to save
 	 */
-	void SaveSkills(int32 PlayerId, const FSkillDomain& SkillData);
+	void SaveSkills(APlayerState* PlayerState, const FSkillDomain& SkillData);
 
 	// Domain Events
 	FOnSkillOperationSucceeded OnSkillOperationSucceeded;

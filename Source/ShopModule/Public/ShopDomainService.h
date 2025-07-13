@@ -7,7 +7,8 @@
 #include "Engine/World.h"
 #include "Async/TaskGraphInterfaces.h"
 #include "Tasks/Task.h"
-#include "ShopDomain.h"
+#include "DatabaseModule/Public/DatabaseManager.h" // Import DTO types from DatabaseModule
+#include "ShopDomain.h" // Keep for FShopPurchaseResult only
 #include "ShopDomainService.generated.h"
 
 class APlayerState;
@@ -124,9 +125,8 @@ public:
 	/**
 	 * Get shop information without modifying anything
 	 * @param ShopID The shop identifier
-	 * @param Callback Callback function to handle the result
 	 */
-	void GetShopInfo(int32 ShopID, TFunction<void(const FShopRepositoryResult&)> Callback);
+	void GetShopInfo(int32 ShopID);
 
 private:
 	// Repository interface for data access (Worker thread)

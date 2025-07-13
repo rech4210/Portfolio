@@ -22,7 +22,9 @@ public:
 
 	void Server_SkillLog(FString Name, const FString& SkillName, FVector SkillLocation);
 
+	virtual void PostLogin(APlayerController* NewPlayer) override;
 	void OnCharacterDataLoaded(const TOptional<struct FCharacterData>& CharacterData, APlayerController* NewPlayer);
+	virtual void Logout(AController* Exiting) override;
 	void OnCharacterDataSaved(bool bSuccess);
 
 protected:
@@ -32,10 +34,8 @@ protected:
 	// 서버 전용 요청 처리
 	virtual void RequestFlowControllerInit(EModeType ModeType) override;
 	virtual void PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage) override;
-	virtual void PostLogin(APlayerController* NewPlayer) override;
-	virtual void Logout(AController* Exiting) override;
-
 	virtual void Tick(float DeltaSeconds) override;
+
 private:
 	UPROPERTY()
 	UBattleFlowController* BattleFlowController;
@@ -44,6 +44,14 @@ private:
 	UPROPERTY()
 	TObjectPtr<UDatabaseManager> DatabaseManager;
 
+	// UPROPERTY()
+	// TScriptInterface<IInventoryRepositoryInterface> InventoryRepository;
+	// UPROPERTY()
+	// TScriptInterface<IInventoryRepositoryInterface> EquipmentRepository;
+	// UPROPERTY()
+	// TScriptInterface<ISkillRepositoryInterface> SkillRepository;
+	// UPROPERTY()
+	// TScriptInterface<IShopRepositoryInterface> ShopRepository;
 
 	TArray<USkillDataAsset*> LoadedSkillDefinitions;
 

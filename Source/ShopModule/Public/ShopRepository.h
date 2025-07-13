@@ -6,7 +6,7 @@
 #include "IShopRepositoryInterface.h"
 #include "UObject/Object.h"
 #include "Tasks/Task.h"
-#include "ShopDomain.h"
+#include "DatabaseModule/Public/DatabaseManager.h" // Import DTO types from DatabaseModule
 #include "ShopRepository.generated.h"
 
 class UShopComponent;
@@ -72,36 +72,14 @@ public:
 	 */
 	virtual UE::Tasks::TTask<bool> ShopExists(int32 ShopID) override;
 
-	// ============================================================================
-	// Legacy methods (component-based operations) - for backward compatibility
-	// ============================================================================
-	// virtual TFuture<void> LoadAllShops(const UObject* WorldContextObject) override;
-	// virtual bool LoadShopData(int32 PlayerInformation, UShopComponent& ShopComponentToPopulate) override;
-	// virtual bool SaveShopData(int32 PlayerInformation, const UShopComponent* ShopComponentToSave) override;
-
 private:
 	UPROPERTY()
 	TObjectPtr<UDatabaseManager> DBManager;
-
-	/**
-	 * Convert domain object to component state (for legacy compatibility)
-	 * @param ShopData The shop domain object
-	 * @param ShopComponent The component to populate
-	 */
-	void ConvertDomainToComponent(const FShopDomain& ShopData, UShopComponent& ShopComponent);
-
-	/**
-	 * Convert component state to domain object (for legacy compatibility)
-	 * @param ShopComponent The component to extract data from
-	 * @param ShopID The shop identifier
-	 * @return The shop domain object
-	 */
-	FShopDomain ConvertComponentToDomain(const UShopComponent& ShopComponent, int32 ShopID);
 
 	/**
 	 * Create a mock shop domain for testing (temporary implementation)
 	 * @param ShopID The shop identifier
 	 * @return Mock shop domain object
 	 */
-	FShopDomain CreateMockShopData(int32 ShopID);
+	// FShopDomain CreateMockShopData(int32 ShopID);
 };

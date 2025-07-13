@@ -110,6 +110,139 @@ struct DATABASEMODULE_API FSkillSlotDTO
 	}
 };
 
+// Shop DTO structures
+USTRUCT(BlueprintType)
+struct DATABASEMODULE_API FShopItemDTO
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	int32 ItemID;
+
+	UPROPERTY()
+	FString ItemName;
+
+	UPROPERTY()
+	FString ItemDescription;
+
+	UPROPERTY()
+	float Price;
+
+	UPROPERTY()
+	int32 Stock;
+
+	UPROPERTY()
+	bool bIsAvailable;
+
+	UPROPERTY()
+	FString Category;
+
+	UPROPERTY()
+	int32 MaxStock;
+
+	UPROPERTY()
+	float RestockIntervalHours;
+
+	FShopItemDTO()
+		: ItemID(0), Price(0.0f), Stock(0), bIsAvailable(false), MaxStock(0), RestockIntervalHours(24.0f)
+	{}
+
+	FShopItemDTO(int32 InItemID, const FString& InItemName, const FString& InItemDescription, 
+				 float InPrice, int32 InStock, bool InIsAvailable, const FString& InCategory, int32 InMaxStock)
+		: ItemID(InItemID), ItemName(InItemName), ItemDescription(InItemDescription)
+		, Price(InPrice), Stock(InStock), bIsAvailable(InIsAvailable)
+		, Category(InCategory), MaxStock(InMaxStock), RestockIntervalHours(24.0f)
+	{}
+
+	// Legacy constructor for backward compatibility
+	FShopItemDTO(int32 InItemID, int32 InStock, float InPrice, int32 InShopID)
+		: ItemID(InItemID), Price(InPrice), Stock(InStock), bIsAvailable(InStock > 0), MaxStock(InStock)
+	{
+		ItemName = FString::Printf(TEXT("Item %d"), InItemID);
+		ItemDescription = TEXT("Legacy item");
+		Category = TEXT("General");
+	}
+};
+
+USTRUCT(BlueprintType)
+struct DATABASEMODULE_API FShopDomain
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	int32 ShopID;
+
+	UPROPERTY()
+	FString ShopName;
+
+	UPROPERTY()
+	FString ShopDescription;
+
+	UPROPERTY()
+	bool bIsOpen;
+
+	UPROPERTY()
+	int32 AreaID;
+
+	UPROPERTY()
+	FVector ShopLocation;
+
+	UPROPERTY()
+	FDateTime LastRestockTime;
+
+	UPROPERTY()
+	float GlobalPriceModifier;
+
+	UPROPERTY()
+	FString ShopOwnerName;
+
+	UPROPERTY()
+	TArray<FShopItemDTO> ShopItems;
+
+	FShopDomain()
+		: ShopID(0), bIsOpen(false), AreaID(0), ShopLocation(FVector::ZeroVector)
+	{}
+};
+
+USTRUCT(BlueprintType)
+struct DATABASEMODULE_API FShopRepositoryResult
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	bool bSuccess;
+
+	UPROPERTY()
+	FString ErrorMessage;
+
+	UPROPERTY()
+	FShopDomain ShopData;
+
+	FShopRepositoryResult()
+		: bSuccess(false)
+	{}
+
+	FShopRepositoryResult(bool InSuccess, const FString& InErrorMessage, const FShopDomain& InShopData)
+		: bSuccess(InSuccess), ErrorMessage(InErrorMessage), ShopData(InShopData)
+	{}
+
+	static FShopRepositoryResult Success(const FShopDomain& InShopData)
+	{
+		FShopRepositoryResult Result;
+		Result.bSuccess = true;
+		Result.ShopData = InShopData;
+		return Result;
+	}
+
+	static FShopRepositoryResult Failure(const FString& InErrorMessage)
+	{
+		FShopRepositoryResult Result;
+		Result.bSuccess = false;
+		Result.ErrorMessage = InErrorMessage;
+		return Result;
+	}
+};
+
 UCLASS()
 class DATABASEMODULE_API UDatabaseManager : public UGameInstanceSubsystem
 {
@@ -229,28 +362,28 @@ public:
 	 * @param ShopID The shop identifier
 	 * @return Task that completes with shop data
 	 */
-	UE::Tasks::TTask<struct FShopDomain> LoadShopByID(int32 ShopID);
+	UE::Tasks::TTask<FShopRepositoryResult> LoadShopByID(int32 ShopID);
 
 	/**
 	 * Save shop data
 	 * @param ShopData The shop domain object to save
 	 * @return Task that completes when save operation finishes
 	 */
-	UE::Tasks::TTask<bool> SaveShop(const struct FShopDomain& ShopData);
+	UE::Tasks::TTask<bool> SaveShop(const FShopDomain& ShopData);
 
 	/**
 	 * Load multiple shops by IDs
 	 * @param ShopIDs Array of shop identifiers
 	 * @return Task that completes with array of shop data
 	 */
-	UE::Tasks::TTask<TArray<struct FShopDomain>> LoadShopsByIDs(const TArray<int32>& ShopIDs);
+	UE::Tasks::TTask<TArray<FShopRepositoryResult>> LoadShopsByIDs(const TArray<int32>& ShopIDs);
 
 	/**
 	 * Load all shops for a specific area/region
 	 * @param AreaID The area identifier
 	 * @return Task that completes with array of shop data
 	 */
-	UE::Tasks::TTask<TArray<struct FShopDomain>> LoadShopsForArea(int32 AreaID);
+	UE::Tasks::TTask<TArray<FShopRepositoryResult>> LoadShopsForArea(int32 AreaID);
 
 	/**
 	 * Delete a shop by ID
@@ -305,4 +438,4 @@ private:
 	FDatabaseManagerImpl* Impl;
 	
 	void LogToExternalServer(const FString& Message);
-}; 
+};

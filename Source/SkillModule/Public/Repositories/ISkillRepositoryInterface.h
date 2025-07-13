@@ -89,43 +89,6 @@ public:
 	 */
 	virtual UE::Tasks::TTask<FSkillRepositoryResult> UpdateSkillCooldown(int32 PlayerId, const FGuid& SlotId, const FDateTime& LastUsedTime, float RemainingCooldown) = 0;
 
-	// ========================================================================
-	// LEGACY SUPPORT METHODS - ENGINE OBJECT DEPENDENCIES
-	// ========================================================================
-	
-	// Legacy methods for backward compatibility
-	virtual void RequestLoadSkillsForPlayer(APlayerState* PlayerState) = 0;
-	virtual void RequestSaveSkillsForPlayer(APlayerState* PlayerState) = 0;
-	
-	/**
-	 * Load skills for player with engine object dependencies
-	 * @param PlayerState Target player
-	 * @return Task that completes when loading finishes
-	 */
-	virtual UE::Tasks::TTask<bool> LoadSkillsForPlayer(APlayerState* PlayerState) = 0;
-
-	/**
-	 * Save skills for player with engine object dependencies
-	 * @param PlayerState Target player
-	 * @return Task that completes when saving finishes
-	 */
-	virtual UE::Tasks::TTask<bool> SaveSkillsForPlayer(APlayerState* PlayerState) = 0;
-
-	/**
-	 * Register skill for player with engine object dependencies
-	 * @param PlayerState Target player
-	 * @param SkillSlot Skill slot to register
-	 * @return Task that completes when registration finishes
-	 */
-	virtual UE::Tasks::TTask<bool> RegisterSkillForPlayer(APlayerState* PlayerState, const FSkillSlotDTO& SkillSlot) = 0;
-
-	/**
-	 * Unregister skill for player with engine object dependencies
-	 * @param PlayerState Target player
-	 * @param SlotId Slot ID to unregister
-	 * @return Task that completes when unregistration finishes
-	 */
-	virtual UE::Tasks::TTask<bool> UnregisterSkillForPlayer(APlayerState* PlayerState, const FGuid& SlotId) = 0;
 };
 
 /**

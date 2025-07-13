@@ -44,7 +44,7 @@ void AGGwaPlayerState::BeginPlay() {
 		// Use DDD-style domain services instead of direct subsystem calls
 		if (UInventorySubsystem* InventorySubsystem = GetGameInstance()->GetSubsystem<UInventorySubsystem>())
 		{
-			if (UInventoryDomainService* InventoryDomainService = InventorySubsystem->CreateDomainService())
+			if (UInventoryDomainService* InventoryDomainService = InventorySubsystem->GetDomainService())
 			{
 				// Use domain service for inventory operations
 				auto LoadTask = InventoryDomainService->LoadInventory(this);
@@ -54,10 +54,10 @@ void AGGwaPlayerState::BeginPlay() {
 
 		if (USkillSubsystem* SkillSubsystem = GetGameInstance()->GetSubsystem<USkillSubsystem>())
 		{
-			if (USkillDomainService* SkillDomainService = SkillSubsystem->CreateDomainService())
+			if (USkillDomainService* SkillDomainService = SkillSubsystem->GetDomainService())
 			{
 				// Use domain service for skill operations
-				auto LoadTask = SkillDomainService->LoadSkills(this);
+				SkillDomainService->LoadSkills(this);
 				// Task will handle completion callbacks automatically
 				
 				// Subscribe to domain service events
@@ -142,9 +142,9 @@ void AGGwaPlayerState::BroadcastAttributeChange(const FGameplayAttribute& Attrib
 	// }
 // }
 
-void AGGwaPlayerState::OnSkillLoadCompleted(APlayerState* PlayerState)
+void AGGwaPlayerState::OnSkillLoadCompleted(int32 Playerid)
 {
-	if (PlayerState == this)
+	if (Playerid == this->GetPlayerId())
 	{
 		UE_LOG(LogTemp, Log, TEXT("Skills loaded successfully for player %s"), *GetPlayerName());
 		// Notify UI or other systems that skills are ready
@@ -152,9 +152,9 @@ void AGGwaPlayerState::OnSkillLoadCompleted(APlayerState* PlayerState)
 	}
 }
 
-void AGGwaPlayerState::OnSkillOperationFailed(APlayerState* PlayerState, const FString& Reason)
+void AGGwaPlayerState::OnSkillOperationFailed(int32 Playerid, const FString& Reason)
 {
-	if (PlayerState == this)
+	if (Playerid == this->GetPlayerId())
 	{
 		UE_LOG(LogTemp, Error, TEXT("Skill operation failed for player %s: %s"), *GetPlayerName(), *Reason);
 		// Handle skill operation failure (show UI notification, etc.)

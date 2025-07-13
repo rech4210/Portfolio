@@ -7,6 +7,7 @@
 #include "SkillRepository.h"
 #include "SkillDomainService.h"
 #include "Components/SkillComponent.h"
+#include "Data/SkillDataAsset.h"
 #include "GameFramework/PlayerState.h"
 
 void USkillSubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -25,12 +26,10 @@ void USkillSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		SkillRepositoryInterface = DefaultSkillRepository;
 	}
 
-	// Legacy repositories
-	SkillConfigRepository = NewObject<USkillConfigRepository>(this, TEXT("SkillConfigRepository"));
-	SkillConfigRepository->Initialize();
-	SkillStateRepository = NewObject<USkillStateRepository>(this, TEXT("SkillStateRepository"));
-	SkillStateRepository->Initialize();
-
+	DomainService = NewObject<USkillDomainService>(this);
+	DomainService->Initialize(SkillRepositoryInterface);
+	
+	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Created new SkillDomainService"));
 	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Initialized - Repository management only"));
 }
 
@@ -38,8 +37,6 @@ void USkillSubsystem::Deinitialize()
 {
 	DefaultSkillRepository = nullptr;
 	SkillRepositoryInterface = nullptr;
-	SkillConfigRepository = nullptr;
-	SkillStateRepository = nullptr;
 	Super::Deinitialize();
 	
 	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Deinitialized"));
@@ -56,49 +53,184 @@ void USkillSubsystem::SetSkillRepository(TScriptInterface<ISkillRepositoryInterf
 	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Repository implementation changed"));
 }
 
-USkillDomainService* USkillSubsystem::CreateDomainService()
-{
-	USkillDomainService* DomainService = NewObject<USkillDomainService>(this);
-	DomainService->Initialize(SkillRepositoryInterface);
-	
-	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Created new SkillDomainService"));
-	return DomainService;
+USkillDomainService* USkillSubsystem::GetDomainService() {
+	return DomainService;	
 }
 
-TScriptInterface<ISkillConfigRepositoryInterface> USkillSubsystem::GetSkillConfigRepository() const
-{
-	return SkillConfigRepository;
-}
+// ============================================================================
+// Use Case Orchestration - App Layer Responsibilities Only
+// ============================================================================
 
-TScriptInterface<ISkillStateRepositoryInterface> USkillSubsystem::GetSkillStateRepository() const
+void USkillSubsystem::RequestRegisterSkill(APlayerState* PlayerState, USkillDataAsset* SkillData)
 {
-	return SkillStateRepository;
-}
-
-void USkillSubsystem::RequestLoadSkillData(APlayerState* PlayerState)
-{
-	UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem::RequestLoadSkillData is deprecated. Use SkillDomainService instead."));
-	
-	// 클라이언트는 DB에서 데이터를 로드하지 않고 복제를 기다립니다.
-	if (GetGameInstance()->GetWorld()->GetNetMode() == NM_Client)
+	// 1. Network & Authority Validation (App Layer responsibility)
+	if (!PlayerState)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerState for skill registration"));
 		return;
 	}
 
-	if (SkillRepositoryInterface.GetInterface() && PlayerState)
+	if (GetGameInstance()->GetWorld()->GetNetMode() == NM_Client)
 	{
-		// Legacy support - just call repository directly
-		SkillRepositoryInterface->RequestLoadSkillsForPlayer(PlayerState);
+		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Skill registration requests should only be made from server"));
+		return;
 	}
+
+	if (!DomainService)
+	{
+		UE_LOG(LogTemp, Error, TEXT("SkillSubsystem: DomainService not initialized"));
+		return;
+	}
+
+	// 2. Transaction Boundary & Logging (App Layer responsibility)
+	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting skill registration transaction - Player: %s, Skill: %d"), 
+		*PlayerState->GetPlayerName(), SkillData ? SkillData->SkillID : -1);
+
+	// 3. Domain Service Call (Delegate business logic)
+	DomainService->RegisterSkillToPlayer(PlayerState, SkillData);
 }
 
-void USkillSubsystem::Client_OnSkillStateUpdated(USkillComponent* SkillComponent)
+void USkillSubsystem::RequestUnregisterSkill(APlayerState* PlayerState, const FGuid& SlotId)
 {
-	UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem::Client_OnSkillStateUpdated is deprecated. Use SkillDomainService instead."));
-	
-	// Legacy support - minimal implementation
-	if (SkillRepositoryInterface.GetInterface())
+	// 1. Network & Authority Validation
+	if (!PlayerState)
 	{
-		// The repository can perform any client-side logic, like updating local caches or data assets.
+		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerState for skill unregistration"));
+		return;
 	}
+
+	if (GetGameInstance()->GetWorld()->GetNetMode() == NM_Client)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Skill unregistration requests should only be made from server"));
+		return;
+	}
+
+	if (!DomainService)
+	{
+		UE_LOG(LogTemp, Error, TEXT("SkillSubsystem: DomainService not initialized"));
+		return;
+	}
+
+	// 2. Transaction Boundary & Logging
+	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting skill unregistration transaction - Player: %s, SlotId: %s"), 
+		*PlayerState->GetPlayerName(), *SlotId.ToString());
+
+	// 3. Domain Service Call
+	DomainService->UnregisterSkillFromPlayer(PlayerState, SlotId);
+}
+
+void USkillSubsystem::RequestSwapSkillSlots(APlayerState* PlayerState, const FGuid& SlotIdA, const FGuid& SlotIdB)
+{
+	// 1. Network & Authority Validation
+	if (!PlayerState)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerState for skill swap"));
+		return;
+	}
+
+	if (GetGameInstance()->GetWorld()->GetNetMode() == NM_Client)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Skill swap requests should only be made from server"));
+		return;
+	}
+
+	if (!DomainService)
+	{
+		UE_LOG(LogTemp, Error, TEXT("SkillSubsystem: DomainService not initialized"));
+		return;
+	}
+
+	// 2. Transaction Boundary & Logging
+	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting skill swap transaction - Player: %s, SlotA: %s, SlotB: %s"), 
+		*PlayerState->GetPlayerName(), *SlotIdA.ToString(), *SlotIdB.ToString());
+
+	// 3. Domain Service Call
+	DomainService->SwapSkillSlots(PlayerState, SlotIdA, SlotIdB);
+}
+
+void USkillSubsystem::RequestLoadPlayerSkills(APlayerState* PlayerState)
+{
+	// 1. Network & Authority Validation
+	if (!PlayerState)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerState for skill loading"));
+		return;
+	}
+
+	if (GetGameInstance()->GetWorld()->GetNetMode() == NM_Client)
+	{
+		UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Client should wait for replicated data, not load from server"));
+		return;
+	}
+
+	if (!DomainService)
+	{
+		UE_LOG(LogTemp, Error, TEXT("SkillSubsystem: DomainService not initialized"));
+		return;
+	}
+
+	// 2. Transaction Boundary & Logging
+	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting skill load transaction - Player: %s"), 
+		*PlayerState->GetPlayerName());
+
+	// 3. Domain Service Call
+	DomainService->LoadSkills(PlayerState);
+}
+
+void USkillSubsystem::RequestSavePlayerSkills(APlayerState* PlayerState, const FSkillDomain& SkillData)
+{
+	// 1. Authority Validation
+	if (!PlayerState)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerState for skill saving"));
+		return;
+	}
+
+	if (GetGameInstance()->GetWorld()->GetNetMode() == NM_Client)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Skill save requests should only be made from server"));
+		return;
+	}
+
+	if (!DomainService)
+	{
+		UE_LOG(LogTemp, Error, TEXT("SkillSubsystem: DomainService not initialized"));
+		return;
+	}
+
+	// 2. Transaction Boundary & Logging
+	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting skill save transaction - Player: %s"), 
+		*PlayerState->GetPlayerName());
+
+	// 3. Domain Service Call
+	DomainService->SaveSkills(PlayerState, SkillData);
+}
+
+void USkillSubsystem::RequestUpdateSkillCooldown(APlayerState* PlayerState, const FGuid& SlotId, const FDateTime& LastUsedTime, float RemainingCooldown)
+{
+	// 1. Authority Validation
+	if (!PlayerState)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerState for cooldown update"));
+		return;
+	}
+
+	if (GetGameInstance()->GetWorld()->GetNetMode() == NM_Client)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Cooldown update requests should only be made from server"));
+		return;
+	}
+
+	if (!DomainService)
+	{
+		UE_LOG(LogTemp, Error, TEXT("SkillSubsystem: DomainService not initialized"));
+		return;
+	}
+
+	// 2. Transaction Boundary & Logging
+	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting cooldown update transaction - Player: %s, SlotId: %s"), 
+		*PlayerState->GetPlayerName(), *SlotId.ToString());
+
+	// 3. Domain Service Call
+	DomainService->UpdateSkillCooldown(PlayerState, SlotId, LastUsedTime, RemainingCooldown);
 }

@@ -48,7 +48,7 @@ bool USkillCastingService::TryCastSkill(AActor* Caster, const FGuid& SlotId){
 				USkillSubsystem* SkillSubsystem = Caster->GetGameInstance()->GetSubsystem<USkillSubsystem>();
 				if (SkillSubsystem)
 				{
-					TScriptInterface<ISkillStateRepositoryInterface> StateRepo = SkillSubsystem->GetSkillStateRepository();
+					TScriptInterface<ISkillRepositoryInterface> StateRepo = SkillSubsystem->GetSkillRepository();
 					if (StateRepo)
 					{
 						APawn* Pawn = Cast<APawn>(Caster);

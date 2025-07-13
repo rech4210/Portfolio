@@ -10,6 +10,7 @@
 class USkillSlot;
 class USkillDataAsset;
 class UGameplayAbility;
+struct FSkillDomain;
 
 // Domain Events for SkillComponent (Aggregate)
 // DECLARE_MULTICAST_DELEGATE_OneParam(FOnSkillRegistered, USkillDataAsset* /* SkillData */);
@@ -110,6 +111,22 @@ public:
 	bool CanSwapSkills(const FGuid& SlotIdA, const FGuid& SlotIdB) const;
 
 	/**
+	 * Validate if cooldown can be updated (Domain Rule)
+	 * @param SlotId Slot ID to validate
+	 * @param LastUsedTime The last used time
+	 * @param RemainingCooldown The remaining cooldown
+	 * @return True if cooldown can be updated
+	 */
+	bool CanUpdateCooldown(const FGuid& SlotId, const FDateTime& LastUsedTime, float RemainingCooldown) const;
+
+	/**
+	 * Validate if skills can be saved (Domain Rule)
+	 * @param SkillData Skill domain data to validate
+	 * @return True if skills can be saved
+	 */
+	bool CanSaveSkills(const FSkillDomain& SkillData) const;
+
+	/**
 	 * Check if player has a specific skill
 	 * @param SkillData Skill data to check
 	 * @return True if player has this skill
@@ -152,6 +169,24 @@ public:
 	 */
 	const TArray<USkillSlot*>& GetAllSkillSlots() const { return reinterpret_cast<const TArray<USkillSlot*>&>(SkillSlots); }
 
+	// ========================================================================
+	// DOMAIN INTEGRATION METHODS - AGGREGATE SYNCHRONIZATION
+	// ========================================================================
+
+	/**
+	 * Synchronize component state with domain data (called by DomainService)
+	 * Updates the aggregate's internal state to match the domain data
+	 * @param SkillData Domain data to sync with
+	 */
+	void SyncWithDomain(const FSkillDomain& SkillData);
+
+	/**
+	 * Extract current domain data from component (called by DomainService)
+	 * Creates domain data representation from current aggregate state
+	 * @return Current skill domain data
+	 */
+	FSkillDomain ExtractDomain() const;
+
 	// 이미 복제를 수행중.
 	// virtual bool ReplicateSubobjects(class UActorChannel* Channel, class FOutBunch* Bunch, FReplicationFlags* RepFlags) override;
 
@@ -166,4 +201,4 @@ private:
 	 * Internal method to notify skill state changes
 	 */
 	void NotifySkillStateChanged();
-}; 
+};

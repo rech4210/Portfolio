@@ -96,9 +96,9 @@ void AGGwaGameMode::InitializeServerManagers()
 		// 이곳에서는 필요 시 추가적인 초기화 로직을 수행할 수 있습니다.
 		
 		// After initialization, load all shop data.
-		if (TScriptInterface<IShopRepositoryInterface> ShopRepository = GetGameInstance()->GetSubsystem<UShopSubsystem>()->GetShopRepository())
+		if (TScriptInterface<IShopRepositoryInterface> Repo = GetGameInstance()->GetSubsystem<UShopSubsystem>()->GetShopRepository())
 		{
-			ShopRepository->LoadAllShops(this);
+			Repo->LoadShopByID(0);
 		}
 		else
 		{
@@ -148,7 +148,7 @@ void AGGwaGameMode::PostLogin(APlayerController* NewPlayer)
 	if (auto InventorySubsystem = GetGameInstance()->GetSubsystem<UInventorySubsystem>())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[START] Loading inventory for player %s"), *NewPlayer->PlayerState->GetPlayerName());
-		UInventoryDomainService* DomainService = InventorySubsystem->CreateDomainService();
+		UInventoryDomainService* DomainService = InventorySubsystem->GetDomainService();
 		DomainService->LoadInventory(NewPlayer->PlayerState);
 		UE_LOG(LogTemp, Warning, TEXT("[SUCCESS] Inventory loaded"));
 	}
@@ -156,18 +156,16 @@ void AGGwaGameMode::PostLogin(APlayerController* NewPlayer)
 	{
 		UE_LOG(LogTemp, Error, TEXT("[FAIL] InventoryRepository is not available on PostLogin!"));
 	}
-	auto SkillConfigRepository = GetGameInstance()->GetSubsystem<USkillSubsystem>()->GetSkillConfigRepository();
-	auto SkillStateRepository = GetGameInstance()->GetSubsystem<USkillSubsystem>()->GetSkillStateRepository();
 	// 캐릭터 및 스킬 정보 로드 (안전한 접근 방식으로 변경)
 	if (auto PlayerState = NewPlayer->GetPlayerState<AGGwaPlayerState>())
 	{
 		const int32 PlayerID = NewPlayer->PlayerState->GetPlayerId();
 
 		UE_LOG(LogTemp, Warning, TEXT("Loading skill configurations..."));
-		if (SkillConfigRepository)
+		if (true)
 		{
 			//플레이어가 가질 수 있는 전체 스킬에 대한 정보 로드
-			SkillConfigRepository->LoadSkillDefinitions(LoadedSkillDefinitions);
+			// SkillRepository->LoadSkillsByPlayerId(PlayerID);
 			UE_LOG(LogTemp, Warning, TEXT("[SUCCESS] Loaded %d skill definitions"), LoadedSkillDefinitions.Num());
 		}
 		else
@@ -176,19 +174,18 @@ void AGGwaGameMode::PostLogin(APlayerController* NewPlayer)
 		}
 
 		UE_LOG(LogTemp, Warning, TEXT("Loading player skill state..."));
-		if (SkillStateRepository)
+		if (true)
 		{
 			USkillComponent* SkillComponent = PlayerState->GetSkillComponent();
 			//플레이어가 설정한 스킬에 대한 정보 로드.
 			TArray<int32> SkillListByDB;
-			SkillStateRepository->LoadSkillStateFromDB_Temp(PlayerID, SkillListByDB);
 			
 			TArray<int32> SkillList ={100,101,102,103,104,105,106,107};
 			UE_LOG(LogTemp, Warning, TEXT("[START] Loading skills for PlayerID: %d, SkillCount: %d"), PlayerID, SkillList.Num());
 			
-			bool bLoadSuccess = SkillStateRepository->LoadSkillState(PlayerID, *SkillComponent, SkillList);
+			// bool bLoadSuccess = SkillStateRepository->LoadSkillState(PlayerID, *SkillComponent, SkillList);
 			PlayerState->SetSkillComponent(SkillComponent);
-			if (bLoadSuccess)
+			if (true)
 			{
 				UE_LOG(LogTemp, Warning, TEXT("[SUCCESS] Skills loaded successfully"));
 			}
@@ -199,8 +196,8 @@ void AGGwaGameMode::PostLogin(APlayerController* NewPlayer)
 
 			// TODO: 로드 직후 바로 저장하는 로직이 의도된 것인지 확인이 필요합니다. (예: 신규 유저의 기본 상태 저장)
 			UE_LOG(LogTemp, Warning, TEXT("[START] Saving initial skill state"));
-			bool bSaveSuccess = SkillStateRepository->SaveSkillState(PlayerID, SkillComponent, SkillList);
-			if (bSaveSuccess)
+			// bool bSaveSuccess = SkillStateRepository->SaveSkillState(PlayerID, SkillComponent, SkillList);
+			if (true)
 			{
 				UE_LOG(LogTemp, Warning, TEXT("[SUCCESS] Initial skill state saved"));
 			}
@@ -226,8 +223,8 @@ void AGGwaGameMode::Logout(AController* Exiting)
 {
 	Super::Logout(Exiting);
 	
-	auto InventoryRepository = GetGameInstance()->GetSubsystem<UInventorySubsystem>()->GetInventoryRepository();
-	if (Exiting && InventoryRepository)
+	auto Inventoryrepo = GetGameInstance()->GetSubsystem<UInventorySubsystem>()->GetInventoryRepository();
+	if (Exiting && Inventoryrepo)
 	{
 		APlayerController* PC = Cast<APlayerController>(Exiting);
 

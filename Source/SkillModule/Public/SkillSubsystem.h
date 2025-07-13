@@ -13,6 +13,8 @@ class USkillRepository;
 class USkillDomainService;
 class APlayerState;
 class USkillComponent;
+class USkillDataAsset;
+struct FSkillDomain;
 
 /**
  * Skill Subsystem - Pure Repository Management
@@ -45,23 +47,61 @@ public:
 	 * @return Configured domain service with repository dependency injected
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Skill")
-	USkillDomainService* CreateDomainService();
+	USkillDomainService* GetDomainService();
 
-	// Legacy support methods
-	TScriptInterface<ISkillConfigRepositoryInterface> GetSkillConfigRepository() const;
-	TScriptInterface<ISkillStateRepositoryInterface> GetSkillStateRepository() const;
-
-	/**
-	 * Legacy support: Entry point for loading player skill data
-	 * @deprecated Use SkillDomainService instead
-	 */
-	void RequestLoadSkillData(APlayerState* PlayerState);
+	// ============================================================================
+	// Use Case Orchestration - App Layer Responsibilities Only
+	// ============================================================================
 
 	/**
-	 * Legacy support: Called by the SkillComponent on clients when skill data is replicated
-	 * @deprecated Use SkillDomainService instead
+	 * Request skill registration with full validation pipeline
+	 * Handles network authority, logging, and transaction boundaries
+	 * @param PlayerState Target player state containing SkillComponent
+	 * @param SkillData Skill data to register
 	 */
-	void Client_OnSkillStateUpdated(USkillComponent* SkillComponent);
+	void RequestRegisterSkill(APlayerState* PlayerState, USkillDataAsset* SkillData);
+
+	/**
+	 * Request skill unregistration with full validation pipeline
+	 * Handles network authority, logging, and transaction boundaries
+	 * @param PlayerState Target player state containing SkillComponent
+	 * @param SlotId Slot ID to unregister
+	 */
+	void RequestUnregisterSkill(APlayerState* PlayerState, const FGuid& SlotId);
+
+	/**
+	 * Request skill slot swap with full validation pipeline
+	 * Handles network authority, logging, and transaction boundaries
+	 * @param PlayerState Target player state containing SkillComponent
+	 * @param SlotIdA First slot ID
+	 * @param SlotIdB Second slot ID
+	 */
+	void RequestSwapSkillSlots(APlayerState* PlayerState, const FGuid& SlotIdA, const FGuid& SlotIdB);
+
+	/**
+	 * Request player skill loading with full validation pipeline
+	 * Handles network authority, logging, and transaction boundaries
+	 * @param PlayerState Target player state containing SkillComponent
+	 */
+	void RequestLoadPlayerSkills(APlayerState* PlayerState);
+
+	/**
+	 * Request player skill saving with full validation pipeline
+	 * Handles network authority, logging, and transaction boundaries
+	 * @param PlayerState Target player state containing SkillComponent
+	 * @param SkillData The skill domain data to save
+	 */
+	void RequestSavePlayerSkills(APlayerState* PlayerState, const FSkillDomain& SkillData);
+
+	/**
+	 * Request skill cooldown update with full validation pipeline
+	 * Handles network authority, logging, and transaction boundaries
+	 * @param PlayerState Target player state containing SkillComponent
+	 * @param SlotId Slot ID
+	 * @param LastUsedTime When the skill was last used
+	 * @param RemainingCooldown Remaining cooldown time
+	 */
+	void RequestUpdateSkillCooldown(APlayerState* PlayerState, const FGuid& SlotId, const FDateTime& LastUsedTime, float RemainingCooldown);
 
 private:
 	// Repository interface for Dependency Injection
@@ -72,10 +112,6 @@ private:
 	UPROPERTY()
 	USkillRepository* DefaultSkillRepository;
 
-	// Legacy repositories
 	UPROPERTY()
-	USkillConfigRepository* SkillConfigRepository;
-
-	UPROPERTY()
-	USkillStateRepository* SkillStateRepository;
+	TObjectPtr<USkillDomainService> DomainService;
 };

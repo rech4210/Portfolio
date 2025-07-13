@@ -35,7 +35,7 @@ public:
 	 * Get the shop domain service for business logic operations
 	 * @return The shop domain service
 	 */
-	UShopDomainService* GetShopDomainService() const;
+	UShopDomainService* GetDomainService() const;
 
 	// ============================================================================
 	// DDD Entry Points
@@ -80,16 +80,6 @@ public:
 	 */
 	void RequestRestockShop(int32 ShopID);
 
-	// ============================================================================
-	// Legacy Entry Points (for backward compatibility)
-	// ============================================================================
-
-	/** Entry point for loading shop data. Can be called from PlayerState's BeginPlay. */
-	void RequestLoadShopData(APlayerState* PlayerState);
-
-	/** Called by the ShopComponent on clients when shop data is replicated. */
-	void Client_OnShopStateUpdated(UShopComponent* ShopComponent);
-
 private:
 	// Repository for data access
 	UPROPERTY()
@@ -102,29 +92,29 @@ private:
 	/**
 	 * Initialize domain events subscriptions
 	 */
-	void SetupDomainEventHandlers();
+	// void SetupDomainEventHandlers();
 
-	/**
-	 * Handle item purchased domain event
-	 * @param PlayerState The player who purchased
-	 * @param ItemID The purchased item ID
-	 * @param Quantity The purchased quantity
-	 */
-	UFUNCTION()
-	void OnItemPurchased(APlayerState* PlayerState, int32 ItemID, int32 Quantity);
-
-	/**
-	 * Handle shop loaded domain event
-	 * @param PlayerState The player for whom shop was loaded
-	 * @param ShopData The loaded shop data
-	 */
-	UFUNCTION()
-	void OnShopLoaded(APlayerState* PlayerState, const struct FShopDomain& ShopData);
-
-	/**
-	 * Handle shop saved domain event
-	 * @param ShopData The saved shop data
-	 */
-	UFUNCTION()
-	void OnShopSaved(const struct FShopDomain& ShopData);
+	// /**
+	//  * Handle item purchased domain event
+	//  * @param PlayerState The player who purchased
+	//  * @param ItemID The purchased item ID
+	//  * @param Quantity The purchased quantity
+	//  */
+	// UFUNCTION()
+	// void OnItemPurchased(APlayerState* PlayerState, int32 ItemID, int32 Quantity);
+	//
+	// /**
+	//  * Handle shop loaded domain event
+	//  * @param PlayerState The player for whom shop was loaded
+	//  * @param ShopData The loaded shop data
+	//  */
+	// UFUNCTION()
+	// void OnShopLoaded(APlayerState* PlayerState, const struct FShopDomain& ShopData);
+	//
+	// /**
+	//  * Handle shop saved domain event
+	//  * @param ShopData The saved shop data
+	//  */
+	// UFUNCTION()
+	// void OnShopSaved(const struct FShopDomain& ShopData);
 };

@@ -71,7 +71,7 @@ struct FDatabaseManagerImpl
 			}
 			catch (const sql::SQLException& e)
 			{
-				UE_LOG(LogTemp, Error, TEXT("SQLException during connection close: %s"), UTF8_TO_TCHAR(e.what()));
+				UE_LOG(LogTemp, Error, TEXT("SQLException during connection close: %hs"), e.what());
 			}
 			delete Con;
 		}
@@ -93,7 +93,7 @@ struct FDatabaseManagerImpl
 			}
 			catch(const sql::SQLException& e)
 			{
-				UE_LOG(LogTemp, Warning, TEXT("Failed to validate pooled connection, creating new one. Error: %s"), UTF8_TO_TCHAR(e.what()));
+				UE_LOG(LogTemp, Warning, TEXT("Failed to validate pooled connection, creating new one. Error: %hs"), e.what());
 				delete Con;
 			}
 		}
@@ -104,7 +104,7 @@ struct FDatabaseManagerImpl
 		}
 		catch (const sql::SQLException& e)
 		{
-			UE_LOG(LogTemp, Error, TEXT("Failed to create new connection: %s"), UTF8_TO_TCHAR(e.what()));
+			UE_LOG(LogTemp, Error, TEXT("Failed to create new connection: %hs"), e.what());
 			return nullptr;
 		}
 	}
@@ -135,7 +135,7 @@ struct FDatabaseManagerImpl
 				}
 				catch (const sql::SQLException& e)
 				{
-					UE_LOG(LogTemp, Error, TEXT("Failed to begin transaction: %s"), UTF8_TO_TCHAR(e.what()));
+					UE_LOG(LogTemp, Error, TEXT("Failed to begin transaction: %hs"), e.what());
 					Connection = nullptr;
 				}
 			}
@@ -152,7 +152,7 @@ struct FDatabaseManagerImpl
 				}
 				catch (const sql::SQLException& e)
 				{
-					UE_LOG(LogTemp, Error, TEXT("Failed to rollback in destructor: %s"), UTF8_TO_TCHAR(e.what()));
+					UE_LOG(LogTemp, Error, TEXT("Failed to rollback in destructor: %hs"), e.what());
 				}
 			}
 		}
@@ -170,7 +170,7 @@ struct FDatabaseManagerImpl
 				}
 				catch (const sql::SQLException& e)
 				{
-					UE_LOG(LogTemp, Error, TEXT("Failed to commit transaction: %s"), UTF8_TO_TCHAR(e.what()));
+					UE_LOG(LogTemp, Error, TEXT("Failed to commit transaction: %hs"), e.what());
 					return false;
 				}
 			}
@@ -196,7 +196,7 @@ struct FDatabaseManagerImpl
 			}
 			catch (const sql::SQLException& e)
 			{
-				UE_LOG(LogTemp, Error, TEXT("Failed to commit transaction: %s"), UTF8_TO_TCHAR(e.what()));
+				UE_LOG(LogTemp, Error, TEXT("Failed to commit transaction: %hs"), e.what());
 				throw;
 			}
 		}
@@ -214,7 +214,7 @@ struct FDatabaseManagerImpl
 			}
 			catch (const sql::SQLException& e)
 			{
-				UE_LOG(LogTemp, Error, TEXT("Failed to rollback transaction: %s"), UTF8_TO_TCHAR(e.what()));
+				UE_LOG(LogTemp, Error, TEXT("Failed to rollback transaction: %hs"), e.what());
 			}
 		}
 	}
@@ -265,7 +265,7 @@ void UDatabaseManager::Initialize(FSubsystemCollectionBase& Collection)
 	
 	catch (const sql::SQLException &e)
 	{
-		UE_LOG(LogTemp, Fatal, TEXT("Failed to initialize database connection: %s"), UTF8_TO_TCHAR(e.what()));
+		UE_LOG(LogTemp, Fatal, TEXT("Failed to initialize database connection: %hs"), e.what());
 		delete Impl;
 		Impl = nullptr;
 	}
@@ -314,7 +314,7 @@ void UDatabaseManager::LoadCharacterInfo(int32 UserId, FCharacterDataLoadDelegat
 			}
 			catch (const sql::SQLException &e)
 			{
-				UE_LOG(LogTemp, Error, TEXT("LoadCharacterInfo failed: %s"), UTF8_TO_TCHAR(e.what()));
+				UE_LOG(LogTemp, Error, TEXT("LoadCharacterInfo failed: %hs"), e.what());
 			}
 			Impl->ReturnConnection(Con);
 		}
@@ -363,7 +363,7 @@ void UDatabaseManager::SaveCharacterInfo(const FCharacterData& CharacterData, FC
 			}
 			catch (const sql::SQLException &e)
 			{
-				UE_LOG(LogTemp, Error, TEXT("SaveCharacterInfo failed: %s"), UTF8_TO_TCHAR(e.what()));
+				UE_LOG(LogTemp, Error, TEXT("SaveCharacterInfo failed: %hs"), e.what());
 			}
 
 			Impl->ReturnConnection(Con);
@@ -447,7 +447,7 @@ UE::Tasks::TTask<bool> UDatabaseManager::WithTransaction(F&& Function, const TCH
 		}
 		catch (const sql::SQLException& e)
 		{
-			UE_LOG(LogTemp, Error, TEXT("Transaction failed with SQL exception: %s"), UTF8_TO_TCHAR(e.what()));
+			UE_LOG(LogTemp, Error, TEXT("Transaction failed with SQL exception: %hs"), e.what());
 			// Destructor will handle rollback
 		}
 		catch (...)
@@ -506,7 +506,7 @@ UE::Tasks::TTask<TArray<FInventoryItemDTO>> UDatabaseManager::LoadInventoryForPl
 		}
 		catch (const sql::SQLException& e)
 		{
-			UE_LOG(LogTemp, Error, TEXT("LoadInventoryForPlayer failed: %s"), UTF8_TO_TCHAR(e.what()));
+			UE_LOG(LogTemp, Error, TEXT("LoadInventoryForPlayer failed: %hs"), e.what());
 		}
 
 		return ResultItems;
@@ -544,7 +544,7 @@ UE::Tasks::TTask<bool> UDatabaseManager::SaveInventoryForPlayer(int32 PlayerId, 
 		}
 		catch (const sql::SQLException& e)
 		{
-			UE_LOG(LogTemp, Error, TEXT("SaveInventoryForPlayer failed: %s"), UTF8_TO_TCHAR(e.what()));
+			UE_LOG(LogTemp, Error, TEXT("SaveInventoryForPlayer failed: %hs"), e.what());
 			return false;
 		}
 	}, TEXT("Inventory/SaveItems"));
@@ -583,7 +583,7 @@ UE::Tasks::TTask<bool> UDatabaseManager::AddInventoryItem(int32 PlayerId, const 
 		}
 		catch (const sql::SQLException& e)
 		{
-			UE_LOG(LogTemp, Error, TEXT("AddInventoryItem failed: %s"), UTF8_TO_TCHAR(e.what()));
+			UE_LOG(LogTemp, Error, TEXT("AddInventoryItem failed: %hs"), e.what());
 			return false;
 		}
 	}, TEXT("Inventory/AddItem"));
@@ -617,7 +617,7 @@ UE::Tasks::TTask<bool> UDatabaseManager::RemoveInventoryItem(int32 PlayerId, con
 		}
 		catch (const sql::SQLException& e)
 		{
-			UE_LOG(LogTemp, Error, TEXT("RemoveInventoryItem failed: %s"), UTF8_TO_TCHAR(e.what()));
+			UE_LOG(LogTemp, Error, TEXT("RemoveInventoryItem failed: %hs"), e.what());
 			return false;
 		}
 	}, TEXT("Inventory/RemoveItem"));
@@ -659,7 +659,7 @@ UE::Tasks::TTask<TArray<FSkillSlotDTO>> UDatabaseManager::LoadSkillsForPlayer(in
 			{
 				FSkillSlotDTO Skill;
 				FString SlotIdString = UTF8_TO_TCHAR(Res->getString("slot_id").c_str());
-				Skill.SlotId.ParseExact(SlotIdString, EGuidFormats::DigitsWithHyphens);
+				FGuid::ParseExact(SlotIdString, EGuidFormats::DigitsWithHyphens, Skill.SlotId);
 				Skill.SkillID = Res->getInt("skill_id");
 				
 				// Parse last used time
@@ -671,7 +671,7 @@ UE::Tasks::TTask<TArray<FSkillSlotDTO>> UDatabaseManager::LoadSkillsForPlayer(in
 		}
 		catch (const sql::SQLException& e)
 		{
-			UE_LOG(LogTemp, Error, TEXT("LoadSkillsForPlayer failed: %s"), UTF8_TO_TCHAR(e.what()));
+			UE_LOG(LogTemp, Error, TEXT("LoadSkillsForPlayer failed: %hs"), e.what());
 		}
 
 		return ResultSkills;
@@ -711,7 +711,7 @@ UE::Tasks::TTask<bool> UDatabaseManager::SaveSkillsForPlayer(int32 PlayerId, con
 		}
 		catch (const sql::SQLException& e)
 		{
-			UE_LOG(LogTemp, Error, TEXT("SaveSkillsForPlayer failed: %s"), UTF8_TO_TCHAR(e.what()));
+			UE_LOG(LogTemp, Error, TEXT("SaveSkillsForPlayer failed: %hs"), e.what());
 			return false;
 		}
 	}, TEXT("Skill/SaveSkills"));
@@ -739,7 +739,7 @@ UE::Tasks::TTask<bool> UDatabaseManager::RegisterSkill(int32 PlayerId, const FSk
 		}
 		catch (const sql::SQLException& e)
 		{
-			UE_LOG(LogTemp, Error, TEXT("RegisterSkill failed: %s"), UTF8_TO_TCHAR(e.what()));
+			UE_LOG(LogTemp, Error, TEXT("RegisterSkill failed: %hs"), e.what());
 			return false;
 		}
 	}, TEXT("Skill/RegisterSkill"));
@@ -762,7 +762,7 @@ UE::Tasks::TTask<bool> UDatabaseManager::UnregisterSkill(int32 PlayerId, const F
 		}
 		catch (const sql::SQLException& e)
 		{
-			UE_LOG(LogTemp, Error, TEXT("UnregisterSkill failed: %s"), UTF8_TO_TCHAR(e.what()));
+			UE_LOG(LogTemp, Error, TEXT("UnregisterSkill failed: %hs"), e.what());
 			return false;
 		}
 	}, TEXT("Skill/UnregisterSkill"));
@@ -787,8 +787,472 @@ UE::Tasks::TTask<bool> UDatabaseManager::UpdateSkillCooldown(int32 PlayerId, con
 		}
 		catch (const sql::SQLException& e)
 		{
-			UE_LOG(LogTemp, Error, TEXT("UpdateSkillCooldown failed: %s"), UTF8_TO_TCHAR(e.what()));
+			UE_LOG(LogTemp, Error, TEXT("UpdateSkillCooldown failed: %hs"), e.what());
 			return false;
 		}
 	}, TEXT("Skill/UpdateCooldown"));
+}
+
+// ============================================================================
+// SHOP REPOSITORY METHODS
+// ============================================================================
+
+UE::Tasks::TTask<FShopRepositoryResult> UDatabaseManager::LoadShopByID(int32 ShopID)
+{
+	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, ShopID]() -> FShopRepositoryResult
+	{
+		FShopRepositoryResult Result;
+		
+		if (!Impl)
+		{
+			UE_LOG(LogTemp, Error, TEXT("DatabaseManager not initialized"));
+			Result.bSuccess = false;
+			Result.ErrorMessage = TEXT("DatabaseManager not initialized");
+			return Result;
+		}
+
+		sql::Connection* Con = Impl->GetConnection();
+		if (!Con)
+		{
+			UE_LOG(LogTemp, Error, TEXT("Failed to get database connection"));
+			Result.bSuccess = false;
+			Result.ErrorMessage = TEXT("Failed to get database connection");
+			return Result;
+		}
+
+		// RAII connection management with SCOPE_EXIT
+		ON_SCOPE_EXIT
+		{
+			if (Con)
+			{
+				Impl->ReturnConnection(Con);
+			}
+		};
+
+		try
+		{
+			// Load shop basic info
+			TUniquePtr<sql::PreparedStatement> ShopStmt(Con->prepareStatement(
+				"SELECT shop_id, shop_name, shop_description, is_open, area_id, shop_location_x, shop_location_y, shop_location_z, last_restock_time FROM shops WHERE shop_id = ?"
+			));
+			ShopStmt->setInt(1, ShopID);
+			
+			TUniquePtr<sql::ResultSet> ShopRes(ShopStmt->executeQuery());
+			
+			if (ShopRes->next())
+			{
+				Result.ShopData.ShopID = ShopRes->getInt("shop_id");
+				Result.ShopData.ShopName = UTF8_TO_TCHAR(ShopRes->getString("shop_name").c_str());
+				Result.ShopData.ShopDescription = UTF8_TO_TCHAR(ShopRes->getString("shop_description").c_str());
+				Result.ShopData.bIsOpen = ShopRes->getBoolean("is_open");
+				Result.ShopData.AreaID = ShopRes->getInt("area_id");
+				
+				// Parse location
+				float X = static_cast<float>(ShopRes->getDouble("shop_location_x"));
+				float Y = static_cast<float>(ShopRes->getDouble("shop_location_y"));
+				float Z = static_cast<float>(ShopRes->getDouble("shop_location_z"));
+				Result.ShopData.ShopLocation = FVector(X, Y, Z);
+				
+				// Parse last restock time
+				std::string TimeStr = ShopRes->getString("last_restock_time");
+				// Convert SQL timestamp to FDateTime if needed
+				Result.ShopData.LastRestockTime = FDateTime::Now();
+
+				// Load shop items
+				TUniquePtr<sql::PreparedStatement> ItemsStmt(Con->prepareStatement(
+					"SELECT item_id, item_name, item_description, price, stock, is_available, category, max_stock FROM shop_items WHERE shop_id = ?"
+				));
+				ItemsStmt->setInt(1, ShopID);
+				
+				TUniquePtr<sql::ResultSet> ItemsRes(ItemsStmt->executeQuery());
+				
+				while (ItemsRes->next())
+				{
+					FShopItemDTO Item;
+					Item.ItemID = ItemsRes->getInt("item_id");
+					Item.ItemName = UTF8_TO_TCHAR(ItemsRes->getString("item_name").c_str());
+					Item.ItemDescription = UTF8_TO_TCHAR(ItemsRes->getString("item_description").c_str());
+					Item.Price = static_cast<float>(ItemsRes->getDouble("price"));
+					Item.Stock = ItemsRes->getInt("stock");
+					Item.bIsAvailable = ItemsRes->getBoolean("is_available");
+					Item.Category = UTF8_TO_TCHAR(ItemsRes->getString("category").c_str());
+					Item.MaxStock = ItemsRes->getInt("max_stock");
+					
+					Result.ShopData.ShopItems.Add(Item);
+				}
+				
+				Result.bSuccess = true;
+			}
+			else
+			{
+				Result.bSuccess = false;
+				Result.ErrorMessage = FString::Printf(TEXT("Shop with ID %d not found"), ShopID);
+			}
+		}
+		catch (const sql::SQLException& e)
+		{
+			UE_LOG(LogTemp, Error, TEXT("LoadShopByID failed: %hs"), e.what());
+			Result.bSuccess = false;
+			Result.ErrorMessage = FString(e.what());
+		}
+
+		return Result;
+	});
+}
+
+UE::Tasks::TTask<bool> UDatabaseManager::SaveShop(const FShopDomain& ShopData)
+{
+	return WithTransaction([ShopData](sql::Connection* Con) -> bool
+	{
+		try
+		{
+			// Update/Insert shop basic info
+			TUniquePtr<sql::PreparedStatement> ShopStmt(Con->prepareStatement(
+				"INSERT INTO shops (shop_id, shop_name, is_open, global_price_modifier, shop_owner_name) "
+				"VALUES (?, ?, ?, ?, ?) "
+				"ON DUPLICATE KEY UPDATE "
+				"shop_name = VALUES(shop_name), is_open = VALUES(is_open), "
+				"global_price_modifier = VALUES(global_price_modifier), shop_owner_name = VALUES(shop_owner_name)"
+			));
+			
+			ShopStmt->setInt(1, ShopData.ShopID);
+			ShopStmt->setString(2, TCHAR_TO_UTF8(*ShopData.ShopName));
+			ShopStmt->setBoolean(3, ShopData.bIsOpen);
+			ShopStmt->setDouble(4, ShopData.GlobalPriceModifier);
+			ShopStmt->setString(5, TCHAR_TO_UTF8(*ShopData.ShopOwnerName));
+			
+			ShopStmt->executeUpdate();
+
+			// Clear existing items
+			TUniquePtr<sql::PreparedStatement> DeleteStmt(Con->prepareStatement(
+				"DELETE FROM shop_items WHERE shop_id = ?"
+			));
+			DeleteStmt->setInt(1, ShopData.ShopID);
+			DeleteStmt->executeUpdate();
+
+			// Insert new items
+			TUniquePtr<sql::PreparedStatement> ItemsStmt(Con->prepareStatement(
+				"INSERT INTO shop_items (shop_id, item_id, stock, price, is_available, max_stock, restock_interval_hours) "
+				"VALUES (?, ?, ?, ?, ?, ?, ?)"
+			));
+
+			for (const FShopItemDTO& Item : ShopData.ShopItems)
+			{
+				ItemsStmt->setInt(1, ShopData.ShopID);
+				ItemsStmt->setInt(2, Item.ItemID);
+				ItemsStmt->setInt(3, Item.Stock);
+				ItemsStmt->setDouble(4, Item.Price);
+				ItemsStmt->setBoolean(5, Item.bIsAvailable);
+				ItemsStmt->setInt(6, Item.MaxStock);
+				ItemsStmt->setDouble(7, Item.RestockIntervalHours);
+				
+				ItemsStmt->executeUpdate();
+			}
+
+			return true;
+		}
+		catch (const sql::SQLException& e)
+		{
+			UE_LOG(LogTemp, Error, TEXT("SaveShop failed: %hs"), e.what());
+			return false;
+		}
+	}, TEXT("Shop/SaveShop"));
+}
+
+UE::Tasks::TTask<TArray<FShopRepositoryResult>> UDatabaseManager::LoadShopsByIDs(const TArray<int32>& ShopIDs)
+{
+	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, ShopIDs]() -> TArray<FShopRepositoryResult>
+	{
+		TArray<FShopRepositoryResult> Results;
+		
+		if (!Impl)
+		{
+			UE_LOG(LogTemp, Error, TEXT("DatabaseManager not initialized"));
+			return Results;
+		}
+
+		sql::Connection* Con = Impl->GetConnection();
+		if (!Con)
+		{
+			UE_LOG(LogTemp, Error, TEXT("Failed to get database connection"));
+			return Results;
+		}
+
+		// RAII connection management
+		ON_SCOPE_EXIT
+		{
+			if (Con)
+			{
+				Impl->ReturnConnection(Con);
+			}
+		};
+
+		try
+		{
+			for (int32 ShopID : ShopIDs)
+			{
+				auto LoadTask = LoadShopByID(ShopID);
+				FShopRepositoryResult ShopResult = LoadTask.GetResult();
+				
+				Results.Add(ShopResult); // Add all results, even failures
+			}
+		}
+		catch (const sql::SQLException& e)
+		{
+			UE_LOG(LogTemp, Error, TEXT("LoadShopsByIDs failed: %s"), UTF8_TO_TCHAR(e.what()));
+			Results.Add(FShopRepositoryResult::Failure(UTF8_TO_TCHAR(e.what())));
+		}
+
+		return Results;
+	});
+}
+
+UE::Tasks::TTask<TArray<FShopRepositoryResult>> UDatabaseManager::LoadShopsForArea(int32 AreaID)
+{
+	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, AreaID]() -> TArray<FShopRepositoryResult>
+	{
+		TArray<FShopRepositoryResult> Results;
+		
+		if (!Impl)
+		{
+			UE_LOG(LogTemp, Error, TEXT("DatabaseManager not initialized"));
+			return Results;
+		}
+
+		sql::Connection* Con = Impl->GetConnection();
+		if (!Con)
+		{
+			UE_LOG(LogTemp, Error, TEXT("Failed to get database connection"));
+			return Results;
+		}
+
+		// RAII connection management
+		ON_SCOPE_EXIT
+		{
+			if (Con)
+			{
+				Impl->ReturnConnection(Con);
+			}
+		};
+
+		try
+		{
+			TUniquePtr<sql::PreparedStatement> Stmt(Con->prepareStatement(
+				"SELECT shop_id FROM shops WHERE area_id = ?"
+			));
+			Stmt->setInt(1, AreaID);
+			
+			TUniquePtr<sql::ResultSet> Res(Stmt->executeQuery());
+			TArray<int32> ShopIDs;
+			
+			while (Res->next())
+			{
+				ShopIDs.Add(Res->getInt("shop_id"));
+			}
+
+			// Load full shop data for each shop ID
+			for (int32 ShopID : ShopIDs)
+			{
+				auto LoadTask = LoadShopByID(ShopID);
+				FShopRepositoryResult ShopResult = LoadTask.GetResult();
+				
+				Results.Add(ShopResult); // Add all results, even failures
+			}
+		}
+		catch (const sql::SQLException& e)
+		{
+			UE_LOG(LogTemp, Error, TEXT("LoadShopsForArea failed: %s"), UTF8_TO_TCHAR(e.what()));
+			Results.Add(FShopRepositoryResult::Failure(UTF8_TO_TCHAR(e.what())));
+		}
+
+		return Results;
+	});
+}
+
+UE::Tasks::TTask<bool> UDatabaseManager::DeleteShop(int32 ShopID)
+{
+	return WithTransaction([ShopID](sql::Connection* Con) -> bool
+	{
+		try
+		{
+			// Delete shop items first (foreign key constraint)
+			TUniquePtr<sql::PreparedStatement> DeleteItemsStmt(Con->prepareStatement(
+				"DELETE FROM shop_items WHERE shop_id = ?"
+			));
+			DeleteItemsStmt->setInt(1, ShopID);
+			DeleteItemsStmt->executeUpdate();
+
+			// Delete shop
+			TUniquePtr<sql::PreparedStatement> DeleteShopStmt(Con->prepareStatement(
+				"DELETE FROM shops WHERE shop_id = ?"
+			));
+			DeleteShopStmt->setInt(1, ShopID);
+			
+			int32 AffectedRows = DeleteShopStmt->executeUpdate();
+			return AffectedRows > 0;
+		}
+		catch (const sql::SQLException& e)
+		{
+			UE_LOG(LogTemp, Error, TEXT("DeleteShop failed: %s"), UTF8_TO_TCHAR(e.what()));
+			return false;
+		}
+	}, TEXT("Shop/DeleteShop"));
+}
+
+UE::Tasks::TTask<bool> UDatabaseManager::CheckShopExists(int32 ShopID)
+{
+	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, ShopID]() -> bool
+	{
+		if (!Impl)
+		{
+			UE_LOG(LogTemp, Error, TEXT("DatabaseManager not initialized"));
+			return false;
+		}
+
+		sql::Connection* Con = Impl->GetConnection();
+		if (!Con)
+		{
+			UE_LOG(LogTemp, Error, TEXT("Failed to get database connection"));
+			return false;
+		}
+
+		// RAII connection management
+		ON_SCOPE_EXIT
+		{
+			if (Con)
+			{
+				Impl->ReturnConnection(Con);
+			}
+		};
+
+		try
+		{
+			TUniquePtr<sql::PreparedStatement> Stmt(Con->prepareStatement(
+				"SELECT COUNT(*) as count FROM shops WHERE shop_id = ?"
+			));
+			Stmt->setInt(1, ShopID);
+			
+			TUniquePtr<sql::ResultSet> Res(Stmt->executeQuery());
+			
+			if (Res->next())
+			{
+				return Res->getInt("count") > 0;
+			}
+		}
+		catch (const sql::SQLException& e)
+		{
+			UE_LOG(LogTemp, Error, TEXT("CheckShopExists failed: %s"), UTF8_TO_TCHAR(e.what()));
+		}
+
+		return false;
+	});
+}
+
+UE::Tasks::TTask<bool> UDatabaseManager::AddItemToShop(int32 ShopID, const FShopItemDTO& ItemData)
+{
+	return WithTransaction([ShopID, ItemData](sql::Connection* Con) -> bool
+	{
+		try
+		{
+			TUniquePtr<sql::PreparedStatement> InsertStmt(Con->prepareStatement(
+				"INSERT INTO shop_items (shop_id, item_id, item_name, item_description, price, stock, is_available, category, max_stock, restock_interval_hours) "
+				"VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
+				"ON DUPLICATE KEY UPDATE "
+				"item_name = VALUES(item_name), item_description = VALUES(item_description), "
+				"price = VALUES(price), stock = VALUES(stock), is_available = VALUES(is_available), "
+				"category = VALUES(category), max_stock = VALUES(max_stock), restock_interval_hours = VALUES(restock_interval_hours)"
+			));
+			
+			InsertStmt->setInt(1, ShopID);
+			InsertStmt->setInt(2, ItemData.ItemID);
+			InsertStmt->setString(3, TCHAR_TO_UTF8(*ItemData.ItemName));
+			InsertStmt->setString(4, TCHAR_TO_UTF8(*ItemData.ItemDescription));
+			InsertStmt->setDouble(5, ItemData.Price);
+			InsertStmt->setInt(6, ItemData.Stock);
+			InsertStmt->setBoolean(7, ItemData.bIsAvailable);
+			InsertStmt->setString(8, TCHAR_TO_UTF8(*ItemData.Category));
+			InsertStmt->setInt(9, ItemData.MaxStock);
+			InsertStmt->setDouble(10, ItemData.RestockIntervalHours);
+			
+			int32 AffectedRows = InsertStmt->executeUpdate();
+			return AffectedRows > 0;
+		}
+		catch (const sql::SQLException& e)
+		{
+			UE_LOG(LogTemp, Error, TEXT("AddItemToShop failed: %hs"), e.what());
+			return false;
+		}
+	}, TEXT("Shop/AddItem"));
+}
+
+UE::Tasks::TTask<bool> UDatabaseManager::RemoveItemFromShop(int32 ShopID, int32 ItemID)
+{
+	return WithTransaction([ShopID, ItemID](sql::Connection* Con) -> bool
+	{
+		try
+		{
+			TUniquePtr<sql::PreparedStatement> DeleteStmt(Con->prepareStatement(
+				"DELETE FROM shop_items WHERE shop_id = ? AND item_id = ?"
+			));
+			DeleteStmt->setInt(1, ShopID);
+			DeleteStmt->setInt(2, ItemID);
+			
+			int32 AffectedRows = DeleteStmt->executeUpdate();
+			return AffectedRows > 0;
+		}
+		catch (const sql::SQLException& e)
+		{
+			UE_LOG(LogTemp, Error, TEXT("RemoveItemFromShop failed: %hs"), e.what());
+			return false;
+		}
+	}, TEXT("Shop/RemoveItem"));
+}
+
+UE::Tasks::TTask<bool> UDatabaseManager::UpdateShopItemStock(int32 ShopID, int32 ItemID, int32 NewStock)
+{
+	return WithTransaction([ShopID, ItemID, NewStock](sql::Connection* Con) -> bool
+	{
+		try
+		{
+			TUniquePtr<sql::PreparedStatement> UpdateStmt(Con->prepareStatement(
+				"UPDATE shop_items SET stock = ?, is_available = ? WHERE shop_id = ? AND item_id = ?"
+			));
+			UpdateStmt->setInt(1, NewStock);
+			UpdateStmt->setBoolean(2, NewStock > 0);
+			UpdateStmt->setInt(3, ShopID);
+			UpdateStmt->setInt(4, ItemID);
+			
+			int32 AffectedRows = UpdateStmt->executeUpdate();
+			return AffectedRows > 0;
+		}
+		catch (const sql::SQLException& e)
+		{
+			UE_LOG(LogTemp, Error, TEXT("UpdateShopItemStock failed: %hs"), e.what());
+			return false;
+		}
+	}, TEXT("Shop/UpdateStock"));
+}
+
+UE::Tasks::TTask<bool> UDatabaseManager::UpdateShopItemPrice(int32 ShopID, int32 ItemID, float NewPrice)
+{
+	return WithTransaction([ShopID, ItemID, NewPrice](sql::Connection* Con) -> bool
+	{
+		try
+		{
+			TUniquePtr<sql::PreparedStatement> UpdateStmt(Con->prepareStatement(
+				"UPDATE shop_items SET price = ? WHERE shop_id = ? AND item_id = ?"
+			));
+			UpdateStmt->setDouble(1, NewPrice);
+			UpdateStmt->setInt(2, ShopID);
+			UpdateStmt->setInt(3, ItemID);
+			
+			int32 AffectedRows = UpdateStmt->executeUpdate();
+			return AffectedRows > 0;
+		}
+		catch (const sql::SQLException& e)
+		{
+			UE_LOG(LogTemp, Error, TEXT("UpdateShopItemPrice failed: %hs"), e.what());
+			return false;
+		}
+	}, TEXT("Shop/UpdatePrice"));
 }
