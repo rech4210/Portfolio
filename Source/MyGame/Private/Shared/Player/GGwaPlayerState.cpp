@@ -47,7 +47,7 @@ void AGGwaPlayerState::BeginPlay() {
 			if (UInventoryDomainService* InventoryDomainService = InventorySubsystem->GetDomainService())
 			{
 				// Use domain service for inventory operations
-				auto LoadTask = InventoryDomainService->LoadInventory(this);
+				// auto LoadTask = InventoryDomainService->LoadInventory(this);
 				// Task will handle completion callbacks automatically
 			}
 		}
@@ -57,7 +57,7 @@ void AGGwaPlayerState::BeginPlay() {
 			if (USkillDomainService* SkillDomainService = SkillSubsystem->GetDomainService())
 			{
 				// Use domain service for skill operations
-				SkillDomainService->LoadSkills(this);
+				// SkillDomainService->LoadSkills(this);
 				// Task will handle completion callbacks automatically
 				
 				// Subscribe to domain service events
@@ -106,15 +106,15 @@ void AGGwaPlayerState::OnSkillSlotsUpdated() const{
 	Controller->Client_ReceiveSkillData(SkillComponent);
 }
 
-void AGGwaPlayerState::SetSkillComponent(USkillComponent* NewComponent) {
-    SkillComponent = NewComponent;
-	if (!SkillComponent) {
-		return;
-	}
-    for (auto Element : SkillComponent->GetAllSkillSlots()) {
-    	UE_LOG(LogTemp, Warning, TEXT("===SkillComponent SetSkillComponent: SkillSlot %d, Id %s ==="), Element->SkillData->InputSlot, *Element->SkillData->Description.ToString());
-    }
-}
+// void AGGwaPlayerState::SetSkillComponent(USkillComponent* NewComponent) {
+//     SkillComponent = NewComponent;
+// 	if (!SkillComponent) {
+// 		return;
+// 	}
+//     for (auto Element : SkillComponent->GetAllSkillSlots()) {
+//     	UE_LOG(LogTemp, Warning, TEXT("===SkillComponent SetSkillComponent: SkillSlot %d, Id %s ==="), Element->SkillData->InputSlot, *Element->SkillData->Description.ToString());
+//     }
+// }
 
 void AGGwaPlayerState::BroadcastAttributeChange(const FGameplayAttribute& Attribute, float NewValue) const{
 	// OnAttributeChanged.Broadcast(Attribute, NewValue, SkillData);

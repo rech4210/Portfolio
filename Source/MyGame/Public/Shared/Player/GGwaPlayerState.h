@@ -48,9 +48,10 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	UInventoryComponent* GetInventoryComponent() const;
-	
-	UFUNCTION(BlueprintCallable)
-	void SetSkillComponent(USkillComponent* NewComponent);
+
+	// Deprecated
+	// UFUNCTION(BlueprintCallable)
+	// void SetSkillComponent(USkillComponent* NewComponent);
 
 	UFUNCTION()
 	void OnSkillSlotsUpdated() const;

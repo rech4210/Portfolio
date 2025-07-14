@@ -279,7 +279,7 @@ void UDatabaseManager::Deinitialize()
 	Super::Deinitialize();
 }
 
-void UDatabaseManager::LoadCharacterInfo(int32 UserId, FCharacterDataLoadDelegate Delegate)
+void UDatabaseManager::LoadCharacterInfo(const FString& UserId, FCharacterDataLoadDelegate Delegate)
 {
 	if (!Impl)
 	{
@@ -296,15 +296,16 @@ void UDatabaseManager::LoadCharacterInfo(int32 UserId, FCharacterDataLoadDelegat
 		{
 			try
 			{
-				TUniquePtr<sql::PreparedStatement> Pstmt(Con->prepareStatement("SELECT character_id, level, exp, json_data FROM characters WHERE user_id = ?"));
-				Pstmt->setInt(1, UserId);
+				TUniquePtr<sql::PreparedStatement> Pstmt(Con->prepareStatement("SELECT character_id, character_name, level, exp, json_data FROM characters WHERE user_id = ?"));
+				Pstmt->setString(1, TCHAR_TO_UTF8(*UserId));
 
 				TUniquePtr<sql::ResultSet> Res(Pstmt->executeQuery());
 				if (Res->next())
 				{
 					FCharacterData LoadedData;
 					LoadedData.UserId = UserId;
-					LoadedData.CharacterId = Res->getInt("character_id");
+					LoadedData.CharacterId = UTF8_TO_TCHAR(Res->getString("character_id").c_str());
+					LoadedData.CharacterName = UTF8_TO_TCHAR(Res->getString("character_name").c_str());
 					LoadedData.Level = Res->getInt("level");
 					LoadedData.Exp = Res->getInt64("exp");
 					LoadedData.JsonData = UTF8_TO_TCHAR(Res->getString("json_data").c_str());
@@ -340,27 +341,24 @@ void UDatabaseManager::SaveCharacterInfo(const FCharacterData& CharacterData, FC
 		sql::Connection* Con = Impl->GetConnection();
 
 		if (Con)
+		{		try
 		{
-			try
-			{
-				TUniquePtr<sql::PreparedStatement> Pstmt(Con->prepareStatement(
-					"INSERT INTO characters (user_id, character_name, level, exp, json_data) "
-					"VALUES (?, ?, ?, ?, ?) "
-					"ON DUPLICATE KEY UPDATE level=VALUES(level), exp=VALUES(exp), json_data=VALUES(json_data), character_name=VALUES(character_name)"
-				));
+			TUniquePtr<sql::PreparedStatement> Pstmt(Con->prepareStatement(
+				"INSERT INTO characters (user_id, character_id, character_name, level, exp, json_data) "
+				"VALUES (?, ?, ?, ?, ?, ?) "
+				"ON DUPLICATE KEY UPDATE level=VALUES(level), exp=VALUES(exp), json_data=VALUES(json_data), character_name=VALUES(character_name)"
+			));
 
-				// Use a temporary variable for the character name for now.
-				std::string CharacterName = "DefaultCharacter";
-
-				Pstmt->setInt(1, CharacterData.UserId);
-				Pstmt->setString(2, CharacterName);
-				Pstmt->setInt(3, CharacterData.Level);
-				Pstmt->setInt64(4, CharacterData.Exp);
-				Pstmt->setString(5, TCHAR_TO_UTF8(*CharacterData.JsonData));
-				
-				Pstmt->executeUpdate();
-				bSuccess = true;
-			}
+			Pstmt->setString(1, TCHAR_TO_UTF8(*CharacterData.UserId));
+			Pstmt->setString(2, TCHAR_TO_UTF8(*CharacterData.CharacterId));
+			Pstmt->setString(3, TCHAR_TO_UTF8(*CharacterData.CharacterName));
+			Pstmt->setInt(4, CharacterData.Level);
+			Pstmt->setInt64(5, CharacterData.Exp);
+			Pstmt->setString(6, TCHAR_TO_UTF8(*CharacterData.JsonData));
+			
+			Pstmt->executeUpdate();
+			bSuccess = true;
+		}
 			catch (const sql::SQLException &e)
 			{
 				UE_LOG(LogTemp, Error, TEXT("SaveCharacterInfo failed: %hs"), e.what());
@@ -460,9 +458,9 @@ UE::Tasks::TTask<bool> UDatabaseManager::WithTransaction(F&& Function, const TCH
 	});
 }
 
-UE::Tasks::TTask<TArray<FInventoryItemDTO>> UDatabaseManager::LoadInventoryForPlayer(int32 PlayerId)
+UE::Tasks::TTask<TArray<FInventoryItemDTO>> UDatabaseManager::LoadInventoryForPlayer(const FString& UserId)
 {
-	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerId]() -> TArray<FInventoryItemDTO>
+	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, UserId]() -> TArray<FInventoryItemDTO>
 	{
 		TArray<FInventoryItemDTO> ResultItems;
 		
@@ -490,9 +488,9 @@ UE::Tasks::TTask<TArray<FInventoryItemDTO>> UDatabaseManager::LoadInventoryForPl
 		try
 		{
 			TUniquePtr<sql::PreparedStatement> Pstmt(Con->prepareStatement(
-				"SELECT item_id, quantity, item_data FROM inventory WHERE player_id = ?"
+				"SELECT item_id, quantity, slot_index, item_data FROM inventory WHERE user_id = ? ORDER BY slot_index"
 			));
-			Pstmt->setInt(1, PlayerId);
+			Pstmt->setString(1, TCHAR_TO_UTF8(*UserId));
 
 			TUniquePtr<sql::ResultSet> Res(Pstmt->executeQuery());
 			while (Res->next())
@@ -500,6 +498,7 @@ UE::Tasks::TTask<TArray<FInventoryItemDTO>> UDatabaseManager::LoadInventoryForPl
 				FInventoryItemDTO Item;
 				Item.ItemID = FName(UTF8_TO_TCHAR(Res->getString("item_id").c_str()));
 				Item.Quantity = Res->getInt("quantity");
+				Item.SlotIndex = Res->getInt("slot_index");
 				Item.ItemData = UTF8_TO_TCHAR(Res->getString("item_data").c_str());
 				ResultItems.Add(Item);
 			}
@@ -513,30 +512,31 @@ UE::Tasks::TTask<TArray<FInventoryItemDTO>> UDatabaseManager::LoadInventoryForPl
 	});
 }
 
-UE::Tasks::TTask<bool> UDatabaseManager::SaveInventoryForPlayer(int32 PlayerId, const TArray<FInventoryItemDTO>& Items)
+UE::Tasks::TTask<bool> UDatabaseManager::SaveInventoryForPlayer(const FString& UserId, const TArray<FInventoryItemDTO>& Items)
 {
-	return WithTransaction([PlayerId, Items](sql::Connection* Con) -> bool
+	return WithTransaction([UserId, Items](sql::Connection* Con) -> bool
 	{
 		try
 		{
 			// Clear existing inventory
 			TUniquePtr<sql::PreparedStatement> DeleteStmt(Con->prepareStatement(
-				"DELETE FROM inventory WHERE player_id = ?"
+				"DELETE FROM inventory WHERE user_id = ?"
 			));
-			DeleteStmt->setInt(1, PlayerId);
+			DeleteStmt->setString(1, TCHAR_TO_UTF8(*UserId));
 			DeleteStmt->executeUpdate();
 
-			// Insert new items
+			// Insert new items with slot index
 			TUniquePtr<sql::PreparedStatement> InsertStmt(Con->prepareStatement(
-				"INSERT INTO inventory (player_id, item_id, quantity, item_data) VALUES (?, ?, ?, ?)"
+				"INSERT INTO inventory (user_id, item_id, quantity, slot_index, item_data) VALUES (?, ?, ?, ?, ?)"
 			));
 
 			for (const FInventoryItemDTO& Item : Items)
 			{
-				InsertStmt->setInt(1, PlayerId);
+				InsertStmt->setString(1, TCHAR_TO_UTF8(*UserId));
 				InsertStmt->setString(2, TCHAR_TO_UTF8(*Item.ItemID.ToString()));
 				InsertStmt->setInt(3, Item.Quantity);
-				InsertStmt->setString(4, TCHAR_TO_UTF8(*Item.ItemData));
+				InsertStmt->setInt(4, Item.SlotIndex);
+				InsertStmt->setString(5, TCHAR_TO_UTF8(*Item.ItemData));
 				InsertStmt->executeUpdate();
 			}
 
@@ -550,34 +550,23 @@ UE::Tasks::TTask<bool> UDatabaseManager::SaveInventoryForPlayer(int32 PlayerId, 
 	}, TEXT("Inventory/SaveItems"));
 }
 
-UE::Tasks::TTask<bool> UDatabaseManager::AddInventoryItem(int32 PlayerId, const FInventoryItemDTO& Item)
+UE::Tasks::TTask<bool> UDatabaseManager::AddInventoryItem(const FString& UserId, const FInventoryItemDTO& Item)
 {
-	return WithTransaction([PlayerId, Item](sql::Connection* Con) -> bool
+	return WithTransaction([UserId, Item](sql::Connection* Con) -> bool
 	{
 		try
 		{
-			// Try to update existing item first
-			TUniquePtr<sql::PreparedStatement> UpdateStmt(Con->prepareStatement(
-				"UPDATE inventory SET quantity = quantity + ? WHERE player_id = ? AND item_id = ?"
+			// Insert or update item with slot management
+			TUniquePtr<sql::PreparedStatement> InsertStmt(Con->prepareStatement(
+				"INSERT INTO inventory (user_id, item_id, quantity, slot_index, item_data) VALUES (?, ?, ?, ?, ?) "
+				"ON DUPLICATE KEY UPDATE quantity = VALUES(quantity), item_data = VALUES(item_data)"
 			));
-			UpdateStmt->setInt(1, Item.Quantity);
-			UpdateStmt->setInt(2, PlayerId);
-			UpdateStmt->setString(3, TCHAR_TO_UTF8(*Item.ItemID.ToString()));
-			
-			int32 UpdatedRows = UpdateStmt->executeUpdate();
-			
-			// If no rows were updated, insert new item
-			if (UpdatedRows == 0)
-			{
-				TUniquePtr<sql::PreparedStatement> InsertStmt(Con->prepareStatement(
-					"INSERT INTO inventory (player_id, item_id, quantity, item_data) VALUES (?, ?, ?, ?)"
-				));
-				InsertStmt->setInt(1, PlayerId);
-				InsertStmt->setString(2, TCHAR_TO_UTF8(*Item.ItemID.ToString()));
-				InsertStmt->setInt(3, Item.Quantity);
-				InsertStmt->setString(4, TCHAR_TO_UTF8(*Item.ItemData));
-				InsertStmt->executeUpdate();
-			}
+			InsertStmt->setString(1, TCHAR_TO_UTF8(*UserId));
+			InsertStmt->setString(2, TCHAR_TO_UTF8(*Item.ItemID.ToString()));
+			InsertStmt->setInt(3, Item.Quantity);
+			InsertStmt->setInt(4, Item.SlotIndex);
+			InsertStmt->setString(5, TCHAR_TO_UTF8(*Item.ItemData));
+			InsertStmt->executeUpdate();
 
 			return true;
 		}
@@ -589,27 +578,27 @@ UE::Tasks::TTask<bool> UDatabaseManager::AddInventoryItem(int32 PlayerId, const 
 	}, TEXT("Inventory/AddItem"));
 }
 
-UE::Tasks::TTask<bool> UDatabaseManager::RemoveInventoryItem(int32 PlayerId, const FName& ItemID, int32 Quantity)
+UE::Tasks::TTask<bool> UDatabaseManager::RemoveInventoryItem(const FString& UserId, const FName& ItemID, int32 Quantity)
 {
-	return WithTransaction([PlayerId, ItemID, Quantity](sql::Connection* Con) -> bool
+	return WithTransaction([UserId, ItemID, Quantity](sql::Connection* Con) -> bool
 	{
 		try
 		{
 			// Update quantity, but don't let it go below 0
 			TUniquePtr<sql::PreparedStatement> UpdateStmt(Con->prepareStatement(
-				"UPDATE inventory SET quantity = GREATEST(0, quantity - ?) WHERE player_id = ? AND item_id = ?"
+				"UPDATE inventory SET quantity = GREATEST(0, quantity - ?) WHERE user_id = ? AND item_id = ?"
 			));
 			UpdateStmt->setInt(1, Quantity);
-			UpdateStmt->setInt(2, PlayerId);
+			UpdateStmt->setString(2, TCHAR_TO_UTF8(*UserId));
 			UpdateStmt->setString(3, TCHAR_TO_UTF8(*ItemID.ToString()));
 			
 			int32 UpdatedRows = UpdateStmt->executeUpdate();
 			
 			// Remove items with 0 quantity
 			TUniquePtr<sql::PreparedStatement> DeleteStmt(Con->prepareStatement(
-				"DELETE FROM inventory WHERE player_id = ? AND item_id = ? AND quantity <= 0"
+				"DELETE FROM inventory WHERE user_id = ? AND item_id = ? AND quantity <= 0"
 			));
-			DeleteStmt->setInt(1, PlayerId);
+			DeleteStmt->setString(1, TCHAR_TO_UTF8(*UserId));
 			DeleteStmt->setString(2, TCHAR_TO_UTF8(*ItemID.ToString()));
 			DeleteStmt->executeUpdate();
 
@@ -627,9 +616,9 @@ UE::Tasks::TTask<bool> UDatabaseManager::RemoveInventoryItem(int32 PlayerId, con
 // SKILL REPOSITORY METHODS
 // ============================================================================
 
-UE::Tasks::TTask<TArray<FSkillSlotDTO>> UDatabaseManager::LoadSkillsForPlayer(int32 PlayerId)
+UE::Tasks::TTask<TArray<FSkillSlotDTO>> UDatabaseManager::LoadSkillsForPlayer(const FString& UserId)
 {
-	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerId]() -> TArray<FSkillSlotDTO>
+	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, UserId]() -> TArray<FSkillSlotDTO>
 	{
 		TArray<FSkillSlotDTO> ResultSkills;
 
@@ -649,25 +638,49 @@ UE::Tasks::TTask<TArray<FSkillSlotDTO>> UDatabaseManager::LoadSkillsForPlayer(in
 		try
 		{
 			TUniquePtr<sql::PreparedStatement> Stmt(Con->prepareStatement(
-				"SELECT slot_id, skill_id, last_used_time, remaining_cooldown FROM skill_slots WHERE player_id = ?"
+				"SELECT slot_id, skill_id, slot_index, last_used_time, remaining_cooldown, is_active, skill_data FROM skills WHERE user_id = ? ORDER BY slot_index"
 			));
-			Stmt->setInt(1, PlayerId);
-			
+			Stmt->setString(1, TCHAR_TO_UTF8(*UserId));
+			UE_LOG(LogTemp, Log, TEXT("Executing skill query for user: %s"), *UserId);
+
 			TUniquePtr<sql::ResultSet> Res(Stmt->executeQuery());
-			
+
 			while (Res->next())
 			{
 				FSkillSlotDTO Skill;
+
 				FString SlotIdString = UTF8_TO_TCHAR(Res->getString("slot_id").c_str());
-				FGuid::ParseExact(SlotIdString, EGuidFormats::DigitsWithHyphens, Skill.SlotId);
+				UE_LOG(LogTemp, Verbose, TEXT("Raw Slot ID: %s"), *SlotIdString);
+
+				if (!FGuid::ParseExact(SlotIdString, EGuidFormats::DigitsWithHyphens, Skill.SlotId))
+				{
+					UE_LOG(LogTemp, Warning, TEXT("Invalid GUID format: %s"), *SlotIdString);
+				}
+
 				Skill.SkillID = Res->getInt("skill_id");
-				
-				// Parse last used time
+				Skill.SlotIndex = Res->getInt("slot_index");
+
 				FString LastUsedString = UTF8_TO_TCHAR(Res->getString("last_used_time").c_str());
-				FDateTime::ParseIso8601(*LastUsedString, Skill.LastUsedTime);
-				
+				if (!FDateTime::ParseIso8601(*LastUsedString, Skill.LastUsedTime))
+				{
+					UE_LOG(LogTemp, Warning, TEXT("Failed to parse last used time: %s"), *LastUsedString);
+				}
+
+				Skill.RemainingCooldown = static_cast<float>(Res->getDouble("remaining_cooldown"));
+				Skill.bIsActive = Res->getBoolean("is_active");
+
+				// Skill.SkillData = UTF8_TO_TCHAR(Res->getString("skill_data").c_str());
+				UE_LOG(LogTemp, Verbose, TEXT("Skill loaded: ID=%d, SlotIndex=%d, Active=%s, CD=%.2f"),
+					Skill.SkillID,
+					Skill.SlotIndex,
+					Skill.bIsActive ? TEXT("true") : TEXT("false"),
+					Skill.RemainingCooldown
+				);
+
 				ResultSkills.Add(Skill);
 			}
+
+			UE_LOG(LogTemp, Log, TEXT("Finished loading skills. Total loaded: %d"), ResultSkills.Num());
 		}
 		catch (const sql::SQLException& e)
 		{
@@ -678,31 +691,34 @@ UE::Tasks::TTask<TArray<FSkillSlotDTO>> UDatabaseManager::LoadSkillsForPlayer(in
 	});
 }
 
-UE::Tasks::TTask<bool> UDatabaseManager::SaveSkillsForPlayer(int32 PlayerId, const TArray<FSkillSlotDTO>& SkillSlots)
+UE::Tasks::TTask<bool> UDatabaseManager::SaveSkillsForPlayer(const FString& UserId, const TArray<FSkillSlotDTO>& SkillSlots)
 {
-	return WithTransaction([PlayerId, SkillSlots](sql::Connection* Con) -> bool
+	return WithTransaction([UserId, SkillSlots](sql::Connection* Con) -> bool
 	{
 		try
 		{
 			// Clear existing skills
 			TUniquePtr<sql::PreparedStatement> DeleteStmt(Con->prepareStatement(
-				"DELETE FROM skill_slots WHERE player_id = ?"
+				"DELETE FROM skills WHERE user_id = ?"
 			));
-			DeleteStmt->setInt(1, PlayerId);
+			DeleteStmt->setString(1, TCHAR_TO_UTF8(*UserId));
 			DeleteStmt->executeUpdate();
 
 			// Insert new skills
 			TUniquePtr<sql::PreparedStatement> InsertStmt(Con->prepareStatement(
-				"INSERT INTO skill_slots (player_id, slot_id, skill_id, last_used_time, remaining_cooldown) VALUES (?, ?, ?, ?, ?)"
+				"INSERT INTO skills (user_id, slot_id, skill_id, slot_index, last_used_time, remaining_cooldown, is_active, skill_data) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
 			));
 
 			for (const FSkillSlotDTO& Skill : SkillSlots)
 			{
-				InsertStmt->setInt(1, PlayerId);
+				InsertStmt->setString(1, TCHAR_TO_UTF8(*UserId));
 				InsertStmt->setString(2, TCHAR_TO_UTF8(*Skill.SlotId.ToString(EGuidFormats::DigitsWithHyphens)));
 				InsertStmt->setInt(3, Skill.SkillID);
-				InsertStmt->setString(4, TCHAR_TO_UTF8(*Skill.LastUsedTime.ToIso8601()));
-				InsertStmt->setDouble(5, 0.0); // RemainingCooldown placeholder
+				InsertStmt->setInt(4, Skill.SlotIndex);
+				InsertStmt->setString(5, TCHAR_TO_UTF8(*Skill.LastUsedTime.ToIso8601()));
+				InsertStmt->setDouble(6, Skill.RemainingCooldown);
+				InsertStmt->setBoolean(7, Skill.bIsActive);
+				InsertStmt->setString(8, TCHAR_TO_UTF8(*Skill.SkillData));
 				
 				InsertStmt->executeUpdate();
 			}
@@ -717,22 +733,25 @@ UE::Tasks::TTask<bool> UDatabaseManager::SaveSkillsForPlayer(int32 PlayerId, con
 	}, TEXT("Skill/SaveSkills"));
 }
 
-UE::Tasks::TTask<bool> UDatabaseManager::RegisterSkill(int32 PlayerId, const FSkillSlotDTO& SkillSlot)
+UE::Tasks::TTask<bool> UDatabaseManager::RegisterSkill(const FString& UserId, const FSkillSlotDTO& SkillSlot)
 {
-	return WithTransaction([PlayerId, SkillSlot](sql::Connection* Con) -> bool
+	return WithTransaction([UserId, SkillSlot](sql::Connection* Con) -> bool
 	{
 		try
 		{
 			TUniquePtr<sql::PreparedStatement> InsertStmt(Con->prepareStatement(
-				"INSERT INTO skill_slots (player_id, slot_id, skill_id, last_used_time, remaining_cooldown) VALUES (?, ?, ?, ?, ?) "
-				"ON DUPLICATE KEY UPDATE skill_id = VALUES(skill_id), last_used_time = VALUES(last_used_time)"
+				"INSERT INTO skills (user_id, slot_id, skill_id, slot_index, last_used_time, remaining_cooldown, is_active, skill_data) VALUES (?, ?, ?, ?, ?, ?, ?, ?) "
+				"ON DUPLICATE KEY UPDATE skill_id = VALUES(skill_id), slot_index = VALUES(slot_index), last_used_time = VALUES(last_used_time), remaining_cooldown = VALUES(remaining_cooldown), is_active = VALUES(is_active), skill_data = VALUES(skill_data)"
 			));
 			
-			InsertStmt->setInt(1, PlayerId);
+			InsertStmt->setString(1, TCHAR_TO_UTF8(*UserId));
 			InsertStmt->setString(2, TCHAR_TO_UTF8(*SkillSlot.SlotId.ToString(EGuidFormats::DigitsWithHyphens)));
 			InsertStmt->setInt(3, SkillSlot.SkillID);
-			InsertStmt->setString(4, TCHAR_TO_UTF8(*SkillSlot.LastUsedTime.ToIso8601()));
-			InsertStmt->setDouble(5, 0.0); // RemainingCooldown placeholder
+			InsertStmt->setInt(4, SkillSlot.SlotIndex);
+			InsertStmt->setString(5, TCHAR_TO_UTF8(*SkillSlot.LastUsedTime.ToIso8601()));
+			InsertStmt->setDouble(6, SkillSlot.RemainingCooldown);
+			InsertStmt->setBoolean(7, SkillSlot.bIsActive);
+			InsertStmt->setString(8, TCHAR_TO_UTF8(*SkillSlot.SkillData));
 			
 			int32 AffectedRows = InsertStmt->executeUpdate();
 			return AffectedRows > 0;
@@ -745,16 +764,16 @@ UE::Tasks::TTask<bool> UDatabaseManager::RegisterSkill(int32 PlayerId, const FSk
 	}, TEXT("Skill/RegisterSkill"));
 }
 
-UE::Tasks::TTask<bool> UDatabaseManager::UnregisterSkill(int32 PlayerId, const FGuid& SlotId)
+UE::Tasks::TTask<bool> UDatabaseManager::UnregisterSkill(const FString& UserId, const FGuid& SlotId)
 {
-	return WithTransaction([PlayerId, SlotId](sql::Connection* Con) -> bool
+	return WithTransaction([UserId, SlotId](sql::Connection* Con) -> bool
 	{
 		try
 		{
 			TUniquePtr<sql::PreparedStatement> DeleteStmt(Con->prepareStatement(
-				"DELETE FROM skill_slots WHERE player_id = ? AND slot_id = ?"
+				"DELETE FROM skills WHERE user_id = ? AND slot_id = ?"
 			));
-			DeleteStmt->setInt(1, PlayerId);
+			DeleteStmt->setString(1, TCHAR_TO_UTF8(*UserId));
 			DeleteStmt->setString(2, TCHAR_TO_UTF8(*SlotId.ToString(EGuidFormats::DigitsWithHyphens)));
 			
 			int32 AffectedRows = DeleteStmt->executeUpdate();
@@ -768,18 +787,18 @@ UE::Tasks::TTask<bool> UDatabaseManager::UnregisterSkill(int32 PlayerId, const F
 	}, TEXT("Skill/UnregisterSkill"));
 }
 
-UE::Tasks::TTask<bool> UDatabaseManager::UpdateSkillCooldown(int32 PlayerId, const FGuid& SlotId, const FDateTime& LastUsedTime, float RemainingCooldown)
+UE::Tasks::TTask<bool> UDatabaseManager::UpdateSkillCooldown(const FString& UserId, const FGuid& SlotId, const FDateTime& LastUsedTime, float RemainingCooldown)
 {
-	return WithTransaction([PlayerId, SlotId, LastUsedTime, RemainingCooldown](sql::Connection* Con) -> bool
+	return WithTransaction([UserId, SlotId, LastUsedTime, RemainingCooldown](sql::Connection* Con) -> bool
 	{
 		try
 		{
 			TUniquePtr<sql::PreparedStatement> UpdateStmt(Con->prepareStatement(
-				"UPDATE skill_slots SET last_used_time = ?, remaining_cooldown = ? WHERE player_id = ? AND slot_id = ?"
+				"UPDATE skills SET last_used_time = ?, remaining_cooldown = ? WHERE user_id = ? AND slot_id = ?"
 			));
 			UpdateStmt->setString(1, TCHAR_TO_UTF8(*LastUsedTime.ToIso8601()));
 			UpdateStmt->setDouble(2, RemainingCooldown);
-			UpdateStmt->setInt(3, PlayerId);
+			UpdateStmt->setString(3, TCHAR_TO_UTF8(*UserId));
 			UpdateStmt->setString(4, TCHAR_TO_UTF8(*SlotId.ToString(EGuidFormats::DigitsWithHyphens)));
 			
 			int32 AffectedRows = UpdateStmt->executeUpdate();
@@ -908,18 +927,25 @@ UE::Tasks::TTask<bool> UDatabaseManager::SaveShop(const FShopDomain& ShopData)
 		{
 			// Update/Insert shop basic info
 			TUniquePtr<sql::PreparedStatement> ShopStmt(Con->prepareStatement(
-				"INSERT INTO shops (shop_id, shop_name, is_open, global_price_modifier, shop_owner_name) "
-				"VALUES (?, ?, ?, ?, ?) "
+				"INSERT INTO shops (shop_id, shop_name, shop_description, is_open, area_id, shop_location_x, shop_location_y, shop_location_z, last_restock_time, global_price_modifier, shop_owner_name) "
+				"VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
 				"ON DUPLICATE KEY UPDATE "
-				"shop_name = VALUES(shop_name), is_open = VALUES(is_open), "
-				"global_price_modifier = VALUES(global_price_modifier), shop_owner_name = VALUES(shop_owner_name)"
+				"shop_name = VALUES(shop_name), shop_description = VALUES(shop_description), is_open = VALUES(is_open), "
+				"area_id = VALUES(area_id), shop_location_x = VALUES(shop_location_x), shop_location_y = VALUES(shop_location_y), shop_location_z = VALUES(shop_location_z), "
+				"last_restock_time = VALUES(last_restock_time), global_price_modifier = VALUES(global_price_modifier), shop_owner_name = VALUES(shop_owner_name)"
 			));
 			
 			ShopStmt->setInt(1, ShopData.ShopID);
 			ShopStmt->setString(2, TCHAR_TO_UTF8(*ShopData.ShopName));
-			ShopStmt->setBoolean(3, ShopData.bIsOpen);
-			ShopStmt->setDouble(4, ShopData.GlobalPriceModifier);
-			ShopStmt->setString(5, TCHAR_TO_UTF8(*ShopData.ShopOwnerName));
+			ShopStmt->setString(3, TCHAR_TO_UTF8(*ShopData.ShopDescription));
+			ShopStmt->setBoolean(4, ShopData.bIsOpen);
+			ShopStmt->setInt(5, ShopData.AreaID);
+			ShopStmt->setDouble(6, ShopData.ShopLocation.X);
+			ShopStmt->setDouble(7, ShopData.ShopLocation.Y);
+			ShopStmt->setDouble(8, ShopData.ShopLocation.Z);
+			ShopStmt->setString(9, TCHAR_TO_UTF8(*ShopData.LastRestockTime.ToIso8601()));
+			ShopStmt->setDouble(10, ShopData.GlobalPriceModifier);
+			ShopStmt->setString(11, TCHAR_TO_UTF8(*ShopData.ShopOwnerName));
 			
 			ShopStmt->executeUpdate();
 
@@ -1255,4 +1281,289 @@ UE::Tasks::TTask<bool> UDatabaseManager::UpdateShopItemPrice(int32 ShopID, int32
 			return false;
 		}
 	}, TEXT("Shop/UpdatePrice"));
+}
+
+// ============================================================================
+// PLAYER ID HELPER IMPLEMENTATIONS
+// ============================================================================
+
+FString UPlayerIdHelper::ConvertPlayerIdToUserId(int32 PlayerId)
+{
+	// 프로토타입용 간단 변환: player_[PlayerId] 형식
+	return FString::Printf(TEXT("player_%d"), PlayerId);
+}
+
+int32 UPlayerIdHelper::ConvertUserIdToPlayerId(const FString& UserId)
+{
+	// player_[number] 형식에서 number 추출
+	if (UserId.IsEmpty())
+	{
+		UE_LOG(LogTemp, Error, TEXT("UPlayerIdHelper::ConvertUserIdToPlayerId: Empty UserId"));
+		return -1;
+	}
+	
+	FString PlayerPrefix = TEXT("player_");
+	if (!UserId.StartsWith(PlayerPrefix))
+	{
+		// 숫자만 있는 경우 직접 변환 시도
+		if (UserId.IsNumeric())
+		{
+			return FCString::Atoi(*UserId);
+		}
+		
+		UE_LOG(LogTemp, Warning, TEXT("UPlayerIdHelper::ConvertUserIdToPlayerId: UserId '%s' does not follow player_[id] format"), *UserId);
+		return -1;
+	}
+	
+	FString NumberPart = UserId.RightChop(PlayerPrefix.Len());
+	if (NumberPart.IsNumeric())
+	{
+		return FCString::Atoi(*NumberPart);
+	}
+	
+	UE_LOG(LogTemp, Error, TEXT("UPlayerIdHelper::ConvertUserIdToPlayerId: Invalid numeric part in UserId '%s'"), *UserId);
+	return -1;
+}
+
+FString UPlayerIdHelper::GenerateUserIdFromPlayerId(int32 PlayerId, const FString& Prefix)
+{
+	
+	return FString::Printf(TEXT("%s_%d"), *Prefix, PlayerId);
+}
+
+bool UPlayerIdHelper::IsValidUserId(const FString& UserId)
+{
+	if (UserId.IsEmpty())
+	{
+		return false;
+	}
+	
+	// VARCHAR(255) 제한 검사
+	if (UserId.Len() > 255)
+	{
+		return false;
+	}
+	
+	// 기본적인 문자열 유효성 검사 (공백, 특수문자 등)
+	for (const TCHAR& Char : UserId)
+	{
+		if (FChar::IsWhitespace(Char) || Char == TEXT('\0'))
+		{
+			return false;
+		}
+	}
+	
+	return true;
+}
+
+// ============================================================================
+// JSON HELPER IMPLEMENTATIONS
+// ============================================================================
+
+FString UDatabaseJsonHelper::SerializeInventoryItemData(const TMap<FString, FString>& ItemProperties)
+{
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+	
+	for (const auto& Property : ItemProperties)
+	{
+		JsonObject->SetStringField(Property.Key, Property.Value);
+	}
+	
+	FString OutputString;
+	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&OutputString);
+	FJsonSerializer::Serialize(JsonObject.ToSharedRef(), Writer);
+	
+	return OutputString;
+}
+
+TMap<FString, FString> UDatabaseJsonHelper::DeserializeInventoryItemData(const FString& JsonData)
+{
+	TMap<FString, FString> Result;
+	
+	if (JsonData.IsEmpty())
+	{
+		return Result;
+	}
+	
+	TSharedPtr<FJsonObject> JsonObject;
+	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonData);
+	
+	if (FJsonSerializer::Deserialize(Reader, JsonObject) && JsonObject.IsValid())
+	{
+		for (const auto& JsonPair : JsonObject->Values)
+		{
+			FString StringValue;
+			if (JsonPair.Value->TryGetString(StringValue))
+			{
+				Result.Add(JsonPair.Key, StringValue);
+			}
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Failed to deserialize inventory item JSON data: %s"), *JsonData);
+	}
+	
+	return Result;
+}
+
+FString UDatabaseJsonHelper::SerializeCharacterExtendedData(const FVector& Position, float Health, float Mana, const TMap<FString, FString>& AdditionalData)
+{
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+	
+	// Position data
+	TSharedPtr<FJsonObject> PositionObject = MakeShareable(new FJsonObject);
+	PositionObject->SetNumberField(TEXT("X"), Position.X);
+	PositionObject->SetNumberField(TEXT("Y"), Position.Y);
+	PositionObject->SetNumberField(TEXT("Z"), Position.Z);
+	JsonObject->SetObjectField(TEXT("Position"), PositionObject);
+	
+	// Health and Mana
+	JsonObject->SetNumberField(TEXT("Health"), Health);
+	JsonObject->SetNumberField(TEXT("Mana"), Mana);
+	
+	// Additional data
+	if (AdditionalData.Num() > 0)
+	{
+		TSharedPtr<FJsonObject> AdditionalObject = MakeShareable(new FJsonObject);
+		for (const auto& Data : AdditionalData)
+		{
+			AdditionalObject->SetStringField(Data.Key, Data.Value);
+		}
+		JsonObject->SetObjectField(TEXT("Additional"), AdditionalObject);
+	}
+	
+	FString OutputString;
+	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&OutputString);
+	FJsonSerializer::Serialize(JsonObject.ToSharedRef(), Writer);
+	
+	return OutputString;
+}
+
+bool UDatabaseJsonHelper::DeserializeCharacterExtendedData(const FString& JsonData, FVector& OutPosition, float& OutHealth, float& OutMana, TMap<FString, FString>& OutAdditionalData)
+{
+	if (JsonData.IsEmpty())
+	{
+		return false;
+	}
+	
+	TSharedPtr<FJsonObject> JsonObject;
+	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonData);
+	
+	if (!FJsonSerializer::Deserialize(Reader, JsonObject) || !JsonObject.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Failed to deserialize character extended JSON data: %s"), *JsonData);
+		return false;
+	}
+	
+	// Parse Position
+	const TSharedPtr<FJsonObject>* PositionObject;
+	if (JsonObject->TryGetObjectField(TEXT("Position"), PositionObject))
+	{
+		double X, Y, Z;
+		if ((*PositionObject)->TryGetNumberField(TEXT("X"), X) &&
+			(*PositionObject)->TryGetNumberField(TEXT("Y"), Y) &&
+			(*PositionObject)->TryGetNumberField(TEXT("Z"), Z))
+		{
+			OutPosition = FVector(X, Y, Z);
+		}
+	}
+	
+	// Parse Health and Mana
+	double HealthValue, ManaValue;
+	if (JsonObject->TryGetNumberField(TEXT("Health"), HealthValue))
+	{
+		OutHealth = static_cast<float>(HealthValue);
+	}
+	if (JsonObject->TryGetNumberField(TEXT("Mana"), ManaValue))
+	{
+		OutMana = static_cast<float>(ManaValue);
+	}
+	
+	// Parse Additional data
+	const TSharedPtr<FJsonObject>* AdditionalObject;
+	if (JsonObject->TryGetObjectField(TEXT("Additional"), AdditionalObject))
+	{
+		for (const auto& JsonPair : (*AdditionalObject)->Values)
+		{
+			FString StringValue;
+			if (JsonPair.Value->TryGetString(StringValue))
+			{
+				OutAdditionalData.Add(JsonPair.Key, StringValue);
+			}
+		}
+	}
+	
+	return true;
+}
+
+FString UDatabaseJsonHelper::SerializeSkillData(const TMap<FString, FString>& SkillProperties)
+{
+	return SerializeInventoryItemData(SkillProperties); // 같은 구조 재사용
+}
+
+TMap<FString, FString> UDatabaseJsonHelper::DeserializeSkillData(const FString& JsonData)
+{
+	return DeserializeInventoryItemData(JsonData); // 같은 구조 재사용
+}
+
+FString UDatabaseJsonHelper::SerializeEquipmentEnhancement(int32 EnhancementLevel, const TArray<FString>& EnhancementEffects)
+{
+	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+	
+	JsonObject->SetNumberField(TEXT("Level"), EnhancementLevel);
+	
+	TArray<TSharedPtr<FJsonValue>> EffectsArray;
+	for (const FString& Effect : EnhancementEffects)
+	{
+		EffectsArray.Add(MakeShareable(new FJsonValueString(Effect)));
+	}
+	JsonObject->SetArrayField(TEXT("Effects"), EffectsArray);
+	
+	FString OutputString;
+	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&OutputString);
+	FJsonSerializer::Serialize(JsonObject.ToSharedRef(), Writer);
+	
+	return OutputString;
+}
+
+bool UDatabaseJsonHelper::DeserializeEquipmentEnhancement(const FString& JsonData, int32& OutEnhancementLevel, TArray<FString>& OutEnhancementEffects)
+{
+	if (JsonData.IsEmpty())
+	{
+		return false;
+	}
+	
+	TSharedPtr<FJsonObject> JsonObject;
+	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonData);
+	
+	if (!FJsonSerializer::Deserialize(Reader, JsonObject) || !JsonObject.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Failed to deserialize equipment enhancement JSON data: %s"), *JsonData);
+		return false;
+	}
+	
+	// Parse enhancement level
+	double Level;
+	if (JsonObject->TryGetNumberField(TEXT("Level"), Level))
+	{
+		OutEnhancementLevel = static_cast<int32>(Level);
+	}
+	
+	// Parse effects array
+	const TArray<TSharedPtr<FJsonValue>>* EffectsArray;
+	if (JsonObject->TryGetArrayField(TEXT("Effects"), EffectsArray))
+	{
+		OutEnhancementEffects.Empty();
+		for (const auto& Effect : *EffectsArray)
+		{
+			FString EffectString;
+			if (Effect->TryGetString(EffectString))
+			{
+				OutEnhancementEffects.Add(EffectString);
+			}
+		}
+	}
+	
+	return true;
 }

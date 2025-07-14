@@ -1,18 +1,17 @@
 services:
   db:
     image: mysql:8.4.0
-    container_name: mygame_db
+    container_name: MySQLContainer
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: root_password_#123
-      MYSQL_DATABASE: mygamedb
-      MYSQL_USER: gameuser
-      MYSQL_PASSWORD: gamepassword
+      MYSQL_ROOT_PASSWORD: test
+      MYSQL_DATABASE: MyGameDB
+      MYSQL_USER: Regacy
+      MYSQL_PASSWORD: GGwa1234
     ports:
-      - "3307:3307" # 3307 임의 포트
+      - "3307:3306" # 3307 임의 포트
     volumes:
-      - ./Database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./Database/Scripts/master_schema.sql:/docker-entrypoint-initdb.d/init.sql
       - db_data:/var/lib/mysql
-
 volumes:
   db_data:

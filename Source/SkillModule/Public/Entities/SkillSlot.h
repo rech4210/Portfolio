@@ -38,6 +38,4 @@ public:
 	void Initialize(USkillDataAsset* InSkillData, TSubclassOf<UGameplayAbility> InAbilityClass);
 	
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-
-protected:
 }; 

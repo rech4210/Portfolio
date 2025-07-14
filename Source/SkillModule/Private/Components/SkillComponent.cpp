@@ -6,6 +6,7 @@
 #include "SkillSubsystem.h"
 #include "Engine/World.h"
 #include "SkillDomain.h"
+#include "Utill/LocalDataBaseLoader.h"
 
 USkillComponent::USkillComponent()
 {
@@ -97,6 +98,7 @@ USkillSlot* USkillComponent::GetSkillSlotByGuid(const FGuid& SlotId) const
 }	
 
 FGuid USkillComponent::GetSkillSlotGuidByIndex(int32 index) const {
+	//스킬 슬롯 비어있음. 수정할것.
 	if (index > MaxSkillSlots || SkillSlots.IsEmpty()) {
 		return  FGuid();
 	}
@@ -278,18 +280,18 @@ void USkillComponent::SyncWithDomain(const FSkillDomain& SkillData)
 	// Clear current slots
 	SkillSlots.Empty();
 
-	// Recreate slots from domain data
 	for (const auto& SlotDTO : SkillData.SkillSlots)
 	{
 		USkillSlot* NewSlot = NewObject<USkillSlot>(this);
 		
-		// Find skill data asset by ID (you might need to implement a skill data asset lookup)
-		// For now, we'll create a basic slot
+		// TODO: Lookup SkillData asset by SkillID from SlotDTO.SkillID
 		NewSlot->SlotId = SlotDTO.SlotId;
 		NewSlot->LastUsedTime = SlotDTO.LastUsedTime;
+		FPrimaryAssetId AssetId;
+		ULocalDataBaseLoader::CheckPrimaryAssetId(SlotDTO.SkillID, AssetId);
+		NewSlot->SkillData = ULocalDataBaseLoader::GetDataFromAssetId<USkillDataAsset>(AssetId);
+		NewSlot->AbilityClass = NewSlot->SkillData->AbilityClass;
 		
-		// TODO: Lookup SkillData asset by SkillID from SlotDTO.SkillID
-		// NewSlot->SkillData = FindSkillDataByID(SlotDTO.SkillID);
 		
 		SkillSlots.Add(NewSlot);
 	}

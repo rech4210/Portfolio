@@ -9,6 +9,7 @@
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003AFyluzub_002Easm_002Fl_003A_002E_002E_003F_002E_002E_003FAppData_003FLocal_003FTemp_003FSandboxFiles_003FCavonyb_003FFyluzub_002Easm/@EntryIndexedValue">ForceIncluded</s:String>
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003AGapozot_002Easm_002Fl_003A_002E_002E_003F_002E_002E_003FAppData_003FLocal_003FTemp_003FSandboxFiles_003FFufipin_003FGapozot_002Easm/@EntryIndexedValue">ForceIncluded</s:String>
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003AGejyhaw_002Easm_002Fl_003A_002E_002E_003F_002E_002E_003FAppData_003FLocal_003FTemp_003FSandboxFiles_003FMemoxec_003FGejyhaw_002Easm/@EntryIndexedValue">ForceIncluded</s:String>
+	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003AKawugyk_002Easm_002Fl_003A_002E_002E_003F_002E_002E_003FAppData_003FLocal_003FTemp_003FSandboxFiles_003FDilomem_003FKawugyk_002Easm/@EntryIndexedValue">ForceIncluded</s:String>
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003AKogigeb_002Easm_002Fl_003A_002E_002E_003F_002E_002E_003FAppData_003FLocal_003FTemp_003FSandboxFiles_003FQubevam_003FKogigeb_002Easm/@EntryIndexedValue">ForceIncluded</s:String>
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003AKuridyg_002Easm_002Fl_003A_002E_002E_003F_002E_002E_003FAppData_003FLocal_003FTemp_003FSandboxFiles_003FZekijax_003FKuridyg_002Easm/@EntryIndexedValue">ForceIncluded</s:String>
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003ANinuxef_002Easm_002Fl_003A_002E_002E_003F_002E_002E_003FAppData_003FLocal_003FTemp_003FSandboxFiles_003FMiweqor_003FNinuxef_002Easm/@EntryIndexedValue">ForceIncluded</s:String>
@@ -20,29 +21,23 @@
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003AVilobeb_002Easm_002Fl_003A_002E_002E_003F_002E_002E_003FAppData_003FLocal_003FTemp_003FSandboxFiles_003FDilicuz_003FVilobeb_002Easm/@EntryIndexedValue">ForceIncluded</s:String>
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003AWixapus_002Easm_002Fl_003A_002E_002E_003F_002E_002E_003FAppData_003FLocal_003FTemp_003FSandboxFiles_003FDezecok_003FWixapus_002Easm/@EntryIndexedValue">ForceIncluded</s:String>
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003AWumavyb_002Easm_002Fl_003A_002E_002E_003F_002E_002E_003FAppData_003FLocal_003FTemp_003FSandboxFiles_003FWebijot_003FWumavyb_002Easm/@EntryIndexedValue">ForceIncluded</s:String>
+	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003AXigemul_002Easm_002Fl_003A_002E_002E_003F_002E_002E_003FAppData_003FLocal_003FTemp_003FSandboxFiles_003FVezilid_003FXigemul_002Easm/@EntryIndexedValue">ForceIncluded</s:String>
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003AZigadif_002Easm_002Fl_003A_002E_002E_003F_002E_002E_003FAppData_003FLocal_003FTemp_003FSandboxFiles_003FMaluxaw_003FZigadif_002Easm/@EntryIndexedValue">ForceIncluded</s:String>
 	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003AZytobyz_002Easm_002Fl_003A_002E_002E_003F_002E_002E_003FAppData_003FLocal_003FTemp_003FSandboxFiles_003FLuzyhop_003FZytobyz_002Easm/@EntryIndexedValue">ForceIncluded</s:String>
-	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=251b6d53_002D8206_002D48a0_002D9017_002Dcfbb6a5da7ba/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="카테고리 'EditorContext' 내 모든 테스트 #2" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=251b6d53_002D8206_002D48a0_002D9017_002Dcfbb6a5da7ba/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="카테고리 'EditorContext' 내 모든 테스트 #2" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
   &lt;Category&gt;EditorContext&lt;/Category&gt;&#xD;
 &lt;/SessionState&gt;</s:String>
-	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=5216aa9b_002Ddf4f_002D42ee_002D8832_002Daa9081e884c9/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="카테고리 'ServerContext' 내 모든 테스트 #2" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
-  &lt;Category&gt;ServerContext&lt;/Category&gt;&#xD;
+	
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=6d26c11b_002D8d3b_002D4191_002Daed4_002Da57a0a2bfbf8/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="SaveAndLoad" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
+  &lt;Category&gt;ClientContext&lt;/Category&gt;&#xD;
 &lt;/SessionState&gt;</s:String>
 	
 	
 	
-	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=73a10f94_002Df5a1_002D49d4_002D95a1_002Dd555427e0008/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="솔루션의 모든 테스트" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
-  &lt;Solution /&gt;&#xD;
-&lt;/SessionState&gt;</s:String>
-	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=8e7cf7e7_002Ddc17_002D4622_002Da352_002D04c91d91ff6b/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="카테고리 'EditorContext' 내 모든 테스트" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
-  &lt;Category&gt;EditorContext&lt;/Category&gt;&#xD;
-&lt;/SessionState&gt;</s:String>
-	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=c7657e19_002Db5d4_002D44f4_002D9090_002Db0ad56c54540/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="카테고리 'ServerContext' 내 모든 테스트" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
-  &lt;Category&gt;ServerContext&lt;/Category&gt;&#xD;
-&lt;/SessionState&gt;</s:String>
-	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=ebc6b2cb_002D75a8_002D483b_002Dbc3d_002D74956ae43b52/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="카테고리 'EngineFilter' 내 모든 테스트" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
-  &lt;Category&gt;EngineFilter&lt;/Category&gt;&#xD;
-&lt;/SessionState&gt;</s:String>
+	
+	
+	
+	
 	
 	
 	</wpf:ResourceDictionary>

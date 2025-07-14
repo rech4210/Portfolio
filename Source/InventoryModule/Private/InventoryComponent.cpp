@@ -203,7 +203,7 @@ bool UInventoryComponent::AddItemDirect(const FInventoryItemDTO& Item)
 	}
 
 	// Load ItemData from AssetManager
-	if (UAssetManager* AssetManager = UAssetManager::GetIfValid())
+	if (UAssetManager* AssetManager = UAssetManager::GetIfInitialized())
 	{
 		FPrimaryAssetId AssetId(TEXT("ItemData"), Item.ItemID);
 		if (UItemDataAsset* ItemData = AssetManager->GetPrimaryAssetObject<UItemDataAsset>(AssetId))

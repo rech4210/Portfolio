@@ -137,6 +137,7 @@ void AGGwaCharacter::OnLocalSkillInput(const FInputActionInstance& Instance, int
 	if (!State->GetSkillComponent()) {
 		return;
 	}
+	//이거 ID 가져오는거 좀 이상하다?
 	FGuid ID = State->GetSkillComponent()->GetSkillSlotGuidByIndex(Index);
 	auto bisSucces  = SkillCastingService->TryCastSkill(this, ID);
 	if (bisSucces) {

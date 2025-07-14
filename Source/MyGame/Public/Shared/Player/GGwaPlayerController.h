@@ -12,20 +12,30 @@
 class ABossCharacter;
 class UBaseDataAsset;
 
+// Forward declarations for client-only classes
+#if !UE_SERVER
+class AGGwaHUD;
+class UGGwaWidget;
+class UBossStatusWidget;
+#ifdef CLIENTMODULE_API
+class UAuthService;
+#endif
+#endif
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAbilityDataAssetApplied, UBaseDataAsset*, Data);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBossDataReceived, const FBossDataStruct&, BossData);
 
-
-// class FRewardData;
 /**
- * 
+ * Unified Player Controller supporting both server and client functionality
+ * Uses preprocessor directives to separate client-only code from server builds
  */
-UCLASS()
+UCLASS(Blueprintable)
 class MYGAME_API AGGwaPlayerController : public APlayerController {
 	GENERATED_BODY()
 public:
 	AGGwaPlayerController();
 	virtual void BeginPlay() override;
+	virtual void PlayerTick(float DeltaTime) override;
 
 	UPROPERTY(BlueprintAssignable, Category = "UI")
 	FOnAbilityDataAssetApplied OnAbilityDataAssetApplied;
@@ -34,22 +44,43 @@ public:
 	FOnBossDataReceived OnBossDataReceived;
 
 	/* 클라이언트 모듈 UI 설정을 위한 함수*/
-	virtual void InitClientWidget(const USkillComponent* SkillCompoent){}
+	virtual void InitClientWidget(const USkillComponent* SkillComponent);
 
-	// UFUNCTION(Client ,Reliable)
-	// virtual void Client_ApplyAbilityDataAsset(UBaseDataAsset* Data);
-	UFUNCTION(Client ,Reliable)
+	UFUNCTION(Client, Reliable)
 	virtual void Client_ReceiveBossData(const FBossDataStruct& BossCharacter);
-	UFUNCTION(Client ,Reliable)
+	
+	UFUNCTION(Client, Reliable)
 	virtual void Client_ReceiveSkillData(const USkillComponent* SkillComponent);
 
-	virtual void NotifyClientStateChanged(){}
+	virtual void NotifyClientStateChanged();
 
 	//클라이언트가 자신에게 Possess한 Pawn을 인식(승인)하도록 알려주는 함수
 	virtual void AcknowledgePossession(APawn* PossessedPawn) override;
 
 	UFUNCTION(Server, Reliable)
 	void Server_InitiateReward(const FString& PlayerId, const FRewardRequest& Payload);
+
+private:
+	// Note: UI properties are handled through runtime checks rather than UPROPERTY 
+	// to avoid server build issues with client-only classes
+
+#if !UE_SERVER
+	// Client-only widget classes - not exposed as UPROPERTY to avoid server build issues
+	TSubclassOf<UGGwaWidget> WidgetClass;
+	TSubclassOf<UBossStatusWidget> BossStatusWidgetClass;
+	TObjectPtr<AGGwaHUD> GGwaHUD;
+
+	// hover 대상을 적으로 제어하기 위해, enemy base character 제공할것.
+	TWeakObjectPtr<ABossCharacter> LastHoveredEnemy;
+
+#ifdef CLIENTMODULE_API
+	// AuthService is only available in client builds with ClientModule
+	TObjectPtr<UAuthService> AuthService;
+#endif
+
+	void OnLoginSuccess(const FString& Token);
+	void OnLoginFailure(const FString& ErrorReason);
+#endif
 
 	// UFUNCTION(Client, Reliable)
 	// void Client_OnRewardResult(bool bOK, const FRewardData& Data, const FString& Error);

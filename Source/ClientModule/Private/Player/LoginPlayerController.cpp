@@ -45,6 +45,7 @@ void ALoginPlayerController::RequestLogin(const FString& UserID, const FString& 
 		FLoginFailureDelegate FailureDelegate;
 		FailureDelegate.BindUObject(this, &ALoginPlayerController::OnLoginFailure_BP);
 
+		//받은 데이터 검증 -> 서버에게 DB 검증을 요청 -> 결과를 
 		UE_LOG(LogTemp, Log, TEXT("Requesting token for user: %s"), *UserID);
 		AuthService->RequestToken(UserID, Roles, SuccessDelegate, FailureDelegate);
 	}

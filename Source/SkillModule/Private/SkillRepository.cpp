@@ -33,15 +33,16 @@ UE::Tasks::TTask<FSkillRepositoryResult> USkillRepository::LoadSkillsByPlayerId(
 			return FSkillRepositoryResult::Failure(TEXT("DatabaseManager not available"));
 		}
 
-		if (PlayerId <= 0)
-		{
-			return FSkillRepositoryResult::Failure(TEXT("Invalid PlayerId"));
-		}
+
+
+		// Convert int32 PlayerId to FString UserId using helper
+		FString UserId = UPlayerIdHelper::ConvertPlayerIdToUserId(PlayerId);
 
 		// Execute database operation on worker thread
-		auto LoadTask = DBManager->LoadSkillsForPlayer(PlayerId);
+		auto LoadTask = DBManager->LoadSkillsForPlayer(UserId);
 		TArray<FSkillSlotDTO> LoadedSkills = LoadTask.GetResult();
 
+		//현재 DTO 데이터를 잘 가져오지 못하는것 같음.
 		// Create domain object
 		FSkillDomain SkillData(PlayerId, LoadedSkills);
 		return FSkillRepositoryResult::Success(SkillData);
@@ -62,8 +63,11 @@ UE::Tasks::TTask<FSkillRepositoryResult> USkillRepository::SaveSkillData(const F
 			return FSkillRepositoryResult::Failure(TEXT("Invalid skill data"));
 		}
 
+		// Convert int32 PlayerId to FString UserId using helper
+		FString UserId = UPlayerIdHelper::ConvertPlayerIdToUserId(SkillData.PlayerId);
+
 		// Execute database operation on worker thread
-		auto SaveTask = DBManager->SaveSkillsForPlayer(SkillData.PlayerId, SkillData.SkillSlots);
+		auto SaveTask = DBManager->SaveSkillsForPlayer(UserId, SkillData.SkillSlots);
 		bool bSuccess = SaveTask.GetResult();
 
 		if (bSuccess)
@@ -86,13 +90,13 @@ UE::Tasks::TTask<FSkillRepositoryResult> USkillRepository::RegisterSkillByPlayer
 			return FSkillRepositoryResult::Failure(TEXT("DatabaseManager not available"));
 		}
 
-		if (PlayerId <= 0)
-		{
-			return FSkillRepositoryResult::Failure(TEXT("Invalid PlayerId"));
-		}
+
+
+		// Convert int32 PlayerId to FString UserId using helper
+		FString UserId = UPlayerIdHelper::ConvertPlayerIdToUserId(PlayerId);
 
 		// Execute database operation on worker thread
-		auto RegisterTask = DBManager->RegisterSkill(PlayerId, SkillSlot);
+		auto RegisterTask = DBManager->RegisterSkill(UserId, SkillSlot);
 		bool bSuccess = RegisterTask.GetResult();
 
 		if (bSuccess)
@@ -117,18 +121,18 @@ UE::Tasks::TTask<FSkillRepositoryResult> USkillRepository::UnregisterSkillByPlay
 			return FSkillRepositoryResult::Failure(TEXT("DatabaseManager not available"));
 		}
 
-		if (PlayerId <= 0)
-		{
-			return FSkillRepositoryResult::Failure(TEXT("Invalid PlayerId"));
-		}
+
 
 		if (!SlotId.IsValid())
 		{
 			return FSkillRepositoryResult::Failure(TEXT("Invalid SlotId"));
 		}
 
+		// Convert int32 PlayerId to FString UserId using helper
+		FString UserId = UPlayerIdHelper::ConvertPlayerIdToUserId(PlayerId);
+
 		// Execute database operation on worker thread
-		auto UnregisterTask = DBManager->UnregisterSkill(PlayerId, SlotId);
+		auto UnregisterTask = DBManager->UnregisterSkill(UserId, SlotId);
 		bool bSuccess = UnregisterTask.GetResult();
 
 		if (bSuccess)
@@ -153,18 +157,18 @@ UE::Tasks::TTask<FSkillRepositoryResult> USkillRepository::UpdateSkillCooldown(i
 			return FSkillRepositoryResult::Failure(TEXT("DatabaseManager not available"));
 		}
 
-		if (PlayerId <= 0)
-		{
-			return FSkillRepositoryResult::Failure(TEXT("Invalid PlayerId"));
-		}
+
 
 		if (!SlotId.IsValid())
 		{
 			return FSkillRepositoryResult::Failure(TEXT("Invalid SlotId"));
 		}
 
+		// Convert int32 PlayerId to FString UserId using helper
+		FString UserId = UPlayerIdHelper::ConvertPlayerIdToUserId(PlayerId);
+
 		// Execute database operation on worker thread
-		auto UpdateTask = DBManager->UpdateSkillCooldown(PlayerId, SlotId, LastUsedTime, RemainingCooldown);
+		auto UpdateTask = DBManager->UpdateSkillCooldown(UserId, SlotId, LastUsedTime, RemainingCooldown);
 		bool bSuccess = UpdateTask.GetResult();
 
 		if (bSuccess)

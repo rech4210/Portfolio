@@ -26,7 +26,7 @@ public:
 	 * @param SlotId 시전할 스킬 슬롯의 고유 ID
 	 * @return 성공적으로 시전 과정을 시작했으면 true를 반환합니다.
 	 */
-	bool TryCastSkill(AActor* Caster, const FGuid& SlotId);
+	bool TryCastSkill(ACharacter* Caster, const FGuid& SlotId);
 
 private:
 	// 실제 구현에서는 Event Bus 시스템을 통해 이벤트를 발행해야 합니다.

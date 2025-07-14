@@ -114,32 +114,21 @@ void AGGwaGameMode::PostLogin(APlayerController* NewPlayer)
 	UE_LOG(LogTemp, Warning, TEXT("=== PostLogin Start ==="));
 	UE_LOG(LogTemp, Warning, TEXT("Checking player validity..."));
 
-	if (!NewPlayer || !NewPlayer->PlayerState)
-	{
+	if (!NewPlayer || !NewPlayer->PlayerState){
 		UE_LOG(LogTemp, Error, TEXT("[FAIL] NewPlayer or PlayerState is not available on PostLogin!"));
 		return;
 	}
 
-	// PreLogin에서 인증된 플레이어인지 확인
-	if (FString* UserId = PendingPlayers.Find(NewPlayer->PlayerState->GetUniqueId()))
-	{
-		// The player is already on the correct map. We don't need to travel again.
-		// NewPlayer->ClientTravel(TEXT("/Game/ThirdPerson/Maps/ThirdPersonMap"), ETravelType::TRAVEL_Absolute);
-
-		// 임시 맵에서 플레이어 정보 제거
+	if (FString* UserId = PendingPlayers.Find(NewPlayer->PlayerState->GetUniqueId())){
 		PendingPlayers.Remove(NewPlayer->PlayerState->GetUniqueId());
 	}
-	else
-	{
+	else{
 		UE_LOG(LogTemp, Error, TEXT("[FAIL] Player %s is not authenticated. Authentication not found in PendingPlayers."), 
 			*NewPlayer->PlayerState->GetPlayerName());
 		UE_LOG(LogTemp, Warning, TEXT("[ACTION] Redirecting unauthorized player to login screen"));
 		
-		// 인증되지 않은 플레이어는 연결을 종료시킵니다.
-		NewPlayer->ClientTravel(TEXT("/Game/Login/LoginLevel"), ETravelType::TRAVEL_Absolute); // 로그인 화면으로 돌려보내기
-		// 혹은 바로 연결을 끊을 수도 있습니다.
+		NewPlayer->ClientTravel(TEXT("/Game/Login/LoginLevel"), ETravelType::TRAVEL_Absolute);
 		// UKismetSystemLibrary::ExecuteConsoleCommand(GetWorld(), FString::Printf(TEXT("kick %s"), *NewPlayer->PlayerState->GetPlayerName()));
-		
 		UE_LOG(LogTemp, Warning, TEXT("=== PostLogin End (Failed) ==="));
 		return;
 	}
@@ -148,109 +137,67 @@ void AGGwaGameMode::PostLogin(APlayerController* NewPlayer)
 	if (auto InventorySubsystem = GetGameInstance()->GetSubsystem<UInventorySubsystem>())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[START] Loading inventory for player %s"), *NewPlayer->PlayerState->GetPlayerName());
-		UInventoryDomainService* DomainService = InventorySubsystem->GetDomainService();
-		DomainService->LoadInventory(NewPlayer->PlayerState);
+		InventorySubsystem->RequestLoadPlayerInventory(NewPlayer->PlayerState);
 		UE_LOG(LogTemp, Warning, TEXT("[SUCCESS] Inventory loaded"));
 	}
 	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("[FAIL] InventoryRepository is not available on PostLogin!"));
 	}
+	
 	// 캐릭터 및 스킬 정보 로드 (안전한 접근 방식으로 변경)
-	if (auto PlayerState = NewPlayer->GetPlayerState<AGGwaPlayerState>())
+	UE_LOG(LogTemp, Warning, TEXT("Loading skills..."));
+	if (auto SkillSubsystem = GetGameInstance()->GetSubsystem<USkillSubsystem>())
 	{
-		const int32 PlayerID = NewPlayer->PlayerState->GetPlayerId();
-
-		UE_LOG(LogTemp, Warning, TEXT("Loading skill configurations..."));
-		if (true)
-		{
-			//플레이어가 가질 수 있는 전체 스킬에 대한 정보 로드
-			// SkillRepository->LoadSkillsByPlayerId(PlayerID);
-			UE_LOG(LogTemp, Warning, TEXT("[SUCCESS] Loaded %d skill definitions"), LoadedSkillDefinitions.Num());
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("[FAIL] SkillConfigRepository is not available!"));
-		}
-
-		UE_LOG(LogTemp, Warning, TEXT("Loading player skill state..."));
-		if (true)
-		{
-			USkillComponent* SkillComponent = PlayerState->GetSkillComponent();
-			//플레이어가 설정한 스킬에 대한 정보 로드.
-			TArray<int32> SkillListByDB;
-			
-			TArray<int32> SkillList ={100,101,102,103,104,105,106,107};
-			UE_LOG(LogTemp, Warning, TEXT("[START] Loading skills for PlayerID: %d, SkillCount: %d"), PlayerID, SkillList.Num());
-			
-			// bool bLoadSuccess = SkillStateRepository->LoadSkillState(PlayerID, *SkillComponent, SkillList);
-			PlayerState->SetSkillComponent(SkillComponent);
-			if (true)
-			{
-				UE_LOG(LogTemp, Warning, TEXT("[SUCCESS] Skills loaded successfully"));
-			}
-			else
-			{
-				UE_LOG(LogTemp, Error, TEXT("[FAIL] Failed to load skills"));
-			}
-
-			// TODO: 로드 직후 바로 저장하는 로직이 의도된 것인지 확인이 필요합니다. (예: 신규 유저의 기본 상태 저장)
-			UE_LOG(LogTemp, Warning, TEXT("[START] Saving initial skill state"));
-			// bool bSaveSuccess = SkillStateRepository->SaveSkillState(PlayerID, SkillComponent, SkillList);
-			if (true)
-			{
-				UE_LOG(LogTemp, Warning, TEXT("[SUCCESS] Initial skill state saved"));
-			}
-			else
-			{
-				UE_LOG(LogTemp, Error, TEXT("[FAIL] Failed to save initial skill state"));
-			}
-
-			UE_LOG(LogTemp, Warning, TEXT("[SUCCESS] SkillComponent assigned to PlayerState"));
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("AGGwaGameMode: SkillStateRepository is not available!"));
-		}
+		SkillSubsystem->RequestLoadPlayerSkills(NewPlayer->PlayerState);
+		UE_LOG(LogTemp, Warning, TEXT("[SUCCESS] Loaded %d skill definitions"), LoadedSkillDefinitions.Num());
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("AGGwaGameMode: Failed to get AGGwaCharacter for NewPlayer!"));
+		UE_LOG(LogTemp, Error, TEXT("[FAIL] SkillConfigRepository is not available!"));
 	}
+	//플레이어가 설정한 스킬에 대한 정보 로드.
+	// TArray<int32> SkillList ={100,101,102,103,104,105,106,107};
 }
 
 void AGGwaGameMode::Logout(AController* Exiting)
 {
 	Super::Logout(Exiting);
-	
-	auto Inventoryrepo = GetGameInstance()->GetSubsystem<UInventorySubsystem>()->GetInventoryRepository();
-	if (Exiting && Inventoryrepo)
-	{
-		APlayerController* PC = Cast<APlayerController>(Exiting);
 
-		
-		if(PC && PC->PlayerState)
-		{
-			// Use the repository to save the player's inventory.
-			UE_LOG(LogTemp, Log, TEXT("Player logging out. Saving inventory data for %s."), *PC->PlayerState->GetPlayerName());
-			if (auto InventorySubsystem = GetGameInstance()->GetSubsystem<UInventorySubsystem>())
-			{
-				UE_LOG(LogTemp, Warning, TEXT("[START] Save inventory for player %s"), *PC->PlayerState->GetPlayerName());
-				// UInventoryDomainService* DomainService = InventorySubsystem->CreateDomainService();
-				// PC->PlayerState->GetComponentByClass<UInventoryComponent>()->GetItems();
-				// DomainService->SaveInventory(PC->PlayerState, DomainService->LoadInventory(PC->PlayerState).InventoryData);
-				// TODO: 저장 로직이 의도된 것인지 확인이 필요합니다. (예: 신규 유저의 기본 상태 저장)
-				// SkillStateRepository->SaveSkillState(PC->PlayerState->GetPlayerId(), PlayerState->GetSkillComponent(), TODO);
-				
-				UE_LOG(LogTemp, Warning, TEXT("[SUCCESS] Inventory Saved"));
-			}
-			// Unload Repo, Clear Component.
-		}
-	}
-	else
+	/*	FObjectPtr(const FObjectPtr& InOther)
+		: Handle(InOther.Handle)
 	{
-		UE_LOG(LogTemp, Error, TEXT("AGGwaGameMode: InventoryRepository is not available on Logout!"));
-	}
+	null 뜬다. 아마 로그아웃이라?
+		ConditionallyMarkAsReachable(*this);
+	}*/
+	// auto Inventoryrepo = GetGameInstance()->GetSubsystem<UInventorySubsystem>()->GetInventoryRepository();
+	// if (Exiting && Inventoryrepo)
+	// {
+	// 	APlayerController* PC = Cast<APlayerController>(Exiting);
+	//
+	// 	
+	// 	if(PC && PC->PlayerState)
+	// 	{
+	// 		// Use the repository to save the player's inventory.
+	// 		UE_LOG(LogTemp, Log, TEXT("Player logging out. Saving inventory data for %s."), *PC->PlayerState->GetPlayerName());
+	// 		if (auto InventorySubsystem = GetGameInstance()->GetSubsystem<UInventorySubsystem>())
+	// 		{
+	// 			UE_LOG(LogTemp, Warning, TEXT("[START] Save inventory for player %s"), *PC->PlayerState->GetPlayerName());
+	// 			// UInventoryDomainService* DomainService = InventorySubsystem->CreateDomainService();
+	// 			// PC->PlayerState->GetComponentByClass<UInventoryComponent>()->GetItems();
+	// 			// DomainService->SaveInventory(PC->PlayerState, DomainService->LoadInventory(PC->PlayerState).InventoryData);
+	// 			// TODO: 저장 로직이 의도된 것인지 확인이 필요합니다. (예: 신규 유저의 기본 상태 저장)
+	// 			// SkillStateRepository->SaveSkillState(PC->PlayerState->GetPlayerId(), PlayerState->GetSkillComponent(), TODO);
+	// 			
+	// 			UE_LOG(LogTemp, Warning, TEXT("[SUCCESS] Inventory Saved"));
+	// 		}
+	// 		// Unload Repo, Clear Component.
+	// 	}
+	// }
+	// else
+	// {
+	// 	UE_LOG(LogTemp, Error, TEXT("AGGwaGameMode: InventoryRepository is not available on Logout!"));
+	// }
 }
 
 void AGGwaGameMode::Server_SkillLog(FString Name, const FString& SkillName, FVector SkillLocation) {

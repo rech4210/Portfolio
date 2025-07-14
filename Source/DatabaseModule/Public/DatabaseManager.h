@@ -28,14 +28,17 @@ struct DATABASEMODULE_API FInventoryItemDTO
 	int32 Quantity;
 
 	UPROPERTY()
+	int32 SlotIndex; // 인벤토리 슬롯 위치
+
+	UPROPERTY()
 	FString ItemData; // JSON serialized data
 
 	FInventoryItemDTO()
-		: Quantity(0)
+		: Quantity(0), SlotIndex(-1)
 	{}
 
-	FInventoryItemDTO(const FName& InItemID, int32 InQuantity, const FString& InItemData)
-		: ItemID(InItemID), Quantity(InQuantity), ItemData(InItemData)
+	FInventoryItemDTO(const FName& InItemID, int32 InQuantity, int32 InSlotIndex, const FString& InItemData)
+		: ItemID(InItemID), Quantity(InQuantity), SlotIndex(InSlotIndex), ItemData(InItemData)
 	{}
 };
 
@@ -46,16 +49,19 @@ struct DATABASEMODULE_API FCharacterData
 	GENERATED_BODY()
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Data")
-	int32 UserId;
+	FString UserId; // VARCHAR(255) in database - supports UUID, external auth IDs
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Data")
-	int32 CharacterId;
+	FString CharacterId; // VARCHAR(255) in database - matches schema
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Data")
+	FString CharacterName; // VARCHAR(100) in database - character display name
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Data")
 	int32 Level;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Data")
-	int32 Exp;
+	int64 Exp; // BIGINT in database - supports large experience values
 
 	// JSONB data from the database, can be parsed into another USTRUCT if needed
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Data")
@@ -65,7 +71,7 @@ struct DATABASEMODULE_API FCharacterData
 	TArray<FInventoryItemDTO> Inventory;
 
 	FCharacterData()
-		: UserId(0), CharacterId(0), Level(1), Exp(0)
+		: UserId(TEXT("")), CharacterId(TEXT("")), CharacterName(TEXT("")), Level(1), Exp(0)
 	{}
 };
 
@@ -243,6 +249,70 @@ struct DATABASEMODULE_API FShopRepositoryResult
 	}
 };
 
+// ID 변환 전략 헬퍼 클래스 - 프로토타입용 간단 변환
+UCLASS()
+class DATABASEMODULE_API UPlayerIdHelper : public UObject
+{
+	GENERATED_BODY()
+
+public:
+	// int32 PlayerId를 VARCHAR UserId로 변환 (프로토타입용 단순 변환)
+	UFUNCTION(BlueprintCallable, Category = "Database|ID")
+	static FString ConvertPlayerIdToUserId(int32 PlayerId);
+	
+	// VARCHAR UserId를 int32 PlayerId로 변환 (가능한 경우)
+	UFUNCTION(BlueprintCallable, Category = "Database|ID")
+	static int32 ConvertUserIdToPlayerId(const FString& UserId);
+	
+	// PlayerId 기반 UserId 생성 (접두사 + 시퀀스 조합)
+	UFUNCTION(BlueprintCallable, Category = "Database|ID")
+	static FString GenerateUserIdFromPlayerId(int32 PlayerId, const FString& Prefix = TEXT("player"));
+	
+	// 유효한 UserId 형식인지 검증
+	UFUNCTION(BlueprintCallable, Category = "Database|ID")
+	static bool IsValidUserId(const FString& UserId);
+};
+
+// JSON 유틸리티 클래스 - DatabaseManager에서 JSON 처리를 위한 헬퍼
+UCLASS()
+class DATABASEMODULE_API UDatabaseJsonHelper : public UObject
+{
+	GENERATED_BODY()
+
+public:
+	// 인벤토리 아이템 데이터를 JSON으로 직렬화
+	UFUNCTION(BlueprintCallable, Category = "Database|JSON")
+	static FString SerializeInventoryItemData(const TMap<FString, FString>& ItemProperties);
+	
+	// JSON에서 인벤토리 아이템 데이터를 역직렬화
+	UFUNCTION(BlueprintCallable, Category = "Database|JSON")
+	static TMap<FString, FString> DeserializeInventoryItemData(const FString& JsonData);
+	
+	// 캐릭터 확장 데이터를 JSON으로 직렬화 (Position, Health, Mana 등)
+	UFUNCTION(BlueprintCallable, Category = "Database|JSON")
+	static FString SerializeCharacterExtendedData(const FVector& Position, float Health, float Mana, const TMap<FString, FString>& AdditionalData);
+	
+	// JSON에서 캐릭터 확장 데이터를 역직렬화
+	UFUNCTION(BlueprintCallable, Category = "Database|JSON")
+	static bool DeserializeCharacterExtendedData(const FString& JsonData, FVector& OutPosition, float& OutHealth, float& OutMana, TMap<FString, FString>& OutAdditionalData);
+	
+	// 스킬 데이터를 JSON으로 직렬화
+	UFUNCTION(BlueprintCallable, Category = "Database|JSON")
+	static FString SerializeSkillData(const TMap<FString, FString>& SkillProperties);
+	
+	// JSON에서 스킬 데이터를 역직렬화
+	UFUNCTION(BlueprintCallable, Category = "Database|JSON")
+	static TMap<FString, FString> DeserializeSkillData(const FString& JsonData);
+	
+	// 장비 강화 데이터를 JSON으로 직렬화
+	UFUNCTION(BlueprintCallable, Category = "Database|JSON")
+	static FString SerializeEquipmentEnhancement(int32 EnhancementLevel, const TArray<FString>& EnhancementEffects);
+	
+	// JSON에서 장비 강화 데이터를 역직렬화
+	UFUNCTION(BlueprintCallable, Category = "Database|JSON")
+	static bool DeserializeEquipmentEnhancement(const FString& JsonData, int32& OutEnhancementLevel, TArray<FString>& OutEnhancementEffects);
+};
+
 UCLASS()
 class DATABASEMODULE_API UDatabaseManager : public UGameInstanceSubsystem
 {
@@ -256,10 +326,10 @@ public:
 
 	/**
 	 * Asynchronously loads character information from the database.
-	 * @param UserId The ID of the user whose character to load.
+	 * @param UserId The ID of the user whose character to load (VARCHAR(255) in database).
 	 * @param Delegate The delegate to call upon completion.
 	 */
-	void LoadCharacterInfo(int32 UserId, FCharacterDataLoadDelegate Delegate);
+	void LoadCharacterInfo(const FString& UserId, FCharacterDataLoadDelegate Delegate);
 
 	/**
 	 * Asynchronously saves character information to the database.
@@ -278,35 +348,35 @@ public:
 
 	/**
 	 * Load inventory items for a specific player
-	 * @param PlayerId The player's unique ID
+	 * @param UserId The player's unique ID (VARCHAR(255) in database)
 	 * @param Delegate Callback with loaded inventory data
 	 */
-	UE::Tasks::TTask<TArray<FInventoryItemDTO>> LoadInventoryForPlayer(int32 PlayerId);
+	UE::Tasks::TTask<TArray<FInventoryItemDTO>> LoadInventoryForPlayer(const FString& UserId);
 
 	/**
 	 * Save inventory items for a specific player
-	 * @param PlayerId The player's unique ID
+	 * @param UserId The player's unique ID (VARCHAR(255) in database)
 	 * @param Items The inventory items to save
 	 * @return Task that completes when save finishes
 	 */
-	UE::Tasks::TTask<bool> SaveInventoryForPlayer(int32 PlayerId, const TArray<FInventoryItemDTO>& Items);
+	UE::Tasks::TTask<bool> SaveInventoryForPlayer(const FString& UserId, const TArray<FInventoryItemDTO>& Items);
 
 	/**
 	 * Add a single item to player's inventory
-	 * @param PlayerId The player's unique ID
+	 * @param UserId The player's unique ID (VARCHAR(255) in database)
 	 * @param Item The item to add
 	 * @return Task that completes when item is added
 	 */
-	UE::Tasks::TTask<bool> AddInventoryItem(int32 PlayerId, const FInventoryItemDTO& Item);
+	UE::Tasks::TTask<bool> AddInventoryItem(const FString& UserId, const FInventoryItemDTO& Item);
 
 	/**
 	 * Remove a single item from player's inventory
-	 * @param PlayerId The player's unique ID
+	 * @param UserId The player's unique ID (VARCHAR(255) in database)
 	 * @param ItemID The item ID to remove
 	 * @param Quantity How many to remove
 	 * @return Task that completes when item is removed
 	 */
-	UE::Tasks::TTask<bool> RemoveInventoryItem(int32 PlayerId, const FName& ItemID, int32 Quantity);
+	UE::Tasks::TTask<bool> RemoveInventoryItem(const FString& UserId, const FName& ItemID, int32 Quantity);
 
 	// ========================================================================
 	// SKILL MANAGEMENT METHODS
@@ -314,44 +384,44 @@ public:
 
 	/**
 	 * Load skill slots for a specific player
-	 * @param PlayerId The player's unique ID
+	 * @param UserId The player's unique ID (VARCHAR(255) in database)
 	 * @return Task that returns loaded skill slots
 	 */
-	UE::Tasks::TTask<TArray<FSkillSlotDTO>> LoadSkillsForPlayer(int32 PlayerId);
+	UE::Tasks::TTask<TArray<FSkillSlotDTO>> LoadSkillsForPlayer(const FString& UserId);
 
 	/**
 	 * Save skill slots for a specific player
-	 * @param PlayerId The player's unique ID
+	 * @param UserId The player's unique ID (VARCHAR(255) in database)
 	 * @param SkillSlots The skill slots to save
 	 * @return Task that completes when save finishes
 	 */
-	UE::Tasks::TTask<bool> SaveSkillsForPlayer(int32 PlayerId, const TArray<FSkillSlotDTO>& SkillSlots);
+	UE::Tasks::TTask<bool> SaveSkillsForPlayer(const FString& UserId, const TArray<FSkillSlotDTO>& SkillSlots);
 
 	/**
 	 * Register a single skill to player's skill slots
-	 * @param PlayerId The player's unique ID
+	 * @param UserId The player's unique ID (VARCHAR(255) in database)
 	 * @param SkillSlot The skill slot to register
 	 * @return Task that completes when skill is registered
 	 */
-	UE::Tasks::TTask<bool> RegisterSkill(int32 PlayerId, const FSkillSlotDTO& SkillSlot);
+	UE::Tasks::TTask<bool> RegisterSkill(const FString& UserId, const FSkillSlotDTO& SkillSlot);
 
 	/**
 	 * Unregister a skill from player's skill slots
-	 * @param PlayerId The player's unique ID
+	 * @param UserId The player's unique ID (VARCHAR(255) in database)
 	 * @param SlotId The slot ID to unregister
 	 * @return Task that completes when skill is unregistered
 	 */
-	UE::Tasks::TTask<bool> UnregisterSkill(int32 PlayerId, const FGuid& SlotId);
+	UE::Tasks::TTask<bool> UnregisterSkill(const FString& UserId, const FGuid& SlotId);
 
 	/**
 	 * Update skill cooldown state
-	 * @param PlayerId The player's unique ID
+	 * @param UserId The player's unique ID (VARCHAR(255) in database)
 	 * @param SlotId The slot ID to update
 	 * @param LastUsedTime When the skill was last used
 	 * @param RemainingCooldown Remaining cooldown time
 	 * @return Task that completes when cooldown is updated
 	 */
-	UE::Tasks::TTask<bool> UpdateSkillCooldown(int32 PlayerId, const FGuid& SlotId, const FDateTime& LastUsedTime, float RemainingCooldown);
+	UE::Tasks::TTask<bool> UpdateSkillCooldown(const FString& UserId, const FGuid& SlotId, const FDateTime& LastUsedTime, float RemainingCooldown);
 
 	// ============================================================================
 	// Shop Data Management Methods

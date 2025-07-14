@@ -38,13 +38,12 @@ UE::Tasks::TTask<FInventoryRepositoryResult> UInventoryRepository::LoadInventory
 			return FInventoryRepositoryResult::Failure(TEXT("DatabaseManager not available"));
 		}
 
-		if (PlayerId <= 0)
-		{
-			return FInventoryRepositoryResult::Failure(TEXT("Invalid PlayerId"));
-		}
+
+		// Convert int32 PlayerId to FString UserId using helper
+		FString UserId = UPlayerIdHelper::ConvertPlayerIdToUserId(PlayerId);
 
 		// Execute database operation on worker thread
-		auto LoadTask = DBManager->LoadInventoryForPlayer(PlayerId);
+		auto LoadTask = DBManager->LoadInventoryForPlayer(UserId);
 		TArray<FInventoryItemDTO> LoadedItems = LoadTask.GetResult();
 
 		// Create domain object
@@ -67,8 +66,11 @@ UE::Tasks::TTask<FInventoryRepositoryResult> UInventoryRepository::SaveInventory
 			return FInventoryRepositoryResult::Failure(TEXT("Invalid inventory data"));
 		}
 
+		// Convert int32 PlayerId to FString UserId using helper
+		FString UserId = UPlayerIdHelper::ConvertPlayerIdToUserId(InventoryData.PlayerId);
+
 		// Execute database operation on worker thread
-		auto SaveTask = DBManager->SaveInventoryForPlayer(InventoryData.PlayerId, InventoryData.Items);
+		auto SaveTask = DBManager->SaveInventoryForPlayer(UserId, InventoryData.Items);
 		bool bSuccess = SaveTask.GetResult();
 
 		if (bSuccess)
@@ -91,20 +93,18 @@ UE::Tasks::TTask<FInventoryRepositoryResult> UInventoryRepository::AddItemByPlay
 		{
 			return FInventoryRepositoryResult::Failure(TEXT("DatabaseManager not available"));
 		}
-
-		if (PlayerId <= 0)
-		{
-			return FInventoryRepositoryResult::Failure(TEXT("Invalid PlayerId"));
-		}
 		
-		auto bSuccess = DBManager->AddInventoryItem(PlayerId, Item).GetResult();
+		// Convert int32 PlayerId to FString UserId using helper
+		FString UserId = UPlayerIdHelper::ConvertPlayerIdToUserId(PlayerId);
+		
+		auto bSuccess = DBManager->AddInventoryItem(UserId, Item).GetResult();
 		if (bSuccess) {
 			FInventoryRepositoryResult& Result = LoadInventoryByPlayerId(PlayerId).GetResult();
 			return FInventoryRepositoryResult::Success(Result.InventoryData);
 		}
 		
 		// or Use PrerequisitesTask DAG 
-		auto PrerequisitesTask = DBManager->AddInventoryItem(PlayerId, Item);
+		auto PrerequisitesTask = DBManager->AddInventoryItem(UserId, Item);
 		Launch(UE_SOURCE_LOCATION, [this, PlayerId, PrerequisitesTask]() mutable ->FInventoryRepositoryResult {
 			auto Ok = PrerequisitesTask.GetResult();
 			if (Ok) {
@@ -130,13 +130,11 @@ UE::Tasks::TTask<FInventoryRepositoryResult> UInventoryRepository::RemoveItemByP
 			return FInventoryRepositoryResult::Failure(TEXT("DatabaseManager not available"));
 		}
 
-		if (PlayerId <= 0)
-		{
-			return FInventoryRepositoryResult::Failure(TEXT("Invalid PlayerId"));
-		}
+		// Convert int32 PlayerId to FString UserId using helper
+		FString UserId = UPlayerIdHelper::ConvertPlayerIdToUserId(PlayerId);
 
 		// Execute database operation on worker thread
-		auto RemoveTask = DBManager->RemoveInventoryItem(PlayerId, ItemID, Quantity);
+		auto RemoveTask = DBManager->RemoveInventoryItem(UserId, ItemID, Quantity);
 		bool bSuccess = RemoveTask.GetResult();
 
 		if (bSuccess)

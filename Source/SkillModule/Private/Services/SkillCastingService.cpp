@@ -11,15 +11,17 @@
 #include "GameFramework/PlayerState.h"
 #include "GameFramework/Pawn.h"
 #include "SkillSubsystem.h"
+#include "GameFramework/Character.h"
 
-bool USkillCastingService::TryCastSkill(AActor* Caster, const FGuid& SlotId){
-	if (!Caster || !Caster->HasAuthority()){
-		UE_LOG(LogTemp, Error, TEXT("SkillCastingService: Caster is null. or not on server authority."));
-		return false;
-	}
+bool USkillCastingService::TryCastSkill(ACharacter* Caster, const FGuid& SlotId){
+	// Client 기준으로 RPC -> 스킬 사용이 되어야함. 애초에 try ability는 predict 지원임 ㅇㅇ
+	// if (!Caster || !Caster->HasAuthority()){
+	// 	UE_LOG(LogTemp, Error, TEXT("SkillCastingService: Caster is null. or not on server authority."));
+	// 	return false;
+	// }
 	
 	// 1. 컴포넌트 가져오기
-	USkillComponent* SkillComp = Caster->FindComponentByClass<USkillComponent>();
+	USkillComponent* SkillComp = Caster->GetPlayerState()->FindComponentByClass<USkillComponent>();
 	UAbilitySystemComponent* ASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(Caster);
 	if (!SkillComp || !ASC){
 		UE_LOG(LogTemp, Error, TEXT("SkillCastingService: Caster '%s' is missing required components (SkillComponent or AbilitySystemComponent)."), *Caster->GetName());
