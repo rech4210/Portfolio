@@ -11,8 +11,98 @@ DECLARE_DELEGATE_OneParam(FCharacterDataSaveDelegate, bool /* bSuccess */);
 DECLARE_DELEGATE_OneParam(FInventoryDataLoadDelegate, bool /* bSuccess */);
 DECLARE_DELEGATE_OneParam(FInventoryDataSaveDelegate, bool /* bSuccess */);
 
+// Database-related delegates
+DECLARE_DELEGATE_TwoParams(FDatabaseUserLoadDelegate, bool /* bSuccess */, const TOptional<FDatabaseUserData>& /* UserData */);
+DECLARE_DELEGATE_OneParam(FDatabaseUserSaveDelegate, bool /* bSuccess */);
+DECLARE_DELEGATE_OneParam(FDatabaseAuditLogDelegate, bool /* bSuccess */);
+
 // Forward declaration for the implementation class (PIMPL pattern)
 struct FDatabaseManagerImpl;
+
+// ============================================================================
+// DATABASE DATA TRANSFER OBJECTS
+// ============================================================================
+
+/**
+ * DTO for User Account Data in Database
+ * Maps to 'users' table structure
+ * Note: Email field is optional for future features (password recovery, etc.)
+ */
+USTRUCT(BlueprintType)
+struct DATABASEMODULE_API FDatabaseUserData
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	int32 UserId; // INT AUTO_INCREMENT PRIMARY KEY
+
+	UPROPERTY()
+	FString Username; // VARCHAR(50) UNIQUE
+
+	UPROPERTY()
+	FString PasswordHash; // VARCHAR(255)
+
+	UPROPERTY()
+	FString Email; // VARCHAR(100) NULLABLE - for future email verification
+
+	UPROPERTY()
+	FDateTime CreatedAt; // DATETIME DEFAULT CURRENT_TIMESTAMP
+
+	UPROPERTY()
+	TOptional<FDateTime> LastLogin; // DATETIME NULLABLE
+
+	UPROPERTY()
+	bool bIsActive; // BOOLEAN DEFAULT TRUE
+
+	UPROPERTY()
+	int32 FailedLoginAttempts; // INT DEFAULT 0
+
+	UPROPERTY()
+	TOptional<FDateTime> AccountLockedUntil; // DATETIME NULLABLE
+
+	FDatabaseUserData()
+		: UserId(0)
+		, bIsActive(true)
+		, FailedLoginAttempts(0)
+	{}
+};
+
+/**
+ * DTO for User Audit Log Data in Database
+ * Maps to 'user_audit_logs' table structure
+ */
+USTRUCT(BlueprintType)
+struct DATABASEMODULE_API FDatabaseAuditLogData
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	int64 LogId; // BIGINT AUTO_INCREMENT
+
+	UPROPERTY()
+	int32 UserId; // INT - Foreign Key to users.user_id
+
+	UPROPERTY()
+	FString Action; // VARCHAR(50) - LOGIN_SUCCESS, LOGIN_FAILED, etc.
+
+	UPROPERTY()
+	FString Details; // TEXT - JSON details about the action
+
+	UPROPERTY()
+	FString IpAddress; // VARCHAR(45) - IPv4/IPv6 address
+
+	UPROPERTY()
+	FDateTime CreatedAt; // DATETIME DEFAULT CURRENT_TIMESTAMP
+
+	FDatabaseAuditLogData()
+		: LogId(0)
+		, UserId(0)
+	{}
+};
+
+// ============================================================================
+// EXISTING INVENTORY DTOs
+// ============================================================================
 
 
 // DTO for inventory items
@@ -502,6 +592,126 @@ public:
 	 * @return Task that completes when price is updated
 	 */
 	UE::Tasks::TTask<bool> UpdateShopItemPrice(int32 ShopID, int32 ItemID, float NewPrice);
+
+	// ============================================================================
+	// USER AUTHENTICATION METHODS
+	// ============================================================================
+
+	/**
+	 * Create a new user account in the database
+	 * @param Username The username for the new account
+	 * @param PasswordHash The hashed password
+	 * @param Email The email address (optional, can be empty)
+	 * @param OutUserId Reference to store the generated user ID
+	 * @return Task that completes when user is created
+	 */
+	UE::Tasks::TTask<bool> CreateUserAccount(const FString& Username, const FString& PasswordHash, const FString& Email, int32& OutUserId);
+
+	/**
+	 * Get user account by username
+	 * @param Username The username to search for
+	 * @return Task that returns user data if found
+	 */
+	UE::Tasks::TTask<TOptional<FDatabaseUserData>> GetUserByUsername(const FString& Username);
+
+	/**
+	 * Get user account by user ID
+	 * @param UserId The user ID to search for
+	 * @return Task that returns user data if found
+	 */
+	UE::Tasks::TTask<TOptional<FDatabaseUserData>> GetUserById(int32 UserId);
+
+	/**
+	 * Update user account information
+	 * @param UserData The user data to update
+	 * @return Task that completes when user is updated
+	 */
+	UE::Tasks::TTask<bool> UpdateUserAccount(const FDatabaseUserData& UserData);
+
+	/**
+	 * Soft delete user account (mark as inactive)
+	 * @param UserId The user ID to delete
+	 * @return Task that completes when user is deleted
+	 */
+	UE::Tasks::TTask<bool> DeleteUserAccount(int32 UserId);
+
+	/**
+	 * Check if a username already exists
+	 * @param Username The username to check
+	 * @return Task that returns true if username exists
+	 */
+	UE::Tasks::TTask<bool> CheckUsernameExists(const FString& Username);
+
+	/**
+	 * Lock user account with expiration time
+	 * @param UserId The user ID to lock
+	 * @param ExpiresAt When the lock should expire
+	 * @return Task that completes when user is locked
+	 */
+	UE::Tasks::TTask<bool> LockUserAccount(int32 UserId, const FDateTime& ExpiresAt);
+
+	/**
+	 * Unlock user account manually
+	 * @param UserId The user ID to unlock
+	 * @return Task that completes when user is unlocked
+	 */
+	UE::Tasks::TTask<bool> UnlockUserAccount(const FString& UserId);
+
+	/**
+	 * Update user's last login timestamp
+	 * @param UserId The user ID to update
+	 * @return Task that completes when timestamp is updated
+	 */
+	UE::Tasks::TTask<bool> UpdateLastLogin(const FString& UserId);
+
+	/**
+	 * Get users whose account locks have expired
+	 * @return Task that returns array of expired locked users
+	 */
+	UE::Tasks::TTask<TArray<FDatabaseUserData>> GetExpiredLockedUsers();
+
+	/**
+	 * Unlock all users whose lock has expired (batch operation)
+	 * @return Task that returns number of users unlocked
+	 */
+	UE::Tasks::TTask<int32> UnlockExpiredUsers();
+
+	// ============================================================================
+	// USER AUDIT LOG METHODS
+	// ============================================================================
+
+	/**
+	 * Add an audit log entry for user action
+	 * @param UserId The user ID performing the action
+	 * @param Action The action type (LOGIN_SUCCESS, LOGIN_FAILED, etc.)
+	 * @param Details JSON details about the action
+	 * @param IpAddress The IP address of the user
+	 * @return Task that completes when log is added
+	 */
+	UE::Tasks::TTask<bool> AddUserAuditLog(int32 UserId, const FString& Action, const FString& Details, const FString& IpAddress);
+
+	/**
+	 * Get audit logs for a specific user
+	 * @param UserId The user ID to get logs for
+	 * @param Limit Maximum number of logs to return (default 100)
+	 * @return Task that returns array of audit logs
+	 */
+	UE::Tasks::TTask<TArray<FDatabaseAuditLogData>> GetUserAuditLogs(int32 UserId, int32 Limit = 100);
+
+	/**
+	 * Get audit logs by action type
+	 * @param Action The action type to filter by (e.g., "LOGIN_SUCCESS", "PASSWORD_CHANGE")
+	 * @param Limit Maximum number of logs to return (default 100)
+	 * @return Task that returns array of audit logs
+	 */
+	UE::Tasks::TTask<TArray<FDatabaseAuditLogData>> GetAuditLogsByAction(const FString& Action, int32 Limit = 100);
+
+	/**
+	 * Get recent audit logs across all users (for admin monitoring)
+	 * @param Limit Maximum number of logs to return (default 50)
+	 * @return Task that returns array of audit logs
+	 */
+	UE::Tasks::TTask<TArray<FDatabaseAuditLogData>> GetRecentAuditLogs(int32 Limit = 50);
 
 private:
 	// Pointer to the implementation

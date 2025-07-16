@@ -8,42 +8,69 @@
 #include "LoginPlayerController.generated.h"
 
 /**
- * 
+ * Login-specific PlayerController for authentication flow
+ * Handles UI and authentication before transitioning to main game
  */
 UCLASS()
-class CLIENTMODULE_API ALoginPlayerController : public APlayerController {
+class CLIENTMODULE_API ALoginPlayerController : public APlayerController 
+{
 	GENERATED_BODY()
+
 public:
-	UFUNCTION(BlueprintCallable, Category="Login")
-	void RequestLogin(const FString& UserID, const FString& Password);
+	/**
+	 * Request user registration through the authentication system
+	 */
+	UFUNCTION(BlueprintCallable, Category="Auth")
+	void RequestRegistration(const FString& Username, const FString& Password);
 
-	/** 토큰 요청 성공 시 호출될 콜백 함수 */
-	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category="Login")
-	void OnLoginSuccess_BP(const FString& Token);
+	/**
+	 * Request user login through the authentication system
+	 */
+	UFUNCTION(BlueprintCallable, Category="Auth")
+	void RequestLogin(const FString& Username, const FString& Password);
+
+	/** Blueprint event: Registration result received */
+	UFUNCTION(BlueprintImplementableEvent, Category="Auth")
+	void OnRegistrationResult_BP(bool bSuccess, const FString& Message);
 	
-	/** 토큰 요청 실패 시 호출될 콜백 함수 */
-	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category="Login")
-	void OnLoginFailure_BP(const FString& ErrorMessage);
+	/** Blueprint event: Login result received */
+	UFUNCTION(BlueprintImplementableEvent, Category="Auth")
+	void OnLoginResult_BP(bool bSuccess, const FString& Token, const FString& UserId);
 
-	UFUNCTION(BlueprintCallable, Category="Login")
-	void ClientTravel_BP(const FString& HostURL ,const FString& Token, ETravelType TravelType);
+	/** 
+	 * Connect to game server and travel to game world
+	 * Called after successful authentication 
+	 */
+	UFUNCTION(BlueprintCallable, Category="Auth")
+	void ConnectToGameServer(const FString& ServerAddress, const FString& Token);
+
 protected:
 	virtual void BeginPlay() override;
 
-	
 private:
-	// void OnLoginSuccess(const FString& Token);
-	// void OnLoginFailure(const FString& ErrorMessage);
-
-	/** 화면에 표시할 로그인 UI 위젯 블루프린트 클래스 */
-	UPROPERTY(EditDefaultsOnly, Category = "Login", meta = (AllowPrivateAccess = "true"))
+	/** Login UI widget class */
+	UPROPERTY(EditDefaultsOnly, Category = "UI", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<UUserWidget> LoginWidgetClass;
 
-	// 생성된 로그인 위젯 인스턴스
+	/** Created login widget instance */
 	UPROPERTY()
 	TObjectPtr<UUserWidget> LoginWidgetInstance;
 
-	// 인증 서비스를 담을 변수
+	/** Authentication service */
 	UPROPERTY()
 	TObjectPtr<UAuthService> AuthService;
+
+	// ============================================================================
+	// AuthService Callbacks
+	// ============================================================================
+
+	/**
+	 * Called when registration request completes
+	 */
+	void OnRegistrationComplete(bool bSuccess, const FString& Message);
+
+	/**
+	 * Called when login request completes
+	 */
+	void OnLoginComplete(bool bSuccess, const FString& Token, const FString& UserId);
 };

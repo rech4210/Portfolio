@@ -1,74 +1,150 @@
 #include "AuthService.h"
-#include "HttpModule.h"
-#include "Interfaces/IHttpRequest.h"
-#include "Interfaces/IHttpResponse.h"
-#include "Json.h"
+#include "GameFramework/PlayerController.h"
+#include "Engine/Engine.h"
+#include "Engine/World.h"
 
 UAuthService::UAuthService()
 {
-    AuthServerUrl = TEXT("http://127.0.0.1:3000");
+    // No longer needs direct server communication
+    // Will communicate through PlayerController RPCs
 }
 
-void UAuthService::RequestToken(const FString& UserId, const TArray<FString>& Roles, FLoginSuccessDelegate OnSuccess, FLoginFailureDelegate OnFailure)
+void UAuthService::RequestRegistration(const FString& Username, const FString& Password, FRegistrationDelegate OnResult)
 {
-    UE_LOG(LogTemp, Warning, TEXT("[Auth Service] Requesting token for user: %s"), *UserId);
-    UE_LOG(LogTemp, Warning, TEXT("[Auth Service] Server URL: %s"), *AuthServerUrl);
+    UE_LOG(LogTemp, Log, TEXT("AuthService: Requesting registration for user %s"), *Username);
 
-    TSharedPtr<FJsonObject> RequestObj = MakeShareable(new FJsonObject);
-    RequestObj->SetStringField(TEXT("userId"), UserId);
-
-    TArray<TSharedPtr<FJsonValue>> RolesArray;
-    for (const FString& Role : Roles)
+    if (Username.IsEmpty() || Password.IsEmpty())
     {
-        RolesArray.Add(MakeShareable(new FJsonValueString(Role)));
-    }
-    RequestObj->SetArrayField(TEXT("roles"), RolesArray);
-
-    FString RequestBody;
-    TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&RequestBody);
-    FJsonSerializer::Serialize(RequestObj.ToSharedRef(), Writer);
-
-    FHttpModule& HttpModule = FHttpModule::Get();
-    TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = HttpModule.CreateRequest();
-
-    HttpRequest->SetURL(AuthServerUrl / TEXT("login"));
-    HttpRequest->SetVerb(TEXT("POST"));
-    HttpRequest->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
-    HttpRequest->SetContentAsString(RequestBody);
-    
-    // Binding the response delegate
-    HttpRequest->OnProcessRequestComplete().BindUObject(this, &UAuthService::OnTokenRequestResponse, OnSuccess, OnFailure);
-
-    HttpRequest->ProcessRequest();
-}
-
-void UAuthService::OnTokenRequestResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful, FLoginSuccessDelegate OnSuccess, FLoginFailureDelegate OnFailure)
-{
-    if (!bWasSuccessful || !Response.IsValid())
-    {
-        OnFailure.ExecuteIfBound(TEXT("Request failed or response is invalid."));
+        UE_LOG(LogTemp, Warning, TEXT("AuthService: Invalid registration parameters"));
+        OnResult.ExecuteIfBound(false, TEXT("Username and password are required"));
         return;
     }
 
-    if (EHttpResponseCodes::IsOk(Response->GetResponseCode()))
+    // Get PlayerController and call server RPC
+    if (UWorld* World = GetWorld())
     {
-        TSharedPtr<FJsonObject> JsonObject;
-        TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
-        
-        if (FJsonSerializer::Deserialize(Reader, JsonObject) && JsonObject.IsValid())
+        if (APlayerController* PC = World->GetFirstPlayerController())
         {
-            FString Token;
-            if (JsonObject->TryGetStringField(TEXT("token"), Token))
-            {
-                OnSuccess.ExecuteIfBound(Token);
-                return;
-            }
+            // TODO: Call PlayerController Server RPC for registration
+            // PC->Server_Register(Username, Password);
+            
+            // Store delegate for later callback
+            PendingRegistrationDelegate = OnResult;
+            
+            UE_LOG(LogTemp, Log, TEXT("AuthService: Registration request sent to server"));
         }
-        OnFailure.ExecuteIfBound(TEXT("Failed to parse token from response."));
+        else
+        {
+            UE_LOG(LogTemp, Error, TEXT("AuthService: No PlayerController found"));
+            OnResult.ExecuteIfBound(false, TEXT("No connection to server"));
+        }
     }
     else
     {
-        const FString ErrorMessage = FString::Printf(TEXT("Request failed with code: %d. Response: %s"), Response->GetResponseCode(), *Response->GetContentAsString());
-        OnFailure.ExecuteIfBound(ErrorMessage);
+        UE_LOG(LogTemp, Error, TEXT("AuthService: No World context"));
+        OnResult.ExecuteIfBound(false, TEXT("Invalid game state"));
     }
 }
+
+void UAuthService::RequestLogin(const FString& Username, const FString& Password, FLoginDelegate OnResult)
+{
+    UE_LOG(LogTemp, Log, TEXT("AuthService: Requesting login for user %s"), *Username);
+
+    if (Username.IsEmpty() || Password.IsEmpty())
+    {
+        UE_LOG(LogTemp, Warning, TEXT("AuthService: Invalid login parameters"));
+        OnResult.ExecuteIfBound(false, TEXT(""), TEXT("Username and password are required"));
+        return;
+    }
+
+    // Get PlayerController and call server RPC
+    if (UWorld* World = GetWorld())
+    {
+        if (APlayerController* PC = World->GetFirstPlayerController())
+        {
+            // TODO: Call PlayerController Server RPC for login
+            // PC->Server_Login(Username, Password);
+            
+            // Store delegate for later callback
+            PendingLoginDelegate = OnResult;
+            
+            UE_LOG(LogTemp, Log, TEXT("AuthService: Login request sent to server"));
+        }
+        else
+        {
+            UE_LOG(LogTemp, Error, TEXT("AuthService: No PlayerController found"));
+            OnResult.ExecuteIfBound(false, TEXT(""), TEXT("No connection to server"));
+        }
+    }
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("AuthService: No World context"));
+        OnResult.ExecuteIfBound(false, TEXT(""), TEXT("Invalid game state"));
+    }
+}
+
+// Called by PlayerController when server responds to registration
+void UAuthService::OnServerRegistrationResult(bool bSuccess, const FString& Message)
+{
+    UE_LOG(LogTemp, Log, TEXT("AuthService: Server registration result - Success: %s, Message: %s"), 
+        bSuccess ? TEXT("true") : TEXT("false"), *Message);
+
+    if (PendingRegistrationDelegate.IsBound())
+    {
+        PendingRegistrationDelegate.ExecuteIfBound(bSuccess, Message);
+        PendingRegistrationDelegate.Unbind();
+    }
+}
+
+// Called by PlayerController when server responds to login
+void UAuthService::OnServerLoginResult(bool bSuccess, const FString& Token, const FString& UserId)
+{
+    UE_LOG(LogTemp, Log, TEXT("AuthService: Server login result - Success: %s, UserId: %s"), 
+        bSuccess ? TEXT("true") : TEXT("false"), *UserId);
+
+    if (PendingLoginDelegate.IsBound())
+    {
+        if (bSuccess)
+        {
+            // Store authentication state
+            CurrentToken = Token;
+            CurrentUserId = UserId;
+            bIsAuthenticated = true;
+            
+            PendingLoginDelegate.ExecuteIfBound(true, Token, UserId);
+        }
+        else
+        {
+            bIsAuthenticated = false;
+            PendingLoginDelegate.ExecuteIfBound(false, TEXT(""), TEXT("Authentication failed"));
+        }
+        PendingLoginDelegate.Unbind();
+    }
+}
+
+void UAuthService::Logout()
+{
+    UE_LOG(LogTemp, Log, TEXT("AuthService: Logging out user %s"), *CurrentUserId);
+    
+    CurrentToken.Empty();
+    CurrentUserId.Empty();
+    bIsAuthenticated = false;
+    
+    // TODO: Notify server of logout if needed
+}
+
+bool UAuthService::IsAuthenticated() const
+{
+    return bIsAuthenticated && !CurrentToken.IsEmpty() && !CurrentUserId.IsEmpty();
+}
+
+FString UAuthService::GetCurrentToken() const
+{
+    return CurrentToken;
+}
+
+FString UAuthService::GetCurrentUserId() const
+{
+    return CurrentUserId;
+}
+

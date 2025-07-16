@@ -27,7 +27,8 @@ public class MyGame : ModuleRules
 			"LoggingModule",
 			"DatabaseModule",
 			"InventoryModule",
-			"EquipmentModule"
+			"EquipmentModule",
+			"AuthModule"
 		});
 
 		

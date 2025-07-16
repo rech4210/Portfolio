@@ -8,6 +8,7 @@
 #include "Shared/GAS/GGwaAbilitySystemComponent.h"
 #include "Shared/Player/GGwaCharacter.h"
 #include "Shared/Player/GGwaPlayerState.h"
+#include "AuthModule/Public/AuthSubsystem.h"
 
 // Client-only includes
 #if !UE_SERVER
@@ -89,6 +90,143 @@ void AGGwaPlayerController::AcknowledgePossession(class APawn* PossessedPawn) {
 void AGGwaPlayerController::Server_InitiateReward_Implementation(const FString& PlayerId, const FRewardRequest& Payload) {
 	IServerLogicBridge* Bridge = Cast<IServerLogicBridge>(GetWorld()->GetSubsystem<UWorldSubsystem>());
 	// Bridge->InitiateRewardFlow(PlayerId, Payload, FOnFlowComplete::CreateUObject(this, &AGGwaPlayerController::Client_OnRewardResult));
+}
+
+// ============================================================================
+// AUTHENTICATION RPC IMPLEMENTATIONS
+// ============================================================================
+
+void AGGwaPlayerController::Server_Register_Implementation(const FString& Username, const FString& Password)
+{
+	UE_LOG(LogTemp, Log, TEXT("AGGwaPlayerController::Server_Register: Registration request for username: %s"), *Username);
+
+	// Get client IP for audit logging
+	FString ClientIP = TEXT("Unknown");
+	if (GetNetConnection() && GetNetConnection()->RemoteAddr.IsValid())
+	{
+		ClientIP = GetNetConnection()->RemoteAddr->ToString(false);
+	}
+
+	// Get AuthSubsystem and delegate the request
+	if (UAuthSubsystem* AuthSubsystem = GetGameInstance()->GetSubsystem<UAuthSubsystem>())
+	{
+		// Bind to AuthSubsystem events to get the result
+		AuthSubsystem->OnServerRegistrationComplete.AddDynamic(this, &AGGwaPlayerController::OnAuthSubsystemRegistrationComplete);
+
+		// Send registration request to AuthSubsystem
+		AuthSubsystem->RequestServerRegistration(Username, Password, ClientIP);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("AGGwaPlayerController::Server_Register: AuthSubsystem not found"));
+		Client_OnRegistrationResult(false, TEXT("Authentication service unavailable"));
+	}
+}
+
+bool AGGwaPlayerController::Server_Register_Validate(const FString& Username, const FString& Password)
+{
+	// Basic validation - AuthSubsystem will do detailed validation
+	return !Username.IsEmpty() && !Password.IsEmpty() && Username.Len() <= 30 && Password.Len() <= 128;
+}
+
+void AGGwaPlayerController::Server_Login_Implementation(const FString& Username, const FString& Password)
+{
+	UE_LOG(LogTemp, Log, TEXT("AGGwaPlayerController::Server_Login: Login request for username: %s"), *Username);
+
+	// Get client IP for audit logging
+	FString ClientIP = TEXT("Unknown");
+	if (GetNetConnection() && GetNetConnection()->RemoteAddr.IsValid())
+	{
+		ClientIP = GetNetConnection()->RemoteAddr->ToString(false);
+	}
+
+	// Get AuthSubsystem and delegate the request
+	if (UAuthSubsystem* AuthSubsystem = GetGameInstance()->GetSubsystem<UAuthSubsystem>())
+	{
+		// Bind to AuthSubsystem events to get the result
+		AuthSubsystem->OnServerAuthenticationComplete.AddDynamic(this, &AGGwaPlayerController::OnAuthSubsystemAuthenticationComplete);
+
+		// Send login request to AuthSubsystem
+		AuthSubsystem->RequestServerAuthentication(Username, Password, ClientIP, this);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("AGGwaPlayerController::Server_Login: AuthSubsystem not found"));
+		Client_OnLoginResult(false, TEXT(""), TEXT(""));
+	}
+}
+
+bool AGGwaPlayerController::Server_Login_Validate(const FString& Username, const FString& Password)
+{
+	// Basic validation - AuthSubsystem will do detailed validation
+	return !Username.IsEmpty() && !Password.IsEmpty() && Username.Len() <= 30 && Password.Len() <= 128;
+}
+
+void AGGwaPlayerController::Client_OnRegistrationResult_Implementation(bool bSuccess, const FString& Message)
+{
+	UE_LOG(LogTemp, Log, TEXT("AGGwaPlayerController::Client_OnRegistrationResult: Success=%s, Message=%s"), 
+		bSuccess ? TEXT("true") : TEXT("false"), *Message);
+
+#if !UE_SERVER && defined(CLIENTMODULE_API)
+	// Notify AuthService about the result
+	if (AuthService)
+	{
+		AuthService->OnServerRegistrationResult(bSuccess, Message);
+	}
+#endif
+}
+
+void AGGwaPlayerController::Client_OnLoginResult_Implementation(bool bSuccess, const FString& Token, const FString& UserId)
+{
+	UE_LOG(LogTemp, Log, TEXT("AGGwaPlayerController::Client_OnLoginResult: Success=%s, UserId=%s"), 
+		bSuccess ? TEXT("true") : TEXT("false"), *UserId);
+
+#if !UE_SERVER && defined(CLIENTMODULE_API)
+	// Notify AuthService about the result
+	if (AuthService)
+	{
+		AuthService->OnServerLoginResult(bSuccess, Token, UserId);
+	}
+
+	// If login successful, we might need to wait for Client_TravelToGameWorld call
+	// or handle any UI updates here
+#endif
+}
+
+void AGGwaPlayerController::Client_TravelToGameWorld_Implementation(const FString& MapURL)
+{
+	UE_LOG(LogTemp, Log, TEXT("AGGwaPlayerController::Client_TravelToGameWorld: Traveling to %s"), *MapURL);
+
+#if !UE_SERVER
+	// Perform client travel to the game world
+	ClientTravel(MapURL, TRAVEL_Relative);
+#endif
+}
+
+// ============================================================================
+// AuthSubsystem Event Handlers
+// ============================================================================
+
+UFUNCTION()
+void AGGwaPlayerController::OnAuthSubsystemRegistrationComplete(bool bSuccess, const FString& Message)
+{
+	// Forward the result to the client
+	Client_OnRegistrationResult(bSuccess, Message);
+}
+
+UFUNCTION()
+void AGGwaPlayerController::OnAuthSubsystemAuthenticationComplete(bool bSuccess, const FString& Token, const FString& UserId)
+{
+	// Forward the result to the client
+	Client_OnLoginResult(bSuccess, Token, UserId);
+
+	// If authentication was successful, trigger game world travel
+	if (bSuccess && !UserId.IsEmpty())
+	{
+		// TODO: Configure the actual game world map URL
+		FString GameWorldURL = TEXT("/Game/Maps/GameWorld");  // Replace with your game world map
+		Client_TravelToGameWorld(GameWorldURL);
+	}
 }
 // void AGGwaPlayerController::Client_OnRewardResult_Implementation(bool bOK, const FRewardData& Data,const FString& Error) {
 // }

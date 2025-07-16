@@ -11,6 +11,7 @@
 
 class ABossCharacter;
 class UBaseDataAsset;
+class UAuthSubsystem;
 
 // Forward declarations for client-only classes
 #if !UE_SERVER
@@ -59,6 +60,60 @@ public:
 
 	UFUNCTION(Server, Reliable)
 	void Server_InitiateReward(const FString& PlayerId, const FRewardRequest& Payload);
+
+	// ============================================================================
+	// AUTHENTICATION RPC METHODS
+	// ============================================================================
+
+	/**
+	 * Server RPC: Register new user account
+	 * Called from client UI, processed by AuthSubsystem
+	 */
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_Register(const FString& Username, const FString& Password);
+
+	/**
+	 * Server RPC: Authenticate user and login
+	 * Called from client UI, processed by AuthSubsystem
+	 */
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_Login(const FString& Username, const FString& Password);
+
+	/**
+	 * Client RPC: Send registration result back to client
+	 */
+	UFUNCTION(Client, Reliable)
+	void Client_OnRegistrationResult(bool bSuccess, const FString& Message);
+
+	/**
+	 * Client RPC: Send login result back to client
+	 * If successful, includes token and user ID for client-side storage
+	 */
+	UFUNCTION(Client, Reliable)
+	void Client_OnLoginResult(bool bSuccess, const FString& Token, const FString& UserId);
+
+	/**
+	 * Client RPC: Trigger client travel to game world after successful authentication
+	 */
+	UFUNCTION(Client, Reliable)
+	void Client_TravelToGameWorld(const FString& MapURL);
+
+private:
+	// ============================================================================
+	// AuthSubsystem Event Handlers
+	// ============================================================================
+
+	/**
+	 * Called when AuthSubsystem completes a registration request
+	 */
+	UFUNCTION()
+	void OnAuthSubsystemRegistrationComplete(bool bSuccess, const FString& Message);
+
+	/**
+	 * Called when AuthSubsystem completes an authentication request
+	 */
+	UFUNCTION()
+	void OnAuthSubsystemAuthenticationComplete(bool bSuccess, const FString& Token, const FString& UserId);
 
 private:
 	// Note: UI properties are handled through runtime checks rather than UPROPERTY 
