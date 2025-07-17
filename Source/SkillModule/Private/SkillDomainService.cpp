@@ -8,6 +8,7 @@
 #include "Async/Async.h"
 #include "Components/SkillComponent.h"
 #include "GameFramework/PlayerState.h"
+#include "Interface/PlayerIdentityInterface.h"
 
 USkillDomainService::USkillDomainService()
 {
@@ -40,11 +41,19 @@ void USkillDomainService::Initialize(TScriptInterface<ISkillRepositoryInterface>
 		Repository.GetInterface() ? TEXT("parameter") : TEXT("subsystem"));
 }
 
-void USkillDomainService::RegisterSkillToPlayer(APlayerState* PlayerState, USkillDataAsset* SkillData)
+void USkillDomainService::RegisterSkillToPlayer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, USkillDataAsset* SkillData)
 {
-	if (!PlayerState || !SkillData || !SkillRepository.GetInterface())
+	if (!PlayerIdentity || !SkillData || !SkillRepository.GetInterface())
 	{
-		OnSkillOperationFailed.Broadcast(PlayerState ? PlayerState->GetPlayerId() : 0, TEXT("Invalid parameters for skill registration"));
+		OnSkillOperationFailed.Broadcast(PlayerIdentity ? PlayerIdentity->GetPlayerGuid() : FGuid(), TEXT("Invalid parameters for skill registration"));
+		return;
+	}
+
+	UObject* PlayerObject = Cast<UObject>(PlayerIdentity.GetObject());
+	APlayerState* PlayerState = Cast<APlayerState>(PlayerObject);
+	if (!PlayerState)
+	{
+		OnSkillOperationFailed.Broadcast(PlayerIdentity->GetPlayerGuid(), TEXT("Could not cast PlayerIdentity to PlayerState"));
 		return;
 	}
 
@@ -52,14 +61,14 @@ void USkillDomainService::RegisterSkillToPlayer(APlayerState* PlayerState, USkil
 	USkillComponent* SkillComponent = PlayerState->FindComponentByClass<USkillComponent>();
 	if (!SkillComponent)
 	{
-		OnSkillOperationFailed.Broadcast(PlayerState->GetPlayerId(), TEXT("No SkillComponent found on PlayerState"));
+		OnSkillOperationFailed.Broadcast(PlayerIdentity->GetPlayerGuid(), TEXT("No SkillComponent found on PlayerState"));
 		return;
 	}
 
 	// Domain validation through Component (Aggregate)
 	if (!SkillComponent->CanRegisterSkill(SkillData))
 	{
-		OnSkillOperationFailed.Broadcast(PlayerState->GetPlayerId(), TEXT("Cannot register skill - domain rules violation"));
+		OnSkillOperationFailed.Broadcast(PlayerIdentity->GetPlayerGuid(), TEXT("Cannot register skill - domain rules violation"));
 		return;
 	}
 
@@ -73,23 +82,23 @@ void USkillDomainService::RegisterSkillToPlayer(APlayerState* PlayerState, USkil
 	bool bRegistrationSuccess = SkillComponent->RegisterSkill(SkillData);
 	if (!bRegistrationSuccess)
 	{
-		OnSkillOperationFailed.Broadcast(PlayerState->GetPlayerId(), TEXT("Failed to register skill in aggregate"));
+		OnSkillOperationFailed.Broadcast(PlayerIdentity->GetPlayerGuid(), TEXT("Failed to register skill in aggregate"));
 		return;
 	}
 
 	// Execute repository operation with atomic transaction
-	auto RepositoryTask = SkillRepository.GetInterface()->RegisterSkillByPlayerId(PlayerState->GetPlayerId(), NewSkillSlot);
+	auto RepositoryTask = SkillRepository.GetInterface()->RegisterSkillByPlayerId(PlayerIdentity->GetPlayerGuid(), NewSkillSlot);
 	
 	// Enhanced error handling with rollback
-	UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerState, SkillData, RepositoryTask]() mutable -> void
+	UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerIdentity, PlayerState, SkillData, RepositoryTask]() mutable -> void
 	{
 		auto Result = RepositoryTask.GetResult();
 		
-		AsyncTask(ENamedThreads::GameThread, [this, PlayerState, SkillData, Result]()
+		AsyncTask(ENamedThreads::GameThread, [this, PlayerIdentity, PlayerState, SkillData, Result]()
 		{
 			if (Result.bSuccess)
 			{
-				OnSkillOperationSucceeded.Broadcast(PlayerState->GetPlayerId(), TEXT("RegisterSkill"));
+				OnSkillOperationSucceeded.Broadcast(PlayerIdentity->GetPlayerGuid(), TEXT("RegisterSkill"));
 			}
 			else
 			{
@@ -102,17 +111,25 @@ void USkillDomainService::RegisterSkillToPlayer(APlayerState* PlayerState, USkil
 					// For now, we'll log the error
 					UE_LOG(LogTemp, Warning, TEXT("SkillDomainService: Failed to persist skill registration, manual rollback required"));
 				}
-				OnSkillOperationFailed.Broadcast(PlayerState->GetPlayerId(), Result.ErrorMessage);
+				OnSkillOperationFailed.Broadcast(PlayerIdentity->GetPlayerGuid(), Result.ErrorMessage);
 			}
 		});
 	});
 }
 
-void USkillDomainService::UnregisterSkillFromPlayer(APlayerState* PlayerState, const FGuid& SlotId)
+void USkillDomainService::UnregisterSkillFromPlayer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FGuid& SlotId)
 {
-	if (!PlayerState || !SlotId.IsValid() || !SkillRepository.GetInterface())
+	if (!PlayerIdentity || !SlotId.IsValid() || !SkillRepository.GetInterface())
 	{
-		OnSkillOperationFailed.Broadcast(PlayerState ? PlayerState->GetPlayerId() : 0, TEXT("Invalid parameters for skill unregistration"));
+		OnSkillOperationFailed.Broadcast(PlayerIdentity ? PlayerIdentity->GetPlayerGuid() : FGuid(), TEXT("Invalid parameters for skill unregistration"));
+		return;
+	}
+
+	UObject* PlayerObject = Cast<UObject>(PlayerIdentity.GetObject());
+	APlayerState* PlayerState = Cast<APlayerState>(PlayerObject);
+	if (!PlayerState)
+	{
+		OnSkillOperationFailed.Broadcast(PlayerIdentity->GetPlayerGuid(), TEXT("Could not cast PlayerIdentity to PlayerState"));
 		return;
 	}
 
@@ -120,14 +137,14 @@ void USkillDomainService::UnregisterSkillFromPlayer(APlayerState* PlayerState, c
 	USkillComponent* SkillComponent = PlayerState->FindComponentByClass<USkillComponent>();
 	if (!SkillComponent)
 	{
-		OnSkillOperationFailed.Broadcast(PlayerState->GetPlayerId(), TEXT("No SkillComponent found on PlayerState"));
+		OnSkillOperationFailed.Broadcast(PlayerIdentity->GetPlayerGuid(), TEXT("No SkillComponent found on PlayerState"));
 		return;
 	}
 
 	// Domain validation through Component (Aggregate)
 	if (!SkillComponent->CanUnregisterSkill(SlotId))
 	{
-		OnSkillOperationFailed.Broadcast(PlayerState->GetPlayerId(), TEXT("Cannot unregister skill - domain rules violation"));
+		OnSkillOperationFailed.Broadcast(PlayerIdentity->GetPlayerGuid(), TEXT("Cannot unregister skill - domain rules violation"));
 		return;
 	}
 
@@ -135,35 +152,43 @@ void USkillDomainService::UnregisterSkillFromPlayer(APlayerState* PlayerState, c
 	SkillComponent->UnregisterSkill(SlotId);
 
 	// Execute repository operation with atomic transaction
-	auto RepositoryTask = SkillRepository.GetInterface()->UnregisterSkillByPlayerId(PlayerState->GetPlayerId(), SlotId);
+	auto RepositoryTask = SkillRepository.GetInterface()->UnregisterSkillByPlayerId(PlayerIdentity->GetPlayerGuid(), SlotId);
 	
 	// Enhanced error handling with rollback
-	UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerState, SlotId, RepositoryTask]() mutable -> void
+	UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerIdentity, PlayerState, SlotId, RepositoryTask]() mutable -> void
 	{
 		auto Result = RepositoryTask.GetResult();
 		
-		AsyncTask(ENamedThreads::GameThread, [this, PlayerState, SlotId, Result]()
+		AsyncTask(ENamedThreads::GameThread, [this, PlayerIdentity, PlayerState, SlotId, Result]()
 		{
 			if (Result.bSuccess)
 			{
-				OnSkillOperationSucceeded.Broadcast(PlayerState->GetPlayerId(), TEXT("UnregisterSkill"));
+				OnSkillOperationSucceeded.Broadcast(PlayerIdentity->GetPlayerGuid(), TEXT("UnregisterSkill"));
 			}
 			else
 			{
 				// Rollback would require re-adding the skill, which is complex
 				// For now, we'll reload from the repository to ensure consistency
 				UE_LOG(LogTemp, Warning, TEXT("SkillDomainService: Failed to persist skill unregistration, reload required"));
-				OnSkillOperationFailed.Broadcast(PlayerState->GetPlayerId(), Result.ErrorMessage);
+				OnSkillOperationFailed.Broadcast(PlayerIdentity->GetPlayerGuid(), Result.ErrorMessage);
 			}
 		});
 	});
 }
 
-void USkillDomainService::SwapSkillSlots(APlayerState* PlayerState, const FGuid& SlotIdA, const FGuid& SlotIdB)
+void USkillDomainService::SwapSkillSlots(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FGuid& SlotIdA, const FGuid& SlotIdB)
 {
-	if (!PlayerState || !SlotIdA.IsValid() || !SlotIdB.IsValid() || !SkillRepository.GetInterface())
+	if (!PlayerIdentity || !SlotIdA.IsValid() || !SlotIdB.IsValid() || !SkillRepository.GetInterface())
 	{
-		OnSkillOperationFailed.Broadcast(PlayerState ? PlayerState->GetPlayerId() : 0, TEXT("Invalid parameters for skill slot swap"));
+		OnSkillOperationFailed.Broadcast(PlayerIdentity ? PlayerIdentity->GetPlayerGuid() : FGuid(), TEXT("Invalid parameters for skill slot swap"));
+		return;
+	}
+
+	UObject* PlayerObject = Cast<UObject>(PlayerIdentity.GetObject());
+	APlayerState* PlayerState = Cast<APlayerState>(PlayerObject);
+	if (!PlayerState)
+	{
+		OnSkillOperationFailed.Broadcast(PlayerIdentity->GetPlayerGuid(), TEXT("Could not cast PlayerIdentity to PlayerState"));
 		return;
 	}
 
@@ -171,14 +196,14 @@ void USkillDomainService::SwapSkillSlots(APlayerState* PlayerState, const FGuid&
 	USkillComponent* SkillComponent = PlayerState->FindComponentByClass<USkillComponent>();
 	if (!SkillComponent)
 	{
-		OnSkillOperationFailed.Broadcast(PlayerState->GetPlayerId(), TEXT("No SkillComponent found on PlayerState"));
+		OnSkillOperationFailed.Broadcast(PlayerIdentity->GetPlayerGuid(), TEXT("No SkillComponent found on PlayerState"));
 		return;
 	}
 
 	// Domain validation through Component (Aggregate)
 	if (!SkillComponent->CanSwapSkills(SlotIdA, SlotIdB))
 	{
-		OnSkillOperationFailed.Broadcast(PlayerState->GetPlayerId(), TEXT("Cannot swap skills - domain rules violation"));
+		OnSkillOperationFailed.Broadcast(PlayerIdentity->GetPlayerGuid(), TEXT("Cannot swap skills - domain rules violation"));
 		return;
 	}
 
@@ -186,17 +211,17 @@ void USkillDomainService::SwapSkillSlots(APlayerState* PlayerState, const FGuid&
 	SkillComponent->SwapSkills(SlotIdA, SlotIdB);
 
 	// Load current skills, perform swap logic, and save
-	auto LoadTask = SkillRepository.GetInterface()->LoadSkillsByPlayerId(PlayerState->GetPlayerId());
+	auto LoadTask = SkillRepository.GetInterface()->LoadSkillsByPlayerId(PlayerIdentity->GetPlayerGuid());
 	
-	UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerState, SlotIdA, SlotIdB, LoadTask]()mutable -> void
+	UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerIdentity, PlayerState, SlotIdA, SlotIdB, LoadTask]()mutable -> void
 	{
 		FSkillRepositoryResult LoadResult = LoadTask.GetResult();
 		
 		if (!LoadResult.bSuccess)
 		{
-			AsyncTask(ENamedThreads::GameThread, [this, PlayerState]()
+			AsyncTask(ENamedThreads::GameThread, [this, PlayerIdentity]()
 			{
-				OnSkillOperationFailed.Broadcast(PlayerState->GetPlayerId(), TEXT("Failed to load skills for swap"));
+				OnSkillOperationFailed.Broadcast(PlayerIdentity->GetPlayerGuid(), TEXT("Failed to load skills for swap"));
 			});
 			return;
 		}
@@ -223,9 +248,9 @@ void USkillDomainService::SwapSkillSlots(APlayerState* PlayerState, const FGuid&
 
 		if (!bSwapSuccess)
 		{
-			AsyncTask(ENamedThreads::GameThread, [this, PlayerState]()
+			AsyncTask(ENamedThreads::GameThread, [this, PlayerIdentity]()
 			{
-				OnSkillOperationFailed.Broadcast(PlayerState->GetPlayerId(), TEXT("Skill slots not found for swap"));
+				OnSkillOperationFailed.Broadcast(PlayerIdentity->GetPlayerGuid(), TEXT("Skill slots not found for swap"));
 			});
 			return;
 		}
@@ -234,11 +259,11 @@ void USkillDomainService::SwapSkillSlots(APlayerState* PlayerState, const FGuid&
 		auto SaveTask = SkillRepository.GetInterface()->SaveSkillData(SkillData);
 		FSkillRepositoryResult SaveResult = SaveTask.GetResult();
 
-		AsyncTask(ENamedThreads::GameThread, [this, PlayerState, SlotIdA, SlotIdB, SaveResult]()
+		AsyncTask(ENamedThreads::GameThread, [this, PlayerIdentity, PlayerState, SlotIdA, SlotIdB, SaveResult]()
 		{
 			if (SaveResult.bSuccess)
 			{
-				OnSkillOperationSucceeded.Broadcast(PlayerState->GetPlayerId(), TEXT("SwapSkillSlots"));
+				OnSkillOperationSucceeded.Broadcast(PlayerIdentity->GetPlayerGuid(), TEXT("SwapSkillSlots"));
 			}
 			else
 			{
@@ -248,17 +273,25 @@ void USkillDomainService::SwapSkillSlots(APlayerState* PlayerState, const FGuid&
 				{
 					SkillComponent->SwapSkills(SlotIdB, SlotIdA); // Swap back
 				}
-				OnSkillOperationFailed.Broadcast(PlayerState->GetPlayerId(), TEXT("Failed to save swapped skills"));
+				OnSkillOperationFailed.Broadcast(PlayerIdentity->GetPlayerGuid(), TEXT("Failed to save swapped skills"));
 			}
 		});
 	});
 }
 
-void USkillDomainService::UpdateSkillCooldown(APlayerState* PlayerState, const FGuid& SlotId, const FDateTime& LastUsedTime, float RemainingCooldown)
+void USkillDomainService::UpdateSkillCooldown(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FGuid& SlotId, const FDateTime& LastUsedTime, float RemainingCooldown)
 {
-	if (!PlayerState || !SlotId.IsValid() || !SkillRepository.GetInterface())
+	if (!PlayerIdentity || !SlotId.IsValid() || !SkillRepository.GetInterface())
 	{
-		OnSkillOperationFailed.Broadcast(PlayerState ? PlayerState->GetPlayerId() : 0, TEXT("Invalid parameters for cooldown update"));
+		OnSkillOperationFailed.Broadcast(PlayerIdentity ? PlayerIdentity->GetPlayerGuid() : FGuid(), TEXT("Invalid parameters for cooldown update"));
+		return;
+	}
+
+	UObject* PlayerObject = Cast<UObject>(PlayerIdentity.GetObject());
+	APlayerState* PlayerState = Cast<APlayerState>(PlayerObject);
+	if (!PlayerState)
+	{
+		OnSkillOperationFailed.Broadcast(PlayerIdentity->GetPlayerGuid(), TEXT("Could not cast PlayerIdentity to PlayerState"));
 		return;
 	}
 
@@ -266,43 +299,51 @@ void USkillDomainService::UpdateSkillCooldown(APlayerState* PlayerState, const F
 	USkillComponent* SkillComponent = PlayerState->FindComponentByClass<USkillComponent>();
 	if (!SkillComponent)
 	{
-		OnSkillOperationFailed.Broadcast(PlayerState->GetPlayerId(), TEXT("No SkillComponent found on PlayerState"));
+		OnSkillOperationFailed.Broadcast(PlayerIdentity->GetPlayerGuid(), TEXT("No SkillComponent found on PlayerState"));
 		return;
 	}
 
 	// Domain validation through Component (Aggregate)
 	if (!SkillComponent->CanUpdateCooldown(SlotId, LastUsedTime, RemainingCooldown))
 	{
-		OnSkillOperationFailed.Broadcast(PlayerState->GetPlayerId(), TEXT("Cannot update cooldown - domain rules violation"));
+		OnSkillOperationFailed.Broadcast(PlayerIdentity->GetPlayerGuid(), TEXT("Cannot update cooldown - domain rules violation"));
 		return;
 	}
 
 	// Execute repository operation with atomic transaction
-	auto RepositoryTask = SkillRepository.GetInterface()->UpdateSkillCooldown(PlayerState->GetPlayerId(), SlotId, LastUsedTime, RemainingCooldown);
+	auto RepositoryTask = SkillRepository.GetInterface()->UpdateSkillCooldown(PlayerIdentity->GetPlayerGuid(), SlotId, LastUsedTime, RemainingCooldown);
 	
-	UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerState, RepositoryTask]() mutable -> void
+	UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerIdentity, RepositoryTask]() mutable -> void
 	{
 		auto Result = RepositoryTask.GetResult();
 		
-		AsyncTask(ENamedThreads::GameThread, [this, PlayerState, Result]()
+		AsyncTask(ENamedThreads::GameThread, [this, PlayerIdentity, Result]()
 		{
 			if (Result.bSuccess)
 			{
-				OnSkillOperationSucceeded.Broadcast(PlayerState->GetPlayerId(), TEXT("UpdateCooldown"));
+				OnSkillOperationSucceeded.Broadcast(PlayerIdentity->GetPlayerGuid(), TEXT("UpdateCooldown"));
 			}
 			else
 			{
-				OnSkillOperationFailed.Broadcast(PlayerState->GetPlayerId(), Result.ErrorMessage);
+				OnSkillOperationFailed.Broadcast(PlayerIdentity->GetPlayerGuid(), Result.ErrorMessage);
 			}
 		});
 	});
 }
 
-void USkillDomainService::LoadSkills(APlayerState* PlayerState)
+void USkillDomainService::LoadSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity)
 {
-	if (!PlayerState || !SkillRepository.GetInterface())
+	if (!PlayerIdentity || !SkillRepository.GetInterface())
 	{
-		OnSkillOperationFailed.Broadcast(PlayerState ? PlayerState->GetPlayerId() : 0, TEXT("Invalid parameters for skill loading"));
+		OnSkillOperationFailed.Broadcast(PlayerIdentity ? PlayerIdentity->GetPlayerGuid() : FGuid(), TEXT("Invalid parameters for skill loading"));
+		return;
+	}
+
+	UObject* PlayerObject = Cast<UObject>(PlayerIdentity.GetObject());
+	APlayerState* PlayerState = Cast<APlayerState>(PlayerObject);
+	if (!PlayerState)
+	{
+		OnSkillOperationFailed.Broadcast(PlayerIdentity->GetPlayerGuid(), TEXT("Could not cast PlayerIdentity to PlayerState"));
 		return;
 	}
 
@@ -310,18 +351,18 @@ void USkillDomainService::LoadSkills(APlayerState* PlayerState)
 	USkillComponent* SkillComponent = PlayerState->FindComponentByClass<USkillComponent>();
 	if (!SkillComponent)
 	{
-		OnSkillOperationFailed.Broadcast(PlayerState->GetPlayerId(), TEXT("No SkillComponent found on PlayerState"));
+		OnSkillOperationFailed.Broadcast(PlayerIdentity->GetPlayerGuid(), TEXT("No SkillComponent found on PlayerState"));
 		return;
 	}
 
 	// Execute repository operation
-	auto RepositoryTask = SkillRepository.GetInterface()->LoadSkillsByPlayerId(PlayerState->GetPlayerId());
+	auto RepositoryTask = SkillRepository.GetInterface()->LoadSkillsByPlayerId(PlayerIdentity->GetPlayerGuid());
 	
-	UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerState, RepositoryTask]()mutable -> void
+	UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerIdentity, PlayerState, RepositoryTask]()mutable -> void
 	{
 		FSkillRepositoryResult Result = RepositoryTask.GetResult();
 		
-		AsyncTask(ENamedThreads::GameThread, [this, PlayerState, Result]()
+		AsyncTask(ENamedThreads::GameThread, [this, PlayerIdentity, PlayerState, Result]()
 		{
 			if (Result.bSuccess)
 			{
@@ -332,22 +373,30 @@ void USkillDomainService::LoadSkills(APlayerState* PlayerState)
 					SkillComponent->SyncWithDomain(Result.SkillData);
 				}
 				
-				OnSkillLoadCompleted.Broadcast(PlayerState->GetPlayerId());
-				OnSkillOperationSucceeded.Broadcast(PlayerState->GetPlayerId(), TEXT("LoadSkills"));
+				OnSkillLoadCompleted.Broadcast(PlayerIdentity->GetPlayerGuid());
+				OnSkillOperationSucceeded.Broadcast(PlayerIdentity->GetPlayerGuid(), TEXT("LoadSkills"));
 			}
 			else
 			{
-				OnSkillOperationFailed.Broadcast(PlayerState->GetPlayerId(), Result.ErrorMessage);
+				OnSkillOperationFailed.Broadcast(PlayerIdentity->GetPlayerGuid(), Result.ErrorMessage);
 			}
 		});
 	});
 }
 
-void USkillDomainService::SaveSkills(APlayerState* PlayerState, const FSkillDomain& SkillData)
+void USkillDomainService::SaveSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FSkillDomain& SkillData)
 {
-	if (!PlayerState || !SkillData.IsValid() || !SkillRepository.GetInterface())
+	if (!PlayerIdentity || !SkillData.IsValid() || !SkillRepository.GetInterface())
 	{
-		OnSkillOperationFailed.Broadcast(PlayerState ? PlayerState->GetPlayerId() : 0, TEXT("Invalid parameters for skill saving"));
+		OnSkillOperationFailed.Broadcast(PlayerIdentity ? PlayerIdentity->GetPlayerGuid() : FGuid(), TEXT("Invalid parameters for skill saving"));
+		return;
+	}
+
+	UObject* PlayerObject = Cast<UObject>(PlayerIdentity.GetObject());
+	APlayerState* PlayerState = Cast<APlayerState>(PlayerObject);
+	if (!PlayerState)
+	{
+		OnSkillOperationFailed.Broadcast(PlayerIdentity->GetPlayerGuid(), TEXT("Could not cast PlayerIdentity to PlayerState"));
 		return;
 	}
 
@@ -355,14 +404,14 @@ void USkillDomainService::SaveSkills(APlayerState* PlayerState, const FSkillDoma
 	USkillComponent* SkillComponent = PlayerState->FindComponentByClass<USkillComponent>();
 	if (!SkillComponent)
 	{
-		OnSkillOperationFailed.Broadcast(PlayerState->GetPlayerId(), TEXT("No SkillComponent found on PlayerState"));
+		OnSkillOperationFailed.Broadcast(PlayerIdentity->GetPlayerGuid(), TEXT("No SkillComponent found on PlayerState"));
 		return;
 	}
 
 	// Domain validation through Component (Aggregate)
 	if (!SkillComponent->CanSaveSkills(SkillData))
 	{
-		OnSkillOperationFailed.Broadcast(PlayerState->GetPlayerId(), TEXT("Cannot save skills - domain rules violation"));
+		OnSkillOperationFailed.Broadcast(PlayerIdentity->GetPlayerGuid(), TEXT("Cannot save skills - domain rules violation"));
 		return;
 	}
 
@@ -372,39 +421,39 @@ void USkillDomainService::SaveSkills(APlayerState* PlayerState, const FSkillDoma
 	// Execute repository operation with atomic transaction
 	auto RepositoryTask = SkillRepository.GetInterface()->SaveSkillData(SkillData);
 	
-	UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerState, RepositoryTask]()mutable -> void
+	UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerIdentity, RepositoryTask]()mutable -> void
 	{
 		FSkillRepositoryResult Result = RepositoryTask.GetResult();
 		
-		AsyncTask(ENamedThreads::GameThread, [this, PlayerState, Result]()
+		AsyncTask(ENamedThreads::GameThread, [this, PlayerIdentity, Result]()
 		{
 			if (Result.bSuccess)
 			{
-				OnSkillSaveCompleted.Broadcast(PlayerState->GetPlayerId());
-				OnSkillOperationSucceeded.Broadcast(PlayerState->GetPlayerId(), TEXT("SaveSkills"));
+				OnSkillSaveCompleted.Broadcast(PlayerIdentity->GetPlayerGuid());
+				OnSkillOperationSucceeded.Broadcast(PlayerIdentity->GetPlayerGuid(), TEXT("SaveSkills"));
 			}
 			else
 			{
-				OnSkillOperationFailed.Broadcast(PlayerState->GetPlayerId(), Result.ErrorMessage);
+				OnSkillOperationFailed.Broadcast(PlayerIdentity->GetPlayerGuid(), Result.ErrorMessage);
 			}
 		});
 	});
 }
 
 template<typename T>
-void USkillDomainService::ExecuteWithEvents(UE::Tasks::TTask<T> RepositoryTask, int32 PlayerId, const FString& OperationName)
+void USkillDomainService::ExecuteWithEvents(UE::Tasks::TTask<T> RepositoryTask, const FGuid& PlayerGuid, const FString& OperationName)
 {
-	UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerId, OperationName, RepositoryTask]() mutable -> void
+	UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerGuid, OperationName, RepositoryTask]() mutable -> void
 	{
 		auto Result = RepositoryTask.GetResult();
 		
-		AsyncTask(ENamedThreads::GameThread, [this, PlayerId, OperationName, Result]()
+		AsyncTask(ENamedThreads::GameThread, [this, PlayerGuid, OperationName, Result]()
 		{
 			if constexpr (std::is_same_v<T, FSkillRepositoryResult>)
 			{
 				if (Result.bSuccess)
 				{
-					OnSkillOperationSucceeded.Broadcast(PlayerId, OperationName);
+					OnSkillOperationSucceeded.Broadcast(PlayerGuid, OperationName);
 					
 					// Trigger specific events based on operation
 					if (OperationName == TEXT("RegisterSkill") && Result.SkillData.SkillSlots.Num() > 0)
@@ -424,13 +473,13 @@ void USkillDomainService::ExecuteWithEvents(UE::Tasks::TTask<T> RepositoryTask, 
 						
 						if (LatestSkill)
 						{
-							OnSkillRegistered.Broadcast(PlayerId, *LatestSkill);
+							OnSkillRegistered.Broadcast(PlayerGuid, *LatestSkill);
 						}
 					}
 				}
 				else
 				{
-					OnSkillOperationFailed.Broadcast(PlayerId, Result.ErrorMessage);
+					OnSkillOperationFailed.Broadcast(PlayerGuid, Result.ErrorMessage);
 				}
 			}
 		});

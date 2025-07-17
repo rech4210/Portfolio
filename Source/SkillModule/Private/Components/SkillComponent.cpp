@@ -305,7 +305,15 @@ void USkillComponent::SyncWithDomain(const FSkillDomain& SkillData)
 FSkillDomain USkillComponent::ExtractDomain() const
 {
 	FSkillDomain DomainData;
-	DomainData.PlayerId = GetOwner() ? GetOwner()->GetUniqueID() : 0;
+	// DomainData.PlayerId = GetOwner() ? GetOwner()->GetUniqueID() : 0; // This is incorrect, PlayerId should be a Guid
+	if (GetOwner())
+	{
+		IPlayerIdentityInterface* PlayerIdentity = Cast<IPlayerIdentityInterface>(GetOwner());
+		if (PlayerIdentity)
+		{
+			DomainData.PlayerId = PlayerIdentity->GetPlayerGuid();
+		}
+	}
 
 	// Convert component slots to domain DTOs
 	for (const USkillSlot* Slot : SkillSlots)

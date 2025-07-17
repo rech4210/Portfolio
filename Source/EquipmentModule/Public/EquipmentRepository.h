@@ -19,8 +19,8 @@ class EQUIPMENTMODULE_API UEquipmentRepository : public UObject, public IEquipme
 
 public:
 	virtual void Initialize() override;
-	virtual bool LoadEquipmentData(int32 PlayerInformation, UEquipmentComponent& EquipmentComponentToPopulate) override;
-	virtual bool SaveEquipmentData(int32 PlayerInformation, const UEquipmentComponent* EquipmentComponentToSave) override;
+	virtual bool LoadEquipmentData(const FGuid& PlayerGuid, UEquipmentComponent& EquipmentComponentToPopulate) override;
+	virtual bool SaveEquipmentData(const FGuid& PlayerGuid, const UEquipmentComponent* EquipmentComponentToSave) override;
 
 private:
 	UPROPERTY()

@@ -2,14 +2,14 @@
 #include "Misc/Guid.h"
 #include "Misc/DateTime.h"
 
-UUserAccountComponent::UUserAccountComponent()
+UAuthComponent::UAuthComponent()
 {
 	// Initialize with default values
 }
 
-UUserAccountComponent* UUserAccountComponent::CreateNewUser(const FString& Username, const FString& PasswordHash)
+UAuthComponent* UAuthComponent::CreateNewUser(const FString& Username, const FString& PasswordHash)
 {
-	UUserAccountComponent* NewUser = NewObject<UUserAccountComponent>();
+	UAuthComponent* NewUser = NewObject<UAuthComponent>();
 	
 	NewUser->UserData.UserId = FGuid::NewGuid().ToString();
 	NewUser->UserData.Username = Username;
@@ -27,14 +27,14 @@ UUserAccountComponent* UUserAccountComponent::CreateNewUser(const FString& Usern
 	return NewUser;
 }
 
-UUserAccountComponent* UUserAccountComponent::CreateFromDTO(const FUserAccountDTO& UserDTO)
+UAuthComponent* UAuthComponent::CreateFromDTO(const FUserAccountDTO& UserDTO)
 {
-	UUserAccountComponent* User = NewObject<UUserAccountComponent>();
+	UAuthComponent* User = NewObject<UAuthComponent>();
 	User->UserData = UserDTO;
 	return User;
 }
 
-bool UUserAccountComponent::CanLogin() const
+bool UAuthComponent::CanLogin() const
 {
 	// Cannot login if account is deleted
 	if (IsAccountDeleted())
@@ -51,7 +51,7 @@ bool UUserAccountComponent::CanLogin() const
 	return true;
 }
 
-bool UUserAccountComponent::IsAccountLocked() const
+bool UAuthComponent::IsAccountLocked() const
 {
 	if (!UserData.bIsLocked)
 	{
@@ -68,12 +68,12 @@ bool UUserAccountComponent::IsAccountLocked() const
 	return true;
 }
 
-bool UUserAccountComponent::IsAccountDeleted() const
+bool UAuthComponent::IsAccountDeleted() const
 {
 	return UserData.bIsDeleted;
 }
 
-void UUserAccountComponent::LockAccount(const FDateTime& ExpiresAt)
+void UAuthComponent::LockAccount(const FDateTime& ExpiresAt)
 {
 	UserData.bIsLocked = true;
 	UserData.LockExpiresAt = ExpiresAt;
@@ -82,7 +82,7 @@ void UUserAccountComponent::LockAccount(const FDateTime& ExpiresAt)
 		FString::Printf(TEXT("Account locked until %s"), *ExpiresAt.ToString()));
 }
 
-void UUserAccountComponent::UnlockAccount()
+void UAuthComponent::UnlockAccount()
 {
 	UserData.bIsLocked = false;
 	UserData.LockExpiresAt = FDateTime::MinValue();
@@ -90,7 +90,7 @@ void UUserAccountComponent::UnlockAccount()
 	AddAuditLog(TEXT("account_unlocked"), TEXT("Account manually unlocked"));
 }
 
-void UUserAccountComponent::UpdateLastLogin()
+void UAuthComponent::UpdateLastLogin()
 {
 	UserData.LastLoginAt = FDateTime::Now();
 	
@@ -104,20 +104,20 @@ void UUserAccountComponent::UpdateLastLogin()
 	AddAuditLog(TEXT("login_success"), TEXT("User login successful"));
 }
 
-void UUserAccountComponent::ChangePassword(const FString& NewPasswordHash)
+void UAuthComponent::ChangePassword(const FString& NewPasswordHash)
 {
 	UserData.PasswordHash = NewPasswordHash;
 	AddAuditLog(TEXT("password_change"), TEXT("Password changed"));
 }
 
-void UUserAccountComponent::SoftDelete()
+void UAuthComponent::SoftDelete()
 {
 	UserData.bIsDeleted = true;
 	UserData.DeletedAt = FDateTime::Now();
 	AddAuditLog(TEXT("account_deleted"), TEXT("Account soft deleted"));
 }
 
-void UUserAccountComponent::AddAuditLog(const FString& Action, const FString& Detail)
+void UAuthComponent::AddAuditLog(const FString& Action, const FString& Detail)
 {
 	FUserAuditLogDTO AuditLog;
 	AuditLog.UserId = UserData.UserId;
@@ -128,12 +128,12 @@ void UUserAccountComponent::AddAuditLog(const FString& Action, const FString& De
 	AuditLogs.Add(AuditLog);
 }
 
-bool UUserAccountComponent::IsValid() const
+bool UAuthComponent::IsValid() const
 {
 	return !UserData.UserId.IsEmpty() && !UserData.Username.IsEmpty() && !UserData.PasswordHash.IsEmpty();
 }
 
-bool UUserAccountComponent::IsValidUsername(const FString& Username)
+bool UAuthComponent::IsValidUsername(const FString& Username)
 {
 	// Username validation rules
 	if (Username.IsEmpty() || Username.Len() < 3 || Username.Len() > 30)
@@ -153,7 +153,7 @@ bool UUserAccountComponent::IsValidUsername(const FString& Username)
 	return true;
 }
 
-bool UUserAccountComponent::IsValidPassword(const FString& Password)
+bool UAuthComponent::IsValidPassword(const FString& Password)
 {
 	// Password validation rules
 	if (Password.IsEmpty() || Password.Len() < 8 || Password.Len() > 128)

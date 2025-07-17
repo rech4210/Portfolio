@@ -29,7 +29,7 @@ void UInventoryRepository::Initialize()
 // PURE REPOSITORY METHODS - NO ENGINE DEPENDENCIES
 // ============================================================================
 
-UE::Tasks::TTask<FInventoryRepositoryResult> UInventoryRepository::LoadInventoryByPlayerId(int32 PlayerId)
+UE::Tasks::TTask<FInventoryRepositoryResult> UInventoryRepository::LoadInventoryByPlayerId(const FGuid& PlayerId)
 {
 	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerId]() -> FInventoryRepositoryResult
 	{
@@ -39,8 +39,8 @@ UE::Tasks::TTask<FInventoryRepositoryResult> UInventoryRepository::LoadInventory
 		}
 
 
-		// Convert int32 PlayerId to FString UserId using helper
-		FString UserId = UPlayerIdHelper::ConvertPlayerIdToUserId(PlayerId);
+		// Convert FGuid PlayerId to FString UserId using helper
+		FString UserId = PlayerId.ToString(); // Assuming UserId is the GUID as a string
 
 		// Execute database operation on worker thread
 		auto LoadTask = DBManager->LoadInventoryForPlayer(UserId);
@@ -66,8 +66,8 @@ UE::Tasks::TTask<FInventoryRepositoryResult> UInventoryRepository::SaveInventory
 			return FInventoryRepositoryResult::Failure(TEXT("Invalid inventory data"));
 		}
 
-		// Convert int32 PlayerId to FString UserId using helper
-		FString UserId = UPlayerIdHelper::ConvertPlayerIdToUserId(InventoryData.PlayerId);
+		// Convert FGuid PlayerId to FString UserId using helper
+		FString UserId = InventoryData.PlayerId.ToString();
 
 		// Execute database operation on worker thread
 		auto SaveTask = DBManager->SaveInventoryForPlayer(UserId, InventoryData.Items);
@@ -85,7 +85,7 @@ UE::Tasks::TTask<FInventoryRepositoryResult> UInventoryRepository::SaveInventory
 }
 
 UE::Tasks::TTask<FInventoryRepositoryResult> UInventoryRepository::AddItemByPlayerId(
-	int32 PlayerId, const FInventoryItemDTO& Item)
+	const FGuid& PlayerId, const FInventoryItemDTO& Item)
 {
 	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerId, Item]() -> FInventoryRepositoryResult {
 		//Use CO_RETURN if c++20 is enabled
@@ -94,8 +94,8 @@ UE::Tasks::TTask<FInventoryRepositoryResult> UInventoryRepository::AddItemByPlay
 			return FInventoryRepositoryResult::Failure(TEXT("DatabaseManager not available"));
 		}
 		
-		// Convert int32 PlayerId to FString UserId using helper
-		FString UserId = UPlayerIdHelper::ConvertPlayerIdToUserId(PlayerId);
+		// Convert FGuid PlayerId to FString UserId using helper
+		FString UserId = PlayerId.ToString();
 		
 		auto bSuccess = DBManager->AddInventoryItem(UserId, Item).GetResult();
 		if (bSuccess) {
@@ -121,7 +121,7 @@ UE::Tasks::TTask<FInventoryRepositoryResult> UInventoryRepository::AddItemByPlay
 }
 
 UE::Tasks::TTask<FInventoryRepositoryResult> UInventoryRepository::RemoveItemByPlayerId(
-	int32 PlayerId, const FName& ItemID, int32 Quantity)
+	const FGuid& PlayerId, const FName& ItemID, int32 Quantity)
 {
 	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerId, ItemID, Quantity]() -> FInventoryRepositoryResult
 	{
@@ -130,8 +130,8 @@ UE::Tasks::TTask<FInventoryRepositoryResult> UInventoryRepository::RemoveItemByP
 			return FInventoryRepositoryResult::Failure(TEXT("DatabaseManager not available"));
 		}
 
-		// Convert int32 PlayerId to FString UserId using helper
-		FString UserId = UPlayerIdHelper::ConvertPlayerIdToUserId(PlayerId);
+		// Convert FGuid PlayerId to FString UserId using helper
+		FString UserId = PlayerId.ToString();
 
 		// Execute database operation on worker thread
 		auto RemoveTask = DBManager->RemoveInventoryItem(UserId, ItemID, Quantity);

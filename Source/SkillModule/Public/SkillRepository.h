@@ -27,11 +27,11 @@ public:
 	// ========================================================================
 	// PURE REPOSITORY METHODS - NO ENGINE DEPENDENCIES (RECOMMENDED)
 	// ========================================================================
-	virtual UE::Tasks::TTask<FSkillRepositoryResult> LoadSkillsByPlayerId(int32 PlayerId) override;
+	virtual UE::Tasks::TTask<FSkillRepositoryResult> LoadSkillsByPlayerId(const FGuid& PlayerId) override;
 	virtual UE::Tasks::TTask<FSkillRepositoryResult> SaveSkillData(const FSkillDomain& SkillData) override;
-	virtual UE::Tasks::TTask<FSkillRepositoryResult> RegisterSkillByPlayerId(int32 PlayerId, const FSkillSlotDTO& SkillSlot) override;
-	virtual UE::Tasks::TTask<FSkillRepositoryResult> UnregisterSkillByPlayerId(int32 PlayerId, const FGuid& SlotId) override;
-	virtual UE::Tasks::TTask<FSkillRepositoryResult> UpdateSkillCooldown(int32 PlayerId, const FGuid& SlotId, const FDateTime& LastUsedTime, float RemainingCooldown) override;
+	virtual UE::Tasks::TTask<FSkillRepositoryResult> RegisterSkillByPlayerId(const FGuid& PlayerId, const FSkillSlotDTO& SkillSlot) override;
+	virtual UE::Tasks::TTask<FSkillRepositoryResult> UnregisterSkillByPlayerId(const FGuid& PlayerId, const FGuid& SlotId) override;
+	virtual UE::Tasks::TTask<FSkillRepositoryResult> UpdateSkillCooldown(const FGuid& PlayerId, const FGuid& SlotId, const FDateTime& LastUsedTime, float RemainingCooldown) override;
 
 private:
 	UPROPERTY()

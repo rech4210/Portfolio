@@ -9,6 +9,7 @@
 #include "Kismet/GameplayStatics.h"
 // #include "DatabaseModule/Public/DatabaseManager.h"
 // #include "DatabaseModule/Public/Data/FCharacterData.h"
+#include "AuthSubsystem.h"
 #include "InventoryDomainService.h"
 #include "InventorySubsystem.h"
 #include "ShopSubsystem.h"
@@ -70,6 +71,8 @@ void AGGwaGameMode::PreLogin(const FString& Options, const FString& Address, con
 		ErrorMessage = TEXT("Invalid authentication token.");
 		UE_LOG(LogTemp, Warning, TEXT("PreLogin failed: %s"), *ErrorMessage);
 	}
+	
+
 }
 
 void AGGwaGameMode::Tick(float DeltaSeconds) {
@@ -111,6 +114,25 @@ void AGGwaGameMode::PostLogin(APlayerController* NewPlayer)
 {
 	Super::PostLogin(NewPlayer);
 
+	/*로그인 성공 이후, player의 GUID 가져오기*/
+	FString PlayerId;
+	//TODO: 임시코드, 어떤 필드로 데이터를 인덱싱할건지?
+	GetGameInstance()->GetSubsystem<UAuthSubsystem>()->GetDomainService()->GetUserInfo(PlayerId);
+	AGGwaPlayerState* State = NewPlayer->GetPlayerState<AGGwaPlayerState>();
+	State->SetPlayerGuid(PlayerId);
+
+	
+
+	/*
+* 1. 플레이어 초기 설정
+*  - GetUserInfo
+*  - Skill
+*  - Equipment
+*  - Inventory
+*  - Character
+*
+*/
+	
 	UE_LOG(LogTemp, Warning, TEXT("=== PostLogin Start ==="));
 	UE_LOG(LogTemp, Warning, TEXT("Checking player validity..."));
 

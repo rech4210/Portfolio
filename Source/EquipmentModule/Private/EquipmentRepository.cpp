@@ -11,7 +11,7 @@ void UEquipmentRepository::Initialize() {
 	}
 }
 
-bool UEquipmentRepository::LoadEquipmentData(int32 PlayerInformation, UEquipmentComponent& EquipmentComponentToPopulate)
+bool UEquipmentRepository::LoadEquipmentData(const FGuid& PlayerGuid, UEquipmentComponent& EquipmentComponentToPopulate)
 {
 	// 서버 권한이 있을 때만 복제된 프로퍼티를 수정
 	if (!EquipmentComponentToPopulate.GetOwner() || !EquipmentComponentToPopulate.GetOwner()->HasAuthority())
@@ -20,7 +20,7 @@ bool UEquipmentRepository::LoadEquipmentData(int32 PlayerInformation, UEquipment
 		return false;
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("EquipmentRepository: Loading equipment data for Player %d"), PlayerInformation);
+	UE_LOG(LogTemp, Log, TEXT("EquipmentRepository: Loading equipment data for Player %s"), *PlayerGuid.ToString());
 
 	// Mock 장비 데이터 생성 (실제로는 DB에서 로드)
 	TArray<FEquipmentSlotState> MockEquipmentItems;
@@ -65,11 +65,11 @@ bool UEquipmentRepository::LoadEquipmentData(int32 PlayerInformation, UEquipment
 		}
 	}
 	
-	UE_LOG(LogTemp, Log, TEXT("EquipmentRepository: Completed loading equipment data for Player %d"), PlayerInformation);
+	UE_LOG(LogTemp, Log, TEXT("EquipmentRepository: Completed loading equipment data for Player %s"), *PlayerGuid.ToString());
 	return true;
 }
 
-bool UEquipmentRepository::SaveEquipmentData(int32 PlayerInformation, const UEquipmentComponent* EquipmentComponentToSave)
+bool UEquipmentRepository::SaveEquipmentData(const FGuid& PlayerGuid, const UEquipmentComponent* EquipmentComponentToSave)
 {
 	if (!EquipmentComponentToSave)
 	{
@@ -77,8 +77,8 @@ bool UEquipmentRepository::SaveEquipmentData(int32 PlayerInformation, const UEqu
 		return false;
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("EquipmentRepository: Saving equipment data for Player %d with %d items"), 
-		PlayerInformation, EquipmentComponentToSave->GetAllEquipment().Num());
+	UE_LOG(LogTemp, Log, TEXT("EquipmentRepository: Saving equipment data for Player %s with %d items"), 
+		*PlayerGuid.ToString(), EquipmentComponentToSave->GetAllEquipment().Num());
 
 	// 실제 구현에서는 여기서 데이터베이스에 저장
 	// 현재는 Mock 구현

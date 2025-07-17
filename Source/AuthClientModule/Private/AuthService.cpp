@@ -3,6 +3,9 @@
 #include "Engine/Engine.h"
 #include "Engine/World.h"
 
+// Forward declaration - include the actual header if available
+class AGGwaPlayerController;
+
 UAuthService::UAuthService()
 {
     // No longer needs direct server communication
@@ -25,13 +28,22 @@ void UAuthService::RequestRegistration(const FString& Username, const FString& P
     {
         if (APlayerController* PC = World->GetFirstPlayerController())
         {
-            // TODO: Call PlayerController Server RPC for registration
-            // PC->Server_Register(Username, Password);
-            
-            // Store delegate for later callback
-            PendingRegistrationDelegate = OnResult;
-            
-            UE_LOG(LogTemp, Log, TEXT("AuthService: Registration request sent to server"));
+            // Cast to our custom PlayerController that has authentication RPCs
+            if (AGGwaPlayerController* GGwaPC = Cast<AGGwaPlayerController>(PC))
+            {
+                // Store delegate for later callback
+                PendingRegistrationDelegate = OnResult;
+                
+                // Call Server RPC for registration
+                GGwaPC->Server_Register(Username, Password);
+                
+                UE_LOG(LogTemp, Log, TEXT("AuthService: Registration request sent to server"));
+            }
+            else
+            {
+                UE_LOG(LogTemp, Error, TEXT("AuthService: PlayerController is not AGGwaPlayerController"));
+                OnResult.ExecuteIfBound(false, TEXT("Invalid PlayerController type"));
+            }
         }
         else
         {
@@ -62,13 +74,22 @@ void UAuthService::RequestLogin(const FString& Username, const FString& Password
     {
         if (APlayerController* PC = World->GetFirstPlayerController())
         {
-            // TODO: Call PlayerController Server RPC for login
-            // PC->Server_Login(Username, Password);
-            
-            // Store delegate for later callback
-            PendingLoginDelegate = OnResult;
-            
-            UE_LOG(LogTemp, Log, TEXT("AuthService: Login request sent to server"));
+            // Cast to our custom PlayerController that has authentication RPCs
+            if (AGGwaPlayerController* GGwaPC = Cast<AGGwaPlayerController>(PC))
+            {
+                // Store delegate for later callback
+                PendingLoginDelegate = OnResult;
+                
+                // Call Server RPC for login
+                GGwaPC->Server_Login(Username, Password);
+                
+                UE_LOG(LogTemp, Log, TEXT("AuthService: Login request sent to server"));
+            }
+            else
+            {
+                UE_LOG(LogTemp, Error, TEXT("AuthService: PlayerController is not AGGwaPlayerController"));
+                OnResult.ExecuteIfBound(false, TEXT(""), TEXT("Invalid PlayerController type"));
+            }
         }
         else
         {

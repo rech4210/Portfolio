@@ -27,12 +27,12 @@ public:
 	// ========================================================================
 	// PURE REPOSITORY METHODS - NO ENGINE DEPENDENCIES (RECOMMENDED)
 	// ========================================================================
-	virtual UE::Tasks::TTask<FInventoryRepositoryResult> LoadInventoryByPlayerId(int32 PlayerId) override;
+	virtual UE::Tasks::TTask<FInventoryRepositoryResult> LoadInventoryByPlayerId(const FGuid& PlayerId) override;
 	virtual UE::Tasks::TTask<FInventoryRepositoryResult> SaveInventoryData(const FInventoryDomain& InventoryData) override;
 	virtual UE::Tasks::TTask<FInventoryRepositoryResult> AddItemByPlayerId(
-		int32 PlayerId, const FInventoryItemDTO& Item) override;
+		const FGuid& PlayerId, const FInventoryItemDTO& Item) override;
 	virtual UE::Tasks::TTask<FInventoryRepositoryResult> RemoveItemByPlayerId(
-		int32 PlayerId, const FName& ItemID, int32 Quantity) override;
+		const FGuid& PlayerId, const FName& ItemID, int32 Quantity) override;
 
 	// Legacy support methods
 	// virtual void RequestLoadInventoryForPlayer(APlayerState* PlayerState) override;

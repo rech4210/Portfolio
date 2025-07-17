@@ -6,6 +6,7 @@
 #include "EquipmentRepository.h"
 #include "Components/EquipmentComponent.h"
 #include "GameFramework/PlayerState.h"
+#include "Interface/PlayerIdentityInterface.h"
 
 void UEquipmentSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -26,7 +27,7 @@ TScriptInterface<IEquipmentRepositoryInterface> UEquipmentSubsystem::GetEquipmen
 	return EquipmentRepository;
 }
 
-void UEquipmentSubsystem::RequestLoadEquipmentData(APlayerState* PlayerState)
+void UEquipmentSubsystem::RequestLoadEquipmentData(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity)
 {
 	// 클라이언트는 DB에서 데이터를 로드하지 않고 복제를 기다립니다.
 	if (GetGameInstance()->GetWorld()->GetNetMode() == NM_Client)
@@ -34,16 +35,21 @@ void UEquipmentSubsystem::RequestLoadEquipmentData(APlayerState* PlayerState)
 		return;
 	}
 
-	if (EquipmentRepository && PlayerState)
+	if (EquipmentRepository && PlayerIdentity)
 	{
-		// 서버에서만 실행: 비동기적으로 DB 또는 외부 저장소에서 장비 데이터 로드
-		if (auto* EquipmentComponent = PlayerState->FindComponentByClass<UEquipmentComponent>())
+		UObject* PlayerObject = Cast<UObject>(PlayerIdentity.GetObject());
+		APlayerState* PlayerState = Cast<APlayerState>(PlayerObject);
+		if (PlayerState)
 		{
-			// 서버 권한이 있을 때만 EquipmentComponent의 복제된 프로퍼티를 수정
-			if (PlayerState->HasAuthority())
+			// 서버에서만 실행: 비동기적으로 DB 또는 외부 저장소에서 장비 데이터 로드
+			if (auto* EquipmentComponent = PlayerState->FindComponentByClass<UEquipmentComponent>())
 			{
-				// EquipmentRepository를 통해 장비 데이터 로드
-				EquipmentRepository->LoadEquipmentData(PlayerState->GetPlayerId(), *EquipmentComponent);
+				// 서버 권한이 있을 때만 EquipmentComponent의 복제된 프로퍼티를 수정
+				if (PlayerState->HasAuthority())
+				{
+					// EquipmentRepository를 통해 장비 데이터 로드
+					EquipmentRepository->LoadEquipmentData(PlayerIdentity->GetPlayerGuid(), *EquipmentComponent);
+				}
 			}
 		}
 	}

@@ -23,7 +23,7 @@ struct SKILLMODULE_API FSkillDomain
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
-	int32 PlayerId = 0;
+	FGuid PlayerId;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
 	TArray<FSkillSlotDTO> SkillSlots;
@@ -39,7 +39,7 @@ struct SKILLMODULE_API FSkillDomain
 		LastUpdateTime = FDateTime::Now();
 	}
 
-	FSkillDomain(int32 InPlayerId, const TArray<FSkillSlotDTO>& InSkillSlots)
+	FSkillDomain(const FGuid& InPlayerId, const TArray<FSkillSlotDTO>& InSkillSlots)
 		: PlayerId(InPlayerId), SkillSlots(InSkillSlots)
 	{
 		LastUpdateTime = FDateTime::Now();
@@ -47,7 +47,7 @@ struct SKILLMODULE_API FSkillDomain
 
 	bool IsValid() const
 	{
-		return PlayerId > 0 && SkillSlots.Num() <= MaxSlots;
+		return PlayerId.IsValid() && SkillSlots.Num() <= MaxSlots;
 	}
 
 	bool HasSkill(int32 SkillID) const

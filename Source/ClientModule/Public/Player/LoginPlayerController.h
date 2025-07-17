@@ -67,10 +67,12 @@ private:
 	/**
 	 * Called when registration request completes
 	 */
+	UFUNCTION()
 	void OnRegistrationComplete(bool bSuccess, const FString& Message);
 
 	/**
 	 * Called when login request completes
 	 */
+	UFUNCTION()
 	void OnLoginComplete(bool bSuccess, const FString& Token, const FString& UserId);
 };

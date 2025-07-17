@@ -8,6 +8,14 @@
 #include "GameFramework/PlayerController.h"
 #include "Json.h"
 #include "JsonUtilities.h"
+#include "HttpModule.h"
+#include "Interfaces/IHttpRequest.h"
+#include "Interfaces/IHttpResponse.h"
+#include "Tasks/Task.h"
+#include "Async/Async.h"
+
+// Forward declaration for PlayerController
+class AGGwaPlayerController;
 
 void UAuthSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -513,21 +521,45 @@ bool UAuthSubsystem::ParseAuthResponseJson(const FString& ResponseBody, FAuthRes
 	
 	if (!FJsonSerializer::Deserialize(Reader, JsonObject) || !JsonObject.IsValid())
 	{
+		UE_LOG(LogTemp, Error, TEXT("AuthSubsystem::ParseAuthResponseJson: Failed to parse JSON response"));
 		return false;
 	}
 
-	FString Token;
-	if (JsonObject->TryGetStringField(TEXT("token"), Token))
+	// Check if response indicates success
+	bool bSuccess = false;
+	if (!JsonObject->TryGetBoolField(TEXT("success"), bSuccess) || !bSuccess)
 	{
-		OutResponse.bIsSuccess = true;
-		OutResponse.Token = Token;
-		
-		// Extract userId from JWT payload (simplified for this example)
-		// In production, you'd properly decode the JWT
-		OutResponse.UserId = TEXT("extracted_from_jwt");
-		return true;
+		UE_LOG(LogTemp, Warning, TEXT("AuthSubsystem::ParseAuthResponseJson: Auth server returned failure"));
+		return false;
 	}
 
+	// Extract JWT token
+	FString Token;
+	if (!JsonObject->TryGetStringField(TEXT("token"), Token) || Token.IsEmpty())
+	{
+		UE_LOG(LogTemp, Error, TEXT("AuthSubsystem::ParseAuthResponseJson: No token found in response"));
+		return false;
+	}
+
+	// Extract user information from the response
+	const TSharedPtr<FJsonObject>* UserObject;
+	if (JsonObject->TryGetObjectField(TEXT("user"), UserObject) && UserObject->IsValid())
+	{
+		FString UserId;
+		if ((*UserObject)->TryGetStringField(TEXT("userId"), UserId))
+		{
+			OutResponse.bIsSuccess = true;
+			OutResponse.Token = Token;
+			OutResponse.UserId = UserId;
+			OutResponse.ErrorCode = 0;
+			OutResponse.ErrorMessage = TEXT("");
+			
+			UE_LOG(LogTemp, Log, TEXT("AuthSubsystem::ParseAuthResponseJson: Successfully parsed JWT response for user %s"), *UserId);
+			return true;
+		}
+	}
+
+	UE_LOG(LogTemp, Error, TEXT("AuthSubsystem::ParseAuthResponseJson: Failed to extract user ID from response"));
 	return false;
 }
 
@@ -539,12 +571,13 @@ void UAuthSubsystem::LoadGameDataForUser(const FString& UserId, APlayerControlle
 		return;
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("AuthSubsystem: Loading game data for user %s"), *UserId);
+	UE_LOG(LogTemp, Log, TEXT("AuthSubsystem: Authentication completed for user %s, delegating to GameMode for data loading"), *UserId);
 
-	// TODO: Load character data, inventory, skills etc. from DatabaseManager
-	// This should integrate with your existing game data loading systems
+	// Note: Game data loading is now handled by GameMode and GAS system
+	// AuthSubsystem only handles authentication, not game state initialization
+	// This follows separation of concerns principle
 	
-	// For now, simulate successful data loading
+	// Simply proceed to game world travel after successful authentication
 	OnGameDataLoaded(true, UserId, PlayerController);
 }
 
@@ -552,6 +585,7 @@ void UAuthSubsystem::OnGameDataLoaded(bool bSuccess, const FString& UserId, APla
 {
 	if (!PlayerController)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("AuthSubsystem::OnGameDataLoaded: PlayerController is null"));
 		return;
 	}
 
@@ -559,14 +593,32 @@ void UAuthSubsystem::OnGameDataLoaded(bool bSuccess, const FString& UserId, APla
 	{
 		UE_LOG(LogTemp, Log, TEXT("AuthSubsystem: Game data loaded successfully for user %s"), *UserId);
 		
-		// TODO: Trigger ClientTravel to move player to game world
-		// PlayerController->ClientTravel(GameWorldURL, TRAVEL_Relative);
+		// Trigger ClientTravel to move player to game world
+		// Note: This is moved from GGwaPlayerController to avoid duplication
+		FString GameWorldURL = TEXT("/Game/Maps/ThirdPersonMap?listen"); // Replace with your actual game world map
+		
+		// Use ClientTravel to move to game world
+		if (AGGwaPlayerController* GGwaPC = Cast<AGGwaPlayerController>(PlayerController))
+		{
+			GGwaPC->Client_TravelToGameWorld(GameWorldURL);
+		}
+		else
+		{
+			// Fallback to direct ClientTravel
+			PlayerController->ClientTravel(GameWorldURL, TRAVEL_Relative);
+		}
+		
+		UE_LOG(LogTemp, Log, TEXT("AuthSubsystem: Initiated client travel to game world for user %s"), *UserId);
 	}
 	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("AuthSubsystem: Failed to load game data for user %s"), *UserId);
 		
-		// TODO: Handle data loading failure
-		// Maybe disconnect the player or retry
+		// Handle data loading failure - disconnect the player
+		if (PlayerController->GetNetConnection())
+		{
+			PlayerController->GetNetConnection()->Close();
+			UE_LOG(LogTemp, Warning, TEXT("AuthSubsystem: Disconnected player %s due to data loading failure"), *UserId);
+		}
 	}
 }

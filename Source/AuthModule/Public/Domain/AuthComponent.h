@@ -10,7 +10,7 @@
  * Contains core business logic for user authentication and account management
  */
 UCLASS(BlueprintType)
-class AUTHMODULE_API UUserAccountComponent : public UObject
+class AUTHMODULE_API UAuthComponent : public UObject
 {
 	GENERATED_BODY()
 
@@ -22,14 +22,14 @@ private:
 	TArray<FUserAuditLogDTO> AuditLogs;
 
 public:
-	UUserAccountComponent();
+	UAuthComponent();
 
 	// Factory Methods
 	UFUNCTION(BlueprintCallable, Category = "Auth Component")
-	static UUserAccountComponent* CreateNewUser(const FString& Username, const FString& PasswordHash);
+	static UAuthComponent* CreateNewUser(const FString& Username, const FString& PasswordHash);
 
 	UFUNCTION(BlueprintCallable, Category = "Auth Component")
-	static UUserAccountComponent* CreateFromDTO(const FUserAccountDTO& UserDTO);
+	static UAuthComponent* CreateFromDTO(const FUserAccountDTO& UserDTO);
 
 	// Core Business Logic
 	UFUNCTION(BlueprintCallable, Category = "Auth Component")

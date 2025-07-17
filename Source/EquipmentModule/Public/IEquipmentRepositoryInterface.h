@@ -26,17 +26,17 @@ class EQUIPMENTMODULE_API IEquipmentRepositoryInterface : public IBaseRepository
 public:
 	/**
 	 * Loads equipment data for a specific player/equipment component.
-	 * @param PlayerInformation Player ID or identifier
+	 * @param PlayerGuid Player GUID or identifier
 	 * @param EquipmentComponentToPopulate The equipment component to populate with data
 	 * @return True if loading was successful
 	 */
-	virtual bool LoadEquipmentData(int32 PlayerInformation, UEquipmentComponent& EquipmentComponentToPopulate) = 0;
+	virtual bool LoadEquipmentData(const FGuid& PlayerGuid, UEquipmentComponent& EquipmentComponentToPopulate) = 0;
 
 	/**
 	 * Saves equipment data from an equipment component.
-	 * @param PlayerInformation Player ID or identifier
+	 * @param PlayerGuid Player GUID or identifier
 	 * @param EquipmentComponentToSave The equipment component containing data to save
 	 * @return True if saving was successful
 	 */
-	virtual bool SaveEquipmentData(int32 PlayerInformation, const UEquipmentComponent* EquipmentComponentToSave) = 0;
+	virtual bool SaveEquipmentData(const FGuid& PlayerGuid, const UEquipmentComponent* EquipmentComponentToSave) = 0;
 };

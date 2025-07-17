@@ -5,10 +5,10 @@
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "IEquipmentRepositoryInterface.h"
+#include "Interface/PlayerIdentityInterface.h"
 #include "EquipmentSubsystem.generated.h"
 
 class UEquipmentRepository;
-class APlayerState;
 class UEquipmentComponent;
 
 /**
@@ -26,7 +26,7 @@ public:
 	TScriptInterface<IEquipmentRepositoryInterface> GetEquipmentRepository() const;
 
 	/** Entry point for loading equipment data. Can be called from PlayerState's BeginPlay. */
-	void RequestLoadEquipmentData(APlayerState* PlayerState);
+	void RequestLoadEquipmentData(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity);
 
 	/** Called by the EquipmentComponent on clients when equipment data is replicated. */
 	void Client_OnEquipmentStateUpdated(UEquipmentComponent* EquipmentComponent);

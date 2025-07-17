@@ -24,18 +24,17 @@ UE::Tasks::TTask<FAuthResponseDTO> UAuthDomainService::RegisterUser(const FAuthR
 	{
 		UE_LOG(LogTemp, Log, TEXT("AuthDomainService::RegisterUser: Starting registration for user %s"), *Request.Username);
 
-		// 1. Validate input
-		FString ValidationError;
-		if (!ValidateUsernameFormat(Request.Username, ValidationError))
+		// 1. Validate input using AuthComponent static validation
+		if (!UAuthComponent::IsValidUsername(Request.Username))
 		{
-			UE_LOG(LogTemp, Warning, TEXT("AuthDomainService::RegisterUser: Username validation failed - %s"), *ValidationError);
-			return CreateErrorResponse(400, ValidationError);
+			UE_LOG(LogTemp, Warning, TEXT("AuthDomainService::RegisterUser: Invalid username format - %s"), *Request.Username);
+			return CreateErrorResponse(400, TEXT("Invalid username format"));
 		}
 
-		if (!ValidatePasswordComplexity(Request.Password, ValidationError))
+		if (!UAuthComponent::IsValidPassword(Request.Password))
 		{
-			UE_LOG(LogTemp, Warning, TEXT("AuthDomainService::RegisterUser: Password validation failed - %s"), *ValidationError);
-			return CreateErrorResponse(400, ValidationError);
+			UE_LOG(LogTemp, Warning, TEXT("AuthDomainService::RegisterUser: Invalid password complexity"));
+			return CreateErrorResponse(400, TEXT("Password does not meet complexity requirements"));
 		}
 
 		// 2. Check if username already exists
@@ -66,7 +65,7 @@ UE::Tasks::TTask<FAuthResponseDTO> UAuthDomainService::RegisterUser(const FAuthR
 		NewUserData.DeletedAt = FDateTime::MinValue();
 
 		// 4. Create domain object for business logic validation
-		UUserAccountComponent* UserComponent = UUserAccountComponent::CreateFromDTO(NewUserData);
+		UAuthComponent* UserComponent = UAuthComponent::CreateFromDTO(NewUserData);
 		if (!UserComponent || !UserComponent->IsValid())
 		{
 			UE_LOG(LogTemp, Error, TEXT("AuthDomainService::RegisterUser: Failed to create valid user component object"));
@@ -132,7 +131,7 @@ UE::Tasks::TTask<FAuthResponseDTO> UAuthDomainService::AuthenticateUser(const FA
 		FUserAccountDTO UserData = UserDataOpt.GetValue();
 
 		// 3. Create domain object and check account status
-		UUserAccountComponent* UserComponent = UUserAccountComponent::CreateFromDTO(UserData);
+		UAuthComponent* UserComponent = UAuthComponent::CreateFromDTO(UserData);
 		if (!UserComponent)
 		{
 			UE_LOG(LogTemp, Error, TEXT("AuthDomainService::AuthenticateUser: Failed to create user component object"));
@@ -167,11 +166,35 @@ UE::Tasks::TTask<FAuthResponseDTO> UAuthDomainService::AuthenticateUser(const FA
 			UE_LOG(LogTemp, Warning, TEXT("AuthDomainService::AuthenticateUser: Password verification failed for user %s"), *Request.Username);
 			LogAuditEvent(UserData.UserId, TEXT("login_failed"), TEXT("Invalid password"));
 			
-			// TODO: Implement login attempt tracking and automatic locking
+			// Implement login attempt tracking and automatic locking
+			UserData.FailedLoginAttempts++;
+			
+			// Lock account if too many failed attempts
+			if (UserData.FailedLoginAttempts >= MaxLoginAttempts)
+			{
+				FDateTime LockExpiresAt = FDateTime::Now() + FTimespan::FromMinutes(LockoutDurationMinutes);
+				UserComponent->LockAccount(LockExpiresAt);
+				
+				auto UpdateLockedUserTask = AuthRepository->UpdateUser(UserComponent->GetUserData());
+				UpdateLockedUserTask.GetResult(); // Fire and forget
+				
+				LogAuditEvent(UserData.UserId, TEXT("account_auto_locked"), 
+					FString::Printf(TEXT("Account locked after %d failed login attempts"), MaxLoginAttempts));
+				
+				return CreateErrorResponse(423, TEXT("Account locked due to too many failed login attempts"));
+			}
+			else
+			{
+				// Update failed attempt count
+				auto UpdateFailedAttemptsTask = AuthRepository->UpdateUser(UserData);
+				UpdateFailedAttemptsTask.GetResult(); // Fire and forget
+			}
+			
 			return CreateErrorResponse(401, TEXT("Invalid credentials"));
 		}
 
-		// 6. Update last login time
+		// 6. Reset failed login attempts and update last login time
+		UserData.FailedLoginAttempts = 0; // Reset failed attempts on successful login
 		UserComponent->UpdateLastLogin();
 		auto UpdateUserTask = AuthRepository->UpdateUser(UserComponent->GetUserData());
 		bool bUserUpdated = UpdateUserTask.GetResult();
@@ -191,11 +214,12 @@ UE::Tasks::TTask<FAuthResponseDTO> UAuthDomainService::AuthenticateUser(const FA
 
 		UE_LOG(LogTemp, Log, TEXT("AuthDomainService::AuthenticateUser: Successfully authenticated user %s"), *Request.Username);
 
-		// 8. Generate token (placeholder - in real implementation, this would be a JWT)
-		FString Token = FString::Printf(TEXT("TOKEN_%s_%lld"), *UserData.UserId, FDateTime::Now().GetTicks());
+		// 8. Note: JWT token generation is handled by external auth server (Node.js)
+		// This domain service only validates business rules and updates user state
+		// The actual token will be provided by the calling AuthSubsystem from external auth server
 
-		// Broadcast event
-		FAuthResponseDTO Response = CreateSuccessResponse(Token, UserData.UserId);
+		// Broadcast event without token (token comes from external auth server)
+		FAuthResponseDTO Response = CreateSuccessResponse(TEXT(""), UserData.UserId);
 		OnAuthenticationComplete.Broadcast(true, Response);
 
 		return Response;
@@ -242,7 +266,7 @@ UE::Tasks::TTask<bool> UAuthDomainService::ChangeUserPassword(const FString& Use
 		}
 
 		// 4. Update password using domain object
-		UUserAccountComponent* UserComponent = UUserAccountComponent::CreateFromDTO(UserData);
+		UAuthComponent* UserComponent = UAuthComponent::CreateFromDTO(UserData);
 		UserComponent->ChangePassword(HashPassword(NewPassword));
 
 		// 5. Save changes
@@ -408,12 +432,22 @@ UE::Tasks::TTask<int32> UAuthDomainService::UnlockExpiredAccounts()
 
 bool UAuthDomainService::ValidatePasswordComplexity(const FString& Password, FString& OutErrorMessage)
 {
-	return UUserAccountComponent::IsValidPassword(Password);
+	bool bIsValid = UAuthComponent::IsValidPassword(Password);
+	if (!bIsValid)
+	{
+		OutErrorMessage = TEXT("Password does not meet complexity requirements");
+	}
+	return bIsValid;
 }
 
 bool UAuthDomainService::ValidateUsernameFormat(const FString& Username, FString& OutErrorMessage)
 {
-	return UUserAccountComponent::IsValidUsername(Username);
+	bool bIsValid = UAuthComponent::IsValidUsername(Username);
+	if (!bIsValid)
+	{
+		OutErrorMessage = TEXT("Invalid username format");
+	}
+	return bIsValid;
 }
 
 // Private helper methods

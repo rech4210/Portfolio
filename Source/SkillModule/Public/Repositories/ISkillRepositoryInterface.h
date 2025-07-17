@@ -54,7 +54,7 @@ public:
 	 * @param PlayerId The player ID to load skills for
 	 * @return Task that returns skill domain data
 	 */
-	virtual UE::Tasks::TTask<FSkillRepositoryResult> LoadSkillsByPlayerId(int32 PlayerId) = 0;
+	virtual UE::Tasks::TTask<FSkillRepositoryResult> LoadSkillsByPlayerId(const FGuid& PlayerId) = 0;
 
 	/**
 	 * Save skill domain data
@@ -69,7 +69,7 @@ public:
 	 * @param SkillSlot Skill slot to register
 	 * @return Task that returns updated skill data
 	 */
-	virtual UE::Tasks::TTask<FSkillRepositoryResult> RegisterSkillByPlayerId(int32 PlayerId, const FSkillSlotDTO& SkillSlot) = 0;
+	virtual UE::Tasks::TTask<FSkillRepositoryResult> RegisterSkillByPlayerId(const FGuid& PlayerId, const FSkillSlotDTO& SkillSlot) = 0;
 
 	/**
 	 * Unregister a skill from player's skill slots
@@ -77,7 +77,7 @@ public:
 	 * @param SlotId Slot ID to unregister
 	 * @return Task that returns updated skill data
 	 */
-	virtual UE::Tasks::TTask<FSkillRepositoryResult> UnregisterSkillByPlayerId(int32 PlayerId, const FGuid& SlotId) = 0;
+	virtual UE::Tasks::TTask<FSkillRepositoryResult> UnregisterSkillByPlayerId(const FGuid& PlayerId, const FGuid& SlotId) = 0;
 
 	/**
 	 * Update skill cooldown state
@@ -87,7 +87,7 @@ public:
 	 * @param RemainingCooldown Remaining cooldown time
 	 * @return Task that returns success/failure
 	 */
-	virtual UE::Tasks::TTask<FSkillRepositoryResult> UpdateSkillCooldown(int32 PlayerId, const FGuid& SlotId, const FDateTime& LastUsedTime, float RemainingCooldown) = 0;
+	virtual UE::Tasks::TTask<FSkillRepositoryResult> UpdateSkillCooldown(const FGuid& PlayerId, const FGuid& SlotId, const FDateTime& LastUsedTime, float RemainingCooldown) = 0;
 
 };
 
@@ -108,4 +108,4 @@ public:
 	virtual bool LoadSkillState(int32 PlayerInformation, USkillComponent& SkillComponentToPopulate, TArray<int32> fetchedSkillList) = 0;
 	virtual bool LoadSkillStateFromDB_Temp(int32 PlayerInformation, const TArray<int32>& fetchedSkillList) = 0;
 	virtual bool SaveSkillState(int32 PlayerInformation, const USkillComponent* SkillComponentToSave, TArray<int32> SkillPayloadList) = 0;
-}; 
+};

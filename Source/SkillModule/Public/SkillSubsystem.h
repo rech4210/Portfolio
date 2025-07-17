@@ -5,13 +5,13 @@
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Repositories/ISkillRepositoryInterface.h"
+#include "Interface/PlayerIdentityInterface.h"
 #include "SkillSubsystem.generated.h"
 
 class USkillConfigRepository;
 class USkillStateRepository;
 class USkillRepository;
 class USkillDomainService;
-class APlayerState;
 class USkillComponent;
 class USkillDataAsset;
 struct FSkillDomain;
@@ -59,7 +59,7 @@ public:
 	 * @param PlayerState Target player state containing SkillComponent
 	 * @param SkillData Skill data to register
 	 */
-	void RequestRegisterSkill(APlayerState* PlayerState, USkillDataAsset* SkillData);
+	void RequestRegisterSkill(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, USkillDataAsset* SkillData);
 
 	/**
 	 * Request skill unregistration with full validation pipeline
@@ -67,7 +67,7 @@ public:
 	 * @param PlayerState Target player state containing SkillComponent
 	 * @param SlotId Slot ID to unregister
 	 */
-	void RequestUnregisterSkill(APlayerState* PlayerState, const FGuid& SlotId);
+	void RequestUnregisterSkill(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FGuid& SlotId);
 
 	/**
 	 * Request skill slot swap with full validation pipeline
@@ -76,14 +76,14 @@ public:
 	 * @param SlotIdA First slot ID
 	 * @param SlotIdB Second slot ID
 	 */
-	void RequestSwapSkillSlots(APlayerState* PlayerState, const FGuid& SlotIdA, const FGuid& SlotIdB);
+	void RequestSwapSkillSlots(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FGuid& SlotIdA, const FGuid& SlotIdB);
 
 	/**
 	 * Request player skill loading with full validation pipeline
 	 * Handles network authority, logging, and transaction boundaries
 	 * @param PlayerState Target player state containing SkillComponent
 	 */
-	void RequestLoadPlayerSkills(APlayerState* PlayerState);
+	void RequestLoadPlayerSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity);
 
 	/**
 	 * Request player skill saving with full validation pipeline
@@ -91,7 +91,7 @@ public:
 	 * @param PlayerState Target player state containing SkillComponent
 	 * @param SkillData The skill domain data to save
 	 */
-	void RequestSavePlayerSkills(APlayerState* PlayerState, const FSkillDomain& SkillData);
+	void RequestSavePlayerSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FSkillDomain& SkillData);
 
 	/**
 	 * Request skill cooldown update with full validation pipeline
@@ -101,7 +101,7 @@ public:
 	 * @param LastUsedTime When the skill was last used
 	 * @param RemainingCooldown Remaining cooldown time
 	 */
-	void RequestUpdateSkillCooldown(APlayerState* PlayerState, const FGuid& SlotId, const FDateTime& LastUsedTime, float RemainingCooldown);
+	void RequestUpdateSkillCooldown(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FGuid& SlotId, const FDateTime& LastUsedTime, float RemainingCooldown);
 
 private:
 	// Repository interface for Dependency Injection

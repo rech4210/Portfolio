@@ -220,13 +220,8 @@ void AGGwaPlayerController::OnAuthSubsystemAuthenticationComplete(bool bSuccess,
 	// Forward the result to the client
 	Client_OnLoginResult(bSuccess, Token, UserId);
 
-	// If authentication was successful, trigger game world travel
-	if (bSuccess && !UserId.IsEmpty())
-	{
-		// TODO: Configure the actual game world map URL
-		FString GameWorldURL = TEXT("/Game/Maps/GameWorld");  // Replace with your game world map
-		Client_TravelToGameWorld(GameWorldURL);
-	}
+	// Note: ClientTravel is now handled by AuthSubsystem after game data loading
+	// This prevents duplicate travel calls and ensures data is loaded before travel
 }
 // void AGGwaPlayerController::Client_OnRewardResult_Implementation(bool bOK, const FRewardData& Data,const FString& Error) {
 // }

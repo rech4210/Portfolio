@@ -6,6 +6,7 @@
 #include "InventoryComponent.h"
 #include "InventoryDomainService.h"
 #include "GameFramework/PlayerState.h"
+#include "Interface/PlayerIdentityInterface.h"
 
 void UInventorySubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -57,12 +58,12 @@ UInventoryDomainService* UInventorySubsystem::GetDomainService() {
 // Use Case Orchestration - App Layer Responsibilities Only
 // ============================================================================
 
-void UInventorySubsystem::RequestAddItemToInventory(APlayerState* PlayerState, const FInventoryItemDTO& Item)
+void UInventorySubsystem::RequestAddItemToInventory(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FInventoryItemDTO& Item)
 {
 	// 1. Network & Authority Validation (App Layer responsibility)
-	if (!PlayerState)
+	if (!PlayerIdentity)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("InventorySubsystem: Invalid PlayerState for item addition"));
+		UE_LOG(LogTemp, Warning, TEXT("InventorySubsystem: Invalid PlayerIdentity for item addition"));
 		return;
 	}
 
@@ -80,18 +81,18 @@ void UInventorySubsystem::RequestAddItemToInventory(APlayerState* PlayerState, c
 
 	// 2. Transaction Boundary & Logging (App Layer responsibility)
 	UE_LOG(LogTemp, Log, TEXT("InventorySubsystem: Starting add item transaction - Player: %s, Item: %s, Quantity: %d"), 
-		*PlayerState->GetPlayerName(), *Item.ItemID.ToString(), Item.Quantity);
+		*PlayerIdentity->GetPlayerGuid().ToString(), *Item.ItemID.ToString(), Item.Quantity);
 
 	// 3. Domain Service Call (Delegate business logic)
-	DomainService->AddItemToInventory(PlayerState, Item);
+	DomainService->AddItemToInventory(PlayerIdentity, Item);
 }
 
-void UInventorySubsystem::RequestRemoveItemFromInventory(APlayerState* PlayerState, const FName& ItemID, int32 Quantity)
+void UInventorySubsystem::RequestRemoveItemFromInventory(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FName& ItemID, int32 Quantity)
 {
 	// 1. Network & Authority Validation
-	if (!PlayerState)
+	if (!PlayerIdentity)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("InventorySubsystem: Invalid PlayerState for item removal"));
+		UE_LOG(LogTemp, Warning, TEXT("InventorySubsystem: Invalid PlayerIdentity for item removal"));
 		return;
 	}
 
@@ -109,18 +110,18 @@ void UInventorySubsystem::RequestRemoveItemFromInventory(APlayerState* PlayerSta
 
 	// 2. Transaction Boundary & Logging
 	UE_LOG(LogTemp, Log, TEXT("InventorySubsystem: Starting remove item transaction - Player: %s, Item: %s, Quantity: %d"), 
-		*PlayerState->GetPlayerName(), *ItemID.ToString(), Quantity);
+		*PlayerIdentity->GetPlayerGuid().ToString(), *ItemID.ToString(), Quantity);
 
 	// 3. Domain Service Call
-	DomainService->RemoveItemFromInventory(PlayerState, ItemID, Quantity);
+	DomainService->RemoveItemFromInventory(PlayerIdentity, ItemID, Quantity);
 }
 
-void UInventorySubsystem::RequestLoadPlayerInventory(APlayerState* PlayerState)
+void UInventorySubsystem::RequestLoadPlayerInventory(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity)
 {
 	// 1. Network & Authority Validation
-	if (!PlayerState)
+	if (!PlayerIdentity)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("InventorySubsystem: Invalid PlayerState for inventory loading"));
+		UE_LOG(LogTemp, Warning, TEXT("InventorySubsystem: Invalid PlayerIdentity for inventory loading"));
 		return;
 	}
 
@@ -138,18 +139,18 @@ void UInventorySubsystem::RequestLoadPlayerInventory(APlayerState* PlayerState)
 
 	// 2. Transaction Boundary & Logging
 	UE_LOG(LogTemp, Log, TEXT("InventorySubsystem: Starting inventory load transaction - Player: %s"), 
-		*PlayerState->GetPlayerName());
+		*PlayerIdentity->GetPlayerGuid().ToString());
 
 	// 3. Domain Service Call
-	DomainService->LoadInventory(PlayerState);
+	DomainService->LoadInventory(PlayerIdentity);
 }
 
-void UInventorySubsystem::RequestSavePlayerInventory(APlayerState* PlayerState, const FInventoryDomain& InventoryData)
+void UInventorySubsystem::RequestSavePlayerInventory(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FInventoryDomain& InventoryData)
 {
 	// 1. Authority Validation
-	if (!PlayerState)
+	if (!PlayerIdentity)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("InventorySubsystem: Invalid PlayerState for inventory saving"));
+		UE_LOG(LogTemp, Warning, TEXT("InventorySubsystem: Invalid PlayerIdentity for inventory saving"));
 		return;
 	}
 
@@ -167,9 +168,9 @@ void UInventorySubsystem::RequestSavePlayerInventory(APlayerState* PlayerState, 
 
 	// 2. Transaction Boundary & Logging
 	UE_LOG(LogTemp, Log, TEXT("InventorySubsystem: Starting inventory save transaction - Player: %s"), 
-		*PlayerState->GetPlayerName());
+		*PlayerIdentity->GetPlayerGuid().ToString());
 
 	// 3. Domain Service Call
-	DomainService->SaveInventory(PlayerState, InventoryData);
+	DomainService->SaveInventory(PlayerIdentity, InventoryData);
 }
 

@@ -24,7 +24,7 @@ void USkillRepository::Initialize()
 // PURE REPOSITORY METHODS - NO ENGINE DEPENDENCIES
 // ============================================================================
 
-UE::Tasks::TTask<FSkillRepositoryResult> USkillRepository::LoadSkillsByPlayerId(int32 PlayerId)
+UE::Tasks::TTask<FSkillRepositoryResult> USkillRepository::LoadSkillsByPlayerId(const FGuid& PlayerId)
 {
 	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerId]() -> FSkillRepositoryResult
 	{
@@ -35,8 +35,8 @@ UE::Tasks::TTask<FSkillRepositoryResult> USkillRepository::LoadSkillsByPlayerId(
 
 
 
-		// Convert int32 PlayerId to FString UserId using helper
-		FString UserId = UPlayerIdHelper::ConvertPlayerIdToUserId(PlayerId);
+		// Convert FGuid PlayerId to FString UserId
+		FString UserId = PlayerId.ToString();
 
 		// Execute database operation on worker thread
 		auto LoadTask = DBManager->LoadSkillsForPlayer(UserId);
@@ -63,8 +63,8 @@ UE::Tasks::TTask<FSkillRepositoryResult> USkillRepository::SaveSkillData(const F
 			return FSkillRepositoryResult::Failure(TEXT("Invalid skill data"));
 		}
 
-		// Convert int32 PlayerId to FString UserId using helper
-		FString UserId = UPlayerIdHelper::ConvertPlayerIdToUserId(SkillData.PlayerId);
+		// Convert FGuid PlayerId to FString UserId
+		FString UserId = SkillData.PlayerId.ToString();
 
 		// Execute database operation on worker thread
 		auto SaveTask = DBManager->SaveSkillsForPlayer(UserId, SkillData.SkillSlots);
@@ -81,7 +81,7 @@ UE::Tasks::TTask<FSkillRepositoryResult> USkillRepository::SaveSkillData(const F
 	});
 }
 
-UE::Tasks::TTask<FSkillRepositoryResult> USkillRepository::RegisterSkillByPlayerId(int32 PlayerId, const FSkillSlotDTO& SkillSlot)
+UE::Tasks::TTask<FSkillRepositoryResult> USkillRepository::RegisterSkillByPlayerId(const FGuid& PlayerId, const FSkillSlotDTO& SkillSlot)
 {
 	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerId, SkillSlot]() -> FSkillRepositoryResult
 	{
@@ -92,8 +92,8 @@ UE::Tasks::TTask<FSkillRepositoryResult> USkillRepository::RegisterSkillByPlayer
 
 
 
-		// Convert int32 PlayerId to FString UserId using helper
-		FString UserId = UPlayerIdHelper::ConvertPlayerIdToUserId(PlayerId);
+		// Convert FGuid PlayerId to FString UserId
+		FString UserId = PlayerId.ToString();
 
 		// Execute database operation on worker thread
 		auto RegisterTask = DBManager->RegisterSkill(UserId, SkillSlot);
@@ -112,7 +112,7 @@ UE::Tasks::TTask<FSkillRepositoryResult> USkillRepository::RegisterSkillByPlayer
 	});
 }
 
-UE::Tasks::TTask<FSkillRepositoryResult> USkillRepository::UnregisterSkillByPlayerId(int32 PlayerId, const FGuid& SlotId)
+UE::Tasks::TTask<FSkillRepositoryResult> USkillRepository::UnregisterSkillByPlayerId(const FGuid& PlayerId, const FGuid& SlotId)
 {
 	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerId, SlotId]() -> FSkillRepositoryResult
 	{
@@ -128,8 +128,8 @@ UE::Tasks::TTask<FSkillRepositoryResult> USkillRepository::UnregisterSkillByPlay
 			return FSkillRepositoryResult::Failure(TEXT("Invalid SlotId"));
 		}
 
-		// Convert int32 PlayerId to FString UserId using helper
-		FString UserId = UPlayerIdHelper::ConvertPlayerIdToUserId(PlayerId);
+		// Convert FGuid PlayerId to FString UserId
+		FString UserId = PlayerId.ToString();
 
 		// Execute database operation on worker thread
 		auto UnregisterTask = DBManager->UnregisterSkill(UserId, SlotId);
@@ -148,7 +148,7 @@ UE::Tasks::TTask<FSkillRepositoryResult> USkillRepository::UnregisterSkillByPlay
 	});
 }
 
-UE::Tasks::TTask<FSkillRepositoryResult> USkillRepository::UpdateSkillCooldown(int32 PlayerId, const FGuid& SlotId, const FDateTime& LastUsedTime, float RemainingCooldown)
+UE::Tasks::TTask<FSkillRepositoryResult> USkillRepository::UpdateSkillCooldown(const FGuid& PlayerId, const FGuid& SlotId, const FDateTime& LastUsedTime, float RemainingCooldown)
 {
 	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerId, SlotId, LastUsedTime, RemainingCooldown]() -> FSkillRepositoryResult
 	{
@@ -164,8 +164,8 @@ UE::Tasks::TTask<FSkillRepositoryResult> USkillRepository::UpdateSkillCooldown(i
 			return FSkillRepositoryResult::Failure(TEXT("Invalid SlotId"));
 		}
 
-		// Convert int32 PlayerId to FString UserId using helper
-		FString UserId = UPlayerIdHelper::ConvertPlayerIdToUserId(PlayerId);
+		// Convert FGuid PlayerId to FString UserId
+		FString UserId = PlayerId.ToString();
 
 		// Execute database operation on worker thread
 		auto UpdateTask = DBManager->UpdateSkillCooldown(UserId, SlotId, LastUsedTime, RemainingCooldown);

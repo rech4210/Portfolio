@@ -20,6 +20,7 @@
 #include "SkillModule/Public/SkillSubsystem.h"
 #include "ShopModule/Public/ShopSubsystem.h"
 #include "EquipmentModule/Public/EquipmentSubsystem.h"
+#include "Interface/PlayerIdentityInterface.h"
 
 
 AGGwaPlayerState::AGGwaPlayerState() {
@@ -142,9 +143,9 @@ void AGGwaPlayerState::BroadcastAttributeChange(const FGameplayAttribute& Attrib
 	// }
 // }
 
-void AGGwaPlayerState::OnSkillLoadCompleted(int32 Playerid)
+void AGGwaPlayerState::OnSkillLoadCompleted(const FGuid& PlayerGuid)
 {
-	if (Playerid == this->GetPlayerId())
+	if (PlayerGuid == GetPlayerGuid())
 	{
 		UE_LOG(LogTemp, Log, TEXT("Skills loaded successfully for player %s"), *GetPlayerName());
 		// Notify UI or other systems that skills are ready
@@ -152,9 +153,9 @@ void AGGwaPlayerState::OnSkillLoadCompleted(int32 Playerid)
 	}
 }
 
-void AGGwaPlayerState::OnSkillOperationFailed(int32 Playerid, const FString& Reason)
+void AGGwaPlayerState::OnSkillOperationFailed(const FGuid& PlayerGuid, const FString& Reason)
 {
-	if (Playerid == this->GetPlayerId())
+	if (PlayerGuid == GetPlayerGuid())
 	{
 		UE_LOG(LogTemp, Error, TEXT("Skill operation failed for player %s: %s"), *GetPlayerName(), *Reason);
 		// Handle skill operation failure (show UI notification, etc.)

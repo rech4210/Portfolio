@@ -11,6 +11,7 @@
 #include "ShopModule/Public/Components/ShopComponent.h"
 #include "EquipmentModule/Public/Components/EquipmentComponent.h"
 #include "GameFramework/PlayerState.h"
+#include "Interface/PlayerIdentityInterface.h"
 #include "GGwaPlayerState.generated.h"
 
 class USkillDataAsset;
@@ -26,7 +27,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSkillsUpdated);
  * 
  */
 UCLASS()
-class MYGAME_API AGGwaPlayerState : public APlayerState, public IAbilitySystemInterface
+class MYGAME_API AGGwaPlayerState : public APlayerState, public IAbilitySystemInterface, public IPlayerIdentityInterface
 {
 	GENERATED_BODY()
 
@@ -65,15 +66,37 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Skills")
 	FOnSkillsUpdated OnSkillsUpdated;
 
+	
+
 protected:
 	virtual void BeginPlay() override;
 
 	// Domain Service Event Handlers
 	UFUNCTION()
-	void OnSkillLoadCompleted(int32 PlayerState);
+	void OnSkillLoadCompleted(const FGuid& PlayerGuid);
 
 	UFUNCTION()
-	void OnSkillOperationFailed(int32 PlayerState, const FString& Reason);
+	void OnSkillOperationFailed(const FGuid& PlayerGuid, const FString& Reason);
+
+public:
+	UFUNCTION(BlueprintCallable)
+	virtual FGuid GetPlayerGuid() const override {
+		try {
+			if (UserKey.IsValid()) {
+				return UserKey;
+			}
+		}
+		catch (...) {
+			UE_LOG(LogTemp, Error, TEXT("failed! Load Guid"));
+		}
+		return FGuid();
+	} 
+	UFUNCTION()
+	virtual void SetPlayerGuid(const FString& UserGuid) override {
+		FGuid::Parse(UserGuid, UserKey);
+	}
+
+protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="GAS")
 	TObjectPtr<UGGwaAbilitySystemComponent> ASC;
 	
@@ -93,4 +116,8 @@ protected:
 private:
 	UPROPERTY()
 	TObjectPtr<AGGwaCharacter> Character;
+
+	/* Caching for User identification */
+	UPROPERTY()
+	FGuid UserKey;
 };

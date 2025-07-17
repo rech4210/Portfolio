@@ -40,7 +40,7 @@ public:
 	 * @param PlayerId The player ID to load inventory for
 	 * @return Task that returns inventory domain data
 	 */
-	virtual UE::Tasks::TTask<FInventoryRepositoryResult> LoadInventoryByPlayerId(int32 PlayerId) = 0;
+	virtual UE::Tasks::TTask<FInventoryRepositoryResult> LoadInventoryByPlayerId(const FGuid& PlayerId) = 0;
 
 	/**
 	 * Save inventory domain data
@@ -56,7 +56,7 @@ public:
 	 * @return Task that completes when item is added
 	 */
 	virtual UE::Tasks::TTask<FInventoryRepositoryResult> AddItemByPlayerId(
-		int32 PlayerId, const FInventoryItemDTO& Item) = 0;
+		const FGuid& PlayerId, const FInventoryItemDTO& Item) = 0;
 
 	/**
 	 * Remove item from inventory by player ID
@@ -66,7 +66,7 @@ public:
 	 * @return Task that completes when item is removed
 	 */
 	virtual UE::Tasks::TTask<FInventoryRepositoryResult> RemoveItemByPlayerId(
-		int32 PlayerId, const FName& ItemID, int32 Quantity) = 0;
+		const FGuid& PlayerId, const FName& ItemID, int32 Quantity) = 0;
 
 	/**
 	 * @deprecated Use pure repository methods instead

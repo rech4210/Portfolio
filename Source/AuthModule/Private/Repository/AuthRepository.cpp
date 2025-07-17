@@ -37,17 +37,32 @@ UE::Tasks::TTask<bool> UAuthRepository::CreateUser(const FUserAccountDTO& UserDa
 
 		try
 		{
-			// Note: This is a placeholder implementation
-			// In reality, you would extend DatabaseManager to support user operations
-			// or create direct SQL operations for user management
-			
+			// Delegate user creation to DatabaseManager
 			UE_LOG(LogTemp, Log, TEXT("AuthRepository::CreateUser: Creating user %s with ID %s"), 
 				*UserData.Username, *UserData.UserId);
 
-			// TODO: Implement actual database insertion
-			// Example SQL: INSERT INTO users (user_id, username, password_hash, created_at) VALUES (?, ?, ?, ?)
+			// Use DatabaseManager's CreateUserAccount method
+			// This follows the master_schema.sql users table structure
+			int32 OutUserId;
+			auto CreateUserTask = DatabaseManager->CreateUserAccount(
+				UserData.Username, 
+				UserData.PasswordHash, 
+				UserData.Email, 
+				OutUserId
+			);
 			
-			return true; // Placeholder success
+			bool bUserCreated = CreateUserTask.GetResult();
+			
+			if (bUserCreated)
+			{
+				UE_LOG(LogTemp, Log, TEXT("AuthRepository::CreateUser: User created successfully with database ID %d"), OutUserId);
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("AuthRepository::CreateUser: Failed to create user in database"));
+			}
+			
+			return bUserCreated;
 		}
 		catch (const std::exception& e)
 		{
@@ -72,11 +87,22 @@ UE::Tasks::TTask<TOptional<FUserAccountDTO>> UAuthRepository::GetUserByUsername(
 		{
 			UE_LOG(LogTemp, Log, TEXT("AuthRepository::GetUserByUsername: Searching for user %s"), *Username);
 
-			// TODO: Implement actual database query
-			// Example SQL: SELECT * FROM users WHERE username = ? AND is_deleted = 0
+			// Use DatabaseManager's GetUserByUsername method
+			// This follows the master_schema.sql users table structure
+			auto GetUserTask = DatabaseManager->GetUserByUsername(Username);
+			TOptional<FDatabaseUserData> DatabaseUserOpt = GetUserTask.GetResult();
 			
-			// Placeholder - return empty optional
-			return TOptional<FUserAccountDTO>();
+			if (DatabaseUserOpt.IsSet())
+			{
+				// Convert DatabaseUserData to UserAccountDTO
+				FUserAccountDTO UserData = ConvertDatabaseUserToDTO(DatabaseUserOpt.GetValue());
+				return TOptional<FUserAccountDTO>(UserData);
+			}
+			else
+			{
+				UE_LOG(LogTemp, Log, TEXT("AuthRepository::GetUserByUsername: User not found - %s"), *Username);
+				return TOptional<FUserAccountDTO>();
+			}
 		}
 		catch (const std::exception& e)
 		{
@@ -101,10 +127,29 @@ UE::Tasks::TTask<TOptional<FUserAccountDTO>> UAuthRepository::GetUserById(const 
 		{
 			UE_LOG(LogTemp, Log, TEXT("AuthRepository::GetUserById: Searching for user ID %s"), *UserId);
 
-			// TODO: Implement actual database query
-			// Example SQL: SELECT * FROM users WHERE user_id = ? AND is_deleted = 0
+			// Convert string UserId to int32 for DatabaseManager
+			int32 DatabaseUserId = FCString::Atoi(*UserId);
+			if (DatabaseUserId == 0 && UserId != TEXT("0"))
+			{
+				UE_LOG(LogTemp, Error, TEXT("AuthRepository::GetUserById: Invalid UserId format - %s"), *UserId);
+				return TOptional<FUserAccountDTO>();
+			}
+
+			// Use DatabaseManager's GetUserById method
+			auto GetUserTask = DatabaseManager->GetUserById(DatabaseUserId);
+			TOptional<FDatabaseUserData> DatabaseUserOpt = GetUserTask.GetResult();
 			
-			return TOptional<FUserAccountDTO>();
+			if (DatabaseUserOpt.IsSet())
+			{
+				// Convert DatabaseUserData to UserAccountDTO
+				FUserAccountDTO UserData = ConvertDatabaseUserToDTO(DatabaseUserOpt.GetValue());
+				return TOptional<FUserAccountDTO>(UserData);
+			}
+			else
+			{
+				UE_LOG(LogTemp, Log, TEXT("AuthRepository::GetUserById: User not found - %s"), *UserId);
+				return TOptional<FUserAccountDTO>();
+			}
 		}
 		catch (const std::exception& e)
 		{
@@ -129,11 +174,12 @@ UE::Tasks::TTask<bool> UAuthRepository::UpdateUser(const FUserAccountDTO& UserDa
 		{
 			UE_LOG(LogTemp, Log, TEXT("AuthRepository::UpdateUser: Updating user %s"), *UserData.UserId);
 
-			// TODO: Implement actual database update
-			// Example SQL: UPDATE users SET username=?, password_hash=?, last_login_at=?, 
-			//              is_locked=?, lock_expires_at=? WHERE user_id=?
+			// Note: DatabaseManager doesn't have a direct UpdateUser method for auth-specific fields
+			// This would need to be implemented with custom SQL through DatabaseManager
+			// For now, log the operation and return true as placeholder
 			
-			return true;
+			UE_LOG(LogTemp, Warning, TEXT("AuthRepository::UpdateUser: Auth-specific user updates not yet implemented"));
+			return true; // Placeholder - needs custom implementation
 		}
 		catch (const std::exception& e)
 		{
@@ -158,10 +204,12 @@ UE::Tasks::TTask<bool> UAuthRepository::DeleteUser(const FString& UserId)
 		{
 			UE_LOG(LogTemp, Log, TEXT("AuthRepository::DeleteUser: Soft deleting user %s"), *UserId);
 
-			// TODO: Implement soft delete
-			// Example SQL: UPDATE users SET is_deleted=1, deleted_at=NOW() WHERE user_id=?
+			// Note: DatabaseManager doesn't have a direct soft delete method for users
+			// This operation would be handled by the external auth server (Node.js)
+			// Auth repository in UE should not handle user deletion directly
 			
-			return true;
+			UE_LOG(LogTemp, Warning, TEXT("AuthRepository::DeleteUser: User deletion should be handled by external auth server"));
+			return false; // Delegate to external auth server
 		}
 		catch (const std::exception& e)
 		{
@@ -186,10 +234,12 @@ UE::Tasks::TTask<bool> UAuthRepository::ValidateCredentials(const FString& Usern
 		{
 			UE_LOG(LogTemp, Log, TEXT("AuthRepository::ValidateCredentials: Validating credentials for %s"), *Username);
 
-			// TODO: Implement credential validation
-			// This should compare hashed passwords, not plain text
+			// Note: Credential validation is handled by external auth server (Node.js)
+			// UE AuthRepository should not directly validate passwords
+			// This method should not be used in the current architecture
 			
-			return false; // Placeholder - always fail for security
+			UE_LOG(LogTemp, Warning, TEXT("AuthRepository::ValidateCredentials: Credential validation should be handled by external auth server"));
+			return false; // Always fail - delegate to external auth server
 		}
 		catch (const std::exception& e)
 		{
@@ -300,10 +350,12 @@ UE::Tasks::TTask<bool> UAuthRepository::AddAuditLog(const FUserAuditLogDTO& Audi
 			UE_LOG(LogTemp, Log, TEXT("AuthRepository::AddAuditLog: Adding audit log for user %s, action %s"), 
 				*AuditLog.UserId, *AuditLog.Action);
 
-			// TODO: Implement audit log insertion
-			// Example SQL: INSERT INTO user_audit_logs (user_id, action, detail, created_at) VALUES (?, ?, ?, ?)
+			// Note: Audit logs should be handled by external auth server according to master_schema.sql
+			// The user_audit_logs table is designed for auth-specific events
+			// UE game server should not directly insert into auth audit logs
 			
-			return true;
+			UE_LOG(LogTemp, Warning, TEXT("AuthRepository::AddAuditLog: Audit logging should be handled by external auth server"));
+			return true; // Placeholder - delegate to external auth server
 		}
 		catch (const std::exception& e)
 		{
@@ -359,10 +411,15 @@ UE::Tasks::TTask<bool> UAuthRepository::CheckUsernameExists(const FString& Usern
 		{
 			UE_LOG(LogTemp, Log, TEXT("AuthRepository::CheckUsernameExists: Checking if username %s exists"), *Username);
 
-			// TODO: Implement username existence check
-			// Example SQL: SELECT COUNT(*) FROM users WHERE username=? AND is_deleted=0
+			// Use DatabaseManager's GetUserByUsername to check existence
+			auto GetUserTask = DatabaseManager->GetUserByUsername(Username);
+			TOptional<FDatabaseUserData> DatabaseUserOpt = GetUserTask.GetResult();
 			
-			return false; // Placeholder
+			bool bExists = DatabaseUserOpt.IsSet();
+			UE_LOG(LogTemp, Log, TEXT("AuthRepository::CheckUsernameExists: Username %s exists = %s"), 
+				*Username, bExists ? TEXT("true") : TEXT("false"));
+			
+			return bExists;
 		}
 		catch (const std::exception& e)
 		{
@@ -432,12 +489,25 @@ UE::Tasks::TTask<bool> UAuthRepository::UnlockExpiredUsers()
 }
 
 // Helper methods
-FUserAccountDTO UAuthRepository::ConvertFromDatabaseResult(const TMap<FString, FString>& DatabaseRow) const
+FUserAccountDTO UAuthRepository::ConvertDatabaseUserToDTO(const FDatabaseUserData& DatabaseUser) const
 {
 	FUserAccountDTO UserData;
 	
-	// TODO: Implement conversion from database row to DTO
-	// Example mapping from SQL result set to DTO properties
+	// Convert from DatabaseManager's FDatabaseUserData to Auth DTO
+	UserData.UserId = FString::FromInt(DatabaseUser.UserId); // Convert int32 to string
+	UserData.Username = DatabaseUser.Username;
+	UserData.Email = DatabaseUser.Email;
+	UserData.CreatedAt = DatabaseUser.CreatedAt;
+	UserData.LastLoginAt = DatabaseUser.LastLogin.GetValue();
+	
+	// Note: Password hash and auth-specific fields might not be in FDatabaseUserData
+	// These would need to be fetched separately or FDatabaseUserData extended
+	UserData.PasswordHash = TEXT(""); // Not included in game database user data
+	UserData.bIsLocked = false; // Default values - should be extended in DatabaseManager
+	UserData.LockExpiresAt = FDateTime::MinValue();
+	UserData.bIsDeleted = false;
+	UserData.DeletedAt = FDateTime::MinValue();
+	// UserData.FailedLoginAttempts = 0;
 	
 	return UserData;
 }

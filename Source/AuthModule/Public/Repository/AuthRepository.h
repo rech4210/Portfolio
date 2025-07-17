@@ -47,7 +47,7 @@ public:
 
 private:
 	// Helper methods for data conversion
-	FUserAccountDTO ConvertFromDatabaseResult(const TMap<FString, FString>& DatabaseRow) const;
+	FUserAccountDTO ConvertDatabaseUserToDTO(const FDatabaseUserData& DatabaseUser) const;
 	FUserAuditLogDTO ConvertAuditLogFromDatabaseResult(const TMap<FString, FString>& DatabaseRow) const;
 	FString ConvertDateTimeToString(const FDateTime& DateTime) const;
 	FDateTime ConvertStringToDateTime(const FString& DateTimeString) const;

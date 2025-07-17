@@ -2,13 +2,12 @@
 
 #include "SkillSubsystem.h"
 #include "DatabaseModule/Public/DatabaseManager.h"
-#include "Repositories/SkillConfigRepository.h"
-#include "Repositories/SkillStateRepository.h"
 #include "SkillRepository.h"
 #include "SkillDomainService.h"
 #include "Components/SkillComponent.h"
 #include "Data/SkillDataAsset.h"
 #include "GameFramework/PlayerState.h"
+#include "Interface/PlayerIdentityInterface.h"
 
 void USkillSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -61,12 +60,12 @@ USkillDomainService* USkillSubsystem::GetDomainService() {
 // Use Case Orchestration - App Layer Responsibilities Only
 // ============================================================================
 
-void USkillSubsystem::RequestRegisterSkill(APlayerState* PlayerState, USkillDataAsset* SkillData)
+void USkillSubsystem::RequestRegisterSkill(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, USkillDataAsset* SkillData)
 {
 	// 1. Network & Authority Validation (App Layer responsibility)
-	if (!PlayerState)
+	if (!PlayerIdentity)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerState for skill registration"));
+		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerIdentity for skill registration"));
 		return;
 	}
 
@@ -84,18 +83,18 @@ void USkillSubsystem::RequestRegisterSkill(APlayerState* PlayerState, USkillData
 
 	// 2. Transaction Boundary & Logging (App Layer responsibility)
 	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting skill registration transaction - Player: %s, Skill: %d"), 
-		*PlayerState->GetPlayerName(), SkillData ? SkillData->SkillID : -1);
+		*PlayerIdentity->GetPlayerGuid().ToString(), SkillData ? SkillData->SkillID : -1);
 
 	// 3. Domain Service Call (Delegate business logic)
-	DomainService->RegisterSkillToPlayer(PlayerState, SkillData);
+	DomainService->RegisterSkillToPlayer(PlayerIdentity, SkillData);
 }
 
-void USkillSubsystem::RequestUnregisterSkill(APlayerState* PlayerState, const FGuid& SlotId)
+void USkillSubsystem::RequestUnregisterSkill(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FGuid& SlotId)
 {
 	// 1. Network & Authority Validation
-	if (!PlayerState)
+	if (!PlayerIdentity)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerState for skill unregistration"));
+		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerIdentity for skill unregistration"));
 		return;
 	}
 
@@ -113,18 +112,18 @@ void USkillSubsystem::RequestUnregisterSkill(APlayerState* PlayerState, const FG
 
 	// 2. Transaction Boundary & Logging
 	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting skill unregistration transaction - Player: %s, SlotId: %s"), 
-		*PlayerState->GetPlayerName(), *SlotId.ToString());
+		*PlayerIdentity->GetPlayerGuid().ToString(), *SlotId.ToString());
 
 	// 3. Domain Service Call
-	DomainService->UnregisterSkillFromPlayer(PlayerState, SlotId);
+	DomainService->UnregisterSkillFromPlayer(PlayerIdentity, SlotId);
 }
 
-void USkillSubsystem::RequestSwapSkillSlots(APlayerState* PlayerState, const FGuid& SlotIdA, const FGuid& SlotIdB)
+void USkillSubsystem::RequestSwapSkillSlots(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FGuid& SlotIdA, const FGuid& SlotIdB)
 {
 	// 1. Network & Authority Validation
-	if (!PlayerState)
+	if (!PlayerIdentity)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerState for skill swap"));
+		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerIdentity for skill swap"));
 		return;
 	}
 
@@ -142,18 +141,18 @@ void USkillSubsystem::RequestSwapSkillSlots(APlayerState* PlayerState, const FGu
 
 	// 2. Transaction Boundary & Logging
 	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting skill swap transaction - Player: %s, SlotA: %s, SlotB: %s"), 
-		*PlayerState->GetPlayerName(), *SlotIdA.ToString(), *SlotIdB.ToString());
+		*PlayerIdentity->GetPlayerGuid().ToString(), *SlotIdA.ToString(), *SlotIdB.ToString());
 
 	// 3. Domain Service Call
-	DomainService->SwapSkillSlots(PlayerState, SlotIdA, SlotIdB);
+	DomainService->SwapSkillSlots(PlayerIdentity, SlotIdA, SlotIdB);
 }
 
-void USkillSubsystem::RequestLoadPlayerSkills(APlayerState* PlayerState)
+void USkillSubsystem::RequestLoadPlayerSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity)
 {
 	// 1. Network & Authority Validation
-	if (!PlayerState)
+	if (!PlayerIdentity)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerState for skill loading"));
+		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerIdentity for skill loading"));
 		return;
 	}
 
@@ -171,18 +170,18 @@ void USkillSubsystem::RequestLoadPlayerSkills(APlayerState* PlayerState)
 
 	// 2. Transaction Boundary & Logging
 	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting skill load transaction - Player: %s"), 
-		*PlayerState->GetPlayerName());
+		*PlayerIdentity->GetPlayerGuid().ToString());
 
 	// 3. Domain Service Call
-	DomainService->LoadSkills(PlayerState);
+	DomainService->LoadSkills(PlayerIdentity);
 }
 
-void USkillSubsystem::RequestSavePlayerSkills(APlayerState* PlayerState, const FSkillDomain& SkillData)
+void USkillSubsystem::RequestSavePlayerSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FSkillDomain& SkillData)
 {
 	// 1. Authority Validation
-	if (!PlayerState)
+	if (!PlayerIdentity)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerState for skill saving"));
+		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerIdentity for skill saving"));
 		return;
 	}
 
@@ -200,18 +199,18 @@ void USkillSubsystem::RequestSavePlayerSkills(APlayerState* PlayerState, const F
 
 	// 2. Transaction Boundary & Logging
 	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting skill save transaction - Player: %s"), 
-		*PlayerState->GetPlayerName());
+		*PlayerIdentity->GetPlayerGuid().ToString());
 
 	// 3. Domain Service Call
-	DomainService->SaveSkills(PlayerState, SkillData);
+	DomainService->SaveSkills(PlayerIdentity, SkillData);
 }
 
-void USkillSubsystem::RequestUpdateSkillCooldown(APlayerState* PlayerState, const FGuid& SlotId, const FDateTime& LastUsedTime, float RemainingCooldown)
+void USkillSubsystem::RequestUpdateSkillCooldown(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FGuid& SlotId, const FDateTime& LastUsedTime, float RemainingCooldown)
 {
 	// 1. Authority Validation
-	if (!PlayerState)
+	if (!PlayerIdentity)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerState for cooldown update"));
+		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerIdentity for cooldown update"));
 		return;
 	}
 
@@ -229,8 +228,8 @@ void USkillSubsystem::RequestUpdateSkillCooldown(APlayerState* PlayerState, cons
 
 	// 2. Transaction Boundary & Logging
 	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting cooldown update transaction - Player: %s, SlotId: %s"), 
-		*PlayerState->GetPlayerName(), *SlotId.ToString());
+		*PlayerIdentity->GetPlayerGuid().ToString(), *SlotId.ToString());
 
 	// 3. Domain Service Call
-	DomainService->UpdateSkillCooldown(PlayerState, SlotId, LastUsedTime, RemainingCooldown);
+	DomainService->UpdateSkillCooldown(PlayerIdentity, SlotId, LastUsedTime, RemainingCooldown);
 }

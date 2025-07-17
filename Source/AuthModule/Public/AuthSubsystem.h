@@ -12,6 +12,8 @@
 // Forward declarations
 struct FAuthRequestDTO;
 struct FAuthResponseDTO;
+class UAuthRepository;
+class UAuthDomainService;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnServerAuthenticationComplete, bool, bSuccess, const FString&, Token, const FString&, UserId);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnServerRegistrationComplete, bool, bSuccess, const FString&, Message);
@@ -28,13 +30,13 @@ class AUTHMODULE_API UAuthSubsystem : public UGameInstanceSubsystem
 
 private:
 	UPROPERTY()
-	class UAuthRepository* DefaultAuthRepository;
+	UAuthRepository* DefaultAuthRepository;
 
 	UPROPERTY()
 	TScriptInterface<IAuthRepositoryInterface> AuthRepositoryInterface;
 
 	UPROPERTY()
-	class UAuthDomainService* DomainService;
+	UAuthDomainService* DomainService;
 
 	// Node.js Auth Server Configuration
 	UPROPERTY(EditAnywhere, Category = "Auth Server")

@@ -6,21 +6,21 @@
 #include "SkillDomain.h"
 #include "UObject/Object.h"
 #include "Tasks/Task.h"
+#include "Interface/PlayerIdentityInterface.h"
 #include "SkillDomainService.generated.h"
 
 class USkillComponent;
 class ISkillRepositoryInterface;
-class APlayerState;
 class USkillDataAsset;
 struct FSkillSlotDTO;
 
 // Domain Events (발행: DomainService)
-DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSkillOperationSucceeded, int32 /* PlayerId */, const FString& /* Operation */);
-DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSkillOperationFailed, int32 /* PlayerId */, const FString& /* Reason */);
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnSkillLoadCompleted, int32 /* PlayerId */);
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnSkillSaveCompleted, int32 /* PlayerId */);
-DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSkillRegistered, int32 /* PlayerId */, const FSkillSlotDTO& /* SkillSlot */);
-DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSkillUnregistered, int32 /* PlayerId */, const FGuid& /* SlotId */);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSkillOperationSucceeded, const FGuid& /* PlayerGuid */, const FString& /* Operation */);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSkillOperationFailed, const FGuid& /* PlayerGuid */, const FString& /* Reason */);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnSkillLoadCompleted, const FGuid& /* PlayerGuid */);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnSkillSaveCompleted, const FGuid& /* PlayerGuid */);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSkillRegistered, const FGuid& /* PlayerGuid */, const FSkillSlotDTO& /* SkillSlot */);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSkillUnregistered, const FGuid& /* PlayerGuid */, const FGuid& /* SlotId */);
 
 /**
  * Domain Service for Skill operations
@@ -47,7 +47,7 @@ public:
 	 * @param PlayerState Target player state containing SkillComponent
 	 * @param SkillData Skill data to register
 	 */
-	void RegisterSkillToPlayer(APlayerState* PlayerState, USkillDataAsset* SkillData);
+	void RegisterSkillToPlayer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, USkillDataAsset* SkillData);
 
 	/**
 	 * Domain Service: Unregister skill from player's skill slots with full business logic
@@ -55,7 +55,7 @@ public:
 	 * @param PlayerState Target player state containing SkillComponent
 	 * @param SlotId Slot ID to unregister
 	 */
-	void UnregisterSkillFromPlayer(APlayerState* PlayerState, const FGuid& SlotId);
+	void UnregisterSkillFromPlayer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FGuid& SlotId);
 
 	/**
 	 * Domain Service: Swap skills between two slots with full business logic
@@ -64,7 +64,7 @@ public:
 	 * @param SlotIdA First slot ID
 	 * @param SlotIdB Second slot ID
 	 */
-	void SwapSkillSlots(APlayerState* PlayerState, const FGuid& SlotIdA, const FGuid& SlotIdB);
+	void SwapSkillSlots(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FGuid& SlotIdA, const FGuid& SlotIdB);
 
 	/**
 	 * Domain Service: Update skill cooldown state
@@ -74,14 +74,14 @@ public:
 	 * @param LastUsedTime When the skill was last used
 	 * @param RemainingCooldown Remaining cooldown time
 	 */
-	void UpdateSkillCooldown(APlayerState* PlayerState, const FGuid& SlotId, const FDateTime& LastUsedTime, float RemainingCooldown);
+	void UpdateSkillCooldown(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FGuid& SlotId, const FDateTime& LastUsedTime, float RemainingCooldown);
 
 	/**
 	 * Domain Service: Load player's skills from persistence
 	 * Triggers domain events for success/failure
 	 * @param PlayerState Target player state containing SkillComponent
 	 */
-	void LoadSkills(APlayerState* PlayerState);
+	void LoadSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity);
 
 	/**
 	 * Domain Service: Save player's current skill state
@@ -89,7 +89,7 @@ public:
 	 * @param PlayerState Target player state containing SkillComponent
 	 * @param SkillData The skill domain data to save
 	 */
-	void SaveSkills(APlayerState* PlayerState, const FSkillDomain& SkillData);
+	void SaveSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FSkillDomain& SkillData);
 
 	// Domain Events
 	FOnSkillOperationSucceeded OnSkillOperationSucceeded;
@@ -111,5 +111,5 @@ private:
 	 * @param OperationName The operation name for logging
 	 */
 	template<typename T>
-	void ExecuteWithEvents(UE::Tasks::TTask<T> RepositoryTask, int32 PlayerId, const FString& OperationName);
+	void ExecuteWithEvents(UE::Tasks::TTask<T> RepositoryTask, const FGuid& PlayerGuid, const FString& OperationName);
 };

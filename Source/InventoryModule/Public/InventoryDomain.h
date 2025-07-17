@@ -18,14 +18,14 @@ struct INVENTORYMODULE_API FInventoryDomain
 
 public:
 	UPROPERTY(BlueprintReadOnly)
-	int32 PlayerId = 0;
+	FGuid PlayerId;
 
 	UPROPERTY(BlueprintReadOnly)
 	TArray<FInventoryItemDTO> Items;
 
 	FInventoryDomain() = default;
 	
-	FInventoryDomain(int32 InPlayerId, const TArray<FInventoryItemDTO>& InItems)
+	FInventoryDomain(const FGuid& InPlayerId, const TArray<FInventoryItemDTO>& InItems)
 		: PlayerId(InPlayerId), Items(InItems)
 	{
 	}
@@ -33,7 +33,7 @@ public:
 	// Domain validation methods
 	bool IsValid() const 
 	{ 
-		return PlayerId > 0; 
+		return PlayerId.IsValid(); 
 	}
 
 	bool HasItem(const FName& ItemID) const

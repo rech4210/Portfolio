@@ -34,6 +34,7 @@ public class ServerModule : ModuleRules
                 "GameplayTags",
                 "ShopModule",
                 "OnlineSubsystem",
+                "AuthModule"
             }
         );
         if (Target.bBuildEditor)

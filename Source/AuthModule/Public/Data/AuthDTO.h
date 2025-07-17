@@ -23,6 +23,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "User")
 	FString PasswordHash;
 
+	UPROPERTY()
+	FString Email; // VARCHAR(100) NULLABLE - for future email verification
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "User")
 	FDateTime CreatedAt;
 
