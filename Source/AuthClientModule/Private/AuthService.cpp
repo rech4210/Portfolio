@@ -2,14 +2,12 @@
 #include "GameFramework/PlayerController.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
-
-// Forward declaration - include the actual header if available
-class AGGwaPlayerController;
+#include "GameSharedModule/Public/Interface/AuthRPCInterface.h"
 
 UAuthService::UAuthService()
 {
     // No longer needs direct server communication
-    // Will communicate through PlayerController RPCs
+    // Will communicate through AuthRPC interface
 }
 
 void UAuthService::RequestRegistration(const FString& Username, const FString& Password, FRegistrationDelegate OnResult)
@@ -23,26 +21,34 @@ void UAuthService::RequestRegistration(const FString& Username, const FString& P
         return;
     }
 
-    // Get PlayerController and call server RPC
+    // Get PlayerController and try to use AuthRPC interface
     if (UWorld* World = GetWorld())
     {
         if (APlayerController* PC = World->GetFirstPlayerController())
         {
-            // Cast to our custom PlayerController that has authentication RPCs
-            if (AGGwaPlayerController* GGwaPC = Cast<AGGwaPlayerController>(PC))
+            // Try to cast to AuthRPC interface
+            if (IAuthRPCInterface* AuthRPC = Cast<IAuthRPCInterface>(PC))
             {
-                // Store delegate for later callback
-                PendingRegistrationDelegate = OnResult;
-                
-                // Call Server RPC for registration
-                GGwaPC->Server_Register(Username, Password);
-                
-                UE_LOG(LogTemp, Log, TEXT("AuthService: Registration request sent to server"));
+                if (AuthRPC->IsAuthRPCAvailable())
+                {
+                    // Store delegate for later callback
+                    PendingRegistrationDelegate = OnResult;
+                    
+                    // Call interface method for registration
+                    AuthRPC->RequestServerRegistration(Username, Password);
+                    
+                    UE_LOG(LogTemp, Log, TEXT("AuthService: Registration request sent through AuthRPC interface"));
+                }
+                else
+                {
+                    UE_LOG(LogTemp, Error, TEXT("AuthService: AuthRPC interface not available"));
+                    OnResult.ExecuteIfBound(false, TEXT("Authentication service unavailable"));
+                }
             }
             else
             {
-                UE_LOG(LogTemp, Error, TEXT("AuthService: PlayerController is not AGGwaPlayerController"));
-                OnResult.ExecuteIfBound(false, TEXT("Invalid PlayerController type"));
+                UE_LOG(LogTemp, Error, TEXT("AuthService: PlayerController does not implement AuthRPC interface"));
+                OnResult.ExecuteIfBound(false, TEXT("Authentication interface not supported"));
             }
         }
         else
@@ -69,26 +75,34 @@ void UAuthService::RequestLogin(const FString& Username, const FString& Password
         return;
     }
 
-    // Get PlayerController and call server RPC
+    // Get PlayerController and try to use AuthRPC interface
     if (UWorld* World = GetWorld())
     {
         if (APlayerController* PC = World->GetFirstPlayerController())
         {
-            // Cast to our custom PlayerController that has authentication RPCs
-            if (AGGwaPlayerController* GGwaPC = Cast<AGGwaPlayerController>(PC))
+            // Try to cast to AuthRPC interface
+            if (IAuthRPCInterface* AuthRPC = Cast<IAuthRPCInterface>(PC))
             {
-                // Store delegate for later callback
-                PendingLoginDelegate = OnResult;
-                
-                // Call Server RPC for login
-                GGwaPC->Server_Login(Username, Password);
-                
-                UE_LOG(LogTemp, Log, TEXT("AuthService: Login request sent to server"));
+                if (AuthRPC->IsAuthRPCAvailable())
+                {
+                    // Store delegate for later callback
+                    PendingLoginDelegate = OnResult;
+                    
+                    // Call interface method for login
+                    AuthRPC->RequestServerLogin(Username, Password);
+                    
+                    UE_LOG(LogTemp, Log, TEXT("AuthService: Login request sent through AuthRPC interface"));
+                }
+                else
+                {
+                    UE_LOG(LogTemp, Error, TEXT("AuthService: AuthRPC interface not available"));
+                    OnResult.ExecuteIfBound(false, TEXT(""), TEXT("Authentication service unavailable"));
+                }
             }
             else
             {
-                UE_LOG(LogTemp, Error, TEXT("AuthService: PlayerController is not AGGwaPlayerController"));
-                OnResult.ExecuteIfBound(false, TEXT(""), TEXT("Invalid PlayerController type"));
+                UE_LOG(LogTemp, Error, TEXT("AuthService: PlayerController does not implement AuthRPC interface"));
+                OnResult.ExecuteIfBound(false, TEXT(""), TEXT("Authentication interface not supported"));
             }
         }
         else

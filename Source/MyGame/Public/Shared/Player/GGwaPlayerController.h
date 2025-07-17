@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Components/SkillComponent.h"
 #include "GameFramework/PlayerController.h"
+#include "Interface/AuthRPCInterface.h"
 #include "Shared/AI/EnemySystemCore/FBossDataStruct.h"
 #include "Shared/Utill/FRewardRequest.h"
 #include "GGwaPlayerController.generated.h"
@@ -31,7 +32,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBossDataReceived, const FBossData
  * Uses preprocessor directives to separate client-only code from server builds
  */
 UCLASS(Blueprintable)
-class MYGAME_API AGGwaPlayerController : public APlayerController {
+class MYGAME_API AGGwaPlayerController : public APlayerController, public IAuthRPCInterface {
 	GENERATED_BODY()
 public:
 	AGGwaPlayerController();
@@ -61,10 +62,19 @@ public:
 	UFUNCTION(Server, Reliable)
 	void Server_InitiateReward(const FString& PlayerId, const FRewardRequest& Payload);
 
+	
+
+	
 	// ============================================================================
 	// AUTHENTICATION RPC METHODS
 	// ============================================================================
 
+	// RPC Call Interface DI
+	virtual void RequestServerRegistration(const FString& Username, const FString& Password) override;
+	virtual void RequestServerLogin(const FString& Username, const FString& Password) override;
+	virtual void Request_Client_TravelToGameWorld(const FString& MapURL) override;
+	virtual bool IsAuthRPCAvailable() const override;
+	
 	/**
 	 * Server RPC: Register new user account
 	 * Called from client UI, processed by AuthSubsystem
@@ -135,11 +145,11 @@ private:
 
 	void OnLoginSuccess(const FString& Token);
 	void OnLoginFailure(const FString& ErrorReason);
-#endif
 
-	// UFUNCTION(Client, Reliable)
-	// void Client_OnRewardResult(bool bOK, const FRewardData& Data, const FString& Error);
-	// virtual void Client_NotifySkillActivated(int32 SkillId);
+public:
+
+private:
+#endif
 };
 
 

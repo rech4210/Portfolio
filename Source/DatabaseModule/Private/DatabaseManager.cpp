@@ -1498,335 +1498,43 @@ bool UDatabaseJsonHelper::DeserializeCharacterExtendedData(const FString& JsonDa
 }
 
 // ============================================================================
-// DATABASE USER AUTHENTICATION METHODS
+// DATABASE USER AUTHENTICATION METHODS - DEPRECATED
 // ============================================================================
+// NOTE: These methods are DEPRECATED and should not be used in production
+// Reason: User authentication should be handled by external auth service
 
-UE::Tasks::TTask<bool> UDatabaseManager::CreateUserAccount(const FString& Username, const FString& PasswordHash, const FString& Email, int32& OutUserId)
+UE::Tasks::TTask<bool> UDatabaseManager::CreateUserAccount(const FString& Username, const FString& PasswordHash, const FString& Email, FString& OutUserId)
 {
-	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, Username, PasswordHash, Email, &OutUserId]() -> bool
-	{
-		if (!Impl)
-		{
-			UE_LOG(LogTemp, Error, TEXT("DatabaseManager not initialized"));
-			return false;
-		}
-
-		sql::Connection* Con = Impl->GetConnection();
-		if (!Con)
-		{
-			UE_LOG(LogTemp, Error, TEXT("Failed to get database connection"));
-			return false;
-		}
-
-		// RAII connection management
-		ON_SCOPE_EXIT
-		{
-			if (Con)
-			{
-				Impl->ReturnConnection(Con);
-			}
-		};
-
-		try
-		{
-			TUniquePtr<sql::PreparedStatement> Stmt(Con->prepareStatement(
-				"INSERT INTO users (username, password_hash, email, created_at, is_active, failed_login_attempts) "
-				"VALUES (?, ?, ?, NOW(), 1, 0)"
-			));
-			Stmt->setString(1, TCHAR_TO_UTF8(*Username));
-			Stmt->setString(2, TCHAR_TO_UTF8(*PasswordHash));
-			
-			// Handle empty email as NULL
-			if (Email.IsEmpty())
-			{
-				Stmt->setNull(3, sql::DataType::VARCHAR);
-			}
-			else
-			{
-				Stmt->setString(3, TCHAR_TO_UTF8(*Email));
-			}
-
-			int32 AffectedRows = Stmt->executeUpdate();
-			if (AffectedRows > 0)
-			{
-				// Get the generated user ID
-				TUniquePtr<sql::Statement> LastIdStmt(Con->createStatement());
-				TUniquePtr<sql::ResultSet> Res(LastIdStmt->executeQuery("SELECT LAST_INSERT_ID() as user_id"));
-				if (Res->next())
-				{
-					OutUserId = Res->getInt("user_id");
-				}
-				return true;
-			}
-			return false;
-		}
-		catch (const sql::SQLException& e)
-		{
-			UE_LOG(LogTemp, Error, TEXT("CreateUserAccount failed: %hs"), e.what());
-			return false;
-		}
-	});
+	// DEPRECATED: User account creation should be handled by external auth service (Node.js)
+	// This method violates separation of concerns in microservice architecture
+	// Game server should only handle game-related data, not user account management
+	UE_LOG(LogTemp, Warning, TEXT("DEPRECATED: UDatabaseManager::CreateUserAccount should not be used. Use external auth service."));
+	OutUserId = TEXT("");
+	return UE::Tasks::MakeCompletedTask<bool>(false);
 }
 
 UE::Tasks::TTask<TOptional<FDatabaseUserData>> UDatabaseManager::GetUserByUsername(const FString& Username)
 {
-	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, Username]() -> TOptional<FDatabaseUserData>
-	{
-		TOptional<FDatabaseUserData> Result;
-
-		if (!Impl)
-		{
-			UE_LOG(LogTemp, Error, TEXT("DatabaseManager not initialized"));
-			return Result;
-		}
-
-		sql::Connection* Con = Impl->GetConnection();
-		if (!Con)
-		{
-			UE_LOG(LogTemp, Error, TEXT("Failed to get database connection"));
-			return Result;
-		}
-
-		// RAII connection management
-		ON_SCOPE_EXIT
-		{
-			if (Con)
-			{
-				Impl->ReturnConnection(Con);
-			}
-		};
-
-		try
-		{
-			TUniquePtr<sql::PreparedStatement> Stmt(Con->prepareStatement(
-				"SELECT user_id, username, password_hash, email, created_at, last_login, is_active, failed_login_attempts, account_locked_until "
-				"FROM users WHERE username = ?"
-			));
-			Stmt->setString(1, TCHAR_TO_UTF8(*Username));
-
-			TUniquePtr<sql::ResultSet> Res(Stmt->executeQuery());
-			if (Res->next())
-			{
-				FDatabaseUserData UserData;
-				UserData.UserId = Res->getInt("user_id");
-				UserData.Username = UTF8_TO_TCHAR(Res->getString("username").c_str());
-				UserData.PasswordHash = UTF8_TO_TCHAR(Res->getString("password_hash").c_str());
-				
-				// Handle nullable email field
-				if (!Res->isNull("email"))
-				{
-					UserData.Email = UTF8_TO_TCHAR(Res->getString("email").c_str());
-				}
-				
-				// Convert SQL timestamps to FDateTime (placeholder implementation)
-				UserData.CreatedAt = FDateTime::Now();
-				
-				if (!Res->isNull("last_login"))
-				{
-					UserData.LastLogin = FDateTime::Now();
-				}
-
-				if (!Res->isNull("account_locked_until"))
-				{
-					UserData.AccountLockedUntil = FDateTime::Now();
-				}
-
-				UserData.bIsActive = Res->getBoolean("is_active");
-				UserData.FailedLoginAttempts = Res->getInt("failed_login_attempts");
-
-				Result = UserData;
-			}
-		}
-		catch (const sql::SQLException& e)
-		{
-			UE_LOG(LogTemp, Error, TEXT("GetUserByUsername failed: %hs"), e.what());
-		}
-
-		return Result;
-	});
+	// DEPRECATED: User account queries should be handled by external auth service
+	// Game server should only work with verified user IDs from JWT tokens
+	UE_LOG(LogTemp, Warning, TEXT("DEPRECATED: UDatabaseManager::GetUserByUsername should not be used. Use external auth service."));
+	return UE::Tasks::MakeCompletedTask<TOptional<FDatabaseUserData>>(TOptional<FDatabaseUserData>());
 }
 
-UE::Tasks::TTask<TOptional<FDatabaseUserData>> UDatabaseManager::GetUserById(int32 UserId)
+UE::Tasks::TTask<TOptional<FDatabaseUserData>> UDatabaseManager::GetUserById(const FString& UserId)
 {
-	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, UserId]() -> TOptional<FDatabaseUserData>
-	{
-		TOptional<FDatabaseUserData> Result;
-
-		if (!Impl)
-		{
-			UE_LOG(LogTemp, Error, TEXT("DatabaseManager not initialized"));
-			return Result;
-		}
-
-		sql::Connection* Con = Impl->GetConnection();
-		if (!Con)
-		{
-			UE_LOG(LogTemp, Error, TEXT("Failed to get database connection"));
-			return Result;
-		}
-
-		// RAII connection management
-		ON_SCOPE_EXIT
-		{
-			if (Con)
-			{
-				Impl->ReturnConnection(Con);
-			}
-		};
-
-		try
-		{
-			TUniquePtr<sql::PreparedStatement> Stmt(Con->prepareStatement(
-				"SELECT user_id, username, password_hash, email, created_at, last_login, is_active, failed_login_attempts, account_locked_until "
-				"FROM users WHERE user_id = ?"
-			));
-			Stmt->setInt(1, UserId);
-
-			TUniquePtr<sql::ResultSet> Res(Stmt->executeQuery());
-			if (Res->next())
-			{
-				FDatabaseUserData UserData;
-				UserData.UserId = Res->getInt("user_id");
-				UserData.Username = UTF8_TO_TCHAR(Res->getString("username").c_str());
-				UserData.PasswordHash = UTF8_TO_TCHAR(Res->getString("password_hash").c_str());
-				
-				// Handle nullable email field
-				if (!Res->isNull("email"))
-				{
-					UserData.Email = UTF8_TO_TCHAR(Res->getString("email").c_str());
-				}
-				
-				// Convert SQL timestamps to FDateTime (placeholder implementation)
-				UserData.CreatedAt = FDateTime::Now();
-
-				if (!Res->isNull("last_login"))
-				{
-					UserData.LastLogin = FDateTime::Now();
-				}
-
-				if (!Res->isNull("account_locked_until"))
-				{
-					UserData.AccountLockedUntil = FDateTime::Now();
-				}
-
-				UserData.bIsActive = Res->getBoolean("is_active");
-				UserData.FailedLoginAttempts = Res->getInt("failed_login_attempts");
-
-				Result = UserData;
-			}
-		}
-		catch (const sql::SQLException& e)
-		{
-			UE_LOG(LogTemp, Error, TEXT("GetUserById failed: %hs"), e.what());
-		}
-
-		return Result;
-	});
+	// DEPRECATED: User account queries should be handled by external auth service
+	// Game server should only work with verified user IDs from JWT tokens for game data queries
+	UE_LOG(LogTemp, Warning, TEXT("DEPRECATED: UDatabaseManager::GetUserById should not be used. Use external auth service."));
+	return UE::Tasks::MakeCompletedTask<TOptional<FDatabaseUserData>>(TOptional<FDatabaseUserData>());
 }
 
 UE::Tasks::TTask<bool> UDatabaseManager::UpdateUserAccount(const FDatabaseUserData& UserData)
 {
-	return WithTransaction([UserData](sql::Connection* Con) -> bool
-	{
-		try
-		{
-			TUniquePtr<sql::PreparedStatement> Stmt(Con->prepareStatement(
-				"UPDATE users SET password_hash = ?, email = ?, last_login = ?, is_active = ?, "
-				"failed_login_attempts = ?, account_locked_until = ? WHERE user_id = ?"
-			));
-
-			Stmt->setString(1, TCHAR_TO_UTF8(*UserData.PasswordHash));
-			
-			// Handle nullable email field
-			if (UserData.Email.IsEmpty())
-			{
-				Stmt->setNull(2, sql::DataType::VARCHAR);
-			}
-			else
-			{
-				Stmt->setString(2, TCHAR_TO_UTF8(*UserData.Email));
-			}
-			
-			if (UserData.LastLogin.IsSet())
-			{
-				Stmt->setString(3, TCHAR_TO_UTF8(*UserData.LastLogin.GetValue().ToIso8601()));
-			}
-			else
-			{
-				Stmt->setNull(3, sql::DataType::TIMESTAMP);
-			}
-
-			Stmt->setBoolean(4, UserData.bIsActive);
-			Stmt->setInt(5, UserData.FailedLoginAttempts);
-
-			if (UserData.AccountLockedUntil.IsSet())
-			{
-				Stmt->setString(6, TCHAR_TO_UTF8(*UserData.AccountLockedUntil.GetValue().ToIso8601()));
-			}
-			else
-			{
-				Stmt->setNull(6, sql::DataType::TIMESTAMP);
-			}
-
-			Stmt->setInt(7, UserData.UserId);
-
-			int32 AffectedRows = Stmt->executeUpdate();
-			return AffectedRows > 0;
-		}
-		catch (const sql::SQLException& e)
-		{
-			UE_LOG(LogTemp, Error, TEXT("UpdateUserAccount failed: %hs"), e.what());
-			return false;
-		}
-	}, TEXT("Database/UpdateUser"));
-}
-
-UE::Tasks::TTask<bool> UDatabaseManager::AddUserAuditLog(int32 UserId, const FString& Action, const FString& Details, const FString& IpAddress)
-{
-	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, UserId, Action, Details, IpAddress]() -> bool
-	{
-		if (!Impl)
-		{
-			UE_LOG(LogTemp, Error, TEXT("DatabaseManager not initialized"));
-			return false;
-		}
-
-		sql::Connection* Con = Impl->GetConnection();
-		if (!Con)
-		{
-			UE_LOG(LogTemp, Error, TEXT("Failed to get database connection"));
-			return false;
-		}
-
-		// RAII connection management
-		ON_SCOPE_EXIT
-		{
-			if (Con)
-			{
-				Impl->ReturnConnection(Con);
-			}
-		};
-
-		try
-		{
-			TUniquePtr<sql::PreparedStatement> Stmt(Con->prepareStatement(
-				"INSERT INTO user_audit_logs (user_id, action, details, ip_address, created_at) "
-				"VALUES (?, ?, ?, ?, NOW())"
-			));
-			Stmt->setInt(1, UserId);
-			Stmt->setString(2, TCHAR_TO_UTF8(*Action));
-			Stmt->setString(3, TCHAR_TO_UTF8(*Details));
-			Stmt->setString(4, TCHAR_TO_UTF8(*IpAddress));
-
-			int32 AffectedRows = Stmt->executeUpdate();
-			return AffectedRows > 0;
-		}
-		catch (const sql::SQLException& e)
-		{
-			UE_LOG(LogTemp, Error, TEXT("AddUserAuditLog failed: %hs"), e.what());
-			return false;
-		}
-	});
+	// DEPRECATED: User account updates should be handled by external auth service
+	// Game server should not manage user account lifecycle
+	UE_LOG(LogTemp, Warning, TEXT("DEPRECATED: UDatabaseManager::UpdateUserAccount should not be used. Use external auth service."));
+	return UE::Tasks::MakeCompletedTask<bool>(false);
 }
 
 FString UDatabaseJsonHelper::SerializeSkillData(const TMap<FString, FString>& SkillProperties)

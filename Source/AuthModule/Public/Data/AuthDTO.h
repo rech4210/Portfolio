@@ -7,6 +7,7 @@
 /**
  * Data Transfer Object for User Account Information
  * Used for transferring user data between layers
+ * Compatible with FDatabaseUserData and master_schema.sql users table
  */
 USTRUCT(BlueprintType)
 struct AUTHMODULE_API FUserAccountDTO : public FTableRowBase
@@ -15,46 +16,51 @@ struct AUTHMODULE_API FUserAccountDTO : public FTableRowBase
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "User")
-	FString UserId;
+	FString UserId; // CHAR(36) - GUID format
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "User")
-	FString Username;
+	FString Username; // VARCHAR(30)
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "User")
-	FString PasswordHash;
-
-	UPROPERTY()
-	FString Email; // VARCHAR(100) NULLABLE - for future email verification
+	FString PasswordHash; // VARCHAR(255) - Note: Should not be exposed in client
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "User")
-	FDateTime CreatedAt;
+	FString Email; // For external auth server only - not in game database
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "User")
-	FDateTime LastLoginAt;
+	FDateTime CreatedAt; // DATETIME(3)
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "User")
-	bool bIsLocked = false;
+	FDateTime LastLoginAt; // DATETIME(3) NULL
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "User")
-	FDateTime LockExpiresAt;
+	bool bIsLocked = false; // TINYINT(1)
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "User")
-	bool bIsDeleted = false;
+	FDateTime LockExpiresAt; // DATETIME(3) NULL
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "User")
-	FDateTime DeletedAt;
+	bool bIsDeleted = false; // TINYINT(1)
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "User")
+	FDateTime DeletedAt; // DATETIME(3) NULL
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "User")
+	int32 FailedLoginAttempts = 0; // Track failed login attempts for security
 
 	FUserAccountDTO()
 	{
 		UserId = TEXT("");
 		Username = TEXT("");
 		PasswordHash = TEXT("");
+		Email = TEXT("");
 		CreatedAt = FDateTime::Now();
 		LastLoginAt = FDateTime::MinValue();
 		bIsLocked = false;
 		LockExpiresAt = FDateTime::MinValue();
 		bIsDeleted = false;
 		DeletedAt = FDateTime::MinValue();
+		FailedLoginAttempts = 0;
 	}
 };
 

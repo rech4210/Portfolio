@@ -21,7 +21,8 @@ public class AuthModule : ModuleRules
 			"DatabaseModule",
 			"HTTP",
 			"Json",
-			"JsonUtilities"
+			"JsonUtilities",
+			"GameSharedModule"
 		});
 	}
 }

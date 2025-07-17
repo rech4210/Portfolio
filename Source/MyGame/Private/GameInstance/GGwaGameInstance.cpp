@@ -26,7 +26,7 @@ void UGGwaGameInstance::HandleMapLoading() {
 	if (IsDedicatedServerInstance() || GetWorld()->GetNetMode()==NM_DedicatedServer)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("서버 인스턴스입니다. MainMap으로 이동합니다."));
-		GetWorld()->ServerTravel(TEXT("/Game/Map/ThirdPersonMap?listen"));
+		GetWorld()->ServerTravel(GetGameWorldURL());
 	}
 	else
 	{

@@ -3,15 +3,13 @@
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Repository/AuthRepositoryInterface.h"
-#include "Domain/AuthDomainService.h"
-#include "HttpModule.h"
 #include "Interfaces/IHttpRequest.h"
+#include "Data/AuthDTO.h"
+#include "Domain/AuthDomainService.h"
 #include "Interfaces/IHttpResponse.h"
+#include "HttpModule.h"
 #include "AuthSubsystem.generated.h"
 
-// Forward declarations
-struct FAuthRequestDTO;
-struct FAuthResponseDTO;
 class UAuthRepository;
 class UAuthDomainService;
 
@@ -129,6 +127,7 @@ private:
 	void LogSecurityEvent(const FString& Event, const FString& Details) const;
 	FString CreateAuthRequestJson(const FAuthRequestDTO& Request) const;
 	bool ParseAuthResponseJson(const FString& ResponseBody, FAuthResponseDTO& OutResponse) const;
+	bool ParseDetailedErrorMessage(const FString& ResponseBody, FString& OutErrorMessage);
 
 	// Game Data Loading after successful authentication
 	void LoadGameDataForUser(const FString& UserId, class APlayerController* PlayerController);

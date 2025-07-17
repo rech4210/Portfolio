@@ -34,36 +34,39 @@ struct DATABASEMODULE_API FDatabaseUserData
 	GENERATED_BODY()
 
 	UPROPERTY()
-	int32 UserId; // INT AUTO_INCREMENT PRIMARY KEY
+	FString UserId; // CHAR(36) PRIMARY KEY - GUID format
 
 	UPROPERTY()
-	FString Username; // VARCHAR(50) UNIQUE
+	FString Username; // VARCHAR(30) UNIQUE
 
 	UPROPERTY()
 	FString PasswordHash; // VARCHAR(255)
 
 	UPROPERTY()
-	FString Email; // VARCHAR(100) NULLABLE - for future email verification
+	FDateTime CreatedAt; // DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3)
 
 	UPROPERTY()
-	FDateTime CreatedAt; // DATETIME DEFAULT CURRENT_TIMESTAMP
+	TOptional<FDateTime> LastLoginAt; // DATETIME(3) NULL
 
 	UPROPERTY()
-	TOptional<FDateTime> LastLogin; // DATETIME NULLABLE
+	bool bIsLocked; // TINYINT(1) DEFAULT 0
 
 	UPROPERTY()
-	bool bIsActive; // BOOLEAN DEFAULT TRUE
+	TOptional<FDateTime> LockExpiresAt; // DATETIME(3) NULL
 
 	UPROPERTY()
-	int32 FailedLoginAttempts; // INT DEFAULT 0
+	bool bIsDeleted; // TINYINT(1) DEFAULT 0
 
 	UPROPERTY()
-	TOptional<FDateTime> AccountLockedUntil; // DATETIME NULLABLE
+	TOptional<FDateTime> DeletedAt; // DATETIME(3) NULL
 
 	FDatabaseUserData()
-		: UserId(0)
-		, bIsActive(true)
-		, FailedLoginAttempts(0)
+		: UserId(TEXT(""))
+		, Username(TEXT(""))
+		, PasswordHash(TEXT(""))
+		, CreatedAt(FDateTime::Now())
+		, bIsLocked(false)
+		, bIsDeleted(false)
 	{}
 };
 
@@ -594,60 +597,50 @@ public:
 	UE::Tasks::TTask<bool> UpdateShopItemPrice(int32 ShopID, int32 ItemID, float NewPrice);
 
 	// ============================================================================
-	// USER AUTHENTICATION METHODS
+	// USER AUTHENTICATION METHODS - DEPRECATED
 	// ============================================================================
+	// NOTE: These methods are DEPRECATED and should not be used in production
+	// Reason: User authentication should be handled by external auth service (Node.js)
+	// The game server should only handle game-related data, not user account management
+	// Use external auth service for: registration, login, password management, account locks
+	// Game server responsibility: character data, inventory, skills, shop data only
 
 	/**
-	 * Create a new user account in the database
-	 * @param Username The username for the new account
-	 * @param PasswordHash The hashed password
-	 * @param Email The email address (optional, can be empty)
-	 * @param OutUserId Reference to store the generated user ID
-	 * @return Task that completes when user is created
+	 * DEPRECATED: Create a new user account in the database
+	 * @deprecated Use external auth service (Node.js) for user account creation
+	 * This method violates separation of concerns in microservice architecture
 	 */
-	UE::Tasks::TTask<bool> CreateUserAccount(const FString& Username, const FString& PasswordHash, const FString& Email, int32& OutUserId);
+	UE_DEPRECATED(5.0, "User account creation should be handled by external auth service")
+	UE::Tasks::TTask<bool> CreateUserAccount(const FString& Username, const FString& PasswordHash, const FString& Email, FString& OutUserId);
 
 	/**
-	 * Get user account by username
-	 * @param Username The username to search for
-	 * @return Task that returns user data if found
+	 * DEPRECATED: Get user account by username
+	 * @deprecated Use external auth service for user account queries
+	 * Game server should only query by verified user ID from JWT token
 	 */
+	UE_DEPRECATED(5.0, "User account queries should be handled by external auth service")
 	UE::Tasks::TTask<TOptional<FDatabaseUserData>> GetUserByUsername(const FString& Username);
 
 	/**
-	 * Get user account by user ID
-	 * @param UserId The user ID to search for
-	 * @return Task that returns user data if found
+	 * DEPRECATED: Get user account by user ID
+	 * @deprecated Use external auth service for user account queries
+	 * Game server should only work with verified user IDs from JWT tokens
 	 */
-	UE::Tasks::TTask<TOptional<FDatabaseUserData>> GetUserById(int32 UserId);
+	UE_DEPRECATED(5.0, "User account queries should be handled by external auth service")
+	UE::Tasks::TTask<TOptional<FDatabaseUserData>> GetUserById(const FString& UserId);
 
 	/**
-	 * Update user account information
-	 * @param UserData The user data to update
-	 * @return Task that completes when user is updated
+	 * DEPRECATED: Update user account information
+	 * @deprecated Use external auth service for user account updates
 	 */
+	UE_DEPRECATED(5.0, "User account updates should be handled by external auth service")
 	UE::Tasks::TTask<bool> UpdateUserAccount(const FDatabaseUserData& UserData);
 
 	/**
-	 * Soft delete user account (mark as inactive)
-	 * @param UserId The user ID to delete
-	 * @return Task that completes when user is deleted
-	 */
-	UE::Tasks::TTask<bool> DeleteUserAccount(int32 UserId);
-
-	/**
-	 * Check if a username already exists
-	 * @param Username The username to check
-	 * @return Task that returns true if username exists
-	 */
-	UE::Tasks::TTask<bool> CheckUsernameExists(const FString& Username);
-
-	/**
-	 * Lock user account with expiration time
-	 * @param UserId The user ID to lock
 	 * @param ExpiresAt When the lock should expire
 	 * @return Task that completes when user is locked
 	 */
+	
 	UE::Tasks::TTask<bool> LockUserAccount(int32 UserId, const FDateTime& ExpiresAt);
 
 	/**
@@ -688,8 +681,6 @@ public:
 	 * @param IpAddress The IP address of the user
 	 * @return Task that completes when log is added
 	 */
-	UE::Tasks::TTask<bool> AddUserAuditLog(int32 UserId, const FString& Action, const FString& Details, const FString& IpAddress);
-
 	/**
 	 * Get audit logs for a specific user
 	 * @param UserId The user ID to get logs for

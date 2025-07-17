@@ -1,11 +1,10 @@
 #include "AuthSubsystem.h"
-#include "Data/AuthDTO.h"
 #include "Repository/AuthRepository.h"
-#include "Domain/AuthDomainService.h"
 #include "DatabaseModule/Public/DatabaseManager.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
-#include "GameFramework/PlayerController.h"
+#include "GameSharedModule/Public/Interface/AuthRPCInterface.h"
+#include "GameFramework/PlayerController.h" 
 #include "Json.h"
 #include "JsonUtilities.h"
 #include "HttpModule.h"
@@ -13,9 +12,8 @@
 #include "Interfaces/IHttpResponse.h"
 #include "Tasks/Task.h"
 #include "Async/Async.h"
+#include "Interface/AuthRPCInterface.h"
 
-// Forward declaration for PlayerController
-class AGGwaPlayerController;
 
 void UAuthSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -380,7 +378,8 @@ void UAuthSubsystem::OnAuthenticationResponse(FHttpRequestPtr Request, FHttpResp
 {
 	if (!bWasSuccessful || !Response.IsValid())
 	{
-		UE_LOG(LogTemp, Error, TEXT("AuthSubsystem: Authentication request failed"));
+		UE_LOG(LogTemp, Error, TEXT("AuthSubsystem: Authentication request failed - Network error"));
+		LogSecurityEvent(TEXT("authentication_network_error"), TEXT("HTTP request failed"));
 		BroadcastAuthenticationResult(false, TEXT(""), TEXT(""), RequestingController);
 		return;
 	}
@@ -389,43 +388,167 @@ void UAuthSubsystem::OnAuthenticationResponse(FHttpRequestPtr Request, FHttpResp
 	const FString ResponseBody = Response->GetContentAsString();
 
 	UE_LOG(LogTemp, Log, TEXT("AuthSubsystem: Authentication response received - Code: %d"), ResponseCode);
+	UE_LOG(LogTemp, VeryVerbose, TEXT("AuthSubsystem: Response body: %s"), *ResponseBody);
 
-	if (ResponseCode == 200) // OK
+	// Handle specific response codes following JWT server (app.js) patterns
+	switch (ResponseCode)
 	{
-		// Parse success response
-		FAuthResponseDTO AuthResponse;
-		if (ParseAuthResponseJson(ResponseBody, AuthResponse) && AuthResponse.bIsSuccess)
+		case 200:
 		{
-			LogSecurityEvent(TEXT("authentication_success"), 
-				FString::Printf(TEXT("UserId: %s"), *AuthResponse.UserId));
+			// Success - parse JWT token and user data
+			FAuthResponseDTO AuthResponse;
+			if (ParseAuthResponseJson(ResponseBody, AuthResponse) && AuthResponse.bIsSuccess)
+			{
+				LogSecurityEvent(TEXT("authentication_success"), 
+					FString::Printf(TEXT("UserId: %s"), *AuthResponse.UserId));
 
-			// Load game data for authenticated user
-			LoadGameDataForUser(AuthResponse.UserId, RequestingController);
+				// Load game data for authenticated user
+				LoadGameDataForUser(AuthResponse.UserId, RequestingController);
+				
+				BroadcastAuthenticationResult(true, AuthResponse.Token, AuthResponse.UserId, RequestingController);
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("AuthSubsystem: Failed to parse authentication response"));
+				LogSecurityEvent(TEXT("authentication_parse_error"), TEXT("Failed to parse successful response"));
+				BroadcastAuthenticationResult(false, TEXT(""), TEXT(""), RequestingController);
+			}
+			break;
+		}
+		
+		case 400:
+		{
+			// Bad Request - missing or invalid fields (following app.js validation)
+			FString ErrorMessage = TEXT("Invalid request format");
+			ParseDetailedErrorMessage(ResponseBody, ErrorMessage);
 			
-			BroadcastAuthenticationResult(true, AuthResponse.Token, AuthResponse.UserId, RequestingController);
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("AuthSubsystem: Failed to parse authentication response"));
+			LogSecurityEvent(TEXT("authentication_bad_request"), 
+				FString::Printf(TEXT("Code: %d, Message: %s"), ResponseCode, *ErrorMessage));
 			BroadcastAuthenticationResult(false, TEXT(""), TEXT(""), RequestingController);
+			break;
 		}
-	}
-	else
-	{
-		// Parse error response
-		FString ErrorMessage = TEXT("Authentication failed");
 		
-		TSharedPtr<FJsonObject> JsonObject;
-		TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ResponseBody);
-		
-		if (FJsonSerializer::Deserialize(Reader, JsonObject) && JsonObject.IsValid())
+		case 401:
 		{
-			JsonObject->TryGetStringField(TEXT("message"), ErrorMessage);
+			// Unauthorized - invalid credentials with failed attempt tracking
+			FString ErrorMessage = TEXT("Invalid username or password");
+			FString DetailedError;
+			
+			if (ParseDetailedErrorMessage(ResponseBody, DetailedError))
+			{
+				ErrorMessage = DetailedError;
+				
+				// Check for remaining attempts information from JWT server
+				TSharedPtr<FJsonObject> JsonObject;
+				TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ResponseBody);
+				
+				if (FJsonSerializer::Deserialize(Reader, JsonObject) && JsonObject.IsValid())
+				{
+					int32 RemainingAttempts;
+					if (JsonObject->TryGetNumberField(TEXT("remainingAttempts"), RemainingAttempts))
+					{
+						if (RemainingAttempts > 0)
+						{
+							ErrorMessage += FString::Printf(TEXT(" (%d attempts remaining)"), RemainingAttempts);
+						}
+						else
+						{
+							ErrorMessage += TEXT(" (Account will be locked on next failed attempt)");
+						}
+					}
+				}
+			}
+			
+			LogSecurityEvent(TEXT("authentication_invalid_credentials"), 
+				FString::Printf(TEXT("Code: %d, Message: %s"), ResponseCode, *ErrorMessage));
+			BroadcastAuthenticationResult(false, TEXT(""), TEXT(""), RequestingController);
+			break;
 		}
-
-		LogSecurityEvent(TEXT("authentication_failed"), FString::Printf(TEXT("Code: %d, Message: %s"), ResponseCode, *ErrorMessage));
-		BroadcastAuthenticationResult(false, TEXT(""), TEXT(""), RequestingController);
+		
+		case 403:
+		{
+			// Forbidden - account disabled or locked (following app.js account status checks)
+			FString ErrorMessage = TEXT("Account access denied");
+			FString DetailedError;
+			
+			if (ParseDetailedErrorMessage(ResponseBody, DetailedError))
+			{
+				ErrorMessage = DetailedError;
+				
+				// Extract lock expiration time if available
+				TSharedPtr<FJsonObject> JsonObject;
+				TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ResponseBody);
+				
+				if (FJsonSerializer::Deserialize(Reader, JsonObject) && JsonObject.IsValid())
+				{
+					FString LockExpiresAt;
+					if (JsonObject->TryGetStringField(TEXT("lockExpiresAt"), LockExpiresAt))
+					{
+						ErrorMessage += FString::Printf(TEXT(" (Locked until: %s)"), *LockExpiresAt);
+					}
+				}
+			}
+			
+			LogSecurityEvent(TEXT("authentication_account_locked_or_disabled"), 
+				FString::Printf(TEXT("Code: %d, Message: %s"), ResponseCode, *ErrorMessage));
+			BroadcastAuthenticationResult(false, TEXT(""), TEXT(""), RequestingController);
+			break;
+		}
+		
+		case 429:
+		{
+			// Too Many Requests - rate limiting from JWT server
+			FString ErrorMessage = TEXT("Too many login attempts. Please try again later.");
+			ParseDetailedErrorMessage(ResponseBody, ErrorMessage);
+			
+			LogSecurityEvent(TEXT("authentication_rate_limited"), 
+				FString::Printf(TEXT("Code: %d, Message: %s"), ResponseCode, *ErrorMessage));
+			BroadcastAuthenticationResult(false, TEXT(""), TEXT(""), RequestingController);
+			break;
+		}
+		
+		case 500:
+		{
+			// Internal Server Error
+			FString ErrorMessage = TEXT("Authentication server error");
+			ParseDetailedErrorMessage(ResponseBody, ErrorMessage);
+			
+			LogSecurityEvent(TEXT("authentication_server_error"), 
+				FString::Printf(TEXT("Code: %d, Message: %s"), ResponseCode, *ErrorMessage));
+			BroadcastAuthenticationResult(false, TEXT(""), TEXT(""), RequestingController);
+			break;
+		}
+		
+		default:
+		{
+			// Unexpected response code
+			FString ErrorMessage = FString::Printf(TEXT("Unexpected server response: %d"), ResponseCode);
+			ParseDetailedErrorMessage(ResponseBody, ErrorMessage);
+			
+			LogSecurityEvent(TEXT("authentication_unexpected_response"), 
+				FString::Printf(TEXT("Code: %d, Message: %s"), ResponseCode, *ErrorMessage));
+			BroadcastAuthenticationResult(false, TEXT(""), TEXT(""), RequestingController);
+			break;
+		}
 	}
+}
+
+bool UAuthSubsystem::ParseDetailedErrorMessage(const FString& ResponseBody, FString& OutErrorMessage)
+{
+	TSharedPtr<FJsonObject> JsonObject;
+	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ResponseBody);
+	
+	if (FJsonSerializer::Deserialize(Reader, JsonObject) && JsonObject.IsValid())
+	{
+		FString Message;
+		if (JsonObject->TryGetStringField(TEXT("message"), Message) && !Message.IsEmpty())
+		{
+			OutErrorMessage = Message;
+			return true;
+		}
+	}
+	
+	return false;
 }
 
 void UAuthSubsystem::OnTokenVerificationResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful, const FString& UserId)
@@ -525,41 +648,98 @@ bool UAuthSubsystem::ParseAuthResponseJson(const FString& ResponseBody, FAuthRes
 		return false;
 	}
 
-	// Check if response indicates success
+	// Check if response indicates success (following app.js structure)
 	bool bSuccess = false;
-	if (!JsonObject->TryGetBoolField(TEXT("success"), bSuccess) || !bSuccess)
+	if (!JsonObject->TryGetBoolField(TEXT("success"), bSuccess))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("AuthSubsystem::ParseAuthResponseJson: Auth server returned failure"));
+		UE_LOG(LogTemp, Warning, TEXT("AuthSubsystem::ParseAuthResponseJson: No success field in response"));
 		return false;
 	}
 
-	// Extract JWT token
+	if (!bSuccess)
+	{
+		// Handle various failure cases from JWT server
+		FString ErrorMessage;
+		JsonObject->TryGetStringField(TEXT("message"), ErrorMessage);
+		
+		// Check for specific error types from app.js
+		if (ErrorMessage.Contains(TEXT("Account is disabled")))
+		{
+			OutResponse.ErrorCode = 403; // Forbidden
+			OutResponse.ErrorMessage = TEXT("Account is disabled");
+		}
+		else if (ErrorMessage.Contains(TEXT("Account is locked")))
+		{
+			OutResponse.ErrorCode = 403; // Forbidden  
+			OutResponse.ErrorMessage = TEXT("Account is locked");
+			
+			// Extract lock expiration if available
+			FString LockExpiresAt;
+			if (JsonObject->TryGetStringField(TEXT("lockExpiresAt"), LockExpiresAt))
+			{
+				OutResponse.ErrorMessage += FString::Printf(TEXT(" until %s"), *LockExpiresAt);
+			}
+		}
+		else if (ErrorMessage.Contains(TEXT("Invalid username or password")))
+		{
+			OutResponse.ErrorCode = 401; // Unauthorized
+			OutResponse.ErrorMessage = TEXT("Invalid credentials");
+			
+			// Check for remaining attempts info
+			int32 RemainingAttempts;
+			if (JsonObject->TryGetNumberField(TEXT("remainingAttempts"), RemainingAttempts))
+			{
+				if (RemainingAttempts > 0)
+				{
+					OutResponse.ErrorMessage += FString::Printf(TEXT(" (%d attempts remaining)"), RemainingAttempts);
+				}
+			}
+		}
+		else
+		{
+			OutResponse.ErrorCode = 400; // Bad Request
+			OutResponse.ErrorMessage = ErrorMessage.IsEmpty() ? TEXT("Authentication failed") : ErrorMessage;
+		}
+		
+		OutResponse.bIsSuccess = false;
+		OutResponse.Token = TEXT("");
+		OutResponse.UserId = TEXT("");
+		
+		UE_LOG(LogTemp, Warning, TEXT("AuthSubsystem::ParseAuthResponseJson: Auth failed - %s"), *OutResponse.ErrorMessage);
+		return false;
+	}
+
+	// Success case - extract JWT token
 	FString Token;
 	if (!JsonObject->TryGetStringField(TEXT("token"), Token) || Token.IsEmpty())
 	{
-		UE_LOG(LogTemp, Error, TEXT("AuthSubsystem::ParseAuthResponseJson: No token found in response"));
+		UE_LOG(LogTemp, Error, TEXT("AuthSubsystem::ParseAuthResponseJson: No token found in successful response"));
 		return false;
 	}
 
-	// Extract user information from the response
+	// Extract user information from the response (following app.js structure)
 	const TSharedPtr<FJsonObject>* UserObject;
 	if (JsonObject->TryGetObjectField(TEXT("user"), UserObject) && UserObject->IsValid())
 	{
-		FString UserId;
-		if ((*UserObject)->TryGetStringField(TEXT("userId"), UserId))
+		FString UserId, Username, Email;
+		if ((*UserObject)->TryGetStringField(TEXT("userId"), UserId) &&
+			(*UserObject)->TryGetStringField(TEXT("username"), Username))
 		{
+			(*UserObject)->TryGetStringField(TEXT("email"), Email); // Email is optional
+			
 			OutResponse.bIsSuccess = true;
 			OutResponse.Token = Token;
 			OutResponse.UserId = UserId;
 			OutResponse.ErrorCode = 0;
 			OutResponse.ErrorMessage = TEXT("");
 			
-			UE_LOG(LogTemp, Log, TEXT("AuthSubsystem::ParseAuthResponseJson: Successfully parsed JWT response for user %s"), *UserId);
+			UE_LOG(LogTemp, Log, TEXT("AuthSubsystem::ParseAuthResponseJson: Successfully parsed JWT response for user %s (username: %s)"), 
+				*UserId, *Username);
 			return true;
 		}
 	}
 
-	UE_LOG(LogTemp, Error, TEXT("AuthSubsystem::ParseAuthResponseJson: Failed to extract user ID from response"));
+	UE_LOG(LogTemp, Error, TEXT("AuthSubsystem::ParseAuthResponseJson: Failed to extract user information from successful response"));
 	return false;
 }
 
@@ -596,11 +776,10 @@ void UAuthSubsystem::OnGameDataLoaded(bool bSuccess, const FString& UserId, APla
 		// Trigger ClientTravel to move player to game world
 		// Note: This is moved from GGwaPlayerController to avoid duplication
 		FString GameWorldURL = TEXT("/Game/Maps/ThirdPersonMap?listen"); // Replace with your actual game world map
-		
 		// Use ClientTravel to move to game world
-		if (AGGwaPlayerController* GGwaPC = Cast<AGGwaPlayerController>(PlayerController))
+		if (IAuthRPCInterface* AuthRPC = Cast<IAuthRPCInterface>(PlayerController))
 		{
-			GGwaPC->Client_TravelToGameWorld(GameWorldURL);
+			AuthRPC->Request_Client_TravelToGameWorld(GameWorldURL);
 		}
 		else
 		{
@@ -614,11 +793,10 @@ void UAuthSubsystem::OnGameDataLoaded(bool bSuccess, const FString& UserId, APla
 	{
 		UE_LOG(LogTemp, Error, TEXT("AuthSubsystem: Failed to load game data for user %s"), *UserId);
 		
-		// Handle data loading failure - disconnect the player
 		if (PlayerController->GetNetConnection())
 		{
-			PlayerController->GetNetConnection()->Close();
-			UE_LOG(LogTemp, Warning, TEXT("AuthSubsystem: Disconnected player %s due to data loading failure"), *UserId);
+			FText Reason = FText::FromString(TEXT("Failed to load game data. Please try again later."));
+			PlayerController->ClientReturnToMainMenuWithTextReason_Implementation(Reason);
 		}
 	}
 }

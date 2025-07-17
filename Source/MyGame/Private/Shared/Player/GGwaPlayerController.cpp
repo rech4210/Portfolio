@@ -86,6 +86,22 @@ void AGGwaPlayerController::AcknowledgePossession(class APawn* PossessedPawn) {
 	}
 }
 
+void AGGwaPlayerController::RequestServerRegistration(const FString& Username, const FString& Password) {
+	Server_Register_Implementation(Username, Password);
+}
+
+void AGGwaPlayerController::RequestServerLogin(const FString& Username, const FString& Password) {
+	Server_Login_Implementation(Username, Password);
+}
+
+void AGGwaPlayerController::Request_Client_TravelToGameWorld(const FString& MapURL) {
+	Client_TravelToGameWorld_Implementation(MapURL);
+}
+
+bool AGGwaPlayerController::IsAuthRPCAvailable() const {
+	return true;
+}
+
 
 void AGGwaPlayerController::Server_InitiateReward_Implementation(const FString& PlayerId, const FRewardRequest& Payload) {
 	IServerLogicBridge* Bridge = Cast<IServerLogicBridge>(GetWorld()->GetSubsystem<UWorldSubsystem>());
@@ -192,6 +208,24 @@ void AGGwaPlayerController::Client_OnLoginResult_Implementation(bool bSuccess, c
 	// or handle any UI updates here
 #endif
 }
+
+// 현재 Login ->AuthService -> AuthRPC->RequestServerLogin(GGwaPlayercontroller (서버))Subsystem -> Subsystem RequestServerAuthentication
+// SendAuthenticationToAuthServer
+// HttpRequest->OnProcessRequestComplete().BindUObject(this, &UAuthSubsystem::OnAuthenticationResponse, RequestingController);
+//
+// LoadGameDataForUser
+// OnGameDataLoaded
+// AuthRPC->Request_Client_TravelToGameWorld(GameWorldURL);
+//
+// void AGGwaPlayerController::Client_TravelToGameWorld_Implementation(const FString& MapURL)
+// {
+// 	UE_LOG(LogTemp, Log, TEXT("AGGwaPlayerController::Client_TravelToGameWorld: Traveling to %s"), *MapURL);
+//
+// #if !UE_SERVER
+// 	// Perform client travel to the game world
+// 	ClientTravel(MapURL, TRAVEL_Relative);
+// #endif
+// }
 
 void AGGwaPlayerController::Client_TravelToGameWorld_Implementation(const FString& MapURL)
 {

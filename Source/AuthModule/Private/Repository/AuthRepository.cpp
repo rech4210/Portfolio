@@ -42,27 +42,12 @@ UE::Tasks::TTask<bool> UAuthRepository::CreateUser(const FUserAccountDTO& UserDa
 				*UserData.Username, *UserData.UserId);
 
 			// Use DatabaseManager's CreateUserAccount method
-			// This follows the master_schema.sql users table structure
-			int32 OutUserId;
-			auto CreateUserTask = DatabaseManager->CreateUserAccount(
-				UserData.Username, 
-				UserData.PasswordHash, 
-				UserData.Email, 
-				OutUserId
-			);
+			// Note: DatabaseManager auth methods are deprecated - this should use external auth service
+			UE_LOG(LogTemp, Warning, TEXT("AuthRepository::CreateUser: Using deprecated DatabaseManager method"));
 			
-			bool bUserCreated = CreateUserTask.GetResult();
-			
-			if (bUserCreated)
-			{
-				UE_LOG(LogTemp, Log, TEXT("AuthRepository::CreateUser: User created successfully with database ID %d"), OutUserId);
-			}
-			else
-			{
-				UE_LOG(LogTemp, Error, TEXT("AuthRepository::CreateUser: Failed to create user in database"));
-			}
-			
-			return bUserCreated;
+			// Since DatabaseManager auth methods are deprecated, return false to indicate 
+			// that user creation should be handled by external auth service
+			return false;
 		}
 		catch (const std::exception& e)
 		{
@@ -88,21 +73,12 @@ UE::Tasks::TTask<TOptional<FUserAccountDTO>> UAuthRepository::GetUserByUsername(
 			UE_LOG(LogTemp, Log, TEXT("AuthRepository::GetUserByUsername: Searching for user %s"), *Username);
 
 			// Use DatabaseManager's GetUserByUsername method
-			// This follows the master_schema.sql users table structure
-			auto GetUserTask = DatabaseManager->GetUserByUsername(Username);
-			TOptional<FDatabaseUserData> DatabaseUserOpt = GetUserTask.GetResult();
+			// Note: DatabaseManager auth methods are deprecated - this should use external auth service
+			UE_LOG(LogTemp, Warning, TEXT("AuthRepository::GetUserByUsername: Using deprecated DatabaseManager method"));
 			
-			if (DatabaseUserOpt.IsSet())
-			{
-				// Convert DatabaseUserData to UserAccountDTO
-				FUserAccountDTO UserData = ConvertDatabaseUserToDTO(DatabaseUserOpt.GetValue());
-				return TOptional<FUserAccountDTO>(UserData);
-			}
-			else
-			{
-				UE_LOG(LogTemp, Log, TEXT("AuthRepository::GetUserByUsername: User not found - %s"), *Username);
-				return TOptional<FUserAccountDTO>();
-			}
+			// Since DatabaseManager auth methods are deprecated, return empty result to indicate 
+			// that user queries should be handled by external auth service
+			return TOptional<FUserAccountDTO>();
 		}
 		catch (const std::exception& e)
 		{
@@ -128,28 +104,12 @@ UE::Tasks::TTask<TOptional<FUserAccountDTO>> UAuthRepository::GetUserById(const 
 			UE_LOG(LogTemp, Log, TEXT("AuthRepository::GetUserById: Searching for user ID %s"), *UserId);
 
 			// Convert string UserId to int32 for DatabaseManager
-			int32 DatabaseUserId = FCString::Atoi(*UserId);
-			if (DatabaseUserId == 0 && UserId != TEXT("0"))
-			{
-				UE_LOG(LogTemp, Error, TEXT("AuthRepository::GetUserById: Invalid UserId format - %s"), *UserId);
-				return TOptional<FUserAccountDTO>();
-			}
-
-			// Use DatabaseManager's GetUserById method
-			auto GetUserTask = DatabaseManager->GetUserById(DatabaseUserId);
-			TOptional<FDatabaseUserData> DatabaseUserOpt = GetUserTask.GetResult();
+			// Since we now use string UserIds, we need to pass the string directly
+			// but DatabaseManager deprecated methods expect different parameter types
+			UE_LOG(LogTemp, Warning, TEXT("AuthRepository::GetUserById: Using deprecated DatabaseManager method"));
 			
-			if (DatabaseUserOpt.IsSet())
-			{
-				// Convert DatabaseUserData to UserAccountDTO
-				FUserAccountDTO UserData = ConvertDatabaseUserToDTO(DatabaseUserOpt.GetValue());
-				return TOptional<FUserAccountDTO>(UserData);
-			}
-			else
-			{
-				UE_LOG(LogTemp, Log, TEXT("AuthRepository::GetUserById: User not found - %s"), *UserId);
-				return TOptional<FUserAccountDTO>();
-			}
+			// For now, since DatabaseManager auth methods are deprecated, return empty result
+			return TOptional<FUserAccountDTO>();
 		}
 		catch (const std::exception& e)
 		{
@@ -192,62 +152,22 @@ UE::Tasks::TTask<bool> UAuthRepository::UpdateUser(const FUserAccountDTO& UserDa
 
 UE::Tasks::TTask<bool> UAuthRepository::DeleteUser(const FString& UserId)
 {
-	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, UserId]() -> bool
-	{
-		if (!DatabaseManager)
-		{
-			UE_LOG(LogTemp, Error, TEXT("AuthRepository::DeleteUser: DatabaseManager is null"));
-			return false;
-		}
-
-		try
-		{
-			UE_LOG(LogTemp, Log, TEXT("AuthRepository::DeleteUser: Soft deleting user %s"), *UserId);
-
-			// Note: DatabaseManager doesn't have a direct soft delete method for users
-			// This operation would be handled by the external auth server (Node.js)
-			// Auth repository in UE should not handle user deletion directly
-			
-			UE_LOG(LogTemp, Warning, TEXT("AuthRepository::DeleteUser: User deletion should be handled by external auth server"));
-			return false; // Delegate to external auth server
-		}
-		catch (const std::exception& e)
-		{
-			UE_LOG(LogTemp, Error, TEXT("AuthRepository::DeleteUser: Database error - %hs"), 
-				e.what());
-			return false;
-		}
-	});
+	// DEPRECATED: User deletion should be handled by external auth server (Node.js)
+	// This violates the separation of concerns - game server should not manage user accounts
+	// User account lifecycle is the responsibility of the authentication service
+	// Reason for deprecation: DDD principle violation - auth concerns should not be in game repository
+	UE_LOG(LogTemp, Warning, TEXT("DEPRECATED: AuthRepository::DeleteUser should not be used. Delegate to external auth server."));
+	return UE::Tasks::MakeCompletedTask<bool>(false);
 }
 
 UE::Tasks::TTask<bool> UAuthRepository::ValidateCredentials(const FString& Username, const FString& PasswordHash)
 {
-	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, Username, PasswordHash]() -> bool
-	{
-		if (!DatabaseManager)
-		{
-			UE_LOG(LogTemp, Error, TEXT("AuthRepository::ValidateCredentials: DatabaseManager is null"));
-			return false;
-		}
-
-		try
-		{
-			UE_LOG(LogTemp, Log, TEXT("AuthRepository::ValidateCredentials: Validating credentials for %s"), *Username);
-
-			// Note: Credential validation is handled by external auth server (Node.js)
-			// UE AuthRepository should not directly validate passwords
-			// This method should not be used in the current architecture
-			
-			UE_LOG(LogTemp, Warning, TEXT("AuthRepository::ValidateCredentials: Credential validation should be handled by external auth server"));
-			return false; // Always fail - delegate to external auth server
-		}
-		catch (const std::exception& e)
-		{
-			UE_LOG(LogTemp, Error, TEXT("AuthRepository::ValidateCredentials: Database error - %hsp"), 
-				e.what());
-			return false;
-		}
-	});
+	// DEPRECATED: Credential validation should be handled by external auth server (Node.js)
+	// This method violates DDD principles as AuthRepository should not handle authentication logic
+	// UE game server should only handle game-related data, not authentication validation
+	// Reason for deprecation: Separation of concerns - auth logic belongs to dedicated auth service
+	UE_LOG(LogTemp, Warning, TEXT("DEPRECATED: AuthRepository::ValidateCredentials should not be used. Delegate to external auth server."));
+	return UE::Tasks::MakeCompletedTask<bool>(false);
 }
 
 UE::Tasks::TTask<bool> UAuthRepository::UpdateLastLogin(const FString& UserId)
@@ -488,27 +408,15 @@ UE::Tasks::TTask<bool> UAuthRepository::UnlockExpiredUsers()
 	});
 }
 
-// Helper methods
+// Helper methods - DEPRECATED
 FUserAccountDTO UAuthRepository::ConvertDatabaseUserToDTO(const FDatabaseUserData& DatabaseUser) const
 {
+	// DEPRECATED: This conversion should not be needed as auth data should come from external service
+	// Game server should only work with verified user IDs from JWT tokens, not raw auth data
+	UE_LOG(LogTemp, Warning, TEXT("DEPRECATED: AuthRepository::ConvertDatabaseUserToDTO should not be used"));
+	
 	FUserAccountDTO UserData;
-	
-	// Convert from DatabaseManager's FDatabaseUserData to Auth DTO
-	UserData.UserId = FString::FromInt(DatabaseUser.UserId); // Convert int32 to string
-	UserData.Username = DatabaseUser.Username;
-	UserData.Email = DatabaseUser.Email;
-	UserData.CreatedAt = DatabaseUser.CreatedAt;
-	UserData.LastLoginAt = DatabaseUser.LastLogin.GetValue();
-	
-	// Note: Password hash and auth-specific fields might not be in FDatabaseUserData
-	// These would need to be fetched separately or FDatabaseUserData extended
-	UserData.PasswordHash = TEXT(""); // Not included in game database user data
-	UserData.bIsLocked = false; // Default values - should be extended in DatabaseManager
-	UserData.LockExpiresAt = FDateTime::MinValue();
-	UserData.bIsDeleted = false;
-	UserData.DeletedAt = FDateTime::MinValue();
-	// UserData.FailedLoginAttempts = 0;
-	
+	// Return empty data since this conversion violates architectural boundaries
 	return UserData;
 }
 
