@@ -137,6 +137,7 @@ private:
 
 	// hover 대상을 적으로 제어하기 위해, enemy base character 제공할것.
 	TWeakObjectPtr<ABossCharacter> LastHoveredEnemy;
+#endif
 
 #ifdef CLIENTMODULE_API
 	// AuthService is only available in client builds with ClientModule
@@ -147,9 +148,67 @@ private:
 	void OnLoginFailure(const FString& ErrorReason);
 
 public:
+	// ============================================================================
+	// LOGIN UI FUNCTIONALITY (Integrated from LoginPlayerController)
+	// ============================================================================
+
+	/**
+	 * Request user registration through AuthService (Client-side)
+	 * Called from UI, delegates to AuthService which uses RPC interface
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Authentication")
+	void RequestRegistration(const FString& Username, const FString& Password);
+
+	/**
+	 * Request user login through AuthService (Client-side) 
+	 * Called from UI, delegates to AuthService which uses RPC interface
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Authentication")
+	void RequestLogin(const FString& Username, const FString& Password);
+
+	/**
+	 * Connect to game server with authentication token
+	 * Performs ClientTravel with token as URL parameter
+	 */
+	// UFUNCTION(BlueprintCallable, Category = "Authentication")
+	// void ConnectToGameServer(const FString& ServerAddress, const FString& Token);
+
+	// ============================================================================
+	// Blueprint Events for UI Integration
+	// ============================================================================
+
+	/**
+	 * Blueprint event for registration result
+	 * Called when server responds to registration request
+	 */
+	UFUNCTION(BlueprintImplementableEvent, Category = "Authentication")
+	void OnRegistrationResult_BP(bool bSuccess, const FString& Message);
+
+	/**
+	 * Blueprint event for login result
+	 * Called when server responds to login request
+	 */
+	UFUNCTION(BlueprintImplementableEvent, Category = "Authentication")
+	void OnLoginResult_BP(bool bSuccess, const FString& Token, const FString& UserId);
 
 private:
-#endif
+	// ============================================================================
+	// AuthService Callbacks (Client-side)
+	// ============================================================================
+
+	/**
+	 * Called by AuthService when registration completes
+	 */
+	UFUNCTION()
+	void OnRegistrationComplete(bool bSuccess, const FString& Message);
+
+	/**
+	 * Called by AuthService when login completes
+	 */
+	UFUNCTION()
+	void OnLoginComplete(bool bSuccess, const FString& Token, const FString& UserId);
+
+private:
 };
 
 

@@ -20,6 +20,8 @@ class SERVERMODULE_API AGGwaGameMode : public ABaseGameMode
 public:
 	AGGwaGameMode();
 
+	virtual void BeginPlay() override;
+
 	void Server_SkillLog(FString Name, const FString& SkillName, FVector SkillLocation);
 
 	virtual void PostLogin(APlayerController* NewPlayer) override;

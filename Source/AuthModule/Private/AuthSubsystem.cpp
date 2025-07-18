@@ -403,6 +403,7 @@ void UAuthSubsystem::OnAuthenticationResponse(FHttpRequestPtr Request, FHttpResp
 					FString::Printf(TEXT("UserId: %s"), *AuthResponse.UserId));
 
 				// Load game data for authenticated user
+				//토큰을 미리 저장해둘까?
 				LoadGameDataForUser(AuthResponse.UserId, RequestingController);
 				
 				BroadcastAuthenticationResult(true, AuthResponse.Token, AuthResponse.UserId, RequestingController);

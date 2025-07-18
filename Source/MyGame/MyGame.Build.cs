@@ -1,5 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
+using System.IO;
 using UnrealBuildTool;
 
 public class MyGame : ModuleRules
@@ -31,7 +32,6 @@ public class MyGame : ModuleRules
 			"AuthModule"
 		});
 
-		
 		//Circular dependency
 		// if (Target.Type == TargetType.Client || Target.Type == TargetType.Editor)
 		// {

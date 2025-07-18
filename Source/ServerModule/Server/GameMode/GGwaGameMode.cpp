@@ -15,7 +15,8 @@
 #include "ShopSubsystem.h"
 #include "SkillSubsystem.h"
 #include "MyGame/Public/Shared/Player/GGwaPlayerState.h"
-
+#include "MyGame/Public/Shared/GameState/GGwaGameState.h"
+#include "MyGame/Public/Shared/Cache/UIConfigCacheActor.h"
 
 #include "Utill/LocalDataBaseLoader.h"
 
@@ -29,6 +30,8 @@ AGGwaGameMode::AGGwaGameMode()
 	// 서비스 인스턴스 생성
 	AuthVerificationService = NewObject<UAuthVerificationService>(this, TEXT("AuthVerificationService"));
 
+	// Set custom GameState class
+	GameStateClass = AGGwaGameState::StaticClass();
 
 	// TODO: EquipmentRepository의 구체적인 구현 클래스로 초기화해야 합니다.
 	// EquipmentRepository = NewObject<UEquipmentRepositoryImpl>(this, TEXT("EquipmentRepository")); 
@@ -73,6 +76,52 @@ void AGGwaGameMode::PreLogin(const FString& Options, const FString& Address, con
 	}
 	
 
+}
+
+void AGGwaGameMode::BeginPlay()
+{
+	Super::BeginPlay();
+
+	// Server only: Create and configure UI Cache Actor
+	if (HasAuthority())
+	{
+		UE_LOG(LogTemp, Log, TEXT("GGwaGameMode::BeginPlay - Creating UI Cache Actor on server"));
+
+		// Spawn the UI configuration cache actor
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = this;
+		SpawnParams.Instigator = nullptr;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+		AUIConfigCacheActor* CacheActor = GetWorld()->SpawnActor<AUIConfigCacheActor>(
+			AUIConfigCacheActor::StaticClass(), 
+			FVector::ZeroVector, 
+			FRotator::ZeroRotator, 
+			SpawnParams);
+
+		if (CacheActor)
+		{
+			UE_LOG(LogTemp, Log, TEXT("GGwaGameMode::BeginPlay - UI Cache Actor spawned successfully"));
+
+			// Initialize default mappings
+			CacheActor->InitializeDefaultMappings();
+
+			// Set cache actor in GameState
+			if (AGGwaGameState* GGwaGameState = GetGameState<AGGwaGameState>())
+			{
+				GGwaGameState->SetCacheActor(CacheActor);
+				UE_LOG(LogTemp, Log, TEXT("GGwaGameMode::BeginPlay - Cache Actor assigned to GameState"));
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("GGwaGameMode::BeginPlay - Failed to get GGwaGameState"));
+			}
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("GGwaGameMode::BeginPlay - Failed to spawn UI Cache Actor"));
+		}
+	}
 }
 
 void AGGwaGameMode::Tick(float DeltaSeconds) {

@@ -18,15 +18,13 @@
 #include "MyGame/Public/Shared/GAS/GGwaAttributeSet.h"
 
 // These headers are from ClientModule - only include if available
-PRAGMA_DISABLE_DEPRECATION_WARNINGS
-// Conditionally include client module headers
 #ifdef CLIENTMODULE_API
-#include "UI/Widget/GGwaWidget.h"
-#include "UI/GGwaHUD.h"
-#include "UI/Enemy/BossStatusWidget.h"
+#include "ClientModule/Public/UI/UIManagerSubsystem.h"
+#include "ClientModule/Public/UI/Widget/GGwaWidget.h"
+#include "ClientModule/Public/UI/GGwaHUD.h"
+#include "ClientModule/Public/UI/Enemy/BossStatusWidget.h"
 #include "AuthClientModule/Public/AuthService.h"
 #endif
-PRAGMA_ENABLE_DEPRECATION_WARNINGS
 #endif
 
 AGGwaPlayerController::AGGwaPlayerController() {
@@ -45,6 +43,19 @@ void AGGwaPlayerController::BeginPlay() {
 
 #if !UE_SERVER
 		bEnableMouseOverEvents = true;
+
+#ifdef CLIENTMODULE_API
+		// Create AuthService instance for client
+		AuthService = NewObject<UAuthService>(this, TEXT("AuthService"));
+		if (!AuthService)
+		{
+			UE_LOG(LogTemp, Error, TEXT("GGwaPlayerController: Failed to create AuthService!"));
+		}
+		else
+		{
+			UE_LOG(LogTemp, Log, TEXT("GGwaPlayerController: AuthService created successfully"));
+		}
+#endif
 #endif
 	}
 	
@@ -189,6 +200,9 @@ void AGGwaPlayerController::Client_OnRegistrationResult_Implementation(bool bSuc
 	{
 		AuthService->OnServerRegistrationResult(bSuccess, Message);
 	}
+	
+	// Also forward to Blueprint for UI updates
+	OnRegistrationResult_BP(bSuccess, Message);
 #endif
 }
 
@@ -204,36 +218,22 @@ void AGGwaPlayerController::Client_OnLoginResult_Implementation(bool bSuccess, c
 		AuthService->OnServerLoginResult(bSuccess, Token, UserId);
 	}
 
+	// Also forward to Blueprint for UI updates
+	OnLoginResult_BP(bSuccess, Token, UserId);
+
 	// If login successful, we might need to wait for Client_TravelToGameWorld call
 	// or handle any UI updates here
 #endif
 }
 
-// 현재 Login ->AuthService -> AuthRPC->RequestServerLogin(GGwaPlayercontroller (서버))Subsystem -> Subsystem RequestServerAuthentication
-// SendAuthenticationToAuthServer
-// HttpRequest->OnProcessRequestComplete().BindUObject(this, &UAuthSubsystem::OnAuthenticationResponse, RequestingController);
-//
-// LoadGameDataForUser
-// OnGameDataLoaded
-// AuthRPC->Request_Client_TravelToGameWorld(GameWorldURL);
-//
-// void AGGwaPlayerController::Client_TravelToGameWorld_Implementation(const FString& MapURL)
-// {
-// 	UE_LOG(LogTemp, Log, TEXT("AGGwaPlayerController::Client_TravelToGameWorld: Traveling to %s"), *MapURL);
-//
-// #if !UE_SERVER
-// 	// Perform client travel to the game world
-// 	ClientTravel(MapURL, TRAVEL_Relative);
-// #endif
-// }
-
 void AGGwaPlayerController::Client_TravelToGameWorld_Implementation(const FString& MapURL)
 {
 	UE_LOG(LogTemp, Log, TEXT("AGGwaPlayerController::Client_TravelToGameWorld: Traveling to %s"), *MapURL);
-
-#if !UE_SERVER
+	
+#if !UE_SERVER && defined(CLIENTMODULE_API)
 	// Perform client travel to the game world
 	ClientTravel(MapURL, TRAVEL_Relative);
+	GetGameInstance()->GetSubsystem<UUIManagerSubsystem>()->OnMapChanged(GetWorld());
 #endif
 }
 
@@ -241,18 +241,16 @@ void AGGwaPlayerController::Client_TravelToGameWorld_Implementation(const FStrin
 // AuthSubsystem Event Handlers
 // ============================================================================
 
-UFUNCTION()
 void AGGwaPlayerController::OnAuthSubsystemRegistrationComplete(bool bSuccess, const FString& Message)
 {
 	// Forward the result to the client
-	Client_OnRegistrationResult(bSuccess, Message);
+	Client_OnRegistrationResult_Implementation(bSuccess, Message);
 }
 
-UFUNCTION()
 void AGGwaPlayerController::OnAuthSubsystemAuthenticationComplete(bool bSuccess, const FString& Token, const FString& UserId)
 {
 	// Forward the result to the client
-	Client_OnLoginResult(bSuccess, Token, UserId);
+	Client_OnLoginResult_Implementation(bSuccess, Token, UserId);
 
 	// Note: ClientTravel is now handled by AuthSubsystem after game data loading
 	// This prevents duplicate travel calls and ensures data is loaded before travel
@@ -370,21 +368,83 @@ void AGGwaPlayerController::OnLoginFailure(const FString& ErrorReason) {
 	// Implementation for login failure
 }
 
+// ============================================================================
+// LOGIN UI FUNCTIONALITY (Integrated from LoginPlayerController)
+// ============================================================================
+
+void AGGwaPlayerController::RequestRegistration(const FString& Username, const FString& Password)
+{
+#if !UE_SERVER && defined(CLIENTMODULE_API)
+	UE_LOG(LogTemp, Log, TEXT("GGwaPlayerController::RequestRegistration: Username=%s"), *Username);
+
+	if (!AuthService)
+	{
+		UE_LOG(LogTemp, Error, TEXT("GGwaPlayerController: AuthService not available"));
+		OnRegistrationResult_BP(false, TEXT("Authentication service not available"));
+		return;
+	}
+
+	// Create delegate for registration result
+	FRegistrationDelegate RegistrationDelegate;
+	RegistrationDelegate.BindDynamic(this, &AGGwaPlayerController::OnRegistrationComplete);
+
+	// Request registration through AuthService
+	AuthService->RequestRegistration(Username, Password, RegistrationDelegate);
 #else
-
-// Stub implementations for server builds
-void AGGwaPlayerController::InitClientWidget(const USkillComponent* SkillComponent) {
-	// Server does not need UI initialization
+	UE_LOG(LogTemp, Warning, TEXT("GGwaPlayerController::RequestRegistration: Called on server or without ClientModule"));
+#endif
 }
 
-void AGGwaPlayerController::PlayerTick(float DeltaTime) {
-	Super::PlayerTick(DeltaTime);
-	// Server-only tick logic if needed
+void AGGwaPlayerController::RequestLogin(const FString& Username, const FString& Password)
+{
+#if !UE_SERVER && defined(CLIENTMODULE_API)
+	UE_LOG(LogTemp, Log, TEXT("GGwaPlayerController::RequestLogin: Username=%s"), *Username);
+
+	if (!AuthService)
+	{
+		UE_LOG(LogTemp, Error, TEXT("GGwaPlayerController: AuthService not available"));
+		OnLoginResult_BP(false, TEXT(""), TEXT(""));
+		return;
+	}
+
+	// Create delegate for login result
+	FLoginDelegate LoginDelegate;
+	LoginDelegate.BindDynamic(this, &AGGwaPlayerController::OnLoginComplete);
+
+	// Request login through AuthService
+	AuthService->RequestLogin(Username, Password, LoginDelegate);
+#else
+	UE_LOG(LogTemp, Warning, TEXT("GGwaPlayerController::RequestLogin: Called on server or without ClientModule"));
+#endif
 }
 
-void AGGwaPlayerController::NotifyClientStateChanged() {
-	// Server does not need UI notifications
+// ============================================================================
+// AuthService Callbacks (Client-side)
+// ============================================================================
+
+void AGGwaPlayerController::OnRegistrationComplete(bool bSuccess, const FString& Message)
+{
+#if !UE_SERVER && defined(CLIENTMODULE_API)
+	UE_LOG(LogTemp, Log, TEXT("GGwaPlayerController::OnRegistrationComplete: Success=%s, Message=%s"), 
+		bSuccess ? TEXT("true") : TEXT("false"), *Message);
+
+	// Forward to Blueprint
+	OnRegistrationResult_BP(bSuccess, Message);
+#endif
 }
 
+void AGGwaPlayerController::OnLoginComplete(bool bSuccess, const FString& Token, const FString& UserId)
+{
+#if !UE_SERVER && defined(CLIENTMODULE_API)
+	UE_LOG(LogTemp, Log, TEXT("GGwaPlayerController::OnLoginComplete: Success=%s, UserId=%s"), 
+		bSuccess ? TEXT("true") : TEXT("false"), *UserId);
+
+	// Forward to Blueprint
+	OnLoginResult_BP(bSuccess, Token, UserId);
+
+	// If login successful, could automatically connect to game server
+	// For now, we let Blueprint handle the flow
+#endif
+}
 #endif // !UE_SERVER
 
