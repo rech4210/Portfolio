@@ -11,6 +11,8 @@
 #include "Shared/Interface/IClientComponentProvider.h"
 #include "GGwaPlayerController.generated.h"
 
+class UClientServiceManager;
+
 class ABossCharacter;
 class UBaseDataAsset;
 class UAuthSubsystem;
@@ -51,9 +53,6 @@ public:
 	UFUNCTION(Server, Reliable)
 	void Server_InitiateReward(const FString& PlayerId, const FRewardRequest& Payload);
 
-	
-
-	
 	// ============================================================================
 	// AUTHENTICATION RPC METHODS
 	// ============================================================================
@@ -64,39 +63,20 @@ public:
 	virtual void Request_Client_TravelToGameWorld(const FString& MapURL) override;
 	virtual bool IsAuthRPCAvailable() const override;
 	
-	/**
-	 * Server RPC: Register new user account
-	 * Called from client UI, processed by AuthSubsystem
-	 */
 	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_Register(const FString& Username, const FString& Password);
 
-	/**
-	 * Server RPC: Authenticate user and login
-	 * Called from client UI, processed by AuthSubsystem
-	 */
 	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_Login(const FString& Username, const FString& Password);
 
-	/**
-	 * Client RPC: Send registration result back to client
-	 */
 	UFUNCTION(Client, Reliable)
 	void Client_OnRegistrationResult(bool bSuccess, const FString& Message);
 
-	/**
-	 * Client RPC: Send login result back to client
-	 * If successful, includes token and user ID for client-side storage
-	 */
 	UFUNCTION(Client, Reliable)
 	void Client_OnLoginResult(bool bSuccess, const FString& Token, const FString& UserId);
 
-	/**
-	 * Client RPC: Trigger client travel to game world after successful authentication
-	 */
 	UFUNCTION(Client, Reliable)
 	void Client_TravelToGameWorld(const FString& MapURL);
-
 private:
 	// ============================================================================
 	// AuthSubsystem Event Handlers
@@ -114,22 +94,38 @@ private:
 	UFUNCTION()
 	void OnAuthSubsystemAuthenticationComplete(bool bSuccess, const FString& Token, const FString& UserId);
 
-private:
-	// Note: Client functionality is now handled through interface pattern
+	// Note: Client functionality is now handled through ClientServiceManager
 	// This avoids circular dependencies between MyGame and ClientModule
-
-	// Client component implementation holder (client builds only)
 	UPROPERTY()
-	TObjectPtr<UObject> ClientComponentProvider; // Holds reference to client components
-
-	void OnLoginSuccess(const FString& Token);
-	void OnLoginFailure(const FString& ErrorReason);
+	TObjectPtr<UClientServiceManager> ClientServiceManager;
 
 public:
 	// ============================================================================
-	// IClientComponentProvider INTERFACE IMPLEMENTATION
+	// CLIENT SERVICE ACCESS
 	// ============================================================================
 
+	/**
+	 * Get client service manager instance for advanced functionality
+	 * @return ClientServiceManager instance or nullptr if not available
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Client Service")
+	UClientServiceManager* GetClientServiceManager() const { return ClientServiceManager; }
+
+	/**
+	 * Service registration methods (called from ClientModule using GGwaGameState pattern)
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Client Service")
+	void RegisterClientAuthService(TScriptInterface<class IClientAuthInterface> AuthService);
+
+	UFUNCTION(BlueprintCallable, Category = "Client Service")
+	void RegisterClientUIService(TScriptInterface<class IClientUIInterface> UIService);
+
+	// ============================================================================
+	// IClientComponentProvider INTERFACE IMPLEMENTATION
+	// All calls delegated to ClientService
+	// ============================================================================
+
+	// 컴포넌트를 주입시켜서 실질 작업을 컴포넌트에 위임시키기로. (UI, Component 각각)
 	// Authentication component interface
 	virtual void InitializeClientAuth() override;
 	virtual void RequestClientRegistration(const FString& Username, const FString& Password) override;
@@ -144,24 +140,8 @@ public:
 	virtual void ReceiveBossDataFromServer(const FBossDataStruct& BossData) override;
 	virtual void ReceiveSkillDataFromServer(const USkillComponent* SkillComponent) override;
 
-public:
-	// ============================================================================
 	// LOGIN UI FUNCTIONALITY (Simplified - delegates to component)
 	// ============================================================================
-
-	/**
-	 * Request user registration through client component (Client-side)
-	 * Called from UI, delegates to ClientAuthComponent
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Authentication")
-	void RequestRegistration(const FString& Username, const FString& Password);
-
-	/**
-	 * Request user login through client component (Client-side) 
-	 * Called from UI, delegates to ClientAuthComponent
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Authentication")
-	void RequestLogin(const FString& Username, const FString& Password);
 
 	/**
 	 * Connect to game server with authentication token
@@ -174,13 +154,11 @@ public:
 	// Blueprint Events for UI Integration
 	// ============================================================================
 
-	/**
-	 * Blueprint event for registration result
-	 * Called when server responds to registration request
-	 */
+	
+	//서버 측 기준 BP의 처리. UI 처리는 Component client bound 에서 수행.
 	UFUNCTION(BlueprintImplementableEvent, Category = "Authentication")
 	void OnRegistrationResult_BP(bool bSuccess, const FString& Message);
-
+	
 	/**
 	 * Blueprint event for login result
 	 * Called when server responds to login request

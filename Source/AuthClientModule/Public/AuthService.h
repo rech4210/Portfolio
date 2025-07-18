@@ -43,14 +43,14 @@ public:
 	 * Called from UI, sends request to PlayerController RPC
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Auth Service")
-	void RequestRegistration(const FString& Username, const FString& Password, FRegistrationDelegate OnResult);
+	void RequestRegistration(const FString& Username, const FString& Password, APlayerController* PC, FRegistrationDelegate OnResult);
 
 	/**
 	 * Request user login through server
 	 * Called from UI, sends request to PlayerController RPC
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Auth Service")
-	void RequestLogin(const FString& Username, const FString& Password, FLoginDelegate OnResult);
+	void RequestLogin(const FString& Username, const FString& Password, APlayerController* PC, FLoginDelegate OnResult);
 
 	/**
 	 * Logout current user

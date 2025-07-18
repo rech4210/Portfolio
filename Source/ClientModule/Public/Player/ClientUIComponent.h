@@ -5,6 +5,7 @@
 #include "Engine/Engine.h"
 #include "MyGame/Public/Shared/AI/EnemySystemCore/FBossDataStruct.h"
 #include "MyGame/Public/Shared/AI/EnemySystemCore/FEnemyWidgetData.h"
+#include "MyGame/Public/Shared/Interface/IClientComponentProvider.h"
 
 // Forward declarations for client UI classes
 class AGGwaHUD;
@@ -23,9 +24,10 @@ class UEnemyAttributeSet;
  * Handles all client-specific UI management functionality.
  * Separated from ClientAuthComponent to follow single responsibility principle.
  * This component manages widget creation, mouse over detection, and UI state updates.
+ * Implements IClientUIInterface for IoC pattern integration.
  */
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent), BlueprintType, Blueprintable)
-class CLIENTMODULE_API UClientUIComponent : public UActorComponent
+class CLIENTMODULE_API UClientUIComponent : public UActorComponent, public IClientUIInterface
 {
 	GENERATED_BODY()
 
@@ -37,47 +39,39 @@ protected:
 
 public:
 	// ============================================================================
-	// CLIENT UI MANAGEMENT
+	// IClientUIInterface IMPLEMENTATION
 	// ============================================================================
 
-	/**
-	 * Initialize client-side UI widgets and HUD components
-	 * @param SkillComponent - Skill data for UI initialization
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Client UI")
-	void InitClientWidget(const USkillComponent* SkillComponent);
+	virtual void InitializeUI(const USkillComponent* SkillComponent) override;
 
-	/**
-	 * Handle mouse over detection for enemy widgets
-	 * Called from PlayerController's PlayerTick
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Client UI")
-	void HandleMouseOverDetection();
+	virtual void HandleMouseOverDetection() override;
 
-	/**
-	 * Notify UI about player state changes
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Client UI")
-	void NotifyClientStateChanged();
+	virtual void NotifyStateChanged() override;
 
-	/**
-	 * Update skill widget from server data
-	 * @param SkillComponent - Updated skill data from server
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Client UI")
-	void ReceiveSkillDataFromServer(const USkillComponent* SkillComponent);
+	virtual void ReceiveBossData(const FBossDataStruct& BossData) override;
 
-	/**
-	 * Handle boss data received from server
-	 * @param BossData - Boss information for UI display
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Client UI")
-	void ReceiveBossDataFromServer(const FBossDataStruct& BossData);
+	virtual void ReceiveSkillData(const USkillComponent* SkillComponent) override;
 
-	/**
-	 * Get access to the HUD for external binding
-	 * Used by PlayerController to bind delegates
-	 */
+	// ============================================================================
+	// LEGACY BLUEPRINT INTERFACE (for backward compatibility)
+	// ============================================================================
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Client UI")
+	void BP_InitClientWidget(const USkillComponent* SkillComponent);
+	
+	UFUNCTION(BlueprintImplementableEvent, Category = "Client UI")
+	void BP_HandleMouseOverDetection();
+	
+	UFUNCTION(BlueprintImplementableEvent, Category = "Client UI")
+	void BP_NotifyClientStateChanged();
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Client UI")
+	void BP_ReceiveSkillDataFromServer(const USkillComponent* SkillComponent);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Client UI")
+	void BP_ReceiveBossDataFromServer(const FBossDataStruct& BossData);
+
+	
 	UFUNCTION(BlueprintCallable, Category = "Client UI")
 	class AGGwaHUD* GetGGwaHUD() const { return GGwaHUD; }
 

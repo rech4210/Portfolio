@@ -27,16 +27,20 @@ void UClientAuthComponent::BeginPlay()
 	// Only initialize on client and if locally controlled
 	if (OwnerController->IsLocalController())
 	{
-		InitializeAuthService();
-		UE_LOG(LogTemp, Log, TEXT("ClientAuthComponent: Initialized for local controller"));
+		InitializeAuth();
+		
+		// Register this component as AuthService implementation using helper method
+		RegisterSelfToServiceManager();
+		
+		UE_LOG(LogTemp, Log, TEXT("ClientAuthComponent: Initialized and registered for local controller"));
 	}
 }
 
 // ============================================================================
-// CLIENT AUTHENTICATION INTERFACE
+// IClientAuthInterface IMPLEMENTATION
 // ============================================================================
 
-void UClientAuthComponent::InitializeAuthService()
+void UClientAuthComponent::InitializeAuth()
 {
 	if (!OwnerController || !OwnerController->IsLocalController())
 	{
@@ -45,13 +49,13 @@ void UClientAuthComponent::InitializeAuthService()
 
 	// Create AuthService instance
 	AuthService = NewObject<UAuthService>(this, TEXT("AuthService"));
-	if (!AuthService)
+	if (AuthService)
 	{
-		UE_LOG(LogTemp, Error, TEXT("ClientAuthComponent: Failed to create AuthService!"));
+		UE_LOG(LogTemp, Log, TEXT("ClientAuthComponent: AuthService created successfully"));
 	}
 	else
 	{
-		UE_LOG(LogTemp, Log, TEXT("ClientAuthComponent: AuthService created successfully"));
+		UE_LOG(LogTemp, Error, TEXT("ClientAuthComponent: Failed to create AuthService!"));
 	}
 }
 
@@ -62,16 +66,16 @@ void UClientAuthComponent::RequestRegistration(const FString& Username, const FS
 	if (!AuthService)
 	{
 		UE_LOG(LogTemp, Error, TEXT("ClientAuthComponent: AuthService not available"));
-		OnRegistrationResult_BP(false, TEXT("Authentication service not available"));
+		BP_OnRegistrationResult(false, TEXT("Authentication service not available"));
 		return;
 	}
 
 	// Create delegate for registration result
 	FRegistrationDelegate RegistrationDelegate;
-	RegistrationDelegate.BindDynamic(this, &UClientAuthComponent::OnRegistrationComplete);
+	RegistrationDelegate.BindDynamic(this, &UClientAuthComponent::OnServerRegistrationResult);
 
 	// Request registration through AuthService
-	AuthService->RequestRegistration(Username, Password, RegistrationDelegate);
+	AuthService->RequestRegistration(Username, Password, OwnerController, RegistrationDelegate);
 }
 
 void UClientAuthComponent::RequestLogin(const FString& Username, const FString& Password)
@@ -81,16 +85,16 @@ void UClientAuthComponent::RequestLogin(const FString& Username, const FString& 
 	if (!AuthService)
 	{
 		UE_LOG(LogTemp, Error, TEXT("ClientAuthComponent: AuthService not available"));
-		OnLoginResult_BP(false, TEXT(""), TEXT(""));
+		BP_OnLoginResult(false, TEXT(""), TEXT(""));
 		return;
 	}
 
 	// Create delegate for login result
 	FLoginDelegate LoginDelegate;
-	LoginDelegate.BindDynamic(this, &UClientAuthComponent::OnLoginComplete);
+	LoginDelegate.BindDynamic(this, &UClientAuthComponent::OnServerLoginResult);
 
 	// Request login through AuthService
-	AuthService->RequestLogin(Username, Password, LoginDelegate);
+	AuthService->RequestLogin(Username, Password, OwnerController, LoginDelegate);
 }
 
 void UClientAuthComponent::OnServerRegistrationResult(bool bSuccess, const FString& Message)
@@ -105,7 +109,7 @@ void UClientAuthComponent::OnServerRegistrationResult(bool bSuccess, const FStri
 	}
 	
 	// Forward to Blueprint for UI updates
-	OnRegistrationResult_BP(bSuccess, Message);
+	BP_OnRegistrationResult(bSuccess, Message);
 	
 	// Also forward to PlayerController's Blueprint event for backward compatibility
 	if (OwnerController)
@@ -126,7 +130,7 @@ void UClientAuthComponent::OnServerLoginResult(bool bSuccess, const FString& Tok
 	}
 
 	// Forward to Blueprint for UI updates
-	OnLoginResult_BP(bSuccess, Token, UserId);
+	BP_OnLoginResult(bSuccess, Token, UserId);
 	
 	// Also forward to PlayerController's Blueprint event for backward compatibility
 	if (OwnerController)
@@ -136,35 +140,25 @@ void UClientAuthComponent::OnServerLoginResult(bool bSuccess, const FString& Tok
 }
 
 // ============================================================================
-// AUTHSERVICE CALLBACK HANDLERS
+// PRIVATE HELPER METHODS
 // ============================================================================
 
-void UClientAuthComponent::OnRegistrationComplete(bool bSuccess, const FString& Message)
+void UClientAuthComponent::RegisterSelfToServiceManager()
 {
-	UE_LOG(LogTemp, Log, TEXT("ClientAuthComponent::OnRegistrationComplete: Success=%s, Message=%s"), 
-		bSuccess ? TEXT("true") : TEXT("false"), *Message);
-
-	// Forward to Blueprint
-	OnRegistrationResult_BP(bSuccess, Message);
-	
-	// Also forward to PlayerController's Blueprint event if needed
 	if (OwnerController)
 	{
-		OwnerController->OnRegistrationResult_BP(bSuccess, Message);
+		// Create TScriptInterface for this component
+		TScriptInterface<IClientAuthInterface> AuthInterface;
+		AuthInterface.SetObject(this);
+		AuthInterface.SetInterface(static_cast<IClientAuthInterface*>(this));
+
+		// Register with the service manager through PlayerController
+		OwnerController->RegisterClientAuthService(AuthInterface);
+		
+		UE_LOG(LogTemp, Log, TEXT("ClientAuthComponent: Successfully registered to ClientServiceManager"));
 	}
-}
-
-void UClientAuthComponent::OnLoginComplete(bool bSuccess, const FString& Token, const FString& UserId)
-{
-	UE_LOG(LogTemp, Log, TEXT("ClientAuthComponent::OnLoginComplete: Success=%s, UserId=%s"), 
-		bSuccess ? TEXT("true") : TEXT("false"), *UserId);
-
-	// Forward to Blueprint
-	OnLoginResult_BP(bSuccess, Token, UserId);
-	
-	// Also forward to PlayerController's Blueprint event if needed
-	if (OwnerController)
+	else
 	{
-		OwnerController->OnLoginResult_BP(bSuccess, Token, UserId);
+		UE_LOG(LogTemp, Error, TEXT("ClientAuthComponent: Cannot register - OwnerController is null"));
 	}
 }

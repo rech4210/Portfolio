@@ -8,11 +8,12 @@
 #include "Shared/GAS/GGwaAbilitySystemComponent.h"
 #include "Shared/Player/GGwaCharacter.h"
 #include "Shared/Player/GGwaPlayerState.h"
+#include "Shared/Service/ClientServiceManager.h"
 #include "AuthModule/Public/AuthSubsystem.h"
 
 AGGwaPlayerController::AGGwaPlayerController() {
-	// Initialize client component provider placeholder
-	ClientComponentProvider = nullptr;
+	// Create ClientServiceManager instance
+	ClientServiceManager = CreateDefaultSubobject<UClientServiceManager>(TEXT("ClientServiceManager"));
 }
 
 void AGGwaPlayerController::BeginPlay() {
@@ -23,17 +24,14 @@ void AGGwaPlayerController::BeginPlay() {
 	
 }
 
+void AGGwaPlayerController::InitClientWidget(const USkillComponent* SkillComponent) {
+}
+
+
 void AGGwaPlayerController::Client_ReceiveBossData_Implementation(const FBossDataStruct& BossCharacter) {
-	// Use interface method instead of direct component access
-	ReceiveBossDataFromServer(BossCharacter);
-	// Always broadcast to any bound delegates
-	OnBossDataReceived.Broadcast(BossCharacter);
-	UE_LOG(LogTemp, Log, TEXT("BossData Called From Server"));
 }
 
 void AGGwaPlayerController::Client_ReceiveSkillData_Implementation(const USkillComponent* SkillComponent) {
-	// Use interface method instead of direct component access
-	ReceiveSkillDataFromServer(SkillComponent);
 }
 
 void AGGwaPlayerController::AcknowledgePossession(class APawn* PossessedPawn) {
@@ -47,6 +45,16 @@ void AGGwaPlayerController::AcknowledgePossession(class APawn* PossessedPawn) {
 		}
 	}
 }
+
+void AGGwaPlayerController::Server_InitiateReward_Implementation(const FString& PlayerId, const FRewardRequest& Payload) {
+	IServerLogicBridge* Bridge = Cast<IServerLogicBridge>(GetWorld()->GetSubsystem<UWorldSubsystem>());
+	// Bridge->InitiateRewardFlow(PlayerId, Payload, FOnFlowComplete::CreateUObject(this, &AGGwaPlayerController::Client_OnRewardResult));
+}
+
+
+// ============================================================================
+// AUTHENTICATION RPC INTERFACES
+// ============================================================================
 
 void AGGwaPlayerController::RequestServerRegistration(const FString& Username, const FString& Password) {
 	Server_Register_Implementation(Username, Password);
@@ -63,13 +71,6 @@ void AGGwaPlayerController::Request_Client_TravelToGameWorld(const FString& MapU
 bool AGGwaPlayerController::IsAuthRPCAvailable() const {
 	return true;
 }
-
-
-void AGGwaPlayerController::Server_InitiateReward_Implementation(const FString& PlayerId, const FRewardRequest& Payload) {
-	IServerLogicBridge* Bridge = Cast<IServerLogicBridge>(GetWorld()->GetSubsystem<UWorldSubsystem>());
-	// Bridge->InitiateRewardFlow(PlayerId, Payload, FOnFlowComplete::CreateUObject(this, &AGGwaPlayerController::Client_OnRewardResult));
-}
-
 // ============================================================================
 // AUTHENTICATION RPC IMPLEMENTATIONS
 // ============================================================================
@@ -78,32 +79,24 @@ void AGGwaPlayerController::Server_Register_Implementation(const FString& Userna
 {
 	UE_LOG(LogTemp, Log, TEXT("AGGwaPlayerController::Server_Register: Registration request for username: %s"), *Username);
 
-	// Get client IP for audit logging
 	FString ClientIP = TEXT("Unknown");
 	if (GetNetConnection() && GetNetConnection()->RemoteAddr.IsValid())
 	{
 		ClientIP = GetNetConnection()->RemoteAddr->ToString(false);
 	}
 
-	// Get AuthSubsystem and delegate the request
 	if (UAuthSubsystem* AuthSubsystem = GetGameInstance()->GetSubsystem<UAuthSubsystem>())
 	{
-		// Bind to AuthSubsystem events to get the result
 		AuthSubsystem->OnServerRegistrationComplete.AddDynamic(this, &AGGwaPlayerController::OnAuthSubsystemRegistrationComplete);
-
-		// Send registration request to AuthSubsystem
 		AuthSubsystem->RequestServerRegistration(Username, Password, ClientIP);
 	}
 	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("AGGwaPlayerController::Server_Register: AuthSubsystem not found"));
-		Client_OnRegistrationResult(false, TEXT("Authentication service unavailable"));
 	}
 }
 
-bool AGGwaPlayerController::Server_Register_Validate(const FString& Username, const FString& Password)
-{
-	// Basic validation - AuthSubsystem will do detailed validation
+bool AGGwaPlayerController::Server_Register_Validate(const FString& Username, const FString& Password){
 	return !Username.IsEmpty() && !Password.IsEmpty() && Username.Len() <= 30 && Password.Len() <= 128;
 }
 
@@ -130,7 +123,7 @@ void AGGwaPlayerController::Server_Login_Implementation(const FString& Username,
 	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("AGGwaPlayerController::Server_Login: AuthSubsystem not found"));
-		Client_OnLoginResult(false, TEXT(""), TEXT(""));
+		// Client_OnLoginResult(false, TEXT(""), TEXT(""));
 	}
 }
 
@@ -145,8 +138,11 @@ void AGGwaPlayerController::Client_OnRegistrationResult_Implementation(bool bSuc
 	UE_LOG(LogTemp, Log, TEXT("AGGwaPlayerController::Client_OnRegistrationResult: Success=%s, Message=%s"), 
 		bSuccess ? TEXT("true") : TEXT("false"), *Message);
 
-	// Use interface method instead of direct component access
-	OnServerRegistrationResult(bSuccess, Message);
+	// Use ClientServiceManager for interface method delegation
+	if (ClientServiceManager)
+	{
+		ClientServiceManager->OnServerRegistrationResult(bSuccess, Message);
+	}
 }
 
 void AGGwaPlayerController::Client_OnLoginResult_Implementation(bool bSuccess, const FString& Token, const FString& UserId)
@@ -154,8 +150,11 @@ void AGGwaPlayerController::Client_OnLoginResult_Implementation(bool bSuccess, c
 	UE_LOG(LogTemp, Log, TEXT("AGGwaPlayerController::Client_OnLoginResult: Success=%s, UserId=%s"), 
 		bSuccess ? TEXT("true") : TEXT("false"), *UserId);
 
-	// Use interface method instead of direct component access
-	OnServerLoginResult(bSuccess, Token, UserId);
+	// Use ClientServiceManager for interface method delegation
+	if (ClientServiceManager)
+	{
+		ClientServiceManager->OnServerLoginResult(bSuccess, Token, UserId);
+	}
 }
 
 void AGGwaPlayerController::Client_TravelToGameWorld_Implementation(const FString& MapURL)
@@ -190,99 +189,122 @@ void AGGwaPlayerController::OnAuthSubsystemAuthenticationComplete(bool bSuccess,
 // void AGGwaPlayerController::Client_OnRewardResult_Implementation(bool bOK, const FRewardData& Data,const FString& Error) {
 // }
 
-// --- Client-only functions ---
-
-void AGGwaPlayerController::InitClientWidget(const USkillComponent* SkillComponent) {
-	// Use interface method instead of direct component access
-	InitializeClientUI(SkillComponent);
-}
-
 void AGGwaPlayerController::PlayerTick(float DeltaTime) {
 	Super::PlayerTick(DeltaTime);
 
-	// Use interface method instead of direct component access
-	HandleClientMouseOverDetection();
-}
-
-void AGGwaPlayerController::OnLoginSuccess(const FString& Token) {
-	// Implementation for login success
-}
-
-void AGGwaPlayerController::OnLoginFailure(const FString& ErrorReason) {
-	// Implementation for login failure
+	// Delegate to ClientServiceManager instead of direct component access
+	if (ClientServiceManager && IsLocalController())
+	{
+		ClientServiceManager->HandleClientMouseOverDetection();
+	}
 }
 
 // ============================================================================
-// LOGIN UI FUNCTIONALITY (Integrated from LoginPlayerController)
+// CLIENT SERVICE REGISTRATION (GGwaGameState pattern)
 // ============================================================================
 
-void AGGwaPlayerController::RequestRegistration(const FString& Username, const FString& Password)
+void AGGwaPlayerController::RegisterClientAuthService(TScriptInterface<IClientAuthInterface> AuthService)
 {
-	UE_LOG(LogTemp, Log, TEXT("GGwaPlayerController::RequestRegistration: Username=%s"), *Username);
-
-	// Use interface method instead of direct component access
-	RequestClientRegistration(Username, Password);
+	if (ClientServiceManager)
+	{
+		UE_LOG(LogTemp, Log, TEXT("GGwaPlayerController: Registering AuthService to ClientServiceManager"));
+		ClientServiceManager->SetAuthService(AuthService);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("GGwaPlayerController: Cannot register AuthService - ClientServiceManager not created"));
+	}
 }
 
-void AGGwaPlayerController::RequestLogin(const FString& Username, const FString& Password)
+void AGGwaPlayerController::RegisterClientUIService(TScriptInterface<IClientUIInterface> UIService)
 {
-	UE_LOG(LogTemp, Log, TEXT("GGwaPlayerController::RequestLogin: Username=%s"), *Username);
-
-	// Use interface method instead of direct component access
-	RequestClientLogin(Username, Password);
+	if (ClientServiceManager)
+	{
+		UE_LOG(LogTemp, Log, TEXT("GGwaPlayerController: Registering UIService to ClientServiceManager"));
+		ClientServiceManager->SetUIService(UIService);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("GGwaPlayerController: Cannot register UIService - ClientServiceManager not created"));
+	}
 }
 
 // ============================================================================
 // IClientComponentProvider INTERFACE IMPLEMENTATION
+// All calls delegated to ClientService
 // ============================================================================
 
+// Authentication component interface
 void AGGwaPlayerController::InitializeClientAuth() {
-	// Default implementation - override in client module
-	UE_LOG(LogTemp, Warning, TEXT("InitializeClientAuth: Default implementation called"));
+	if (ClientServiceManager)
+	{
+		ClientServiceManager->InitializeClientAuth();
+	}
 }
 
 void AGGwaPlayerController::RequestClientRegistration(const FString& Username, const FString& Password) {
-	// Default implementation - override in client module
-	UE_LOG(LogTemp, Warning, TEXT("RequestClientRegistration: Default implementation called"));
+	if (ClientServiceManager)
+	{
+		ClientServiceManager->RequestClientRegistration(Username, Password);
+	}
 }
 
 void AGGwaPlayerController::RequestClientLogin(const FString& Username, const FString& Password) {
-	// Default implementation - override in client module
-	UE_LOG(LogTemp, Warning, TEXT("RequestClientLogin: Default implementation called"));
+	if (ClientServiceManager)
+	{
+		ClientServiceManager->RequestClientLogin(Username, Password);
+	}
 }
 
 void AGGwaPlayerController::OnServerRegistrationResult(bool bSuccess, const FString& Message) {
-	// Default implementation - override in client module
-	UE_LOG(LogTemp, Warning, TEXT("OnServerRegistrationResult: Default implementation called"));
+	if (ClientServiceManager)
+	{
+		ClientServiceManager->OnServerRegistrationResult(bSuccess, Message);
+	}
 }
 
 void AGGwaPlayerController::OnServerLoginResult(bool bSuccess, const FString& Token, const FString& UserId) {
-	// Default implementation - override in client module
-	UE_LOG(LogTemp, Warning, TEXT("OnServerLoginResult: Default implementation called"));
+	if (ClientServiceManager)
+	{
+		ClientServiceManager->OnServerLoginResult(bSuccess, Token, UserId);
+	}
 }
 
+
+// UI component interface
+
 void AGGwaPlayerController::InitializeClientUI(const USkillComponent* SkillComponent) {
-	// Default implementation - override in client module
-	UE_LOG(LogTemp, Warning, TEXT("InitializeClientUI: Default implementation called"));
+	if (ClientServiceManager)
+	{
+		ClientServiceManager->InitializeClientUI(SkillComponent);
+	}
 }
 
 void AGGwaPlayerController::HandleClientMouseOverDetection() {
-	// Default implementation - override in client module
-	UE_LOG(LogTemp, Warning, TEXT("HandleClientMouseOverDetection: Default implementation called"));
+	if (ClientServiceManager)
+	{
+		ClientServiceManager->HandleClientMouseOverDetection();
+	}
 }
 
 void AGGwaPlayerController::NotifyClientStateChanged() {
-	// Default implementation - override in client module
-	UE_LOG(LogTemp, Warning, TEXT("NotifyClientStateChanged: Default implementation called"));
+	if (ClientServiceManager)
+	{
+		ClientServiceManager->NotifyClientStateChanged();
+	}
 }
 
 void AGGwaPlayerController::ReceiveBossDataFromServer(const FBossDataStruct& BossData) {
-	// Default implementation - override in client module
-	UE_LOG(LogTemp, Warning, TEXT("ReceiveBossDataFromServer: Default implementation called"));
+	if (ClientServiceManager)
+	{
+		ClientServiceManager->ReceiveBossDataFromServer(BossData);
+	}
 }
 
 void AGGwaPlayerController::ReceiveSkillDataFromServer(const USkillComponent* SkillComponent) {
-	// Default implementation - override in client module
-	UE_LOG(LogTemp, Warning, TEXT("ReceiveSkillDataFromServer: Default implementation called"));
+	if (ClientServiceManager)
+	{
+		ClientServiceManager->ReceiveSkillDataFromServer(SkillComponent);
+	}
 }
 

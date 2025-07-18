@@ -38,15 +38,24 @@ void UClientUIComponent::BeginPlay()
 	if (OwnerController->IsLocalController())
 	{
 		SetupClientInputMode();
+
+		// Register with ClientServiceManager using TScriptInterface pattern
+		TScriptInterface<IClientUIInterface> UIInterface;
+		UIInterface.SetObject(this);
+		UIInterface.SetInterface(static_cast<IClientUIInterface*>(this));
+
+		// Register with the service manager
+		OwnerController->RegisterClientUIService(UIInterface);
+		
 		UE_LOG(LogTemp, Log, TEXT("ClientUIComponent: Initialized for local controller"));
 	}
 }
 
 // ============================================================================
-// CLIENT UI MANAGEMENT
+// IClientUIInterface IMPLEMENTATION
 // ============================================================================
 
-void UClientUIComponent::InitClientWidget(const USkillComponent* SkillComponent)
+void UClientUIComponent::InitializeUI(const USkillComponent* SkillComponent)
 {
 	if (!OwnerController || !OwnerController->IsLocalController())
 	{
@@ -99,6 +108,9 @@ void UClientUIComponent::InitClientWidget(const USkillComponent* SkillComponent)
 	{
 		UE_LOG(LogTemp, Error, TEXT("ClientUIComponent: Widget classes not set"));
 	}
+	
+	// Call Blueprint event for additional initialization
+	BP_InitClientWidget(SkillComponent);
 }
 
 void UClientUIComponent::HandleMouseOverDetection()
@@ -146,9 +158,12 @@ void UClientUIComponent::HandleMouseOverDetection()
 		LastHoveredEnemy = nullptr;
 		GGwaHUD->GetBossWidget()->SetVisibility(ESlateVisibility::Hidden);
 	}
+	
+	// Call Blueprint event for additional handling
+	BP_HandleMouseOverDetection();
 }
 
-void UClientUIComponent::NotifyClientStateChanged()
+void UClientUIComponent::NotifyStateChanged()
 {
 	if (!OwnerController || !OwnerController->IsLocalController() || !GGwaHUD)
 	{
@@ -159,9 +174,22 @@ void UClientUIComponent::NotifyClientStateChanged()
 	{
 		GGwaHUD->GetBaseWidget()->OnPlayerStateChanged.Broadcast();
 	}
+	
+	// Call Blueprint event for additional handling
+	BP_NotifyClientStateChanged();
 }
 
-void UClientUIComponent::ReceiveSkillDataFromServer(const USkillComponent* SkillComponent)
+void UClientUIComponent::ReceiveBossData(const FBossDataStruct& BossData)
+{
+	// This can be used for direct boss data updates from server
+	// Currently forwarded through PlayerController's OnBossDataReceived delegate
+	UE_LOG(LogTemp, Log, TEXT("ClientUIComponent: Received boss data from server"));
+	
+	// Call Blueprint event for additional handling
+	BP_ReceiveBossDataFromServer(BossData);
+}
+
+void UClientUIComponent::ReceiveSkillData(const USkillComponent* SkillComponent)
 {
 	if (!OwnerController || !OwnerController->IsLocalController() || !GGwaHUD)
 	{
@@ -172,13 +200,9 @@ void UClientUIComponent::ReceiveSkillDataFromServer(const USkillComponent* Skill
 	{
 		GGwaHUD->GetBaseWidget()->UpdateSkillWidgetFromServer(SkillComponent);
 	}
-}
-
-void UClientUIComponent::ReceiveBossDataFromServer(const FBossDataStruct& BossData)
-{
-	// This can be used for direct boss data updates from server
-	// Currently forwarded through PlayerController's OnBossDataReceived delegate
-	UE_LOG(LogTemp, Log, TEXT("ClientUIComponent: Received boss data from server"));
+	
+	// Call Blueprint event for additional handling
+	BP_ReceiveSkillDataFromServer(SkillComponent);
 }
 
 // ============================================================================
