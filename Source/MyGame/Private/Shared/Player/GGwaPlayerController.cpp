@@ -10,79 +10,30 @@
 #include "Shared/Player/GGwaPlayerState.h"
 #include "AuthModule/Public/AuthSubsystem.h"
 
-// Client-only includes
-#if !UE_SERVER
-#include "MyGame/Public/Shared/AI/BossCharacter.h"
-#include "MyGame/Public/Shared/AI/EnemyAbilitySystemComponent.h"
-#include "MyGame/Public/Shared/AI/EnemyAttributeSet.h"
-#include "MyGame/Public/Shared/GAS/GGwaAttributeSet.h"
-
-// These headers are from ClientModule - only include if available
-#ifdef CLIENTMODULE_API
-#include "ClientModule/Public/UI/UIManagerSubsystem.h"
-#include "ClientModule/Public/UI/Widget/GGwaWidget.h"
-#include "ClientModule/Public/UI/GGwaHUD.h"
-#include "ClientModule/Public/UI/Enemy/BossStatusWidget.h"
-#include "AuthClientModule/Public/AuthService.h"
-#endif
-#endif
-
 AGGwaPlayerController::AGGwaPlayerController() {
+	// Initialize client component provider placeholder
+	ClientComponentProvider = nullptr;
 }
 
 void AGGwaPlayerController::BeginPlay() {
 	Super::BeginPlay();
 	
-	// Client-only UI setup
-	if (IsLocalController()) {
-		bShowMouseCursor = true;
-		FInputModeGameAndUI inputMode;
-		inputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-		inputMode.SetHideCursorDuringCapture(false);
-		SetInputMode(inputMode);
-
-#if !UE_SERVER
-		bEnableMouseOverEvents = true;
-
-#ifdef CLIENTMODULE_API
-		// Create AuthService instance for client
-		AuthService = NewObject<UAuthService>(this, TEXT("AuthService"));
-		if (!AuthService)
-		{
-			UE_LOG(LogTemp, Error, TEXT("GGwaPlayerController: Failed to create AuthService!"));
-		}
-		else
-		{
-			UE_LOG(LogTemp, Log, TEXT("GGwaPlayerController: AuthService created successfully"));
-		}
-#endif
-#endif
-	}
-	
+	// Server-client logging
 	UE_LOG(LogTemp, Warning, TEXT("IsServer: %d | IsLocallyControlled: %d"), HasAuthority(), IsLocalController());
+	
 }
 
-
-// 해당 아래 RPC들이 OnReplicatedUsing에 비해 안정적인지 검토해봐야한다.
-// void AGGwaPlayerController::Client_ApplyAbilityDataAsset_Implementation(UBaseDataAsset* Data) {
-// 	UE_LOG(LogTemp, Log, TEXT("ApplyAbility Data Called From Server"));
-// }
-
 void AGGwaPlayerController::Client_ReceiveBossData_Implementation(const FBossDataStruct& BossCharacter) {
-#if !UE_SERVER && defined(CLIENTMODULE_API)
-	if (IsLocalController()) {
-		OnBossDataReceived.Broadcast(BossCharacter);
-	}
-#endif
+	// Use interface method instead of direct component access
+	ReceiveBossDataFromServer(BossCharacter);
+	// Always broadcast to any bound delegates
+	OnBossDataReceived.Broadcast(BossCharacter);
 	UE_LOG(LogTemp, Log, TEXT("BossData Called From Server"));
 }
 
 void AGGwaPlayerController::Client_ReceiveSkillData_Implementation(const USkillComponent* SkillComponent) {
-#if !UE_SERVER && defined(CLIENTMODULE_API)
-	if (IsLocalController() && GGwaHUD && GGwaHUD->GetBaseWidget()) {
-		GGwaHUD->GetBaseWidget()->UpdateSkillWidgetFromServer(SkillComponent);
-	}
-#endif
+	// Use interface method instead of direct component access
+	ReceiveSkillDataFromServer(SkillComponent);
 }
 
 void AGGwaPlayerController::AcknowledgePossession(class APawn* PossessedPawn) {
@@ -194,16 +145,8 @@ void AGGwaPlayerController::Client_OnRegistrationResult_Implementation(bool bSuc
 	UE_LOG(LogTemp, Log, TEXT("AGGwaPlayerController::Client_OnRegistrationResult: Success=%s, Message=%s"), 
 		bSuccess ? TEXT("true") : TEXT("false"), *Message);
 
-#if !UE_SERVER && defined(CLIENTMODULE_API)
-	// Notify AuthService about the result
-	if (AuthService)
-	{
-		AuthService->OnServerRegistrationResult(bSuccess, Message);
-	}
-	
-	// Also forward to Blueprint for UI updates
-	OnRegistrationResult_BP(bSuccess, Message);
-#endif
+	// Use interface method instead of direct component access
+	OnServerRegistrationResult(bSuccess, Message);
 }
 
 void AGGwaPlayerController::Client_OnLoginResult_Implementation(bool bSuccess, const FString& Token, const FString& UserId)
@@ -211,29 +154,18 @@ void AGGwaPlayerController::Client_OnLoginResult_Implementation(bool bSuccess, c
 	UE_LOG(LogTemp, Log, TEXT("AGGwaPlayerController::Client_OnLoginResult: Success=%s, UserId=%s"), 
 		bSuccess ? TEXT("true") : TEXT("false"), *UserId);
 
-#if !UE_SERVER && defined(CLIENTMODULE_API)
-	// Notify AuthService about the result
-	if (AuthService)
-	{
-		AuthService->OnServerLoginResult(bSuccess, Token, UserId);
-	}
-
-	// Also forward to Blueprint for UI updates
-	OnLoginResult_BP(bSuccess, Token, UserId);
-
-	// If login successful, we might need to wait for Client_TravelToGameWorld call
-	// or handle any UI updates here
-#endif
+	// Use interface method instead of direct component access
+	OnServerLoginResult(bSuccess, Token, UserId);
 }
 
 void AGGwaPlayerController::Client_TravelToGameWorld_Implementation(const FString& MapURL)
 {
 	UE_LOG(LogTemp, Log, TEXT("AGGwaPlayerController::Client_TravelToGameWorld: Traveling to %s"), *MapURL);
 	
-#if !UE_SERVER && defined(CLIENTMODULE_API)
+#if !UE_SERVER
 	// Perform client travel to the game world
 	ClientTravel(MapURL, TRAVEL_Relative);
-	GetGameInstance()->GetSubsystem<UUIManagerSubsystem>()->OnMapChanged(GetWorld());
+	// Note: UIManagerSubsystem access would need to be handled through interface if needed
 #endif
 }
 
@@ -259,105 +191,17 @@ void AGGwaPlayerController::OnAuthSubsystemAuthenticationComplete(bool bSuccess,
 // }
 
 // --- Client-only functions ---
-#if !UE_SERVER
 
 void AGGwaPlayerController::InitClientWidget(const USkillComponent* SkillComponent) {
-#if !UE_SERVER && defined(CLIENTMODULE_API)
-	if (HasAuthority()) {
-		UE_LOG(LogTemp, Warning, TEXT("server Controller"));
-		return;
-	}
-	else if (IsLocalController()) {
-		UE_LOG(LogTemp, Warning, TEXT("Client has been initialized"));
-	}
-	
-	if (WidgetClass) {
-		UGGwaWidget* Widget = CreateWidget<UGGwaWidget>(this, WidgetClass);
-		UBossStatusWidget* BossWidget = CreateWidget<UBossStatusWidget>(this, BossStatusWidgetClass);
-		Widget->AddToViewport();
-		BossWidget->AddToViewport();
-		BossWidget->SetVisibility(ESlateVisibility::Hidden);
-		
-		if (Widget) {
-			GGwaHUD = Cast<AGGwaHUD>(GetHUD());
-			GGwaHUD->SetBaseWidget(Widget);
-			GGwaHUD->SetBossWidget(BossWidget);
-
-			// Bind to the controller's delegates
-			OnBossDataReceived.AddDynamic(GGwaHUD, &AGGwaHUD::HandleBossDataReceived);
-			
-			if (AGGwaPlayerState* PS = GetPlayerState<AGGwaPlayerState>()) {
-				auto ASC = PS->GetAbilitySystemComponent();
-				UGGwaAbilitySystemComponent* GGawASC = CastChecked<UGGwaAbilitySystemComponent>(ASC);
-				const UGGwaAttributeSet* GGwaAttributeSet = Cast<UGGwaAttributeSet>(GGawASC->GetAttributeSet(UGGwaAttributeSet::StaticClass()));
-				Widget->UpdateSkillWidgetFromServer(SkillComponent);
-				Widget->InitWidget(GGawASC, GGwaAttributeSet);
-			}
-		}
-	}
-#else
-	// Server does not need UI initialization
-#endif
+	// Use interface method instead of direct component access
+	InitializeClientUI(SkillComponent);
 }
 
 void AGGwaPlayerController::PlayerTick(float DeltaTime) {
 	Super::PlayerTick(DeltaTime);
 
-	// Client-only mouse over logic
-#if !UE_SERVER && defined(CLIENTMODULE_API)
-	if (IsLocalController()) {
-		FHitResult Hit;
-		// Visibility 채널로 마우스 밑 Actor 판별
-		if (GetHitResultUnderCursorByChannel(
-				UEngineTypes::ConvertToTraceType(ECC_Visibility),
-				true, Hit))
-		{
-			if (ABossCharacter* Enemy = Cast<ABossCharacter>(Hit.GetActor()))
-			{
-				if (GGwaHUD) {
-					GGwaHUD->GetBossWidget()->SetVisibility(ESlateVisibility::Visible);
-				}
-				
-				if (Enemy != LastHoveredEnemy.Get()) {
-					LastHoveredEnemy = Enemy;
-
-					// ASC와 AttributeSet 가져오기
-					UEnemyAbilitySystemComponent* ASC = Cast<UEnemyAbilitySystemComponent>(Enemy->GetAbilitySystemComponent());
-					const UEnemyAttributeSet* AttrSet = ASC ? ASC->GetSet<UEnemyAttributeSet>() : nullptr;
-					if (!ASC || !AttrSet) return;
-
-					FBossDataStruct BossData;
-					BossData.Health = AttrSet->GetHealth();
-					BossData.MaxHealth = AttrSet->GetMaxHealth();
-					BossData.Damage = AttrSet->GetDamage();
-
-					// FEnemyWidgetData 구성
-					FEnemyWidgetData WidgetData = Enemy->GetWidgetData();
-					if (GGwaHUD && IsLocalController()) {
-						GGwaHUD->GetBossWidget()->SetWidget(WidgetData, BossData);
-					}
-				}
-				return;
-			}
-		}
-
-		// 커서가 적 이외 영역에 있을 때: 클리어
-		if (LastHoveredEnemy.IsValid()) {
-			LastHoveredEnemy = nullptr;
-			if (GGwaHUD && IsLocalController()) {
-				GGwaHUD->GetBossWidget()->SetVisibility(ESlateVisibility::Hidden);
-			}
-		}
-	}
-#endif
-}
-
-void AGGwaPlayerController::NotifyClientStateChanged() {
-#if !UE_SERVER && defined(CLIENTMODULE_API)
-	if (IsLocalController() && GGwaHUD && GGwaHUD->GetBaseWidget()) {
-		GGwaHUD->GetBaseWidget()->OnPlayerStateChanged.Broadcast();
-	}
-#endif
+	// Use interface method instead of direct component access
+	HandleClientMouseOverDetection();
 }
 
 void AGGwaPlayerController::OnLoginSuccess(const FString& Token) {
@@ -374,77 +218,71 @@ void AGGwaPlayerController::OnLoginFailure(const FString& ErrorReason) {
 
 void AGGwaPlayerController::RequestRegistration(const FString& Username, const FString& Password)
 {
-#if !UE_SERVER && defined(CLIENTMODULE_API)
 	UE_LOG(LogTemp, Log, TEXT("GGwaPlayerController::RequestRegistration: Username=%s"), *Username);
 
-	if (!AuthService)
-	{
-		UE_LOG(LogTemp, Error, TEXT("GGwaPlayerController: AuthService not available"));
-		OnRegistrationResult_BP(false, TEXT("Authentication service not available"));
-		return;
-	}
-
-	// Create delegate for registration result
-	FRegistrationDelegate RegistrationDelegate;
-	RegistrationDelegate.BindDynamic(this, &AGGwaPlayerController::OnRegistrationComplete);
-
-	// Request registration through AuthService
-	AuthService->RequestRegistration(Username, Password, RegistrationDelegate);
-#else
-	UE_LOG(LogTemp, Warning, TEXT("GGwaPlayerController::RequestRegistration: Called on server or without ClientModule"));
-#endif
+	// Use interface method instead of direct component access
+	RequestClientRegistration(Username, Password);
 }
 
 void AGGwaPlayerController::RequestLogin(const FString& Username, const FString& Password)
 {
-#if !UE_SERVER && defined(CLIENTMODULE_API)
 	UE_LOG(LogTemp, Log, TEXT("GGwaPlayerController::RequestLogin: Username=%s"), *Username);
 
-	if (!AuthService)
-	{
-		UE_LOG(LogTemp, Error, TEXT("GGwaPlayerController: AuthService not available"));
-		OnLoginResult_BP(false, TEXT(""), TEXT(""));
-		return;
-	}
-
-	// Create delegate for login result
-	FLoginDelegate LoginDelegate;
-	LoginDelegate.BindDynamic(this, &AGGwaPlayerController::OnLoginComplete);
-
-	// Request login through AuthService
-	AuthService->RequestLogin(Username, Password, LoginDelegate);
-#else
-	UE_LOG(LogTemp, Warning, TEXT("GGwaPlayerController::RequestLogin: Called on server or without ClientModule"));
-#endif
+	// Use interface method instead of direct component access
+	RequestClientLogin(Username, Password);
 }
 
 // ============================================================================
-// AuthService Callbacks (Client-side)
+// IClientComponentProvider INTERFACE IMPLEMENTATION
 // ============================================================================
 
-void AGGwaPlayerController::OnRegistrationComplete(bool bSuccess, const FString& Message)
-{
-#if !UE_SERVER && defined(CLIENTMODULE_API)
-	UE_LOG(LogTemp, Log, TEXT("GGwaPlayerController::OnRegistrationComplete: Success=%s, Message=%s"), 
-		bSuccess ? TEXT("true") : TEXT("false"), *Message);
-
-	// Forward to Blueprint
-	OnRegistrationResult_BP(bSuccess, Message);
-#endif
+void AGGwaPlayerController::InitializeClientAuth() {
+	// Default implementation - override in client module
+	UE_LOG(LogTemp, Warning, TEXT("InitializeClientAuth: Default implementation called"));
 }
 
-void AGGwaPlayerController::OnLoginComplete(bool bSuccess, const FString& Token, const FString& UserId)
-{
-#if !UE_SERVER && defined(CLIENTMODULE_API)
-	UE_LOG(LogTemp, Log, TEXT("GGwaPlayerController::OnLoginComplete: Success=%s, UserId=%s"), 
-		bSuccess ? TEXT("true") : TEXT("false"), *UserId);
-
-	// Forward to Blueprint
-	OnLoginResult_BP(bSuccess, Token, UserId);
-
-	// If login successful, could automatically connect to game server
-	// For now, we let Blueprint handle the flow
-#endif
+void AGGwaPlayerController::RequestClientRegistration(const FString& Username, const FString& Password) {
+	// Default implementation - override in client module
+	UE_LOG(LogTemp, Warning, TEXT("RequestClientRegistration: Default implementation called"));
 }
-#endif // !UE_SERVER
+
+void AGGwaPlayerController::RequestClientLogin(const FString& Username, const FString& Password) {
+	// Default implementation - override in client module
+	UE_LOG(LogTemp, Warning, TEXT("RequestClientLogin: Default implementation called"));
+}
+
+void AGGwaPlayerController::OnServerRegistrationResult(bool bSuccess, const FString& Message) {
+	// Default implementation - override in client module
+	UE_LOG(LogTemp, Warning, TEXT("OnServerRegistrationResult: Default implementation called"));
+}
+
+void AGGwaPlayerController::OnServerLoginResult(bool bSuccess, const FString& Token, const FString& UserId) {
+	// Default implementation - override in client module
+	UE_LOG(LogTemp, Warning, TEXT("OnServerLoginResult: Default implementation called"));
+}
+
+void AGGwaPlayerController::InitializeClientUI(const USkillComponent* SkillComponent) {
+	// Default implementation - override in client module
+	UE_LOG(LogTemp, Warning, TEXT("InitializeClientUI: Default implementation called"));
+}
+
+void AGGwaPlayerController::HandleClientMouseOverDetection() {
+	// Default implementation - override in client module
+	UE_LOG(LogTemp, Warning, TEXT("HandleClientMouseOverDetection: Default implementation called"));
+}
+
+void AGGwaPlayerController::NotifyClientStateChanged() {
+	// Default implementation - override in client module
+	UE_LOG(LogTemp, Warning, TEXT("NotifyClientStateChanged: Default implementation called"));
+}
+
+void AGGwaPlayerController::ReceiveBossDataFromServer(const FBossDataStruct& BossData) {
+	// Default implementation - override in client module
+	UE_LOG(LogTemp, Warning, TEXT("ReceiveBossDataFromServer: Default implementation called"));
+}
+
+void AGGwaPlayerController::ReceiveSkillDataFromServer(const USkillComponent* SkillComponent) {
+	// Default implementation - override in client module
+	UE_LOG(LogTemp, Warning, TEXT("ReceiveSkillDataFromServer: Default implementation called"));
+}
 

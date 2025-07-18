@@ -43,10 +43,10 @@ protected:
 	 * Called when a new map is loaded
 	 * Automatically creates appropriate UI for the loaded map
 	 */
-	UFUNCTION()
-	void OnMapChanged(UWorld* LoadedWorld);
 
 public:
+	UFUNCTION()
+	void OnMapChanged(UWorld* LoadedWorld);
 	/**
 	 * Set the cache actor reference (called by GameState)
 	 * This replaces the old local MapWidgetMap functionality
