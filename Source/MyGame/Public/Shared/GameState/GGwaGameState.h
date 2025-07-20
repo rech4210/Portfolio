@@ -4,6 +4,7 @@
 #include "GameFramework/GameStateBase.h"
 #include "Net/UnrealNetwork.h"
 #include "GameSharedModule/Public/Interface/UISubsystemInterface.h"
+#include "Shared/Interface/IClientComponentProvider.h"
 #include "GGwaGameState.generated.h"
 
 
@@ -49,8 +50,19 @@ public:
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_InitCacheActor(AUIConfigCacheActor* NewActor);
 
-	void InitializeUISubsystemWithIOC(IUISubsystemInterface* InUISubsystemInterface){
-		UISubsystemInterface = InUISubsystemInterface;
+	void InitializeUISubsystemWithIOC(IUISubsystemInterface* Interface){
+		UISubsystemInterface = Interface;
+	}
+
+	void InitializeClientManagerSubsystemWithIOC(TScriptInterface<IClientManagerInterface> Interface){
+		if (!HasAuthority()) {
+			ClientServiceInterface = Interface;
+		}
+	}
+
+	TScriptInterface<IClientManagerInterface> GetClientManagerInterface() const {
+		if (!ClientServiceInterface) return nullptr;
+		return ClientServiceInterface;
 	}
 
 	/**
@@ -61,4 +73,5 @@ public:
 
 private:
 	IUISubsystemInterface* UISubsystemInterface;
+	TScriptInterface<IClientManagerInterface> ClientServiceInterface;
 };

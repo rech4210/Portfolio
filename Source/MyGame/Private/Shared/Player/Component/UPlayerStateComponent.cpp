@@ -73,7 +73,7 @@ void UPlayerStateComponent::OnRep_CurrentStateTag(){
     {
         // This function seems to be for client-side notification.
         // The original implementation had this. Let's assume it's correct.
-        PlayerController->NotifyClientStateChanged();
+        PlayerController->NotifyStateChanged();
     }
     
     // Broadcast to local listeners on the client as well

@@ -53,7 +53,7 @@ void AGGwaCharacter::OnRep_PlayerState() {
 	InitASC();
 	if (auto PC = GetController()) {
 		if (auto GGwaPC = Cast<AGGwaPlayerController>(PC))	{
-			GGwaPC->InitClientWidget(Cast<AGGwaPlayerState>(GetPlayerState())->GetSkillComponent());
+			GGwaPC->InitializeUI(Cast<AGGwaPlayerState>(GetPlayerState())->GetSkillComponent());
 		}
 	}
 	Cast<AGGwaPlayerState>(GetPlayerState())->InitPlayerState();

@@ -14,6 +14,7 @@
 #include "SkillModule/Public/Components/SkillComponent.h"
 #include "Engine/Engine.h"
 #include "Kismet/GameplayStatics.h"
+#include "UI/UIManagerSubsystem.h"
 
 UClientUIComponent::UClientUIComponent()
 {
@@ -39,13 +40,24 @@ void UClientUIComponent::BeginPlay()
 	{
 		SetupClientInputMode();
 
-		// Register with ClientServiceManager using TScriptInterface pattern
+		// Register with UIManagerSubsystem using TScriptInterface pattern
 		TScriptInterface<IClientUIInterface> UIInterface;
 		UIInterface.SetObject(this);
 		UIInterface.SetInterface(static_cast<IClientUIInterface*>(this));
 
-		// Register with the service manager
-		OwnerController->RegisterClientUIService(UIInterface);
+		// Get UIManagerSubsystem and register this service
+		if (UWorld* World = GetWorld())
+		{
+			if (UUIManagerSubsystem* UISubsystem = World->GetGameInstance()->GetSubsystem<UUIManagerSubsystem>())
+			{
+				UISubsystem->RegisterUIService(UIInterface);
+				UE_LOG(LogTemp, Log, TEXT("ClientUIComponent: Registered with UIManagerSubsystem"));
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("ClientUIComponent: Failed to get UIManagerSubsystem"));
+			}
+		}
 		
 		UE_LOG(LogTemp, Log, TEXT("ClientUIComponent: Initialized for local controller"));
 	}

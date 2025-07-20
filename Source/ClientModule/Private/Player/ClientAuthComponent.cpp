@@ -4,6 +4,7 @@
 #include "MyGame/Public/Shared/Player/GGwaPlayerController.h"
 #include "AuthClientModule/Public/AuthService.h"
 #include "Engine/Engine.h"
+#include "UI/UIManagerSubsystem.h"
 
 UClientAuthComponent::UClientAuthComponent()
 {
@@ -112,10 +113,10 @@ void UClientAuthComponent::OnServerRegistrationResult(bool bSuccess, const FStri
 	BP_OnRegistrationResult(bSuccess, Message);
 	
 	// Also forward to PlayerController's Blueprint event for backward compatibility
-	if (OwnerController)
-	{
-		OwnerController->OnRegistrationResult_BP(bSuccess, Message);
-	}
+	// if (OwnerController)
+	// {
+	// 	OwnerController->OnRegistrationResult_BP(bSuccess, Message);
+	// }
 }
 
 void UClientAuthComponent::OnServerLoginResult(bool bSuccess, const FString& Token, const FString& UserId)
@@ -133,10 +134,10 @@ void UClientAuthComponent::OnServerLoginResult(bool bSuccess, const FString& Tok
 	BP_OnLoginResult(bSuccess, Token, UserId);
 	
 	// Also forward to PlayerController's Blueprint event for backward compatibility
-	if (OwnerController)
-	{
-		OwnerController->OnLoginResult_BP(bSuccess, Token, UserId);
-	}
+	// if (OwnerController)
+	// {
+	// 	OwnerController->OnLoginResult_BP(bSuccess, Token, UserId);
+	// }
 }
 
 // ============================================================================
@@ -152,10 +153,19 @@ void UClientAuthComponent::RegisterSelfToServiceManager()
 		AuthInterface.SetObject(this);
 		AuthInterface.SetInterface(static_cast<IClientAuthInterface*>(this));
 
-		// Register with the service manager through PlayerController
-		OwnerController->RegisterClientAuthService(AuthInterface);
-		
-		UE_LOG(LogTemp, Log, TEXT("ClientAuthComponent: Successfully registered to ClientServiceManager"));
+		// Register with UIManagerSubsystem
+		if (UWorld* World = GetWorld())
+		{
+			if (UUIManagerSubsystem* UISubsystem = World->GetGameInstance()->GetSubsystem<UUIManagerSubsystem>())
+			{
+				UISubsystem->RegisterAuthService(AuthInterface);
+				UE_LOG(LogTemp, Log, TEXT("ClientAuthComponent: Successfully registered to UIManagerSubsystem"));
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("ClientAuthComponent: Failed to get UIManagerSubsystem"));
+			}
+		}
 	}
 	else
 	{

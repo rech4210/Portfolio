@@ -54,69 +54,31 @@ public:
 	virtual void ReceiveSkillData(const USkillComponent* SkillComponent) = 0;
 };
 
-// ============================================================================
-// MAIN CLIENT SERVICE LOCATOR INTERFACE
-// ============================================================================
-
-UINTERFACE(MinimalAPI, Blueprintable)
-class UClientServiceManagerInterface : public UInterface
+/**
+ * Interface for UI Subsystem (Client Module)
+ * This interface allows PlayerController to interact with UIManagerSubsystem
+ */
+UINTERFACE(MinimalAPI)
+class UClientManagerInterface : public UInterface
 {
 	GENERATED_BODY()
 };
 
-/**
- * Main interface for client service management and location
- * Similar to UISubsystemInterface pattern used in GGwaGameState
- * Provides access to various client-specific services through interface segregation
- */
-class MYGAME_API IClientServiceManagerInterface
+class MYGAME_API IClientManagerInterface
 {
 	GENERATED_BODY()
 
 public:
-	// Service location methods
-	virtual IClientAuthInterface* GetAuthService() = 0;
-	virtual IClientUIInterface* GetUIService() = 0;
+	virtual void InitializeUI(const USkillComponent* SkillComponent) = 0;
+	// Auth service delegation
+	virtual void ProcessRegistration(const FString& Username, const FString& Password) = 0;
+	virtual void ProcessLogin(const FString& Username, const FString& Password) = 0;
+	virtual void HandleRegistrationResult(bool bSuccess, const FString& Message) = 0;
+	virtual void HandleLoginResult(bool bSuccess, const FString& Token, const FString& UserId) = 0;
 	
-	// Service registration methods (called from ClientModule)
-	virtual void SetAuthService(TScriptInterface<IClientAuthInterface> AuthService) = 0;
-	virtual void SetUIService(TScriptInterface<IClientUIInterface> UIService) = 0;
-	
-	// Service availability check
-	virtual bool IsServiceReady() const = 0;
-};
-
-// ============================================================================
-// LEGACY COMPATIBILITY INTERFACE
-// ============================================================================
-
-UINTERFACE(MinimalAPI, Blueprintable)
-class UClientComponentProvider : public UInterface
-{
-	GENERATED_BODY()
-};
-
-/**
- * Legacy interface for providing access to client-specific components
- * Now delegates to IClientServiceManagerInterface for actual implementation
- * Maintained for backward compatibility
- */
-class MYGAME_API IClientComponentProvider
-{
-	GENERATED_BODY()
-
-public:
-	// Authentication component interface
-	virtual void InitializeClientAuth() = 0;
-	virtual void RequestClientRegistration(const FString& Username, const FString& Password) = 0;
-	virtual void RequestClientLogin(const FString& Username, const FString& Password) = 0;
-	virtual void OnServerRegistrationResult(bool bSuccess, const FString& Message) = 0;
-	virtual void OnServerLoginResult(bool bSuccess, const FString& Token, const FString& UserId) = 0;
-
-	// UI component interface
-	virtual void InitializeClientUI(const class USkillComponent* SkillComponent) = 0;
-	virtual void HandleClientMouseOverDetection() = 0;
-	virtual void NotifyClientStateChanged() = 0;
-	virtual void ReceiveBossDataFromServer(const struct FBossDataStruct& BossData) = 0;
-	virtual void ReceiveSkillDataFromServer(const class USkillComponent* SkillComponent) = 0;
+	// UI service delegation
+	virtual void ProcessMouseOverDetection() = 0;
+	virtual void NotifyStateChanged() = 0;
+	virtual void ProcessBossData(const FBossDataStruct& BossData) = 0;
+	virtual void ProcessSkillData(const USkillComponent* SkillComponent) = 0;
 };

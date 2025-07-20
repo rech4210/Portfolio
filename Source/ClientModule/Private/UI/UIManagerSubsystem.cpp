@@ -5,6 +5,7 @@
 #include "Blueprint/UserWidget.h"
 #include "Shared/Cache/UIConfigCacheActor.h"
 #include "Shared/GameState/GGwaGameState.h"
+#include "SkillModule/Public/Components/SkillComponent.h"
 
 void UUIManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -15,26 +16,24 @@ void UUIManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	{
 		if (AGGwaGameState * GameState = Cast<AGGwaGameState>(World->GetGameState())) {
 			GameState->InitializeUISubsystemWithIOC(this);
+			GameState->InitializeClientManagerSubsystemWithIOC(this);
 		}
 	}
-	// Register for world subsystem events instead of world delegates
-	// This is more reliable and doesn't have the compilation issue
 	
 	UE_LOG(LogTemp, Log, TEXT("UIManagerSubsystem: Initialized - will listen for cache actor from GameState"));
 }
 
 void UUIManagerSubsystem::Deinitialize()
 {
-	// Clean up current widget
 	RemoveCurrentWidget();
-
-	// Clear cache actor reference
 	CacheActor = nullptr;
 
 	UE_LOG(LogTemp, Log, TEXT("UIManagerSubsystem: Deinitialized"));
 
 	Super::Deinitialize();
 }
+
+/* 기존 Subsystem에서 제공되던 함수를 모두 Client 측 Component의 역할로 위임시킬것.*/
 
 void UUIManagerSubsystem::OnMapChanged(UWorld* LoadedWorld)
 {
@@ -126,4 +125,179 @@ void UUIManagerSubsystem::RemoveCurrentWidget()
 		CurrentWidget = nullptr;
 		UE_LOG(LogTemp, Log, TEXT("UIManagerSubsystem::RemoveCurrentWidget: Removed current widget"));
 	}
+}
+
+// ============================================================================
+// IClientUIManagerInterface IMPLEMENTATION 
+// ============================================================================
+
+void UUIManagerSubsystem::RegisterAuthService(TScriptInterface<IClientAuthInterface> AuthService)
+{
+	if (AuthService)
+	{
+		RegisteredAuthService = AuthService;
+		UE_LOG(LogTemp, Log, TEXT("UIManagerSubsystem: Auth service registered"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UIManagerSubsystem: Failed to register auth service - null interface"));
+	}
+}
+
+void UUIManagerSubsystem::RegisterUIService(TScriptInterface<IClientUIInterface> UIService)
+{
+	if (UIService)
+	{
+		RegisteredUIService = UIService;
+		UE_LOG(LogTemp, Log, TEXT("UIManagerSubsystem: UI service registered"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UIManagerSubsystem: Failed to register UI service - null interface"));
+	}
+}
+
+// Auth service delegation
+void UUIManagerSubsystem::InitializeAuth()
+{
+	if (RegisteredAuthService)
+	{
+		RegisteredAuthService->InitializeAuth();
+		UE_LOG(LogTemp, Log, TEXT("UIManagerSubsystem: Delegated InitializeAuth"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UIManagerSubsystem: No auth service registered"));
+	}
+}
+
+void UUIManagerSubsystem::ProcessRegistration(const FString& Username, const FString& Password)
+{
+	if (RegisteredAuthService)
+	{
+		RegisteredAuthService->RequestRegistration(Username, Password);
+		UE_LOG(LogTemp, Log, TEXT("UIManagerSubsystem: Processing registration for user: %s"), *Username);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UIManagerSubsystem: No auth service registered for registration"));
+	}
+}
+
+void UUIManagerSubsystem::ProcessLogin(const FString& Username, const FString& Password)
+{
+	if (RegisteredAuthService)
+	{
+		RegisteredAuthService->RequestLogin(Username, Password);
+		UE_LOG(LogTemp, Log, TEXT("UIManagerSubsystem: Processing login for user: %s"), *Username);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UIManagerSubsystem: No auth service registered for login"));
+	}
+}
+
+void UUIManagerSubsystem::HandleRegistrationResult(bool bSuccess, const FString& Message)
+{
+	if (RegisteredAuthService)
+	{
+		RegisteredAuthService->OnServerRegistrationResult(bSuccess, Message);
+		UE_LOG(LogTemp, Log, TEXT("UIManagerSubsystem: Handled registration result - Success: %s"), bSuccess ? TEXT("true") : TEXT("false"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UIManagerSubsystem: No auth service registered for registration result"));
+	}
+}
+
+void UUIManagerSubsystem::HandleLoginResult(bool bSuccess, const FString& Token, const FString& UserId)
+{
+	if (RegisteredAuthService)
+	{
+		RegisteredAuthService->OnServerLoginResult(bSuccess, Token, UserId);
+		UE_LOG(LogTemp, Log, TEXT("UIManagerSubsystem: Handled login result - Success: %s, UserId: %s"), 
+			bSuccess ? TEXT("true") : TEXT("false"), *UserId);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UIManagerSubsystem: No auth service registered for login result"));
+	}
+}
+
+// UI service delegation
+void UUIManagerSubsystem::InitializeUI(const USkillComponent* SkillComponent)
+{
+	if (RegisteredUIService)
+	{
+		RegisteredUIService->InitializeUI(SkillComponent);
+		UE_LOG(LogTemp, Log, TEXT("UIManagerSubsystem: Delegated InitializeUI"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UIManagerSubsystem: No UI service registered"));
+	}
+}
+
+void UUIManagerSubsystem::ProcessMouseOverDetection()
+{
+	if (RegisteredUIService)
+	{
+		RegisteredUIService->HandleMouseOverDetection();
+		// No log here as this is called frequently
+	}
+	else
+	{
+		UE_LOG(LogTemp, VeryVerbose, TEXT("UIManagerSubsystem: No UI service registered for mouse detection"));
+	}
+}
+
+void UUIManagerSubsystem::NotifyStateChanged()
+{
+	if (RegisteredUIService)
+	{
+		RegisteredUIService->NotifyStateChanged();
+		UE_LOG(LogTemp, Log, TEXT("UIManagerSubsystem: Delegated NotifyStateChanged"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UIManagerSubsystem: No UI service registered for state change"));
+	}
+}
+
+void UUIManagerSubsystem::ProcessBossData(const FBossDataStruct& BossData)
+{
+	if (RegisteredUIService)
+	{
+		RegisteredUIService->ReceiveBossData(BossData);
+		UE_LOG(LogTemp, Log, TEXT("UIManagerSubsystem: Processing boss data"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UIManagerSubsystem: No UI service registered for boss data"));
+	}
+}
+
+void UUIManagerSubsystem::ProcessSkillData(const USkillComponent* SkillComponent)
+{
+	if (RegisteredUIService)
+	{
+		RegisteredUIService->ReceiveSkillData(SkillComponent);
+		UE_LOG(LogTemp, Log, TEXT("UIManagerSubsystem: Processing skill data"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UIManagerSubsystem: No UI service registered for skill data"));
+	}
+}
+
+bool UUIManagerSubsystem::IsServiceReady() const
+{
+	bool bAuthReady = RegisteredAuthService != nullptr;
+	bool bUIReady = RegisteredUIService != nullptr;
+	
+	UE_LOG(LogTemp, VeryVerbose, TEXT("UIManagerSubsystem service status - Auth: %s, UI: %s"), 
+		bAuthReady ? TEXT("Ready") : TEXT("Not Ready"), 
+		bUIReady ? TEXT("Ready") : TEXT("Not Ready"));
+		
+	return bAuthReady && bUIReady;
 }

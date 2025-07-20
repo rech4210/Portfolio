@@ -104,7 +104,7 @@ void AGGwaPlayerState::OnSkillSlotsUpdated() const{
 	{
 		return;
 	}
-	Controller->Client_ReceiveSkillData(SkillComponent);
+	Controller->ProcessSkillData(SkillComponent);
 }
 
 // void AGGwaPlayerState::SetSkillComponent(USkillComponent* NewComponent) {

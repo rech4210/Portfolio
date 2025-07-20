@@ -1,37 +1,27 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #include "Shared/Player/GGwaPlayerController.h"
-
 #include "AbilitySystemComponent.h"
 #include "Abilities/GameplayAbilityTypes.h"
 #include "Shared/AI/Interface/ServerLogicBridge.h"
 #include "Shared/GAS/GGwaAbilitySystemComponent.h"
 #include "Shared/Player/GGwaCharacter.h"
 #include "Shared/Player/GGwaPlayerState.h"
-#include "Shared/Service/ClientServiceManager.h"
 #include "AuthModule/Public/AuthSubsystem.h"
+#include "Engine/World.h"
+#include "Shared/GameState/GGwaGameState.h"
 
 AGGwaPlayerController::AGGwaPlayerController() {
-	// Create ClientServiceManager instance
-	ClientServiceManager = CreateDefaultSubobject<UClientServiceManager>(TEXT("ClientServiceManager"));
+
 }
 
 void AGGwaPlayerController::BeginPlay() {
 	Super::BeginPlay();
-	
-	// Server-client logging
 	UE_LOG(LogTemp, Warning, TEXT("IsServer: %d | IsLocallyControlled: %d"), HasAuthority(), IsLocalController());
 	
-}
-
-void AGGwaPlayerController::InitClientWidget(const USkillComponent* SkillComponent) {
-}
-
-
-void AGGwaPlayerController::Client_ReceiveBossData_Implementation(const FBossDataStruct& BossCharacter) {
-}
-
-void AGGwaPlayerController::Client_ReceiveSkillData_Implementation(const USkillComponent* SkillComponent) {
+	if (IsLocalController()){
+		if (auto ClientManagerInterface = Cast<AGGwaGameState>(GetWorld()->GetGameState())->GetClientManagerInterface()) {
+			CachedClientManagerInterface = ClientManagerInterface;
+		}
+	}
 }
 
 void AGGwaPlayerController::AcknowledgePossession(class APawn* PossessedPawn) {
@@ -71,6 +61,7 @@ void AGGwaPlayerController::Request_Client_TravelToGameWorld(const FString& MapU
 bool AGGwaPlayerController::IsAuthRPCAvailable() const {
 	return true;
 }
+
 // ============================================================================
 // AUTHENTICATION RPC IMPLEMENTATIONS
 // ============================================================================
@@ -87,7 +78,7 @@ void AGGwaPlayerController::Server_Register_Implementation(const FString& Userna
 
 	if (UAuthSubsystem* AuthSubsystem = GetGameInstance()->GetSubsystem<UAuthSubsystem>())
 	{
-		AuthSubsystem->OnServerRegistrationComplete.AddDynamic(this, &AGGwaPlayerController::OnAuthSubsystemRegistrationComplete);
+		AuthSubsystem->OnServerRegistrationComplete.AddDynamic(this, &AGGwaPlayerController::Client_OnRegistrationResult);
 		AuthSubsystem->RequestServerRegistration(Username, Password, ClientIP);
 	}
 	else
@@ -115,7 +106,7 @@ void AGGwaPlayerController::Server_Login_Implementation(const FString& Username,
 	if (UAuthSubsystem* AuthSubsystem = GetGameInstance()->GetSubsystem<UAuthSubsystem>())
 	{
 		// Bind to AuthSubsystem events to get the result
-		AuthSubsystem->OnServerAuthenticationComplete.AddDynamic(this, &AGGwaPlayerController::OnAuthSubsystemAuthenticationComplete);
+		AuthSubsystem->OnServerAuthenticationComplete.AddDynamic(this, &AGGwaPlayerController::Client_OnLoginResult);
 
 		// Send login request to AuthSubsystem
 		AuthSubsystem->RequestServerAuthentication(Username, Password, ClientIP, this);
@@ -123,7 +114,6 @@ void AGGwaPlayerController::Server_Login_Implementation(const FString& Username,
 	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("AGGwaPlayerController::Server_Login: AuthSubsystem not found"));
-		// Client_OnLoginResult(false, TEXT(""), TEXT(""));
 	}
 }
 
@@ -139,22 +129,12 @@ void AGGwaPlayerController::Client_OnRegistrationResult_Implementation(bool bSuc
 		bSuccess ? TEXT("true") : TEXT("false"), *Message);
 
 	// Use ClientServiceManager for interface method delegation
-	if (ClientServiceManager)
-	{
-		ClientServiceManager->OnServerRegistrationResult(bSuccess, Message);
-	}
 }
 
 void AGGwaPlayerController::Client_OnLoginResult_Implementation(bool bSuccess, const FString& Token, const FString& UserId)
 {
 	UE_LOG(LogTemp, Log, TEXT("AGGwaPlayerController::Client_OnLoginResult: Success=%s, UserId=%s"), 
 		bSuccess ? TEXT("true") : TEXT("false"), *UserId);
-
-	// Use ClientServiceManager for interface method delegation
-	if (ClientServiceManager)
-	{
-		ClientServiceManager->OnServerLoginResult(bSuccess, Token, UserId);
-	}
 }
 
 void AGGwaPlayerController::Client_TravelToGameWorld_Implementation(const FString& MapURL)
@@ -169,142 +149,61 @@ void AGGwaPlayerController::Client_TravelToGameWorld_Implementation(const FStrin
 }
 
 // ============================================================================
-// AuthSubsystem Event Handlers
+// IClientComponentProvider INTERFACE IMPLEMENTATION
+// All calls delegated to UIManagerInterface (interface-based architecture)
 // ============================================================================
 
-void AGGwaPlayerController::OnAuthSubsystemRegistrationComplete(bool bSuccess, const FString& Message)
-{
-	// Forward the result to the client
-	Client_OnRegistrationResult_Implementation(bSuccess, Message);
+TScriptInterface<IClientManagerInterface> AGGwaPlayerController::GetUIManagerInterface() {
+	return CachedClientManagerInterface;
 }
 
-void AGGwaPlayerController::OnAuthSubsystemAuthenticationComplete(bool bSuccess, const FString& Token, const FString& UserId)
-{
-	// Forward the result to the client
-	Client_OnLoginResult_Implementation(bSuccess, Token, UserId);
-
-	// Note: ClientTravel is now handled by AuthSubsystem after game data loading
-	// This prevents duplicate travel calls and ensures data is loaded before travel
+void AGGwaPlayerController::InitializeUI(const USkillComponent* SkillComponent) {
+	if (!IsLocalController()) return;
+	CachedClientManagerInterface->InitializeUI(SkillComponent);
 }
-// void AGGwaPlayerController::Client_OnRewardResult_Implementation(bool bOK, const FRewardData& Data,const FString& Error) {
-// }
+
+void AGGwaPlayerController::ProcessRegistration(const FString& Username, const FString& Password) {
+	if (!IsLocalController()) return;
+	CachedClientManagerInterface->ProcessRegistration(Username, Password);
+}
+
+void AGGwaPlayerController::ProcessLogin(const FString& Username, const FString& Password) {
+	if (!IsLocalController()) return;
+	CachedClientManagerInterface->ProcessLogin(Username, Password);
+}
+
+void AGGwaPlayerController::HandleRegistrationResult(bool bSuccess, const FString& Message) {
+	if (!IsLocalController()) return;
+	CachedClientManagerInterface->HandleRegistrationResult(bSuccess, Message);
+}
+
+void AGGwaPlayerController::HandleLoginResult(bool bSuccess, const FString& Token, const FString& UserId) {
+	if (!IsLocalController()) return;
+	CachedClientManagerInterface->HandleLoginResult(bSuccess, Token, UserId);
+}
+
+void AGGwaPlayerController::ProcessMouseOverDetection() {
+	if (!IsLocalController()) return;
+	CachedClientManagerInterface->ProcessMouseOverDetection();
+}
+
+void AGGwaPlayerController::NotifyStateChanged() {
+	if (!IsLocalController()) return;
+	CachedClientManagerInterface->NotifyStateChanged();
+}
+
+void AGGwaPlayerController::ProcessBossData_Implementation(const FBossDataStruct& BossData) {
+	if (!IsLocalController()) return;
+	CachedClientManagerInterface->ProcessBossData(BossData);
+}
+
+void AGGwaPlayerController::ProcessSkillData_Implementation(const USkillComponent* SkillComponent) {
+	if (!IsLocalController()) return;
+	CachedClientManagerInterface->ProcessSkillData(SkillComponent);
+}
 
 void AGGwaPlayerController::PlayerTick(float DeltaTime) {
+	if (!IsLocalController()) return;
 	Super::PlayerTick(DeltaTime);
-
-	// Delegate to ClientServiceManager instead of direct component access
-	if (ClientServiceManager && IsLocalController())
-	{
-		ClientServiceManager->HandleClientMouseOverDetection();
-	}
+	ProcessMouseOverDetection();
 }
-
-// ============================================================================
-// CLIENT SERVICE REGISTRATION (GGwaGameState pattern)
-// ============================================================================
-
-void AGGwaPlayerController::RegisterClientAuthService(TScriptInterface<IClientAuthInterface> AuthService)
-{
-	if (ClientServiceManager)
-	{
-		UE_LOG(LogTemp, Log, TEXT("GGwaPlayerController: Registering AuthService to ClientServiceManager"));
-		ClientServiceManager->SetAuthService(AuthService);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("GGwaPlayerController: Cannot register AuthService - ClientServiceManager not created"));
-	}
-}
-
-void AGGwaPlayerController::RegisterClientUIService(TScriptInterface<IClientUIInterface> UIService)
-{
-	if (ClientServiceManager)
-	{
-		UE_LOG(LogTemp, Log, TEXT("GGwaPlayerController: Registering UIService to ClientServiceManager"));
-		ClientServiceManager->SetUIService(UIService);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("GGwaPlayerController: Cannot register UIService - ClientServiceManager not created"));
-	}
-}
-
-// ============================================================================
-// IClientComponentProvider INTERFACE IMPLEMENTATION
-// All calls delegated to ClientService
-// ============================================================================
-
-// Authentication component interface
-void AGGwaPlayerController::InitializeClientAuth() {
-	if (ClientServiceManager)
-	{
-		ClientServiceManager->InitializeClientAuth();
-	}
-}
-
-void AGGwaPlayerController::RequestClientRegistration(const FString& Username, const FString& Password) {
-	if (ClientServiceManager)
-	{
-		ClientServiceManager->RequestClientRegistration(Username, Password);
-	}
-}
-
-void AGGwaPlayerController::RequestClientLogin(const FString& Username, const FString& Password) {
-	if (ClientServiceManager)
-	{
-		ClientServiceManager->RequestClientLogin(Username, Password);
-	}
-}
-
-void AGGwaPlayerController::OnServerRegistrationResult(bool bSuccess, const FString& Message) {
-	if (ClientServiceManager)
-	{
-		ClientServiceManager->OnServerRegistrationResult(bSuccess, Message);
-	}
-}
-
-void AGGwaPlayerController::OnServerLoginResult(bool bSuccess, const FString& Token, const FString& UserId) {
-	if (ClientServiceManager)
-	{
-		ClientServiceManager->OnServerLoginResult(bSuccess, Token, UserId);
-	}
-}
-
-
-// UI component interface
-
-void AGGwaPlayerController::InitializeClientUI(const USkillComponent* SkillComponent) {
-	if (ClientServiceManager)
-	{
-		ClientServiceManager->InitializeClientUI(SkillComponent);
-	}
-}
-
-void AGGwaPlayerController::HandleClientMouseOverDetection() {
-	if (ClientServiceManager)
-	{
-		ClientServiceManager->HandleClientMouseOverDetection();
-	}
-}
-
-void AGGwaPlayerController::NotifyClientStateChanged() {
-	if (ClientServiceManager)
-	{
-		ClientServiceManager->NotifyClientStateChanged();
-	}
-}
-
-void AGGwaPlayerController::ReceiveBossDataFromServer(const FBossDataStruct& BossData) {
-	if (ClientServiceManager)
-	{
-		ClientServiceManager->ReceiveBossDataFromServer(BossData);
-	}
-}
-
-void AGGwaPlayerController::ReceiveSkillDataFromServer(const USkillComponent* SkillComponent) {
-	if (ClientServiceManager)
-	{
-		ClientServiceManager->ReceiveSkillDataFromServer(SkillComponent);
-	}
-}
-

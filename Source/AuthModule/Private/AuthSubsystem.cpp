@@ -776,7 +776,7 @@ void UAuthSubsystem::OnGameDataLoaded(bool bSuccess, const FString& UserId, APla
 		
 		// Trigger ClientTravel to move player to game world
 		// Note: This is moved from GGwaPlayerController to avoid duplication
-		FString GameWorldURL = TEXT("/Game/Maps/ThirdPersonMap?listen"); // Replace with your actual game world map
+		FString GameWorldURL = TEXT("/Game/Map/ThirdPersonMap?listen"); // Replace with your actual game world map
 		// Use ClientTravel to move to game world
 		if (IAuthRPCInterface* AuthRPC = Cast<IAuthRPCInterface>(PlayerController))
 		{

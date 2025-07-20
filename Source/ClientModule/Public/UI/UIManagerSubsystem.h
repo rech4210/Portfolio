@@ -5,83 +5,84 @@
 #include "Blueprint/UserWidget.h"
 #include "Engine/World.h"
 #include "Interface/UISubsystemInterface.h"
+#include "MyGame/Public/Shared/Interface/IClientComponentProvider.h"
 #include "UIManagerSubsystem.generated.h"
 
 class AUIConfigCacheActor;
 
-/**
- * UI Manager Subsystem for automatic widget creation/removal based on map changes
- * Manages UI lifecycle automatically when transitioning between different maps
- * Now works with replicated UIConfigCacheActor for server-controlled UI configuration
- */
 UCLASS(BlueprintType, Blueprintable)
-class CLIENTMODULE_API UUIManagerSubsystem : public UGameInstanceSubsystem, public IUISubsystemInterface
+class CLIENTMODULE_API UUIManagerSubsystem : public UGameInstanceSubsystem, public IUISubsystemInterface, public IClientManagerInterface
 {
 	GENERATED_BODY()
 
 public:
-	// USubsystem interface
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
+	
+	// ============================================================================
+	// UI
+	// ============================================================================
 
-protected:
-	/**
-	 * Currently active widget instance
-	 * Cached to allow proper cleanup when transitioning between maps
-	 */
-	UPROPERTY(Transient)
-	TObjectPtr<UUserWidget> CurrentWidget;
-
-	/**
-	 * Reference to the replicated cache actor
-	 * Contains server-controlled map-widget mappings
-	 */
-	UPROPERTY(Transient)
-	TObjectPtr<AUIConfigCacheActor> CacheActor;
-
-	/**
-	 * Called when a new map is loaded
-	 * Automatically creates appropriate UI for the loaded map
-	 */
-
-public:
 	UFUNCTION()
 	void OnMapChanged(UWorld* LoadedWorld);
-	/**
-	 * Set the cache actor reference (called by GameState)
-	 * This replaces the old local MapWidgetMap functionality
-	 */
+
 	// UFUNCTION(BlueprintCallable, Category = "UI Manager")
 	virtual void SetCacheActor(AUIConfigCacheActor* NewCacheActor) override;
 
-	/**
-	 * Request to set widget for a specific map through cache actor
-	 * This will send request to replicated cache actor
-	 */
 	UFUNCTION(BlueprintCallable, Category = "UI Manager")
 	void RequestSetWidgetForMap(FName MapName, TSubclassOf<UUserWidget> WidgetClass);
 
-	/**
-	 * Get currently active widget
-	 */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "UI Manager")
 	UUserWidget* GetCurrentWidget() const { return CurrentWidget; }
 
-	/**
-	 * Get the cache actor
-	 */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "UI Manager")
 	AUIConfigCacheActor* GetCacheActor() const { return CacheActor; }
 
-	/**
-	 * Force refresh current widget (useful for debugging)
-	 */
 	UFUNCTION(BlueprintCallable, Category = "UI Manager")
 	void RefreshCurrentWidget();
 
-	/**
-	 * Manually remove current widget
-	 */
+
+	// ============================================================================
+	// ClientComponent IMPLEMENTATION
+	// ============================================================================
+
 	UFUNCTION(BlueprintCallable, Category = "UI Manager")
 	void RemoveCurrentWidget();
+	void RegisterAuthService(TScriptInterface<IClientAuthInterface> AuthService);
+	void RegisterUIService(TScriptInterface<IClientUIInterface> UIService);
+	void InitializeAuth();
+	bool IsServiceReady() const;
+
+	// ============================================================================
+	// IClientUIManagerInterface IMPLEMENTATION
+	// ============================================================================
+
+	virtual void InitializeUI(const USkillComponent* SkillComponent) override;
+	virtual void ProcessRegistration(const FString& Username, const FString& Password) override;
+	virtual void ProcessLogin(const FString& Username, const FString& Password) override;
+	virtual void HandleRegistrationResult(bool bSuccess, const FString& Message) override;
+	virtual void HandleLoginResult(bool bSuccess, const FString& Token, const FString& UserId) override;
+
+	virtual void ProcessMouseOverDetection() override;
+	virtual void NotifyStateChanged() override;
+	virtual void ProcessBossData(const FBossDataStruct& BossData) override;
+	virtual void ProcessSkillData(const USkillComponent* SkillComponent) override;
+
+protected:
+
+	UPROPERTY(Transient)
+	TObjectPtr<UUserWidget> CurrentWidget;
+
+	UPROPERTY(Transient)
+	TObjectPtr<AUIConfigCacheActor> CacheActor;
+
+	// ============================================================================
+	// IOC SERVICE MANAGEMENT
+	// ============================================================================
+
+	UPROPERTY(Transient)
+	TScriptInterface<IClientAuthInterface> RegisteredAuthService;
+	
+	UPROPERTY(Transient)
+	TScriptInterface<IClientUIInterface> RegisteredUIService;
 };
