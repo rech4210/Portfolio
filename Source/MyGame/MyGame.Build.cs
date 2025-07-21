@@ -29,7 +29,9 @@ public class MyGame : ModuleRules
 			"DatabaseModule",
 			"InventoryModule",
 			"EquipmentModule",
-			"AuthModule"
+			"AuthModule",
+			"Sockets",
+			"Networking",
 		});
 
 		//Circular dependency

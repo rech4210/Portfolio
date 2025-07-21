@@ -76,6 +76,10 @@ void AGGwaPlayerController::Request_Client_TravelToGameWorld(const FString& MapU
 	Client_TravelToGameWorld_Implementation(MapURL);
 }
 
+void AGGwaPlayerController::Request_Client_ConnectToGameServerWithToken(const FString& Token, const FString& UserId) {
+	ConnectToGameServerWithToken(Token, UserId);
+}
+
 bool AGGwaPlayerController::IsAuthRPCAvailable() const {
 	return true;
 }
@@ -244,6 +248,13 @@ void AGGwaPlayerController::HandleLoginResult(bool bSuccess, const FString& Toke
 		CachedClientManagerInterface->HandleLoginResult(bSuccess, Token, UserId);
 		UE_LOG(LogTemp, Log, TEXT("GGwaPlayerController::HandleLoginResult - Success: %s, UserId: %s"), 
 			bSuccess ? TEXT("true") : TEXT("false"), *UserId);
+		
+		// Token-based server connection is now handled by AuthSubsystem in OnGameDataLoaded
+		// No need to call ConnectToGameServerWithToken here to avoid duplication
+		if (bSuccess)
+		{
+			UE_LOG(LogTemp, Log, TEXT("GGwaPlayerController::HandleLoginResult - Login successful, AuthSubsystem will handle server connection"));
+		}
 	}
 	else
 	{
@@ -308,4 +319,36 @@ void AGGwaPlayerController::PlayerTick(float DeltaTime) {
 	if (!IsLocalController()) return;
 	Super::PlayerTick(DeltaTime);
 	ProcessMouseOverDetection();
+}
+
+// ============================================================================
+// TOKEN-BASED SERVER CONNECTION
+// ============================================================================
+
+void AGGwaPlayerController::ConnectToGameServerWithToken(const FString& Token, const FString& UserId)
+{
+	if (!IsLocalController()) return;
+
+	// Store token for server validation
+	CachedAuthToken = Token;
+	CachedUserId = UserId;
+	
+	// Construct server URL with token parameter
+	// Format: 127.0.0.1:7777/Game/Map/ThirdPersonMap?listen&token=JWT_TOKEN_HERE
+	const FString ServerIP = TEXT("127.0.0.1");
+	const FString ServerPort = TEXT("7777");
+	const FString MapPath = TEXT("/Game/Map/ThirdPersonMap");
+	const FString ServerURL = FString::Printf(
+		TEXT("%s:%s?Game=%s?listen?token=%s?userid=%s"),
+		*ServerIP,
+		*ServerPort,
+		*MapPath,
+		*Token,
+		*UserId
+	);
+	UE_LOG(LogTemp, Log, TEXT("GGwaPlayerController::ConnectToGameServerWithToken - Connecting to: %s"), *ServerURL);
+	UE_LOG(LogTemp, Log, TEXT("GGwaPlayerController::ConnectToGameServerWithToken - Token: %s"), *Token.Left(20)); // Log first 20 chars for security
+
+	// Perform client travel with token
+	ClientTravel(ServerURL, TRAVEL_Absolute);
 }

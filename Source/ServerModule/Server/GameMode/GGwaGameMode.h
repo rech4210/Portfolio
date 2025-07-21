@@ -59,4 +59,29 @@ private:
 
 	// PreLogin에서 인증에 성공한 유저 정보를 임시 저장하는 맵
 	TMap<FUniqueNetIdRepl, FString> PendingPlayers;
+
+	// Async token verification management
+	struct FPendingTokenVerification
+	{
+		FString Token;
+		FString ProvidedUserId;
+		FString Address;
+		FUniqueNetIdRepl UniqueId;
+		double StartTime;
+		bool bCompleted;
+		bool bSuccess;
+		FString ErrorMessage;
+
+		FPendingTokenVerification()
+			: StartTime(0.0), bCompleted(false), bSuccess(false) {}
+	};
+
+	// Map to track pending token verifications during PreLogin
+	TMap<FUniqueNetIdRepl, FPendingTokenVerification> PendingTokenVerifications;
+
+	// Async token verification callback
+	void OnTokenVerificationComplete(bool bSuccess, const FString& VerifiedUserId, const FUniqueNetIdRepl& UniqueId);
+
+	// Check and process completed token verifications
+	void ProcessPendingTokenVerifications();
 };

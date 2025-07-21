@@ -46,6 +46,10 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Auth Server")
 	bool bUseExternalAuthServer = true;
 
+	// Token caching for server connection
+	UPROPERTY()
+	TMap<FString, FString> UserTokenCache; // UserId -> JWT Token mapping
+
 public:
 	// USubsystem interface
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
@@ -132,4 +136,9 @@ private:
 	// Game Data Loading after successful authentication
 	void LoadGameDataForUser(const FString& UserId, class APlayerController* PlayerController);
 	void OnGameDataLoaded(bool bSuccess, const FString& UserId, class APlayerController* PlayerController);
+	
+	// Token caching management
+	void CacheTokenForUser(const FString& UserId, const FString& Token);
+	FString GetCachedTokenForUser(const FString& UserId) const;
+	void ClearTokenCache();
 };

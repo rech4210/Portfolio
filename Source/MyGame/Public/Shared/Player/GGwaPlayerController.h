@@ -48,6 +48,7 @@ public:
 	virtual void RequestServerRegistration(const FString& Username, const FString& Password) override;
 	virtual void RequestServerLogin(const FString& Username, const FString& Password) override;
 	virtual void Request_Client_TravelToGameWorld(const FString& MapURL) override;
+	virtual void Request_Client_ConnectToGameServerWithToken(const FString& Token, const FString& UserId) override;
 	virtual bool IsAuthRPCAvailable() const override;
 	
 
@@ -118,6 +119,30 @@ public:
     virtual void ProcessBossData(const FBossDataStruct& BossData) override;
 	UFUNCTION(Client, Reliable , BlueprintCallable, Category = "Client Service")
     virtual void ProcessSkillData(const USkillComponent* SkillComponent) override;
+
+	UFUNCTION(BlueprintCallable, Category = "Authentication")
+	void ConnectToGameServerWithToken(const FString& Token, const FString& UserId);
+
+	// ============================================================================
+	// TOKEN-BASED SERVER CONNECTION
+	// ============================================================================
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Authentication")
+	FString GetCachedAuthToken() const { return CachedAuthToken; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Authentication")
+	FString GetCachedUserId() const { return CachedUserId; }
+
+private:
+	// ============================================================================
+	// TOKEN MANAGEMENT
+	// ============================================================================
+
+	UPROPERTY(Transient)
+	FString CachedAuthToken;
+
+	UPROPERTY(Transient)
+	FString CachedUserId;
 	
 };
 

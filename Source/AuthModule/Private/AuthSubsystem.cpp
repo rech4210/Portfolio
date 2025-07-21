@@ -402,8 +402,10 @@ void UAuthSubsystem::OnAuthenticationResponse(FHttpRequestPtr Request, FHttpResp
 				LogSecurityEvent(TEXT("authentication_success"), 
 					FString::Printf(TEXT("UserId: %s"), *AuthResponse.UserId));
 
+				// Cache token for server connection
+				CacheTokenForUser(AuthResponse.UserId, AuthResponse.Token);
+
 				// Load game data for authenticated user
-				//토큰을 미리 저장해둘까?
 				LoadGameDataForUser(AuthResponse.UserId, RequestingController);
 				
 				BroadcastAuthenticationResult(true, AuthResponse.Token, AuthResponse.UserId, RequestingController);
@@ -774,21 +776,38 @@ void UAuthSubsystem::OnGameDataLoaded(bool bSuccess, const FString& UserId, APla
 	{
 		UE_LOG(LogTemp, Log, TEXT("AuthSubsystem: Game data loaded successfully for user %s"), *UserId);
 		
-		// Trigger ClientTravel to move player to game world
-		// Note: This is moved from GGwaPlayerController to avoid duplication
-		FString GameWorldURL = TEXT("/Game/Map/ThirdPersonMap?listen"); // Replace with your actual game world map
-		// Use ClientTravel to move to game world
+		// Find the cached token for this user
+		FString AuthToken = GetCachedTokenForUser(UserId);
+		
+		if (AuthToken.IsEmpty())
+		{
+			UE_LOG(LogTemp, Error, TEXT("AuthSubsystem: No cached token found for user %s"), *UserId);
+			
+			// Fallback to basic game world travel without token
+			FString GameWorldURL = TEXT("/Game/Map/ThirdPersonMap?listen");
+			if (IAuthRPCInterface* AuthRPC = Cast<IAuthRPCInterface>(PlayerController))
+			{
+				AuthRPC->Request_Client_TravelToGameWorld(GameWorldURL);
+			}
+			return;
+		}
+		
+		// Use AuthRPCInterface to initiate token-based server connection
 		if (IAuthRPCInterface* AuthRPC = Cast<IAuthRPCInterface>(PlayerController))
 		{
-			AuthRPC->Request_Client_TravelToGameWorld(GameWorldURL);
+			UE_LOG(LogTemp, Log, TEXT("AuthSubsystem: Initiating token-based server connection for user %s"), *UserId);
+			UE_LOG(LogTemp, Log, TEXT("AuthSubsystem: Token (first 20 chars): %s"), *AuthToken.Left(20));
+			
+			// Call through AuthRPCInterface (DI pattern)
+			AuthRPC->Request_Client_ConnectToGameServerWithToken(AuthToken, UserId);
 		}
 		else
 		{
-			// Fallback to direct ClientTravel
-			// PlayerController->ClientTravel(GameWorldURL, TRAVEL_Relative);
+			UE_LOG(LogTemp, Error, TEXT("AuthSubsystem: PlayerController does not implement IAuthRPCInterface - cannot perform token-based connection"));
+			
+			// This should not happen if the controller properly implements the interface
+			UE_LOG(LogTemp, Error, TEXT("AuthSubsystem: Check that your PlayerController implements IAuthRPCInterface"));
 		}
-		
-		UE_LOG(LogTemp, Log, TEXT("AuthSubsystem: Initiated client travel to game world for user %s"), *UserId);
 	}
 	else
 	{
@@ -800,4 +819,45 @@ void UAuthSubsystem::OnGameDataLoaded(bool bSuccess, const FString& UserId, APla
 			PlayerController->ClientReturnToMainMenuWithTextReason_Implementation(Reason);
 		}
 	}
+}
+
+// ============================================================================
+// Token Caching Management
+// ============================================================================
+
+void UAuthSubsystem::CacheTokenForUser(const FString& UserId, const FString& Token)
+{
+	if (UserId.IsEmpty() || Token.IsEmpty())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("AuthSubsystem::CacheTokenForUser: Invalid UserId or Token"));
+		return;
+	}
+
+	UserTokenCache.Add(UserId, Token);
+	UE_LOG(LogTemp, Log, TEXT("AuthSubsystem::CacheTokenForUser: Cached token for user %s"), *UserId);
+}
+
+FString UAuthSubsystem::GetCachedTokenForUser(const FString& UserId) const
+{
+	if (UserId.IsEmpty())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("AuthSubsystem::GetCachedTokenForUser: Empty UserId provided"));
+		return FString();
+	}
+
+	if (const FString* FoundToken = UserTokenCache.Find(UserId))
+	{
+		UE_LOG(LogTemp, Log, TEXT("AuthSubsystem::GetCachedTokenForUser: Found cached token for user %s"), *UserId);
+		return *FoundToken;
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("AuthSubsystem::GetCachedTokenForUser: No cached token found for user %s"), *UserId);
+	return FString();
+}
+
+void UAuthSubsystem::ClearTokenCache()
+{
+	int32 ClearedCount = UserTokenCache.Num();
+	UserTokenCache.Empty();
+	UE_LOG(LogTemp, Log, TEXT("AuthSubsystem::ClearTokenCache: Cleared %d cached tokens"), ClearedCount);
 }

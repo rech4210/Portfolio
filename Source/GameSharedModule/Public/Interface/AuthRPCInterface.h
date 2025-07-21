@@ -39,5 +39,16 @@ public:
 	 */
 	virtual bool IsAuthRPCAvailable() const = 0;
 
+	/**
+	 * Travel to game world
+	 * @param MapURL The URL to travel to
+	 */
 	virtual void Request_Client_TravelToGameWorld(const FString& MapURL) = 0;
+
+	/**
+	 * Connect to game server with JWT token for authentication
+	 * @param Token JWT authentication token
+	 * @param UserId User ID for verification
+	 */
+	virtual void Request_Client_ConnectToGameServerWithToken(const FString& Token, const FString& UserId) = 0;
 };

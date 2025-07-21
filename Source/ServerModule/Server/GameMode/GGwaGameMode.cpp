@@ -18,6 +18,10 @@
 #include "MyGame/Public/Shared/GameState/GGwaGameState.h"
 #include "MyGame/Public/Shared/Cache/UIConfigCacheActor.h"
 
+#include "Engine/NetConnection.h"
+#include "Sockets.h"
+#include "Networking.h"
+
 #include "Utill/LocalDataBaseLoader.h"
 
 // TODO: The concrete implementation class headers would be here.
@@ -51,28 +55,49 @@ void AGGwaGameMode::PreLogin(const FString& Options, const FString& Address, con
 	// Options 문자열에서 토큰 파싱
 	// 클라이언트가 OpenLevel 시 "?token=...“ 형태로 보냈다고 가정
 	const FString Token = UGameplayStatics::ParseOption(Options, TEXT("token"));
-	UE_LOG(LogTemp, Warning, TEXT("Token: %s"), *Token);
+	const FString ProvidedUserId = UGameplayStatics::ParseOption(Options, TEXT("userid"));
+	
+	UE_LOG(LogTemp, Warning, TEXT("[Game Server] Provided Token: %s..."), *Token.Left(20));
+	UE_LOG(LogTemp, Warning, TEXT("[Game Server] Provided UserId: %s"), *ProvidedUserId);
 
 	if (Token.IsEmpty())
 	{
 		ErrorMessage = TEXT("No authentication token provided.");
-		UE_LOG(LogTemp, Warning, TEXT("PreLogin failed: %s"), *ErrorMessage);
+		UE_LOG(LogTemp, Warning, TEXT("[Game Server] PreLogin failed: %s"), *ErrorMessage);
 		return;
 	}
 	
-	FString UserId;
-	if (AuthVerificationService->VerifyToken(Token, UserId))
+	// JWT 서버에서 토큰 검증 (비동기 방식으로 변경)
+	// Create pending verification entry
+	FPendingTokenVerification& PendingVerification = PendingTokenVerifications.Add(UniqueId);
+	PendingVerification.Token = Token;
+	PendingVerification.ProvidedUserId = ProvidedUserId;
+	PendingVerification.Address = Address;
+	PendingVerification.UniqueId = UniqueId;
+	PendingVerification.StartTime = FPlatformTime::Seconds();
+	PendingVerification.bCompleted = false;
+	PendingVerification.bSuccess = false;
+
+	UE_LOG(LogTemp, Log, TEXT("[Game Server] Starting async token verification for user: %s"), *ProvidedUserId);
+
+	// Start async token verification
+	if (AuthVerificationService)
 	{
-		// 인증 성공!
-		UE_LOG(LogTemp, Log, TEXT("PreLogin successful for user: %s"), *UserId);
-		// PostLogin에서 맵 이동을 처리하기 위해 플레이어 정보를 임시 저장합니다.
-		PendingPlayers.Add(UniqueId, UserId);
+		FOnTokenVerified OnComplete;
+		OnComplete.BindLambda([this, UniqueId](bool bSuccess, const FString& UserId) {
+			OnTokenVerificationComplete(bSuccess, UserId, UniqueId);
+		});
+		AuthVerificationService->VerifyTokenAsync(Token, OnComplete);
+		
+		UE_LOG(LogTemp, Log, TEXT("[Game Server] PreLogin initiated async token verification"));
+		// Note: Connection approval/denial will be handled in OnTokenVerificationComplete callback
 	}
 	else
 	{
-		// 인증 실패
-		ErrorMessage = TEXT("Invalid authentication token.");
-		UE_LOG(LogTemp, Warning, TEXT("PreLogin failed: %s"), *ErrorMessage);
+		ErrorMessage = TEXT("Authentication service unavailable.");
+		UE_LOG(LogTemp, Error, TEXT("[Game Server] PreLogin failed: AuthVerificationService not available"));
+		PendingTokenVerifications.Remove(UniqueId);
+		return;
 	}
 	
 
@@ -126,6 +151,10 @@ void AGGwaGameMode::BeginPlay()
 
 void AGGwaGameMode::Tick(float DeltaSeconds) {
 	Super::Tick(DeltaSeconds);
+	
+	// Process pending token verifications
+	ProcessPendingTokenVerifications();
+	
 	static float LogTimer = 0.0f;
 	LogTimer += DeltaSeconds;
 	if (LogTimer >= GAME_MODE_FREQUENCY)
@@ -294,5 +323,120 @@ void AGGwaGameMode::RequestFlowControllerInit(EModeType ModeType)
 	if (HasAuthority() && BattleFlowController)
 	{
 		BattleFlowController->InitBattleMode(ModeType);
+	}
+}
+
+// ============================================================================
+// ASYNC TOKEN VERIFICATION
+// ============================================================================
+
+void AGGwaGameMode::OnTokenVerificationComplete(bool bSuccess, const FString& VerifiedUserId, const FUniqueNetIdRepl& UniqueId)
+{
+	UE_LOG(LogTemp, Log, TEXT("[Game Server] Token verification completed for UniqueId: %s, Success: %s"), 
+		*UniqueId->ToString(), bSuccess ? TEXT("true") : TEXT("false"));
+
+	// Find the pending verification
+	FPendingTokenVerification* PendingVerification = PendingTokenVerifications.Find(UniqueId);
+	if (!PendingVerification)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[Game Server] No pending verification found for UniqueId: %s"), *UniqueId->ToString());
+		return;
+	}
+
+	// Update pending verification status
+	PendingVerification->bCompleted = true;
+	PendingVerification->bSuccess = bSuccess;
+
+	if (bSuccess)
+	{
+		// 추가 보안: 제공된 UserId가 검증된 UserId와 일치하는지 확인
+		if (!PendingVerification->ProvidedUserId.IsEmpty() && PendingVerification->ProvidedUserId != VerifiedUserId)
+		{
+			PendingVerification->bSuccess = false;
+			PendingVerification->ErrorMessage = TEXT("User ID mismatch with token.");
+			UE_LOG(LogTemp, Warning, TEXT("[Game Server] Token verification failed: User ID mismatch. Provided: %s, Verified: %s"), 
+				*PendingVerification->ProvidedUserId, *VerifiedUserId);
+		}
+		else
+		{
+			// 토큰 검증 성공!
+			UE_LOG(LogTemp, Log, TEXT("[Game Server] Token verification successful for user: %s"), *VerifiedUserId);
+			UE_LOG(LogTemp, Log, TEXT("[Game Server] Token verified, allowing connection to ThirdPersonMap"));
+			
+			// PostLogin에서 사용하기 위해 플레이어 정보 저장
+			PendingPlayers.Add(UniqueId, VerifiedUserId);
+		}
+	}
+	else
+	{
+		// 토큰 검증 실패
+		PendingVerification->ErrorMessage = TEXT("Invalid authentication token.");
+		UE_LOG(LogTemp, Warning, TEXT("[Game Server] Token verification failed for user: %s"), *PendingVerification->ProvidedUserId);
+	}
+
+	// Process completed verifications will be handled in Tick()
+}
+
+void AGGwaGameMode::ProcessPendingTokenVerifications()
+{
+	// Process completed token verifications
+	TArray<FUniqueNetIdRepl> CompletedVerifications;
+	
+	for (auto& Pair : PendingTokenVerifications)
+	{
+		const FUniqueNetIdRepl& UniqueId = Pair.Key;
+		FPendingTokenVerification& Verification = Pair.Value;
+		
+		if (Verification.bCompleted)
+		{
+			CompletedVerifications.Add(UniqueId);
+			
+			if (!Verification.bSuccess)
+			{
+				// Disconnect player due to failed token verification
+				UE_LOG(LogTemp, Warning, TEXT("[Game Server] Disconnecting player due to failed token verification: %s"), 
+					*Verification.ErrorMessage);
+				
+				// Find the player controller and disconnect
+				for (FConstPlayerControllerIterator Iterator = GetWorld()->GetPlayerControllerIterator(); Iterator; ++Iterator)
+				{
+					APlayerController* PC = Iterator->Get();
+					if (PC && PC->PlayerState->GetUniqueId() == UniqueId)
+					{
+						PC->GetNetConnection()->Close();
+						break;
+					}
+				}
+			}
+		}
+		else
+		{
+			// Check for timeout
+			double CurrentTime = FPlatformTime::Seconds();
+			if (CurrentTime - Verification.StartTime > 10.0f) // 10 second timeout
+			{
+				CompletedVerifications.Add(UniqueId);
+				
+				UE_LOG(LogTemp, Warning, TEXT("[Game Server] Token verification timed out for UniqueId: %s"), 
+					*UniqueId->ToString());
+				
+				// Disconnect player due to timeout
+				for (FConstPlayerControllerIterator Iterator = GetWorld()->GetPlayerControllerIterator(); Iterator; ++Iterator)
+				{
+					APlayerController* PC = Iterator->Get();
+					if (PC && PC->PlayerState->GetUniqueId() == UniqueId)
+					{
+						PC->GetNetConnection()->Close();
+						break;
+					}
+				}
+			}
+		}
+	}
+	
+	// Remove completed verifications
+	for (const FUniqueNetIdRepl& UniqueId : CompletedVerifications)
+	{
+		PendingTokenVerifications.Remove(UniqueId);
 	}
 }

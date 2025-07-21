@@ -6,7 +6,7 @@ public class AuthServerModule : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "Json", "JsonUtilities", "HTTP" ,"NetCore" });
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 
