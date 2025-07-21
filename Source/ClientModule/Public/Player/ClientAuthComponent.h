@@ -110,6 +110,7 @@ public:
 	 */
 	UFUNCTION(BlueprintImplementableEvent, Category = "Client Auth")
 	void BP_OnLoginResult(bool bSuccess, const FString& Token, const FString& UserId);
+	virtual IClientManagerInterface* GetClientSubSystem() override;
 
 private:
 	// ============================================================================
@@ -127,14 +128,5 @@ private:
 	 */
 	UPROPERTY()
 	TObjectPtr<class AGGwaPlayerController> OwnerController;
-
-	// ============================================================================
-	// PRIVATE HELPER METHODS
-	// ============================================================================
-
-	/**
-	 * Register this component to ClientServiceManager
-	 */
-	void RegisterSelfToServiceManager();
 
 };

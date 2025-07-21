@@ -41,24 +41,25 @@ app.post('/register', async (req, res) => {
         });
     }
 
-    // Basic validation
-    if (username.length < 3 || username.length > 50) {
+    // Basic validation matching UE5 AuthComponent validation
+    if (username.length < 3 || username.length > 30) {
         return res.status(400).json({ 
             success: false,
-            message: 'Username must be between 3 and 50 characters' 
+            message: 'Username must be between 3 and 30 characters' 
         });
     }
 
-    if (password.length < 6) {
+    if (password.length < 8) {
         return res.status(400).json({ 
             success: false,
-            message: 'Password must be at least 6 characters long' 
+            message: 'Password must be at least 8 characters long' 
         });
     }
 
     let connection;
     try {
         const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+        const userId = uuidv4(); // Generate UUID for user_id to match UE5 AuthComponent
 
         connection = await dbPool.getConnection();
         await connection.beginTransaction();
@@ -75,25 +76,24 @@ app.post('/register', async (req, res) => {
             });
         }
 
-        // 2. Insert user (auto-increment user_id)
+        // 2. Insert user using UE5 AuthComponent schema (UUID-based user_id)
         const userSql = `
-            INSERT INTO users (username, password_hash, email, created_at, is_active, failed_login_attempts) 
-            VALUES (?, ?, ?, NOW(), 1, 0)
+            INSERT INTO users (user_id, username, password_hash, created_at, last_login_at, is_locked, lock_expires_at, is_deleted, deleted_at) 
+            VALUES (?, ?, ?, NOW(3), NULL, 0, NULL, 0, NULL)
         `;
-        const [result] = await connection.execute(userSql, [username, hashedPassword, email || null]);
-        const userId = result.insertId;
+        await connection.execute(userSql, [userId, username, hashedPassword]);
 
-        // 3. Insert audit log
+        // 3. Insert audit log using UE5 schema
         const logSql = `
-            INSERT INTO user_audit_logs (user_id, action, details, ip_address, created_at) 
-            VALUES (?, 'ACCOUNT_CREATED', ?, ?, NOW())
+            INSERT INTO user_audit_logs (user_id, action, detail, created_at) 
+            VALUES (?, ?, ?, NOW(3))
         `;
         const details = JSON.stringify({ 
             username: username,
             ip: clientIp, 
             userAgent: req.headers['user-agent'] || 'unknown'
         });
-        await connection.execute(logSql, [userId, details, clientIp]);
+        await connection.execute(logSql, [userId, 'registration', details]);
 
         await connection.commit();
 
@@ -138,27 +138,26 @@ app.post('/login', async (req, res) => {
     try {
         connection = await dbPool.getConnection();
 
-        // Get user data
+        // Get user data using UE5 AuthComponent schema
         const userSql = `
-            SELECT user_id, username, password_hash, email, is_active, 
-                   failed_login_attempts, account_locked_until 
+            SELECT user_id, username, password_hash, is_locked, lock_expires_at, is_deleted 
             FROM users 
-            WHERE username = ?
+            WHERE username = ? AND is_deleted = 0
         `;
         const [rows] = await connection.execute(userSql, [username]);
 
         if (rows.length === 0) {
-            // Log failed attempt for non-existent user
+            // Log failed attempt for non-existent user using UE5 schema
             const logSql = `
-                INSERT INTO user_audit_logs (user_id, action, details, ip_address, created_at) 
-                VALUES (NULL, 'LOGIN_FAILED_USER_NOT_FOUND', ?, ?, NOW())
+                INSERT INTO user_audit_logs (user_id, action, detail, created_at) 
+                VALUES (?, ?, ?, NOW(3))
             `;
             const details = JSON.stringify({ 
                 attempted_username: username,
                 ip: clientIp,
                 userAgent: req.headers['user-agent'] || 'unknown'
             });
-            await connection.execute(logSql, [details, clientIp]);
+            await connection.execute(logSql, [null, 'login_failed_user_not_found', details]);
 
             return res.status(401).json({ 
                 success: false,
@@ -168,39 +167,29 @@ app.post('/login', async (req, res) => {
 
         const user = rows[0];
 
-        // Check if account is active
-        if (!user.is_active) {
-            const logSql = `
-                INSERT INTO user_audit_logs (user_id, action, details, ip_address, created_at) 
-                VALUES (?, 'LOGIN_FAILED_INACTIVE', ?, ?, NOW())
-            `;
-            const details = JSON.stringify({ 
-                ip: clientIp,
-                userAgent: req.headers['user-agent'] || 'unknown'
-            });
-            await connection.execute(logSql, [user.user_id, details, clientIp]);
+        // Check if account is locked using UE5 AuthComponent logic
+        if (user.is_locked) {
+            const now = new Date();
+            const lockExpires = user.lock_expires_at ? new Date(user.lock_expires_at) : null;
+            
+            if (!lockExpires || now < lockExpires) {
+                const logSql = `
+                    INSERT INTO user_audit_logs (user_id, action, detail, created_at) 
+                    VALUES (?, ?, ?, NOW(3))
+                `;
+                const details = JSON.stringify({ 
+                    ip: clientIp,
+                    lockExpires: lockExpires ? lockExpires.toISOString() : 'permanent',
+                    userAgent: req.headers['user-agent'] || 'unknown'
+                });
+                await connection.execute(logSql, [user.user_id, 'login_failed_locked', details]);
 
-            return res.status(403).json({ 
-                success: false,
-                message: 'Account is disabled' 
-            });
+                return res.status(403).json({ 
+                    success: false,
+                    message: 'Account is locked' 
+                });
+            }
         }
-
-        // Check if account is locked
-        if (user.account_locked_until && new Date(user.account_locked_until) > new Date()) {
-            const logSql = `
-                INSERT INTO user_audit_logs (user_id, action, details, ip_address, created_at) 
-                VALUES (?, 'LOGIN_FAILED_LOCKED', ?, ?, NOW())
-            `;
-            const details = JSON.stringify({ 
-                ip: clientIp,
-                lockExpires: user.account_locked_until,
-                userAgent: req.headers['user-agent'] || 'unknown'
-            });
-            await connection.execute(logSql, [user.user_id, details, clientIp]);
-
-            return res.status(403).json({ 
-                success: false,
                 message: 'Account is locked',
                 lockExpiresAt: user.account_locked_until
             });

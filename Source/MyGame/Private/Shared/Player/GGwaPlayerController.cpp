@@ -15,13 +15,31 @@ AGGwaPlayerController::AGGwaPlayerController() {
 
 void AGGwaPlayerController::BeginPlay() {
 	Super::BeginPlay();
-	UE_LOG(LogTemp, Warning, TEXT("IsServer: %d | IsLocallyControlled: %d"), HasAuthority(), IsLocalController());
-	
-	if (IsLocalController()){
-		if (auto ClientManagerInterface = Cast<AGGwaGameState>(GetWorld()->GetGameState())->GetClientManagerInterface()) {
-			CachedClientManagerInterface = ClientManagerInterface;
+	UE_LOG(LogTemp, Warning, TEXT("GGwaPlayerController::BeginPlay - IsServer: %d | IsLocallyControlled: %d"), 
+		HasAuthority(), IsLocalController());
+
+#if !UE_SERVER
+	if (IsLocalController())
+	{
+		// Step 1: Check World validity
+		UWorld* World = GetWorld();
+		if (!World)
+		{
+			UE_LOG(LogTemp, Error, TEXT("- Client Only Controller::BeginPlay - World is null!"));
+			return;
+		}
+		if (ClientAuthComponentClass && ClientUIComponentClass) {
+			ClientAuthComponent = NewObject<UActorComponent>(this, ClientAuthComponentClass);
+			Cast<IClientAuthInterface>(ClientAuthComponent)->InitializeAuth();
+			CachedClientManagerInterface = Cast<IClientAuthInterface>(ClientAuthComponent)->GetClientSubSystem();
+			
+			RegistClientComponent(ClientAuthComponent);
+			ClientUIComponent = NewObject<UActorComponent>(this, ClientUIComponentClass);
+			// Cast<IClientUIInterface>(ClientUIComponent)->InitializeUI();
+			RegistClientComponent(ClientUIComponent);
 		}
 	}
+#endif
 }
 
 void AGGwaPlayerController::AcknowledgePossession(class APawn* PossessedPawn) {
@@ -34,13 +52,13 @@ void AGGwaPlayerController::AcknowledgePossession(class APawn* PossessedPawn) {
 			ASC->BindAbilityActivationToInputComponent(InputComponent, FGameplayAbilityInputBinds("Confirm", "Cancel", FTopLevelAssetPath(TEXT("/Script/SkillModule"), TEXT("EAbilityInputID"))));
 		}
 	}
+
 }
 
 void AGGwaPlayerController::Server_InitiateReward_Implementation(const FString& PlayerId, const FRewardRequest& Payload) {
 	IServerLogicBridge* Bridge = Cast<IServerLogicBridge>(GetWorld()->GetSubsystem<UWorldSubsystem>());
 	// Bridge->InitiateRewardFlow(PlayerId, Payload, FOnFlowComplete::CreateUObject(this, &AGGwaPlayerController::Client_OnRewardResult));
 }
-
 
 // ============================================================================
 // AUTHENTICATION RPC INTERFACES
@@ -153,53 +171,137 @@ void AGGwaPlayerController::Client_TravelToGameWorld_Implementation(const FStrin
 // All calls delegated to UIManagerInterface (interface-based architecture)
 // ============================================================================
 
-TScriptInterface<IClientManagerInterface> AGGwaPlayerController::GetUIManagerInterface() {
+IClientManagerInterface* AGGwaPlayerController::GetUIManagerInterface() {
 	return CachedClientManagerInterface;
+}
+
+void AGGwaPlayerController::RegistClientComponent(UActorComponent* Component) {
+	CachedClientManagerInterface->RegistClientComponent(Component);
 }
 
 void AGGwaPlayerController::InitializeUI(const USkillComponent* SkillComponent) {
 	if (!IsLocalController()) return;
-	CachedClientManagerInterface->InitializeUI(SkillComponent);
+	
+	if (CachedClientManagerInterface)
+	{
+		CachedClientManagerInterface->InitializeUI(SkillComponent);
+		UE_LOG(LogTemp, Log, TEXT("GGwaPlayerController::InitializeUI - Delegated to ClientManager"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GGwaPlayerController::InitializeUI - ClientManagerInterface not available"));
+	}
 }
 
 void AGGwaPlayerController::ProcessRegistration(const FString& Username, const FString& Password) {
 	if (!IsLocalController()) return;
-	CachedClientManagerInterface->ProcessRegistration(Username, Password);
+	
+	if (CachedClientManagerInterface)
+	{
+		CachedClientManagerInterface->ProcessRegistration(Username, Password);
+		UE_LOG(LogTemp, Log, TEXT("GGwaPlayerController::ProcessRegistration - Delegated for user: %s"), *Username);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GGwaPlayerController::ProcessRegistration - ClientManagerInterface not available"));
+	}
 }
 
 void AGGwaPlayerController::ProcessLogin(const FString& Username, const FString& Password) {
 	if (!IsLocalController()) return;
-	CachedClientManagerInterface->ProcessLogin(Username, Password);
+	
+	if (CachedClientManagerInterface)
+	{
+		CachedClientManagerInterface->ProcessLogin(Username, Password);
+		UE_LOG(LogTemp, Log, TEXT("GGwaPlayerController::ProcessLogin - Delegated for user: %s"), *Username);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GGwaPlayerController::ProcessLogin - ClientManagerInterface not available"));
+	}
 }
 
 void AGGwaPlayerController::HandleRegistrationResult(bool bSuccess, const FString& Message) {
 	if (!IsLocalController()) return;
-	CachedClientManagerInterface->HandleRegistrationResult(bSuccess, Message);
+	
+	if (CachedClientManagerInterface)
+	{
+		CachedClientManagerInterface->HandleRegistrationResult(bSuccess, Message);
+		UE_LOG(LogTemp, Log, TEXT("GGwaPlayerController::HandleRegistrationResult - Success: %s"), 
+			bSuccess ? TEXT("true") : TEXT("false"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GGwaPlayerController::HandleRegistrationResult - ClientManagerInterface not available"));
+	}
 }
 
 void AGGwaPlayerController::HandleLoginResult(bool bSuccess, const FString& Token, const FString& UserId) {
 	if (!IsLocalController()) return;
-	CachedClientManagerInterface->HandleLoginResult(bSuccess, Token, UserId);
+	
+	if (CachedClientManagerInterface)
+	{
+		CachedClientManagerInterface->HandleLoginResult(bSuccess, Token, UserId);
+		UE_LOG(LogTemp, Log, TEXT("GGwaPlayerController::HandleLoginResult - Success: %s, UserId: %s"), 
+			bSuccess ? TEXT("true") : TEXT("false"), *UserId);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GGwaPlayerController::HandleLoginResult - ClientManagerInterface not available"));
+	}
 }
 
 void AGGwaPlayerController::ProcessMouseOverDetection() {
 	if (!IsLocalController()) return;
-	CachedClientManagerInterface->ProcessMouseOverDetection();
+	
+	if (CachedClientManagerInterface)
+	{
+		CachedClientManagerInterface->ProcessMouseOverDetection();
+		// No log here as this is called frequently
+	}
+	// No warning log for mouse detection as it's called frequently
 }
 
 void AGGwaPlayerController::NotifyStateChanged() {
 	if (!IsLocalController()) return;
-	CachedClientManagerInterface->NotifyStateChanged();
+	
+	if (CachedClientManagerInterface)
+	{
+		CachedClientManagerInterface->NotifyStateChanged();
+		UE_LOG(LogTemp, Log, TEXT("GGwaPlayerController::NotifyStateChanged - Delegated"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GGwaPlayerController::NotifyStateChanged - ClientManagerInterface not available"));
+	}
 }
 
 void AGGwaPlayerController::ProcessBossData_Implementation(const FBossDataStruct& BossData) {
 	if (!IsLocalController()) return;
-	CachedClientManagerInterface->ProcessBossData(BossData);
+	
+	if (CachedClientManagerInterface)
+	{
+		CachedClientManagerInterface->ProcessBossData(BossData);
+		UE_LOG(LogTemp, Log, TEXT("GGwaPlayerController::ProcessBossData - Delegated boss data"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GGwaPlayerController::ProcessBossData - ClientManagerInterface not available"));
+	}
 }
 
 void AGGwaPlayerController::ProcessSkillData_Implementation(const USkillComponent* SkillComponent) {
 	if (!IsLocalController()) return;
-	CachedClientManagerInterface->ProcessSkillData(SkillComponent);
+	
+	if (CachedClientManagerInterface)
+	{
+		CachedClientManagerInterface->ProcessSkillData(SkillComponent);
+		UE_LOG(LogTemp, Log, TEXT("GGwaPlayerController::ProcessSkillData - Delegated skill data"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GGwaPlayerController::ProcessSkillData - ClientManagerInterface not available"));
+	}
 }
 
 void AGGwaPlayerController::PlayerTick(float DeltaTime) {

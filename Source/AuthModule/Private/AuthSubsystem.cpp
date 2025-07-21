@@ -785,7 +785,7 @@ void UAuthSubsystem::OnGameDataLoaded(bool bSuccess, const FString& UserId, APla
 		else
 		{
 			// Fallback to direct ClientTravel
-			PlayerController->ClientTravel(GameWorldURL, TRAVEL_Relative);
+			// PlayerController->ClientTravel(GameWorldURL, TRAVEL_Relative);
 		}
 		
 		UE_LOG(LogTemp, Log, TEXT("AuthSubsystem: Initiated client travel to game world for user %s"), *UserId);

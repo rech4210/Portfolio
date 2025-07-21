@@ -9,6 +9,8 @@
 #include "UIManagerSubsystem.generated.h"
 
 class AUIConfigCacheActor;
+class UClientAuthComponent;
+class UClientUIComponent;
 
 UCLASS(BlueprintType, Blueprintable)
 class CLIENTMODULE_API UUIManagerSubsystem : public UGameInstanceSubsystem, public IUISubsystemInterface, public IClientManagerInterface
@@ -40,6 +42,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "UI Manager")
 	void RefreshCurrentWidget();
+	void OnWorldInit(UWorld* NewWorld, const UWorld::InitializationValues IVS);
 
 
 	// ============================================================================
@@ -48,15 +51,15 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "UI Manager")
 	void RemoveCurrentWidget();
-	void RegisterAuthService(TScriptInterface<IClientAuthInterface> AuthService);
-	void RegisterUIService(TScriptInterface<IClientUIInterface> UIService);
-	void InitializeAuth();
+	// void RegisterAuthService(UClientAuthComponent* AuthService);
+	// void RegisterUIService(UClientUIComponent* UIService);
 	bool IsServiceReady() const;
 
 	// ============================================================================
 	// IClientUIManagerInterface IMPLEMENTATION
 	// ============================================================================
-
+	virtual void RegistClientComponent(UActorComponent* Component) override;
+	
 	virtual void InitializeUI(const USkillComponent* SkillComponent) override;
 	virtual void ProcessRegistration(const FString& Username, const FString& Password) override;
 	virtual void ProcessLogin(const FString& Username, const FString& Password) override;
@@ -81,8 +84,8 @@ protected:
 	// ============================================================================
 
 	UPROPERTY(Transient)
-	TScriptInterface<IClientAuthInterface> RegisteredAuthService;
+	TObjectPtr<UClientAuthComponent> ClientAuthService;
 	
 	UPROPERTY(Transient)
-	TScriptInterface<IClientUIInterface> RegisteredUIService;
+	TObjectPtr<UClientUIComponent> ClientUIService;
 };

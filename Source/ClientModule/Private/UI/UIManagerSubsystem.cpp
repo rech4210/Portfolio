@@ -3,25 +3,55 @@
 #include "Engine/World.h"
 #include "Kismet/GameplayStatics.h"
 #include "Blueprint/UserWidget.h"
+#include "Player/ClientAuthComponent.h"
+#include "Player/ClientUIComponent.h"
 #include "Shared/Cache/UIConfigCacheActor.h"
 #include "Shared/GameState/GGwaGameState.h"
+#include "Shared/Player/GGwaPlayerController.h"
 #include "SkillModule/Public/Components/SkillComponent.h"
 
 void UUIManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 
-	// 의존관계 역전 (IOC) 패턴을 사용하여 GameState에게 Client UIManagerSubsystem을 제공하도록 요청.
-	if (UWorld* World = GetWorld())
-	{
-		if (AGGwaGameState * GameState = Cast<AGGwaGameState>(World->GetGameState())) {
-			GameState->InitializeUISubsystemWithIOC(this);
-			GameState->InitializeClientManagerSubsystemWithIOC(this);
-		}
-	}
+	UE_LOG(LogTemp, Log, TEXT("UIManagerSubsystem::Initialize - Starting initialization"));
 	
-	UE_LOG(LogTemp, Log, TEXT("UIManagerSubsystem: Initialized - will listen for cache actor from GameState"));
 }
+
+
+void UUIManagerSubsystem::OnWorldInit(UWorld* NewWorld, const UWorld::InitializationValues IVS) {
+	// 의존관계 역전 (IOC) 패턴을 사용하여 GameState에게 Client UIManagerSubsystem을 제공하도록 요청.
+	if (!NewWorld)
+	{
+		UE_LOG(LogTemp, Error, TEXT("UIManagerSubsystem::Initialize - World is null!"));
+		return;
+	}
+
+	AGGwaGameState* GameState = Cast<AGGwaGameState>(GetWorld()->GetGameState());
+	if (!GameState)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UIManagerSubsystem::Initialize - GameState not available yet"));
+		return;
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("UIManagerSubsystem::Initialize - Found GameState: %s"), 
+		*GameState->GetClass()->GetName());
+
+
+	// auto ClientManagerInterface = Cast<UClientManagerInterface>(this);
+	//
+	// if (!ClientManagerInterface) {
+	// 	UE_LOG(LogTemp, Log, TEXT("UIManagerSubsystem::Initialize - Found GameState: %s"), TEXT("ClientManagerInterface Is null"));
+	// }
+	//
+	// // Register UI interface
+	// GameState->InitializeUISubsystemWithIOC(this);
+	//
+	// GameState->InitializeClientManagerSubsystemWithIOC(ClientManagerInterface);
+	
+	UE_LOG(LogTemp, Log, TEXT("UIManagerSubsystem::Initialize - Registered both interfaces with GameState"));
+}
+
 
 void UUIManagerSubsystem::Deinitialize()
 {
@@ -131,51 +161,36 @@ void UUIManagerSubsystem::RemoveCurrentWidget()
 // IClientUIManagerInterface IMPLEMENTATION 
 // ============================================================================
 
-void UUIManagerSubsystem::RegisterAuthService(TScriptInterface<IClientAuthInterface> AuthService)
-{
-	if (AuthService)
-	{
-		RegisteredAuthService = AuthService;
-		UE_LOG(LogTemp, Log, TEXT("UIManagerSubsystem: Auth service registered"));
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("UIManagerSubsystem: Failed to register auth service - null interface"));
-	}
-}
+//
+// void UUIManagerSubsystem::RegistClientSubsystem(TScriptInterface<IClientManagerInterface> Subsystem) {
+// 	auto ControllerIterator = GetWorld()->GetPlayerControllerIterator();
+// 	for (auto Controller : ControllerIterator) {
+// 		if (auto PlayerController = Cast<AGGwaPlayerController>(Controller)) {
+// 			PlayerController->RegistClientSubsystem(this);
+// 		}
+// 	}
+// }
 
-void UUIManagerSubsystem::RegisterUIService(TScriptInterface<IClientUIInterface> UIService)
-{
-	if (UIService)
-	{
-		RegisteredUIService = UIService;
-		UE_LOG(LogTemp, Log, TEXT("UIManagerSubsystem: UI service registered"));
+void UUIManagerSubsystem::RegistClientComponent(UActorComponent* Component) {
+	if (auto Auth = Cast<UClientAuthComponent>(Component)){
+		ClientAuthService = Auth;
+		UE_LOG(LogTemp, Log, TEXT("UIManagerSubsystem: Registered ClientAuthComponent"));
+	}
+	else if (auto UI = Cast<UClientUIComponent>(Component)){
+		ClientUIService = UI;
+		UE_LOG(LogTemp, Log, TEXT("UIManagerSubsystem: Registered ClientUIComponent"));
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("UIManagerSubsystem: Failed to register UI service - null interface"));
-	}
-}
-
-// Auth service delegation
-void UUIManagerSubsystem::InitializeAuth()
-{
-	if (RegisteredAuthService)
-	{
-		RegisteredAuthService->InitializeAuth();
-		UE_LOG(LogTemp, Log, TEXT("UIManagerSubsystem: Delegated InitializeAuth"));
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("UIManagerSubsystem: No auth service registered"));
+		UE_LOG(LogTemp, Warning, TEXT("UIManagerSubsystem: Component is not a valid ClientAuth or ClientUI component"));
 	}
 }
 
 void UUIManagerSubsystem::ProcessRegistration(const FString& Username, const FString& Password)
 {
-	if (RegisteredAuthService)
+	if (ClientAuthService)
 	{
-		RegisteredAuthService->RequestRegistration(Username, Password);
+		ClientAuthService->RequestRegistration(Username, Password);
 		UE_LOG(LogTemp, Log, TEXT("UIManagerSubsystem: Processing registration for user: %s"), *Username);
 	}
 	else
@@ -186,9 +201,9 @@ void UUIManagerSubsystem::ProcessRegistration(const FString& Username, const FSt
 
 void UUIManagerSubsystem::ProcessLogin(const FString& Username, const FString& Password)
 {
-	if (RegisteredAuthService)
+	if (ClientAuthService)
 	{
-		RegisteredAuthService->RequestLogin(Username, Password);
+		ClientAuthService->RequestLogin(Username, Password);
 		UE_LOG(LogTemp, Log, TEXT("UIManagerSubsystem: Processing login for user: %s"), *Username);
 	}
 	else
@@ -199,9 +214,9 @@ void UUIManagerSubsystem::ProcessLogin(const FString& Username, const FString& P
 
 void UUIManagerSubsystem::HandleRegistrationResult(bool bSuccess, const FString& Message)
 {
-	if (RegisteredAuthService)
+	if (ClientAuthService)
 	{
-		RegisteredAuthService->OnServerRegistrationResult(bSuccess, Message);
+		ClientAuthService->OnServerRegistrationResult(bSuccess, Message);
 		UE_LOG(LogTemp, Log, TEXT("UIManagerSubsystem: Handled registration result - Success: %s"), bSuccess ? TEXT("true") : TEXT("false"));
 	}
 	else
@@ -212,9 +227,9 @@ void UUIManagerSubsystem::HandleRegistrationResult(bool bSuccess, const FString&
 
 void UUIManagerSubsystem::HandleLoginResult(bool bSuccess, const FString& Token, const FString& UserId)
 {
-	if (RegisteredAuthService)
+	if (ClientAuthService)
 	{
-		RegisteredAuthService->OnServerLoginResult(bSuccess, Token, UserId);
+		ClientAuthService->OnServerLoginResult(bSuccess, Token, UserId);
 		UE_LOG(LogTemp, Log, TEXT("UIManagerSubsystem: Handled login result - Success: %s, UserId: %s"), 
 			bSuccess ? TEXT("true") : TEXT("false"), *UserId);
 	}
@@ -227,9 +242,9 @@ void UUIManagerSubsystem::HandleLoginResult(bool bSuccess, const FString& Token,
 // UI service delegation
 void UUIManagerSubsystem::InitializeUI(const USkillComponent* SkillComponent)
 {
-	if (RegisteredUIService)
+	if (ClientUIService)
 	{
-		RegisteredUIService->InitializeUI(SkillComponent);
+		ClientUIService->InitializeUI(SkillComponent);
 		UE_LOG(LogTemp, Log, TEXT("UIManagerSubsystem: Delegated InitializeUI"));
 	}
 	else
@@ -240,9 +255,9 @@ void UUIManagerSubsystem::InitializeUI(const USkillComponent* SkillComponent)
 
 void UUIManagerSubsystem::ProcessMouseOverDetection()
 {
-	if (RegisteredUIService)
+	if (ClientUIService)
 	{
-		RegisteredUIService->HandleMouseOverDetection();
+		ClientUIService->HandleMouseOverDetection();
 		// No log here as this is called frequently
 	}
 	else
@@ -253,9 +268,9 @@ void UUIManagerSubsystem::ProcessMouseOverDetection()
 
 void UUIManagerSubsystem::NotifyStateChanged()
 {
-	if (RegisteredUIService)
+	if (ClientUIService)
 	{
-		RegisteredUIService->NotifyStateChanged();
+		ClientUIService->NotifyStateChanged();
 		UE_LOG(LogTemp, Log, TEXT("UIManagerSubsystem: Delegated NotifyStateChanged"));
 	}
 	else
@@ -266,9 +281,9 @@ void UUIManagerSubsystem::NotifyStateChanged()
 
 void UUIManagerSubsystem::ProcessBossData(const FBossDataStruct& BossData)
 {
-	if (RegisteredUIService)
+	if (ClientUIService)
 	{
-		RegisteredUIService->ReceiveBossData(BossData);
+		ClientUIService->ReceiveBossData(BossData);
 		UE_LOG(LogTemp, Log, TEXT("UIManagerSubsystem: Processing boss data"));
 	}
 	else
@@ -279,9 +294,9 @@ void UUIManagerSubsystem::ProcessBossData(const FBossDataStruct& BossData)
 
 void UUIManagerSubsystem::ProcessSkillData(const USkillComponent* SkillComponent)
 {
-	if (RegisteredUIService)
+	if (ClientUIService)
 	{
-		RegisteredUIService->ReceiveSkillData(SkillComponent);
+		ClientUIService->ReceiveSkillData(SkillComponent);
 		UE_LOG(LogTemp, Log, TEXT("UIManagerSubsystem: Processing skill data"));
 	}
 	else
@@ -292,8 +307,8 @@ void UUIManagerSubsystem::ProcessSkillData(const USkillComponent* SkillComponent
 
 bool UUIManagerSubsystem::IsServiceReady() const
 {
-	bool bAuthReady = RegisteredAuthService != nullptr;
-	bool bUIReady = RegisteredUIService != nullptr;
+	bool bAuthReady = ClientAuthService != nullptr;
+	bool bUIReady = ClientUIService != nullptr;
 	
 	UE_LOG(LogTemp, VeryVerbose, TEXT("UIManagerSubsystem service status - Auth: %s, UI: %s"), 
 		bAuthReady ? TEXT("Ready") : TEXT("Not Ready"), 

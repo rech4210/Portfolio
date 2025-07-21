@@ -1,4 +1,5 @@
-﻿-- users ?뚯씠釉? 怨꾩젙 愿由?
+﻿
+-- users ?뚯씠釉? 怨꾩젙 愿由?
 CREATE TABLE users (
   user_id         CHAR(36)       PRIMARY KEY,
   username        VARCHAR(30)    NOT NULL UNIQUE,
@@ -30,10 +31,10 @@ CREATE TABLE characters (
 CREATE TABLE user_audit_logs (
   log_id     BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   user_id    CHAR(36)           NOT NULL,
-  action     VARCHAR(50)        NOT NULL COMMENT '?? registration, login_success',
+  action     VARCHAR(50)        NOT NULL COMMENT 'registration, login_success',
   detail     JSON               NULL,
   created_at DATETIME(3)        NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-  INDEX(ix_user_action) (user_id, action)
+  INDEX ix_user_action (user_id, action)
 ) ENGINE=InnoDB
   CHARACTER SET utf8mb4
   COLLATE utf8mb4_unicode_ci;

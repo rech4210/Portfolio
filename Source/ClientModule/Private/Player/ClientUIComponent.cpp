@@ -34,33 +34,6 @@ void UClientUIComponent::BeginPlay()
 		UE_LOG(LogTemp, Error, TEXT("ClientUIComponent: Owner is not AGGwaPlayerController"));
 		return;
 	}
-
-	// Only initialize on client and if locally controlled
-	if (OwnerController->IsLocalController())
-	{
-		SetupClientInputMode();
-
-		// Register with UIManagerSubsystem using TScriptInterface pattern
-		TScriptInterface<IClientUIInterface> UIInterface;
-		UIInterface.SetObject(this);
-		UIInterface.SetInterface(static_cast<IClientUIInterface*>(this));
-
-		// Get UIManagerSubsystem and register this service
-		if (UWorld* World = GetWorld())
-		{
-			if (UUIManagerSubsystem* UISubsystem = World->GetGameInstance()->GetSubsystem<UUIManagerSubsystem>())
-			{
-				UISubsystem->RegisterUIService(UIInterface);
-				UE_LOG(LogTemp, Log, TEXT("ClientUIComponent: Registered with UIManagerSubsystem"));
-			}
-			else
-			{
-				UE_LOG(LogTemp, Warning, TEXT("ClientUIComponent: Failed to get UIManagerSubsystem"));
-			}
-		}
-		
-		UE_LOG(LogTemp, Log, TEXT("ClientUIComponent: Initialized for local controller"));
-	}
 }
 
 // ============================================================================

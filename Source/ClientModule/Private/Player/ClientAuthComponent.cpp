@@ -16,25 +16,7 @@ UClientAuthComponent::UClientAuthComponent()
 void UClientAuthComponent::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	// Cache owner controller reference
-	OwnerController = Cast<AGGwaPlayerController>(GetOwner());
-	if (!OwnerController)
-	{
-		UE_LOG(LogTemp, Error, TEXT("ClientAuthComponent: Owner is not AGGwaPlayerController"));
-		return;
-	}
 
-	// Only initialize on client and if locally controlled
-	if (OwnerController->IsLocalController())
-	{
-		InitializeAuth();
-		
-		// Register this component as AuthService implementation using helper method
-		RegisterSelfToServiceManager();
-		
-		UE_LOG(LogTemp, Log, TEXT("ClientAuthComponent: Initialized and registered for local controller"));
-	}
 }
 
 // ============================================================================
@@ -43,12 +25,16 @@ void UClientAuthComponent::BeginPlay()
 
 void UClientAuthComponent::InitializeAuth()
 {
-	if (!OwnerController || !OwnerController->IsLocalController())
-	{
+	OwnerController = Cast<AGGwaPlayerController>(GetOwner());
+	if (!OwnerController){
+		UE_LOG(LogTemp, Error, TEXT("ClientAuthComponent: Owner is not AGGwaPlayerController"));
+		return;
+	}
+	
+	if (!OwnerController || !OwnerController->IsLocalController()){
 		return;
 	}
 
-	// Create AuthService instance
 	AuthService = NewObject<UAuthService>(this, TEXT("AuthService"));
 	if (AuthService)
 	{
@@ -140,35 +126,13 @@ void UClientAuthComponent::OnServerLoginResult(bool bSuccess, const FString& Tok
 	// }
 }
 
+IClientManagerInterface* UClientAuthComponent::GetClientSubSystem() {
+	if (auto UISubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UUIManagerSubsystem>()) {
+		return UISubsystem;
+	}
+	return nullptr;
+}
+
 // ============================================================================
 // PRIVATE HELPER METHODS
 // ============================================================================
-
-void UClientAuthComponent::RegisterSelfToServiceManager()
-{
-	if (OwnerController)
-	{
-		// Create TScriptInterface for this component
-		TScriptInterface<IClientAuthInterface> AuthInterface;
-		AuthInterface.SetObject(this);
-		AuthInterface.SetInterface(static_cast<IClientAuthInterface*>(this));
-
-		// Register with UIManagerSubsystem
-		if (UWorld* World = GetWorld())
-		{
-			if (UUIManagerSubsystem* UISubsystem = World->GetGameInstance()->GetSubsystem<UUIManagerSubsystem>())
-			{
-				UISubsystem->RegisterAuthService(AuthInterface);
-				UE_LOG(LogTemp, Log, TEXT("ClientAuthComponent: Successfully registered to UIManagerSubsystem"));
-			}
-			else
-			{
-				UE_LOG(LogTemp, Warning, TEXT("ClientAuthComponent: Failed to get UIManagerSubsystem"));
-			}
-		}
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("ClientAuthComponent: Cannot register - OwnerController is null"));
-	}
-}

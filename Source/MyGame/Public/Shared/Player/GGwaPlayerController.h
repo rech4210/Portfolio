@@ -17,6 +17,7 @@ class UAuthSubsystem;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAbilityDataAssetApplied, UBaseDataAsset*, Data);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBossDataReceived, const FBossDataStruct&, BossData);
+DECLARE_DELEGATE_OneParam(FClientSubsystemDelegate, TScriptInterface<IClientManagerInterface>);
 
 UCLASS(Blueprintable)
 class MYGAME_API AGGwaPlayerController : public APlayerController, public IAuthRPCInterface, public IClientManagerInterface {
@@ -35,6 +36,7 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "UI")
 	FOnBossDataReceived OnBossDataReceived;
 
+	FClientSubsystemDelegate OnClientSubsystemDelegate;
 
 	// ============================================================================
 	// AUTHENTICATION RPC METHODS
@@ -66,22 +68,32 @@ private:
 	// AuthSubsystem Event Handlers
 	// ============================================================================
 
-	UPROPERTY()
-	TScriptInterface<IClientManagerInterface> CachedClientManagerInterface;
+	IClientManagerInterface* CachedClientManagerInterface;
 
+	UPROPERTY(EditDefaultsOnly, Category= "Client Component")
+	TSubclassOf<UActorComponent> ClientAuthComponentClass;
+
+	UPROPERTY(EditDefaultsOnly, Category= "Client Component")
+	TSubclassOf<UActorComponent> ClientUIComponentClass;
+
+	UPROPERTY(EditDefaultsOnly, Category= "Client Component")
+	TObjectPtr<UActorComponent> ClientAuthComponent;
+
+	UPROPERTY(EditDefaultsOnly, Category= "Client Component")
+	TObjectPtr<UActorComponent> ClientUIComponent;
 public:
 	// ============================================================================
 	// CLIENT SERVICE ACCESS - Interface-based approach
 	// ============================================================================
 
 	// Get UIManagerSubsystem interface (cached for performance)
-	UFUNCTION(BlueprintCallable, Category = "Client Service")
-	TScriptInterface<IClientManagerInterface> GetUIManagerInterface();
+	IClientManagerInterface* GetUIManagerInterface();
 
 	// ============================================================================
 	// Subsystem Interface Implementation
 	// ============================================================================
-
+	virtual void RegistClientComponent(UActorComponent* Component) override;
+	
 	UFUNCTION(BlueprintCallable, Category = "Client Service")
 	virtual void InitializeUI(const USkillComponent* SkillComponent) override;
 	
@@ -106,6 +118,7 @@ public:
     virtual void ProcessBossData(const FBossDataStruct& BossData) override;
 	UFUNCTION(Client, Reliable , BlueprintCallable, Category = "Client Service")
     virtual void ProcessSkillData(const USkillComponent* SkillComponent) override;
+	
 };
 
 

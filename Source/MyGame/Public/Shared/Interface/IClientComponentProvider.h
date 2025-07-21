@@ -8,6 +8,38 @@
 class USkillComponent;
 struct FBossDataStruct;
 
+
+/**
+ * Interface for UI Subsystem (Client Module)
+ * This interface allows PlayerController to interact with UIManagerSubsystem
+ */
+UINTERFACE(MinimalAPI)
+class UClientManagerInterface : public UInterface
+{
+	GENERATED_BODY()
+};
+
+class MYGAME_API IClientManagerInterface
+{
+	GENERATED_BODY()
+
+public:
+	virtual void RegistClientComponent(UActorComponent* Component) = 0;
+	virtual void InitializeUI(const USkillComponent* SkillComponent) = 0;
+	// Auth service delegation
+	virtual void ProcessRegistration(const FString& Username, const FString& Password) = 0;
+	virtual void ProcessLogin(const FString& Username, const FString& Password) = 0;
+	virtual void HandleRegistrationResult(bool bSuccess, const FString& Message) = 0;
+	virtual void HandleLoginResult(bool bSuccess, const FString& Token, const FString& UserId) = 0;
+	
+	// UI service delegation
+	virtual void ProcessMouseOverDetection() = 0;
+	virtual void NotifyStateChanged() = 0;
+	virtual void ProcessBossData(const FBossDataStruct& BossData) = 0;
+	virtual void ProcessSkillData(const USkillComponent* SkillComponent) = 0;
+};
+
+
 // ============================================================================
 // INDIVIDUAL CLIENT INTERFACE DEFINITIONS
 // ============================================================================
@@ -27,6 +59,7 @@ class MYGAME_API IClientAuthInterface
 
 public:
 	virtual void InitializeAuth() = 0;
+	virtual IClientManagerInterface* GetClientSubSystem() = 0;
 	virtual void RequestRegistration(const FString& Username, const FString& Password) = 0;
 	virtual void RequestLogin(const FString& Username, const FString& Password) = 0;
 	virtual void OnServerRegistrationResult(bool bSuccess, const FString& Message) = 0;
@@ -52,33 +85,4 @@ public:
 	virtual void NotifyStateChanged() = 0;
 	virtual void ReceiveBossData(const FBossDataStruct& BossData) = 0;
 	virtual void ReceiveSkillData(const USkillComponent* SkillComponent) = 0;
-};
-
-/**
- * Interface for UI Subsystem (Client Module)
- * This interface allows PlayerController to interact with UIManagerSubsystem
- */
-UINTERFACE(MinimalAPI)
-class UClientManagerInterface : public UInterface
-{
-	GENERATED_BODY()
-};
-
-class MYGAME_API IClientManagerInterface
-{
-	GENERATED_BODY()
-
-public:
-	virtual void InitializeUI(const USkillComponent* SkillComponent) = 0;
-	// Auth service delegation
-	virtual void ProcessRegistration(const FString& Username, const FString& Password) = 0;
-	virtual void ProcessLogin(const FString& Username, const FString& Password) = 0;
-	virtual void HandleRegistrationResult(bool bSuccess, const FString& Message) = 0;
-	virtual void HandleLoginResult(bool bSuccess, const FString& Token, const FString& UserId) = 0;
-	
-	// UI service delegation
-	virtual void ProcessMouseOverDetection() = 0;
-	virtual void NotifyStateChanged() = 0;
-	virtual void ProcessBossData(const FBossDataStruct& BossData) = 0;
-	virtual void ProcessSkillData(const USkillComponent* SkillComponent) = 0;
 };
