@@ -334,18 +334,17 @@ void AGGwaPlayerController::ConnectToGameServerWithToken(const FString& Token, c
 	CachedUserId = UserId;
 	
 	// Construct server URL with token parameter
-	// Format: 127.0.0.1:7777/Game/Map/ThirdPersonMap?listen&token=JWT_TOKEN_HERE
+	// Format: 127.0.0.1:7777?token=JWT_TOKEN&userid=USER_ID
 	const FString ServerIP = TEXT("127.0.0.1");
 	const FString ServerPort = TEXT("7777");
-	const FString MapPath = TEXT("/Game/Map/ThirdPersonMap");
 	const FString ServerURL = FString::Printf(
-		TEXT("%s:%s?Game=%s?listen?token=%s?userid=%s"),
+		TEXT("%s:%s?token=%s&userid=%s"),
 		*ServerIP,
 		*ServerPort,
-		*MapPath,
 		*Token,
 		*UserId
 	);
+	
 	UE_LOG(LogTemp, Log, TEXT("GGwaPlayerController::ConnectToGameServerWithToken - Connecting to: %s"), *ServerURL);
 	UE_LOG(LogTemp, Log, TEXT("GGwaPlayerController::ConnectToGameServerWithToken - Token: %s"), *Token.Left(20)); // Log first 20 chars for security
 

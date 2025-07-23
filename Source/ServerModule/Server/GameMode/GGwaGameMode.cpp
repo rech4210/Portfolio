@@ -18,10 +18,6 @@
 #include "MyGame/Public/Shared/GameState/GGwaGameState.h"
 #include "MyGame/Public/Shared/Cache/UIConfigCacheActor.h"
 
-#include "Engine/NetConnection.h"
-#include "Sockets.h"
-#include "Networking.h"
-
 #include "Utill/LocalDataBaseLoader.h"
 
 // TODO: The concrete implementation class headers would be here.
@@ -60,11 +56,25 @@ void AGGwaGameMode::PreLogin(const FString& Options, const FString& Address, con
 	UE_LOG(LogTemp, Warning, TEXT("[Game Server] Provided Token: %s..."), *Token.Left(20));
 	UE_LOG(LogTemp, Warning, TEXT("[Game Server] Provided UserId: %s"), *ProvidedUserId);
 
+	// Development mode: Allow connections without token for testing
+	bool bDevelopmentMode = true; // TODO: Make this configurable
+	
 	if (Token.IsEmpty())
 	{
-		ErrorMessage = TEXT("No authentication token provided.");
-		UE_LOG(LogTemp, Warning, TEXT("[Game Server] PreLogin failed: %s"), *ErrorMessage);
-		return;
+		if (bDevelopmentMode)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[Game Server] Development Mode: Allowing connection without token"));
+			// Allow connection without token in development mode
+			FString DefaultUserId = FString::Printf(TEXT("dev_user_%s"), *UniqueId->ToString().Right(8));
+			PendingPlayers.Add(UniqueId, DefaultUserId);
+			return; // Success - allow connection
+		}
+		else
+		{
+			ErrorMessage = TEXT("No authentication token provided.");
+			UE_LOG(LogTemp, Warning, TEXT("[Game Server] PreLogin failed: %s"), *ErrorMessage);
+			return;
+		}
 	}
 	
 	// JWT 서버에서 토큰 검증 (비동기 방식으로 변경)
@@ -94,10 +104,24 @@ void AGGwaGameMode::PreLogin(const FString& Options, const FString& Address, con
 	}
 	else
 	{
-		ErrorMessage = TEXT("Authentication service unavailable.");
-		UE_LOG(LogTemp, Error, TEXT("[Game Server] PreLogin failed: AuthVerificationService not available"));
-		PendingTokenVerifications.Remove(UniqueId);
-		return;
+		if (bDevelopmentMode)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[Game Server] Development Mode: AuthVerificationService not available, allowing connection"));
+			// Remove the pending verification since we won't use it
+			PendingTokenVerifications.Remove(UniqueId);
+			
+			// Use provided UserId or generate a default one
+			FString FallbackUserId = !ProvidedUserId.IsEmpty() ? ProvidedUserId : FString::Printf(TEXT("dev_user_%s"), *UniqueId->ToString().Right(8));
+			PendingPlayers.Add(UniqueId, FallbackUserId);
+			return; // Success - allow connection
+		}
+		else
+		{
+			ErrorMessage = TEXT("Authentication service unavailable.");
+			UE_LOG(LogTemp, Error, TEXT("[Game Server] PreLogin failed: AuthVerificationService not available"));
+			PendingTokenVerifications.Remove(UniqueId);
+			return;
+		}
 	}
 	
 
@@ -343,6 +367,9 @@ void AGGwaGameMode::OnTokenVerificationComplete(bool bSuccess, const FString& Ve
 		return;
 	}
 
+	// Development mode: Allow failed token verification
+	bool bDevelopmentMode = true; // TODO: Make this configurable
+	
 	// Update pending verification status
 	PendingVerification->bCompleted = true;
 	PendingVerification->bSuccess = bSuccess;
@@ -352,10 +379,20 @@ void AGGwaGameMode::OnTokenVerificationComplete(bool bSuccess, const FString& Ve
 		// 추가 보안: 제공된 UserId가 검증된 UserId와 일치하는지 확인
 		if (!PendingVerification->ProvidedUserId.IsEmpty() && PendingVerification->ProvidedUserId != VerifiedUserId)
 		{
-			PendingVerification->bSuccess = false;
-			PendingVerification->ErrorMessage = TEXT("User ID mismatch with token.");
-			UE_LOG(LogTemp, Warning, TEXT("[Game Server] Token verification failed: User ID mismatch. Provided: %s, Verified: %s"), 
-				*PendingVerification->ProvidedUserId, *VerifiedUserId);
+			if (bDevelopmentMode)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("[Game Server] Development Mode: User ID mismatch but allowing connection. Provided: %s, Verified: %s"), 
+					*PendingVerification->ProvidedUserId, *VerifiedUserId);
+				// Use verified UserId in development mode
+				PendingPlayers.Add(UniqueId, VerifiedUserId);
+			}
+			else
+			{
+				PendingVerification->bSuccess = false;
+				PendingVerification->ErrorMessage = TEXT("User ID mismatch with token.");
+				UE_LOG(LogTemp, Warning, TEXT("[Game Server] Token verification failed: User ID mismatch. Provided: %s, Verified: %s"), 
+					*PendingVerification->ProvidedUserId, *VerifiedUserId);
+			}
 		}
 		else
 		{
@@ -370,8 +407,21 @@ void AGGwaGameMode::OnTokenVerificationComplete(bool bSuccess, const FString& Ve
 	else
 	{
 		// 토큰 검증 실패
-		PendingVerification->ErrorMessage = TEXT("Invalid authentication token.");
-		UE_LOG(LogTemp, Warning, TEXT("[Game Server] Token verification failed for user: %s"), *PendingVerification->ProvidedUserId);
+		if (bDevelopmentMode)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[Game Server] Development Mode: Token verification failed but allowing connection for user: %s"), *PendingVerification->ProvidedUserId);
+			// Use provided UserId or generate a fallback
+			FString FallbackUserId = !PendingVerification->ProvidedUserId.IsEmpty() ? 
+				PendingVerification->ProvidedUserId : 
+				FString::Printf(TEXT("dev_user_%s"), *UniqueId->ToString().Right(8));
+			PendingPlayers.Add(UniqueId, FallbackUserId);
+			PendingVerification->bSuccess = true; // Override for development
+		}
+		else
+		{
+			PendingVerification->ErrorMessage = TEXT("Invalid authentication token.");
+			UE_LOG(LogTemp, Warning, TEXT("[Game Server] Token verification failed for user: %s"), *PendingVerification->ProvidedUserId);
+		}
 	}
 
 	// Process completed verifications will be handled in Tick()
@@ -403,7 +453,8 @@ void AGGwaGameMode::ProcessPendingTokenVerifications()
 					APlayerController* PC = Iterator->Get();
 					if (PC && PC->PlayerState->GetUniqueId() == UniqueId)
 					{
-						PC->GetNetConnection()->Close();
+						// Use ClientTravel to disconnect player instead of Close()
+						PC->ClientTravel(TEXT(""), ETravelType::TRAVEL_Absolute);
 						break;
 					}
 				}
@@ -426,7 +477,8 @@ void AGGwaGameMode::ProcessPendingTokenVerifications()
 					APlayerController* PC = Iterator->Get();
 					if (PC && PC->PlayerState->GetUniqueId() == UniqueId)
 					{
-						PC->GetNetConnection()->Close();
+						// Use ClientTravel to disconnect player instead of Close()
+						PC->ClientTravel(TEXT(""), ETravelType::TRAVEL_Absolute);
 						break;
 					}
 				}
