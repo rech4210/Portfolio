@@ -10,7 +10,7 @@ class USkillDataAsset;
 class UGameplayAbility;
 /**
  * 스킬 슬롯의 상태를 나타내는 Entity
- * 각 슬롯은 고유한 ID와 마지막 사용 시간 등의 상태를 가집니다.
+ * SlotIndex 기반으로 식별하며, SQL 스키마와 일치합니다.
  */
 UCLASS(BlueprintType, Blueprintable)
 class SKILLMODULE_API USkillSlot : public UObject
@@ -19,23 +19,35 @@ class SKILLMODULE_API USkillSlot : public UObject
 
 public:
 	virtual bool IsSupportedForNetworking() const override { return true; }
-	// 고유 식별자
+	
+	// 슬롯 인덱스 (0, 1, 2, 3... 순서 기반 식별자)
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Skill|Entity")
-	FGuid SlotId;
+	int32 SlotIndex;
+
+	// 스킬 ID (데이터베이스의 skill_id)
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Skill|Entity")
+	int32 SkillId;
 
 	// 스킬 데이터 (Value Object 참조)
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Skill|Entity")
 	TObjectPtr<USkillDataAsset> SkillData;
 
-	// 슬롯에 할당된 GameplayAbility 클래스
-	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Skill|Entity")
-	TSubclassOf<UGameplayAbility> AbilityClass;
-
 	// 마지막 사용 시간
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill|Entity")
 	FDateTime LastUsedTime;
 
-	void Initialize(USkillDataAsset* InSkillData, TSubclassOf<UGameplayAbility> InAbilityClass);
+	// 슬롯 키 (Q, W, E, R 등)
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Skill|Entity")
+	FString SlotKey;
+
+	void Initialize(int32 InSlotIndex, const FString& InSlotKey, USkillDataAsset* InSkillData = nullptr);
+	void SetSkillData(USkillDataAsset* InSkillData, int32 InSkillId);
+	void ClearSkill();
+	
+	// 비즈니스 로직
+	bool IsEmpty() const { return SkillData == nullptr || SkillId <= 0; }
+	bool IsOnCooldown(float BaseCooltime) const;
+	float GetRemainingCooldown(float BaseCooltime) const;
 	
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 }; 

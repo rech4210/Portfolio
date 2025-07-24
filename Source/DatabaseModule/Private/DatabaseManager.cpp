@@ -651,11 +651,11 @@ UE::Tasks::TTask<TArray<FSkillSlotDTO>> UDatabaseManager::LoadSkillsForPlayer(co
 
 				FString SlotIdString = UTF8_TO_TCHAR(Res->getString("slot_id").c_str());
 				UE_LOG(LogTemp, Verbose, TEXT("Raw Slot ID: %s"), *SlotIdString);
-
-				if (!FGuid::ParseExact(SlotIdString, EGuidFormats::DigitsWithHyphens, Skill.SlotId))
-				{
-					UE_LOG(LogTemp, Warning, TEXT("Invalid GUID format: %s"), *SlotIdString);
-				}
+				//
+				// if (!FGuid::ParseExact(SlotIdString, EGuidFormats::DigitsWithHyphens, Skill.SlotId))
+				// {
+				// 	UE_LOG(LogTemp, Warning, TEXT("Invalid GUID format: %s"), *SlotIdString);
+				// }
 
 				Skill.SkillID = Res->getInt("skill_id");
 				Skill.SlotIndex = Res->getInt("slot_index");
@@ -712,7 +712,7 @@ UE::Tasks::TTask<bool> UDatabaseManager::SaveSkillsForPlayer(const FString& User
 			for (const FSkillSlotDTO& Skill : SkillSlots)
 			{
 				InsertStmt->setString(1, TCHAR_TO_UTF8(*UserId));
-				InsertStmt->setString(2, TCHAR_TO_UTF8(*Skill.SlotId.ToString(EGuidFormats::DigitsWithHyphens)));
+				// InsertStmt->setString(2, TCHAR_TO_UTF8(*Skill.SlotId.ToString(EGuidFormats::DigitsWithHyphens)));
 				InsertStmt->setInt(3, Skill.SkillID);
 				InsertStmt->setInt(4, Skill.SlotIndex);
 				InsertStmt->setString(5, TCHAR_TO_UTF8(*Skill.LastUsedTime.ToIso8601()));
@@ -745,7 +745,7 @@ UE::Tasks::TTask<bool> UDatabaseManager::RegisterSkill(const FString& UserId, co
 			));
 			
 			InsertStmt->setString(1, TCHAR_TO_UTF8(*UserId));
-			InsertStmt->setString(2, TCHAR_TO_UTF8(*SkillSlot.SlotId.ToString(EGuidFormats::DigitsWithHyphens)));
+			// InsertStmt->setString(2, TCHAR_TO_UTF8(*SkillSlot.SlotId.ToString(EGuidFormats::DigitsWithHyphens)));
 			InsertStmt->setInt(3, SkillSlot.SkillID);
 			InsertStmt->setInt(4, SkillSlot.SlotIndex);
 			InsertStmt->setString(5, TCHAR_TO_UTF8(*SkillSlot.LastUsedTime.ToIso8601()));
@@ -1606,4 +1606,609 @@ bool UDatabaseJsonHelper::DeserializeEquipmentEnhancement(const FString& JsonDat
 	}
 	
 	return true;
+}
+
+// ============================================================================
+// SlotIndex-based Skill Management Methods
+// ============================================================================
+
+UE::Tasks::TTask<bool> UDatabaseManager::UnregisterSkill(const FString& UserId, int32 SlotIndex)
+{
+	return WithTransaction([UserId, SlotIndex](sql::Connection* Con) -> bool
+	{
+		try
+		{
+			TUniquePtr<sql::PreparedStatement> DeleteStmt(Con->prepareStatement(
+				"DELETE FROM user_skill_slots WHERE user_id = ? AND slot_index = ?"
+			));
+			DeleteStmt->setString(1, TCHAR_TO_UTF8(*UserId));
+			DeleteStmt->setInt(2, SlotIndex);
+			
+			int32 AffectedRows = DeleteStmt->executeUpdate();
+			return AffectedRows > 0;
+		}
+		catch (const sql::SQLException& e)
+		{
+			UE_LOG(LogTemp, Error, TEXT("UnregisterSkill (SlotIndex) failed: %hs"), e.what());
+			return false;
+		}
+	}, TEXT("Skill/UnregisterSkillByIndex"));
+}
+
+UE::Tasks::TTask<bool> UDatabaseManager::UpdateSkillCooldown(const FString& UserId, int32 SlotIndex, const FDateTime& LastUsedTime, float RemainingCooldown)
+{
+	return WithTransaction([UserId, SlotIndex, LastUsedTime, RemainingCooldown](sql::Connection* Con) -> bool
+	{
+		try
+		{
+			// Convert DateTime to MySQL format
+			FString LastUsedString = LastUsedTime.ToString(TEXT("%Y-%m-%d %H:%M:%S"));
+			
+			TUniquePtr<sql::PreparedStatement> UpdateStmt(Con->prepareStatement(
+				"UPDATE user_skill_slots SET last_used_time = ?, remaining_cooldown = ? WHERE user_id = ? AND slot_index = ?"
+			));
+			UpdateStmt->setString(1, TCHAR_TO_UTF8(*LastUsedString));
+			UpdateStmt->setDouble(2, RemainingCooldown);
+			UpdateStmt->setString(3, TCHAR_TO_UTF8(*UserId));
+			UpdateStmt->setInt(4, SlotIndex);
+			
+			int32 AffectedRows = UpdateStmt->executeUpdate();
+			return AffectedRows > 0;
+		}
+		catch (const sql::SQLException& e)
+		{
+			UE_LOG(LogTemp, Error, TEXT("UpdateSkillCooldown (SlotIndex) failed: %hs"), e.what());
+			return false;
+		}
+	}, TEXT("Skill/UpdateCooldownByIndex"));
+}
+
+// ============================================================================
+// 3-LAYER MAPPING ARCHITECTURE IMPLEMENTATION
+// ============================================================================
+
+UE::Tasks::TTask<TArray<FSkillSlotDatabaseDTO>> UDatabaseManager::LoadUserSkillSlots(int32 UserId, const FString& SlotKey)
+{
+	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, UserId, SlotKey]() -> TArray<FSkillSlotDatabaseDTO>
+	{
+		TArray<FSkillSlotDatabaseDTO> SkillSlots;
+		
+		try
+		{
+			sql::Connection* Con = Impl->GetConnection();
+			if (!Con)
+			{
+				UE_LOG(LogTemp, Error, TEXT("LoadUserSkillSlots: Failed to get database connection"));
+				return SkillSlots;
+			}
+			
+			ON_SCOPE_EXIT
+			{
+				Impl->ReturnConnection(Con);
+			};
+			
+			// SQL Query: user_skill_slots와 user_skills를 조인하여 데이터 로드
+			FString Query = TEXT(
+				"SELECT uss.user_id, uss.slot_key, uss.skill_id, uss.slot_index, "
+				"uss.last_used_time, uss.created_at, uss.updated_at, "
+				"COALESCE(us.skill_level, 1) as skill_level "
+				"FROM user_skill_slots uss "
+				"LEFT JOIN user_skills us ON uss.user_id = us.user_id AND uss.skill_id = us.skill_id "
+				"WHERE uss.user_id = ? AND uss.slot_key = ? "
+				"ORDER BY uss.slot_index"
+			);
+			
+			std::unique_ptr<sql::PreparedStatement> Stmt(Con->prepareStatement(TCHAR_TO_UTF8(*Query)));
+			Stmt->setInt(1, UserId);
+			Stmt->setString(2, TCHAR_TO_UTF8(*SlotKey));
+			
+			std::unique_ptr<sql::ResultSet> Result(Stmt->executeQuery());
+			
+			while (Result->next())
+			{
+				FSkillSlotDatabaseDTO SlotDTO;
+				SlotDTO.UserId = Result->getInt("user_id");
+				SlotDTO.SlotKey = UTF8_TO_TCHAR(Result->getString("slot_key").c_str());
+				SlotDTO.SkillId = Result->getInt("skill_id");
+				SlotDTO.SlotIndex = Result->getInt("slot_index");
+				SlotDTO.SkillLevel = Result->getInt("skill_level");
+				
+				// last_used_time 처리
+				std::string LastUsedString = Result->getString("last_used_time");
+				if (!LastUsedString.empty() && LastUsedString != "NULL")
+				{
+					FDateTime::ParseIso8601(UTF8_TO_TCHAR(LastUsedString.c_str()), SlotDTO.LastUsedTime);
+				}
+				else
+				{
+					SlotDTO.LastUsedTime = FDateTime::MinValue();
+				}
+				
+				// created_at, updated_at 처리
+				std::string CreatedAtString = Result->getString("created_at");
+				if (!CreatedAtString.empty())
+				{
+					FDateTime::ParseIso8601(UTF8_TO_TCHAR(CreatedAtString.c_str()), SlotDTO.CreatedAt);
+				}
+				
+				std::string UpdatedAtString = Result->getString("updated_at");
+				if (!UpdatedAtString.empty())
+				{
+					FDateTime::ParseIso8601(UTF8_TO_TCHAR(UpdatedAtString.c_str()), SlotDTO.UpdatedAt);
+				}
+				
+				SkillSlots.Add(SlotDTO);
+			}
+			
+			UE_LOG(LogTemp, Log, TEXT("LoadUserSkillSlots: Loaded %d skill slots for UserId=%d, SlotKey=%s"), 
+				SkillSlots.Num(), UserId, *SlotKey);
+		}
+		catch (const sql::SQLException& e)
+		{
+			UE_LOG(LogTemp, Error, TEXT("LoadUserSkillSlots failed: %hs"), e.what());
+		}
+		
+		return SkillSlots;
+	});
+}
+
+UE::Tasks::TTask<bool> UDatabaseManager::SaveUserSkillSlots(const TArray<FSkillSlotDatabaseDTO>& SkillSlotDTOs)
+{
+	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, SkillSlotDTOs]() -> bool
+	{
+		if (SkillSlotDTOs.IsEmpty())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("SaveUserSkillSlots: Empty SkillSlotDTOs array"));
+			return true;
+		}
+		
+		try
+		{
+			sql::Connection* Con = Impl->GetConnection();
+			if (!Con)
+			{
+				UE_LOG(LogTemp, Error, TEXT("SaveUserSkillSlots: Failed to get database connection"));
+				return false;
+			}
+			
+			ON_SCOPE_EXIT
+			{
+				Impl->ReturnConnection(Con);
+			};
+			
+			// 트랜잭션 시작
+			Con->setAutoCommit(false);
+			
+			ON_SCOPE_EXIT
+			{
+				try
+				{
+					Con->setAutoCommit(true);
+				}
+				catch (...) {}
+			};
+			
+			// UPSERT 쿼리 (INSERT ... ON DUPLICATE KEY UPDATE)
+			FString Query = TEXT(
+				"INSERT INTO user_skill_slots "
+				"(user_id, slot_key, skill_id, slot_index, last_used_time) "
+				"VALUES (?, ?, ?, ?, ?) "
+				"ON DUPLICATE KEY UPDATE "
+				"skill_id = VALUES(skill_id), "
+				"slot_index = VALUES(slot_index), "
+				"last_used_time = VALUES(last_used_time), "
+				"updated_at = CURRENT_TIMESTAMP(3)"
+			);
+			
+			std::unique_ptr<sql::PreparedStatement> Stmt(Con->prepareStatement(TCHAR_TO_UTF8(*Query)));
+			
+			for (const FSkillSlotDatabaseDTO& SlotDTO : SkillSlotDTOs)
+			{
+				Stmt->setInt(1, SlotDTO.UserId);
+				Stmt->setString(2, TCHAR_TO_UTF8(*SlotDTO.SlotKey));
+				Stmt->setInt(3, SlotDTO.SkillId);
+				Stmt->setInt(4, SlotDTO.SlotIndex);
+				
+				// last_used_time 처리
+				if (SlotDTO.LastUsedTime != FDateTime::MinValue())
+				{
+					FString LastUsedString = SlotDTO.LastUsedTime.ToIso8601();
+					Stmt->setString(5, TCHAR_TO_UTF8(*LastUsedString));
+				}
+				else
+				{
+					Stmt->setNull(5, sql::DataType::TIMESTAMP);
+				}
+				
+				Stmt->executeUpdate();
+			}
+			
+			Con->commit();
+			
+			UE_LOG(LogTemp, Log, TEXT("SaveUserSkillSlots: Successfully saved %d skill slots"), SkillSlotDTOs.Num());
+			return true;
+		}
+		catch (const sql::SQLException& e)
+		{
+			UE_LOG(LogTemp, Error, TEXT("SaveUserSkillSlots failed: %hs"), e.what());
+			return false;
+		}
+	});
+}
+
+UE::Tasks::TTask<TArray<FSkillMasterDatabaseDTO>> UDatabaseManager::LoadSkillMasterData(const TArray<int32>& SkillIds)
+{
+	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, SkillIds]() -> TArray<FSkillMasterDatabaseDTO>
+	{
+		TArray<FSkillMasterDatabaseDTO> SkillMasterData;
+		
+		try
+		{
+			sql::Connection* Con = Impl->GetConnection();
+			if (!Con)
+			{
+				UE_LOG(LogTemp, Error, TEXT("LoadSkillMasterData: Failed to get database connection"));
+				return SkillMasterData;
+			}
+			
+			ON_SCOPE_EXIT
+			{
+				Impl->ReturnConnection(Con);
+			};
+			
+			FString Query;
+			std::unique_ptr<sql::PreparedStatement> Stmt;
+			
+			if (SkillIds.IsEmpty())
+			{
+				// 모든 스킬 마스터 데이터 로드
+				Query = TEXT(
+					"SELECT skill_id, display_name, description, base_cooltime, base_cost, max_level, enabled "
+					"FROM skills "
+					"WHERE enabled = 1 "
+					"ORDER BY skill_id"
+				);
+				Stmt.reset(Con->prepareStatement(TCHAR_TO_UTF8(*Query)));
+			}
+			else
+			{
+				// 특정 스킬 ID들만 로드
+				FString PlaceholderList;
+				for (int32 i = 0; i < SkillIds.Num(); ++i)
+				{
+					if (i > 0) PlaceholderList += TEXT(",");
+					PlaceholderList += TEXT("?");
+				}
+				
+				Query = FString::Printf(TEXT(
+					"SELECT skill_id, display_name, description, base_cooltime, base_cost, max_level, enabled "
+					"FROM skills "
+					"WHERE skill_id IN (%s) AND enabled = 1 "
+					"ORDER BY skill_id"
+				), *PlaceholderList);
+				
+				Stmt.reset(Con->prepareStatement(TCHAR_TO_UTF8(*Query)));
+				
+				for (int32 i = 0; i < SkillIds.Num(); ++i)
+				{
+					Stmt->setInt(i + 1, SkillIds[i]);
+				}
+			}
+			
+			std::unique_ptr<sql::ResultSet> Result(Stmt->executeQuery());
+			
+			while (Result->next())
+			{
+				FSkillMasterDatabaseDTO MasterDTO;
+				MasterDTO.SkillId = Result->getInt("skill_id");
+				MasterDTO.DisplayName = UTF8_TO_TCHAR(Result->getString("display_name").c_str());
+				MasterDTO.Description = UTF8_TO_TCHAR(Result->getString("description").c_str());
+				MasterDTO.BaseCooltime = Result->getDouble("base_cooltime");
+				MasterDTO.BaseCost = Result->getDouble("base_cost");
+				MasterDTO.MaxLevel = Result->getInt("max_level");
+				MasterDTO.bEnabled = Result->getBoolean("enabled");
+				
+				SkillMasterData.Add(MasterDTO);
+			}
+			
+			UE_LOG(LogTemp, Log, TEXT("LoadSkillMasterData: Loaded %d skill master entries"), SkillMasterData.Num());
+		}
+		catch (const sql::SQLException& e)
+		{
+			UE_LOG(LogTemp, Error, TEXT("LoadSkillMasterData failed: %hs"), e.what());
+		}
+		
+		return SkillMasterData;
+	});
+}
+
+UE::Tasks::TTask<bool> UDatabaseManager::SaveSkillMasterData(const TArray<FSkillMasterDatabaseDTO>& SkillMasterDTOs)
+{
+	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, SkillMasterDTOs]() -> bool
+	{
+		if (SkillMasterDTOs.IsEmpty())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("SaveSkillMasterData: Empty SkillMasterDTOs array"));
+			return true;
+		}
+		
+		try
+		{
+			sql::Connection* Con = Impl->GetConnection();
+			if (!Con)
+			{
+				UE_LOG(LogTemp, Error, TEXT("SaveSkillMasterData: Failed to get database connection"));
+				return false;
+			}
+			
+			ON_SCOPE_EXIT
+			{
+				Impl->ReturnConnection(Con);
+			};
+			
+			// 트랜잭션 시작
+			Con->setAutoCommit(false);
+			
+			ON_SCOPE_EXIT
+			{
+				try
+				{
+					Con->setAutoCommit(true);
+				}
+				catch (...) {}
+			};
+			
+			// UPSERT 쿼리
+			FString Query = TEXT(
+				"INSERT INTO skills "
+				"(skill_id, display_name, description, base_cooltime, base_cost, max_level, enabled) "
+				"VALUES (?, ?, ?, ?, ?, ?, ?) "
+				"ON DUPLICATE KEY UPDATE "
+				"display_name = VALUES(display_name), "
+				"description = VALUES(description), "
+				"base_cooltime = VALUES(base_cooltime), "
+				"base_cost = VALUES(base_cost), "
+				"max_level = VALUES(max_level), "
+				"enabled = VALUES(enabled), "
+				"updated_at = CURRENT_TIMESTAMP(3)"
+			);
+			
+			std::unique_ptr<sql::PreparedStatement> Stmt(Con->prepareStatement(TCHAR_TO_UTF8(*Query)));
+			
+			for (const FSkillMasterDatabaseDTO& MasterDTO : SkillMasterDTOs)
+			{
+				Stmt->setInt(1, MasterDTO.SkillId);
+				Stmt->setString(2, TCHAR_TO_UTF8(*MasterDTO.DisplayName));
+				Stmt->setString(3, TCHAR_TO_UTF8(*MasterDTO.Description));
+				Stmt->setDouble(4, MasterDTO.BaseCooltime);
+				Stmt->setDouble(5, MasterDTO.BaseCost);
+				Stmt->setInt(6, MasterDTO.MaxLevel);
+				Stmt->setBoolean(7, MasterDTO.bEnabled);
+				
+				Stmt->executeUpdate();
+			}
+			
+			Con->commit();
+			
+			UE_LOG(LogTemp, Log, TEXT("SaveSkillMasterData: Successfully saved %d skill master entries"), SkillMasterDTOs.Num());
+			return true;
+		}
+		catch (const sql::SQLException& e)
+		{
+			UE_LOG(LogTemp, Error, TEXT("SaveSkillMasterData failed: %hs"), e.what());
+			return false;
+		}
+	});
+}
+
+UE::Tasks::TTask<bool> UDatabaseManager::UpdateSkillSlotCooldown(
+	int32 UserId, 
+	const FString& SlotKey, 
+	int32 SlotIndex, 
+	const FDateTime& LastUsedTime)
+{
+	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, UserId, SlotKey, SlotIndex, LastUsedTime]() -> bool
+	{
+		try
+		{
+			sql::Connection* Con = Impl->GetConnection();
+			if (!Con)
+			{
+				UE_LOG(LogTemp, Error, TEXT("UpdateSkillSlotCooldown: Failed to get database connection"));
+				return false;
+			}
+			
+			ON_SCOPE_EXIT
+			{
+				Impl->ReturnConnection(Con);
+			};
+			
+			FString Query = TEXT(
+				"UPDATE user_skill_slots "
+				"SET last_used_time = ?, updated_at = CURRENT_TIMESTAMP(3) "
+				"WHERE user_id = ? AND slot_key = ? AND slot_index = ?"
+			);
+			
+			std::unique_ptr<sql::PreparedStatement> Stmt(Con->prepareStatement(TCHAR_TO_UTF8(*Query)));
+			
+			if (LastUsedTime != FDateTime::MinValue())
+			{
+				FString LastUsedString = LastUsedTime.ToIso8601();
+				Stmt->setString(1, TCHAR_TO_UTF8(*LastUsedString));
+			}
+			else
+			{
+				Stmt->setNull(1, sql::DataType::TIMESTAMP);
+			}
+			
+			Stmt->setInt(2, UserId);
+			Stmt->setString(3, TCHAR_TO_UTF8(*SlotKey));
+			Stmt->setInt(4, SlotIndex);
+			
+			int32 AffectedRows = Stmt->executeUpdate();
+			
+			if (AffectedRows > 0)
+			{
+				UE_LOG(LogTemp, Log, TEXT("UpdateSkillSlotCooldown: Updated UserId=%d, SlotKey=%s, SlotIndex=%d"), 
+					UserId, *SlotKey, SlotIndex);
+				return true;
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("UpdateSkillSlotCooldown: No rows affected for UserId=%d, SlotKey=%s, SlotIndex=%d"), 
+					UserId, *SlotKey, SlotIndex);
+				return false;
+			}
+		}
+		catch (const sql::SQLException& e)
+		{
+			UE_LOG(LogTemp, Error, TEXT("UpdateSkillSlotCooldown failed: %hs"), e.what());
+			return false;
+		}
+	});
+}
+
+UE::Tasks::TTask<bool> UDatabaseManager::ClearUserSkillSlots(int32 UserId, const FString& SlotKey)
+{
+	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, UserId, SlotKey]() -> bool
+	{
+		try
+		{
+			sql::Connection* Con = Impl->GetConnection();
+			if (!Con)
+			{
+				UE_LOG(LogTemp, Error, TEXT("ClearUserSkillSlots: Failed to get database connection"));
+				return false;
+			}
+			
+			ON_SCOPE_EXIT
+			{
+				Impl->ReturnConnection(Con);
+			};
+			
+			FString Query;
+			std::unique_ptr<sql::PreparedStatement> Stmt;
+			
+			if (SlotKey.IsEmpty())
+			{
+				// 모든 슬롯 키 삭제
+				Query = TEXT("DELETE FROM user_skill_slots WHERE user_id = ?");
+				Stmt.reset(Con->prepareStatement(TCHAR_TO_UTF8(*Query)));
+				Stmt->setInt(1, UserId);
+			}
+			else
+			{
+				// 특정 슬롯 키만 삭제
+				Query = TEXT("DELETE FROM user_skill_slots WHERE user_id = ? AND slot_key = ?");
+				Stmt.reset(Con->prepareStatement(TCHAR_TO_UTF8(*Query)));
+				Stmt->setInt(1, UserId);
+				Stmt->setString(2, TCHAR_TO_UTF8(*SlotKey));
+			}
+			
+			int32 AffectedRows = Stmt->executeUpdate();
+			
+			UE_LOG(LogTemp, Log, TEXT("ClearUserSkillSlots: Cleared %d skill slots for UserId=%d, SlotKey=%s"), 
+				AffectedRows, UserId, SlotKey.IsEmpty() ? TEXT("ALL") : *SlotKey);
+			
+			return true;
+		}
+		catch (const sql::SQLException& e)
+		{
+			UE_LOG(LogTemp, Error, TEXT("ClearUserSkillSlots failed: %hs"), e.what());
+			return false;
+		}
+	});
+}
+
+UE::Tasks::TTask<TMap<int32, int32>> UDatabaseManager::GetSkillUsageStatistics(
+	int32 UserId,
+	int32 SkillId,
+	const FDateTime& StartDate,
+	const FDateTime& EndDate)
+{
+	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, UserId, SkillId, StartDate, EndDate]() -> TMap<int32, int32>
+	{
+		TMap<int32, int32> UsageStats;
+		
+		try
+		{
+			sql::Connection* Con = Impl->GetConnection();
+			if (!Con)
+			{
+				UE_LOG(LogTemp, Error, TEXT("GetSkillUsageStatistics: Failed to get database connection"));
+				return UsageStats;
+			}
+			
+			ON_SCOPE_EXIT
+			{
+				Impl->ReturnConnection(Con);
+			};
+			
+			// 통계 쿼리 (간단한 버전 - 실제로는 별도의 usage_logs 테이블이 필요할 수 있음)
+			FString Query = TEXT(
+				"SELECT skill_id, COUNT(*) as usage_count "
+				"FROM user_skill_slots "
+				"WHERE last_used_time IS NOT NULL"
+			);
+			
+			TArray<FString> WhereConditions;
+			TArray<FString> ParamValues;
+			
+			if (UserId > 0)
+			{
+				WhereConditions.Add(TEXT("user_id = ?"));
+				ParamValues.Add(FString::FromInt(UserId));
+			}
+			
+			if (SkillId > 0)
+			{
+				WhereConditions.Add(TEXT("skill_id = ?"));
+				ParamValues.Add(FString::FromInt(SkillId));
+			}
+			
+			if (StartDate != FDateTime::MinValue())
+			{
+				WhereConditions.Add(TEXT("last_used_time >= ?"));
+				ParamValues.Add(StartDate.ToIso8601());
+			}
+			
+			if (EndDate != FDateTime::MaxValue())
+			{
+				WhereConditions.Add(TEXT("last_used_time <= ?"));
+				ParamValues.Add(EndDate.ToIso8601());
+			}
+			
+			if (!WhereConditions.IsEmpty())
+			{
+				Query += TEXT(" AND ") + FString::Join(WhereConditions, TEXT(" AND "));
+			}
+			
+			Query += TEXT(" GROUP BY skill_id ORDER BY usage_count DESC");
+			
+			std::unique_ptr<sql::PreparedStatement> Stmt(Con->prepareStatement(TCHAR_TO_UTF8(*Query)));
+			
+			// 파라미터 바인딩
+			for (int32 i = 0; i < ParamValues.Num(); ++i)
+			{
+				Stmt->setString(i + 1, TCHAR_TO_UTF8(*ParamValues[i]));
+			}
+			
+			std::unique_ptr<sql::ResultSet> Result(Stmt->executeQuery());
+			
+			while (Result->next())
+			{
+				int32 ResultSkillId = Result->getInt("skill_id");
+				int32 UsageCount = Result->getInt("usage_count");
+				UsageStats.Add(ResultSkillId, UsageCount);
+			}
+			
+			UE_LOG(LogTemp, Log, TEXT("GetSkillUsageStatistics: Retrieved statistics for %d skills"), UsageStats.Num());
+		}
+		catch (const sql::SQLException& e)
+		{
+			UE_LOG(LogTemp, Error, TEXT("GetSkillUsageStatistics failed: %hs"), e.what());
+		}
+		
+		return UsageStats;
+	});
 }

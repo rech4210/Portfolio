@@ -13,7 +13,7 @@
 #include "SkillSubsystem.h"
 #include "GameFramework/Character.h"
 
-bool USkillCastingService::TryCastSkill(ACharacter* Caster, const FGuid& SlotId){
+bool USkillCastingService::TryCastSkill(ACharacter* Caster, int32 SlotIndex){
 	// Client 기준으로 RPC -> 스킬 사용이 되어야함. 애초에 try ability는 predict 지원임 ㅇㅇ
 	// if (!Caster || !Caster->HasAuthority()){
 	// 	UE_LOG(LogTemp, Error, TEXT("SkillCastingService: Caster is null. or not on server authority."));
@@ -28,13 +28,13 @@ bool USkillCastingService::TryCastSkill(ACharacter* Caster, const FGuid& SlotId)
 		return false;
 	}
 	
-	USkillSlot* Slot = SkillComp->GetSkillSlotByGuid(SlotId);
-	if (!Slot || !Slot->SkillData || !Slot->AbilityClass)
+	USkillSlot* Slot = SkillComp->GetSkillSlotByIndex(SlotIndex);
+	if (!Slot || !Slot->SkillData || !Slot->SkillData->AbilityClass)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SkillCastingService: Invalid Slot or SkillData for SlotId, AbilityClass %s"), *SlotId.ToString());
+		UE_LOG(LogTemp, Warning, TEXT("SkillCastingService: Invalid Slot or SkillData for SlotIndex %d"), SlotIndex);
 		return false;
 	}
-	const FGameplayAbilitySpecHandle& AbilitySpec = ASC->FindAbilitySpecFromClass(Slot->AbilityClass)->Handle;
+	const FGameplayAbilitySpecHandle& AbilitySpec = ASC->FindAbilitySpecFromClass(Slot->SkillData->AbilityClass)->Handle;
 
 	// 8. Gameplay Ability 실행
 	if (AbilitySpec.IsValid())

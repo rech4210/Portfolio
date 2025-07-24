@@ -1,5 +1,7 @@
 @echo off
+REM Set console to UTF-8 and configure proper Korean display
 chcp 65001 > nul
+for /f "tokens=2 delims==" %%a in ('wmic os get locale /value') do set locale=%%a
 REM MyGame 데이터베이스 초기화 스크립트 (Docker 대상)
 REM 이 스크립트는 DDL 폴더의 모든 .sql 파일을 순서대로 합쳐 실행합니다.
 
@@ -16,7 +18,7 @@ ECHO ==================================================
 ECHO MyGame Database Initialization Script for DOCKER
 ECHO ==================================================
 ECHO.
-ECHO ⚠️  주의: 이 스크립트를 실행하기 전에 다음을 확인하세요:
+ECHO [주의] 이 스크립트를 실행하기 전에 다음을 확인하세요:
 ECHO    1. Docker의 'mygame_db' 컨테이너가 실행 중인지 확인
 ECHO    2. 접속 정보: Host=%DB_HOST%, Port=%DB_PORT%
 ECHO    3. 사용자 정보: User=%DB_USER%
@@ -35,22 +37,22 @@ IF EXIST %MASTER_SCHEMA_FILE% (
 ECHO Generating master schema file from DDL folder...
 
 REM DDL 폴더의 모든 .sql 파일을 순서대로 합치기
-powershell -Command "Get-ChildItem -Path ..\DDL -Recurse -Filter *.sql | Sort-Object FullName | Get-Content | Set-Content -Encoding utf8 %MASTER_SCHEMA_FILE%"
+powershell -ExecutionPolicy Bypass -Command "$OutputEncoding = [System.Text.Encoding]::UTF8; [Console]::OutputEncoding = [System.Text.Encoding]::UTF8; Get-ChildItem -Path ..\DDL -Recurse -Filter *.sql | Sort-Object FullName | Get-Content -Encoding UTF8 | Set-Content -Encoding UTF8 '%MASTER_SCHEMA_FILE%'"
 
 IF NOT EXIST %MASTER_SCHEMA_FILE% (
-    ECHO ❌ Failed to create master schema file.
+    ECHO [오류] Failed to create master schema file.
     ECHO    - DDL 폴더 경로를 확인해주세요.
     ECHO    - PowerShell 실행 권한을 확인해주세요.
     PAUSE
     GOTO :EOF
 )
 
-ECHO ✅ Master schema file created successfully: %MASTER_SCHEMA_FILE%
+ECHO [완료] Master schema file created successfully: %MASTER_SCHEMA_FILE%
 ECHO.
 
 REM 스키마 파일 내용 미리보기
 ECHO === DDL Preview (첫 10줄) ===
-powershell -Command "Get-Content %MASTER_SCHEMA_FILE% | Select-Object -First 10"
+powershell -ExecutionPolicy Bypass -Command "$OutputEncoding = [System.Text.Encoding]::UTF8; [Console]::OutputEncoding = [System.Text.Encoding]::UTF8; Get-Content '%MASTER_SCHEMA_FILE%' -Encoding UTF8 | Select-Object -First 10"
 ECHO ================================
 ECHO.
 ECHO Executing schema on Docker database: %DB_NAME%...
@@ -63,7 +65,7 @@ ECHO CREATE DATABASE IF NOT EXISTS %DB_NAME% CHARACTER SET utf8mb4 COLLATE utf8m
 IF %ERRORLEVEL% NEQ 0 (
     ECHO.
     ECHO *************************************************
-    ECHO *  ❌ DATABASE INITIALIZATION FAILED!
+    ECHO *  [오류] DATABASE INITIALIZATION FAILED!
     ECHO *  다음을 확인해주세요:
     ECHO *  1. Docker의 'mygame_db' 컨테이너 실행 상태
     ECHO *  2. 사용자 계정과 비밀번호
@@ -76,20 +78,20 @@ IF %ERRORLEVEL% NEQ 0 (
 
 ECHO.
 ECHO ==================================================
-ECHO  ✅ Database initialization complete!
+ECHO  [완료] Database initialization complete!
 ECHO ==================================================
 ECHO.
-ECHO 📋 요약:
+ECHO [요약]:
 ECHO    - 대상 데이터베이스: %DB_NAME% on Docker (%DB_HOST%:%DB_PORT%)
 ECHO    - 처리된 테이블: characters, inventory, skills, equipment, shops, shop_items
 ECHO.
 
 REM 임시 파일 삭제
 DEL %MASTER_SCHEMA_FILE%
-ECHO 🗑️  Deleted temporary schema file.
+ECHO [정리] Deleted temporary schema file.
 
 ECHO.
-ECHO 🚀 이제 다음 단계를 진행할 수 있습니다:
+ECHO [다음 단계] 이제 다음 단계를 진행할 수 있습니다:
 ECHO    1. UE5의 DatabaseSettings에서 포트를 %DB_PORT%로 변경
 ECHO    2. DatabaseManager 기능 테스트
 ECHO.

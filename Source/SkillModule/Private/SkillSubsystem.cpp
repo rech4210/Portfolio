@@ -57,102 +57,15 @@ USkillDomainService* USkillSubsystem::GetDomainService() {
 }
 
 // ============================================================================
-// Use Case Orchestration - App Layer Responsibilities Only
+// 3-LAYER MAPPING ARCHITECTURE USE CASES (RECOMMENDED)
 // ============================================================================
 
-void USkillSubsystem::RequestRegisterSkill(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, USkillDataAsset* SkillData)
+void USkillSubsystem::RequestLoadPlayerSkills3Layer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId, const FString& SlotKey)
 {
 	// 1. Network & Authority Validation (App Layer responsibility)
 	if (!PlayerIdentity)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerIdentity for skill registration"));
-		return;
-	}
-
-	if (GetGameInstance()->GetWorld()->GetNetMode() == NM_Client)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Skill registration requests should only be made from server"));
-		return;
-	}
-
-	if (!DomainService)
-	{
-		UE_LOG(LogTemp, Error, TEXT("SkillSubsystem: DomainService not initialized"));
-		return;
-	}
-
-	// 2. Transaction Boundary & Logging (App Layer responsibility)
-	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting skill registration transaction - Player: %s, Skill: %d"), 
-		*PlayerIdentity->GetPlayerGuid().ToString(), SkillData ? SkillData->SkillID : -1);
-
-	// 3. Domain Service Call (Delegate business logic)
-	DomainService->RegisterSkillToPlayer(PlayerIdentity, SkillData);
-}
-
-void USkillSubsystem::RequestUnregisterSkill(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FGuid& SlotId)
-{
-	// 1. Network & Authority Validation
-	if (!PlayerIdentity)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerIdentity for skill unregistration"));
-		return;
-	}
-
-	if (GetGameInstance()->GetWorld()->GetNetMode() == NM_Client)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Skill unregistration requests should only be made from server"));
-		return;
-	}
-
-	if (!DomainService)
-	{
-		UE_LOG(LogTemp, Error, TEXT("SkillSubsystem: DomainService not initialized"));
-		return;
-	}
-
-	// 2. Transaction Boundary & Logging
-	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting skill unregistration transaction - Player: %s, SlotId: %s"), 
-		*PlayerIdentity->GetPlayerGuid().ToString(), *SlotId.ToString());
-
-	// 3. Domain Service Call
-	DomainService->UnregisterSkillFromPlayer(PlayerIdentity, SlotId);
-}
-
-void USkillSubsystem::RequestSwapSkillSlots(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FGuid& SlotIdA, const FGuid& SlotIdB)
-{
-	// 1. Network & Authority Validation
-	if (!PlayerIdentity)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerIdentity for skill swap"));
-		return;
-	}
-
-	if (GetGameInstance()->GetWorld()->GetNetMode() == NM_Client)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Skill swap requests should only be made from server"));
-		return;
-	}
-
-	if (!DomainService)
-	{
-		UE_LOG(LogTemp, Error, TEXT("SkillSubsystem: DomainService not initialized"));
-		return;
-	}
-
-	// 2. Transaction Boundary & Logging
-	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting skill swap transaction - Player: %s, SlotA: %s, SlotB: %s"), 
-		*PlayerIdentity->GetPlayerGuid().ToString(), *SlotIdA.ToString(), *SlotIdB.ToString());
-
-	// 3. Domain Service Call
-	DomainService->SwapSkillSlots(PlayerIdentity, SlotIdA, SlotIdB);
-}
-
-void USkillSubsystem::RequestLoadPlayerSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity)
-{
-	// 1. Network & Authority Validation
-	if (!PlayerIdentity)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerIdentity for skill loading"));
+		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerIdentity for 3-layer skill loading"));
 		return;
 	}
 
@@ -168,26 +81,26 @@ void USkillSubsystem::RequestLoadPlayerSkills(TScriptInterface<IPlayerIdentityIn
 		return;
 	}
 
-	// 2. Transaction Boundary & Logging
-	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting skill load transaction - Player: %s"), 
-		*PlayerIdentity->GetPlayerGuid().ToString());
+	// 2. Transaction Boundary & Logging (App Layer responsibility)
+	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting 3-layer skill load transaction - Player: %s, UserId: %d, SlotKey: %s"), 
+		*PlayerIdentity->GetPlayerGuid().ToString(), UserId, *SlotKey);
 
-	// 3. Domain Service Call
-	DomainService->LoadSkills(PlayerIdentity);
+	// 3. Domain Service Call (Delegate business logic)
+	DomainService->LoadPlayerSkills3Layer(PlayerIdentity, UserId, SlotKey);
 }
 
-void USkillSubsystem::RequestSavePlayerSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FSkillDomain& SkillData)
+void USkillSubsystem::RequestSavePlayerSkills3Layer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId)
 {
-	// 1. Authority Validation
+	// 1. Network & Authority Validation
 	if (!PlayerIdentity)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerIdentity for skill saving"));
+		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerIdentity for 3-layer skill saving"));
 		return;
 	}
 
 	if (GetGameInstance()->GetWorld()->GetNetMode() == NM_Client)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Skill save requests should only be made from server"));
+		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: 3-layer skill save requests should only be made from server"));
 		return;
 	}
 
@@ -198,25 +111,25 @@ void USkillSubsystem::RequestSavePlayerSkills(TScriptInterface<IPlayerIdentityIn
 	}
 
 	// 2. Transaction Boundary & Logging
-	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting skill save transaction - Player: %s"), 
-		*PlayerIdentity->GetPlayerGuid().ToString());
+	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting 3-layer skill save transaction - Player: %s, UserId: %d"), 
+		*PlayerIdentity->GetPlayerGuid().ToString(), UserId);
 
 	// 3. Domain Service Call
-	DomainService->SaveSkills(PlayerIdentity, SkillData);
+	DomainService->SavePlayerSkills3Layer(PlayerIdentity, UserId);
 }
 
-void USkillSubsystem::RequestUpdateSkillCooldown(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FGuid& SlotId, const FDateTime& LastUsedTime, float RemainingCooldown)
+void USkillSubsystem::RequestUpdateSkillSlot3Layer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId, int32 SlotIndex, USkillDataAsset* SkillData)
 {
-	// 1. Authority Validation
+	// 1. Network & Authority Validation
 	if (!PlayerIdentity)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerIdentity for cooldown update"));
+		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerIdentity for 3-layer skill slot update"));
 		return;
 	}
 
 	if (GetGameInstance()->GetWorld()->GetNetMode() == NM_Client)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Cooldown update requests should only be made from server"));
+		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: 3-layer skill slot update requests should only be made from server"));
 		return;
 	}
 
@@ -227,9 +140,298 @@ void USkillSubsystem::RequestUpdateSkillCooldown(TScriptInterface<IPlayerIdentit
 	}
 
 	// 2. Transaction Boundary & Logging
-	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting cooldown update transaction - Player: %s, SlotId: %s"), 
-		*PlayerIdentity->GetPlayerGuid().ToString(), *SlotId.ToString());
+	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting 3-layer skill slot update transaction - Player: %s, UserId: %d, SlotIndex: %d, Skill: %d"), 
+		*PlayerIdentity->GetPlayerGuid().ToString(), UserId, SlotIndex, SkillData ? SkillData->SkillID : -1);
 
 	// 3. Domain Service Call
-	DomainService->UpdateSkillCooldown(PlayerIdentity, SlotId, LastUsedTime, RemainingCooldown);
+	DomainService->UpdatePlayerSkillSlot3Layer(PlayerIdentity, UserId, SlotIndex, SkillData);
 }
+
+void USkillSubsystem::RequestUpdateSkillCooldown3Layer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId, const FString& SlotKey, int32 SlotIndex, const FDateTime& LastUsedTime)
+{
+	// 1. Network & Authority Validation
+	if (!PlayerIdentity)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerIdentity for 3-layer cooldown update"));
+		return;
+	}
+
+	if (GetGameInstance()->GetWorld()->GetNetMode() == NM_Client)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: 3-layer cooldown update requests should only be made from server"));
+		return;
+	}
+
+	if (!DomainService)
+	{
+		UE_LOG(LogTemp, Error, TEXT("SkillSubsystem: DomainService not initialized"));
+		return;
+	}
+
+	// 2. Transaction Boundary & Logging
+	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting 3-layer cooldown update transaction - Player: %s, UserId: %d, SlotKey: %s, SlotIndex: %d"), 
+		*PlayerIdentity->GetPlayerGuid().ToString(), UserId, *SlotKey, SlotIndex);
+
+	// 3. Domain Service Call
+	DomainService->UpdateSkillCooldown3Layer(PlayerIdentity, UserId, SlotKey, SlotIndex, LastUsedTime);
+}
+
+void USkillSubsystem::RequestClearPlayerSkills3Layer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId, const FString& SlotKey)
+{
+	// 1. Network & Authority Validation
+	if (!PlayerIdentity)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerIdentity for 3-layer skill clearing"));
+		return;
+	}
+
+	if (GetGameInstance()->GetWorld()->GetNetMode() == NM_Client)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: 3-layer skill clear requests should only be made from server"));
+		return;
+	}
+
+	if (!DomainService)
+	{
+		UE_LOG(LogTemp, Error, TEXT("SkillSubsystem: DomainService not initialized"));
+		return;
+	}
+
+	// 2. Transaction Boundary & Logging
+	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting 3-layer skill clear transaction - Player: %s, UserId: %d, SlotKey: %s"), 
+		*PlayerIdentity->GetPlayerGuid().ToString(), UserId, *SlotKey);
+
+	// 3. Domain Service Call
+	DomainService->ClearPlayerSkills3Layer(PlayerIdentity, UserId, SlotKey);
+}
+
+void USkillSubsystem::RequestSwapSkillSlots3Layer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId, int32 SlotIndexA, int32 SlotIndexB)
+{
+	// 1. Network & Authority Validation
+	if (!PlayerIdentity)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerIdentity for 3-layer skill swap"));
+		return;
+	}
+
+	if (GetGameInstance()->GetWorld()->GetNetMode() == NM_Client)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: 3-layer skill swap requests should only be made from server"));
+		return;
+	}
+
+	if (!DomainService)
+	{
+		UE_LOG(LogTemp, Error, TEXT("SkillSubsystem: DomainService not initialized"));
+		return;
+	}
+
+	// 2. Transaction Boundary & Logging
+	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting 3-layer skill swap transaction - Player: %s, UserId: %d, SlotA: %d, SlotB: %d"), 
+		*PlayerIdentity->GetPlayerGuid().ToString(), UserId, SlotIndexA, SlotIndexB);
+
+	// 3. Domain Service Call - Implement as two update operations
+	UObject* PlayerObject = Cast<UObject>(PlayerIdentity.GetObject());
+	APlayerState* PlayerState = Cast<APlayerState>(PlayerObject);
+	if (!PlayerState)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Could not cast PlayerIdentity to PlayerState"));
+		return;
+	}
+
+	USkillComponent* SkillComponent = PlayerState->FindComponentByClass<USkillComponent>();
+	if (!SkillComponent)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: No SkillComponent found on PlayerState"));
+		return;
+	}
+
+	// Perform domain validation and swap
+	if (SkillComponent->CanSwapSkills(SlotIndexA, SlotIndexB))
+	{
+		SkillComponent->SwapSkills(SlotIndexA, SlotIndexB);
+		DomainService->SavePlayerSkills3Layer(PlayerIdentity, UserId);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Cannot swap skills - domain rules violation"));
+	}
+}
+
+// ============================================================================
+// LEGACY USE CASE ORCHESTRATION - DEPRECATED
+// ============================================================================
+//
+// void USkillSubsystem::RequestRegisterSkill(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, USkillDataAsset* SkillData)
+// {
+// 	// 1. Network & Authority Validation (App Layer responsibility)
+// 	if (!PlayerIdentity)
+// 	{
+// 		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerIdentity for skill registration"));
+// 		return;
+// 	}
+//
+// 	if (GetGameInstance()->GetWorld()->GetNetMode() == NM_Client)
+// 	{
+// 		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Skill registration requests should only be made from server"));
+// 		return;
+// 	}
+//
+// 	if (!DomainService)
+// 	{
+// 		UE_LOG(LogTemp, Error, TEXT("SkillSubsystem: DomainService not initialized"));
+// 		return;
+// 	}
+//
+// 	// 2. Transaction Boundary & Logging (App Layer responsibility)
+// 	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting skill registration transaction - Player: %s, Skill: %d"), 
+// 		*PlayerIdentity->GetPlayerGuid().ToString(), SkillData ? SkillData->SkillID : -1);
+//
+// 	// 3. Domain Service Call (Delegate business logic)
+// 	DomainService->RegisterSkillToPlayer(PlayerIdentity, SkillData);
+// }
+//
+// void USkillSubsystem::RequestUnregisterSkill(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 SlotIndex)
+// {
+// 	// 1. Network & Authority Validation
+// 	if (!PlayerIdentity)
+// 	{
+// 		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerIdentity for skill unregistration"));
+// 		return;
+// 	}
+//
+// 	if (GetGameInstance()->GetWorld()->GetNetMode() == NM_Client)
+// 	{
+// 		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Skill unregistration requests should only be made from server"));
+// 		return;
+// 	}
+//
+// 	if (!DomainService)
+// 	{
+// 		UE_LOG(LogTemp, Error, TEXT("SkillSubsystem: DomainService not initialized"));
+// 		return;
+// 	}
+//
+// 	// 2. Transaction Boundary & Logging
+// 	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting skill unregistration transaction - Player: %s, SlotIndex: %d"), 
+// 		*PlayerIdentity->GetPlayerGuid().ToString(), SlotIndex);
+//
+// 	// 3. Domain Service Call
+// 	DomainService->UnregisterSkillFromPlayer(PlayerIdentity, SlotIndex);
+// }
+//
+// void USkillSubsystem::RequestSwapSkillSlots(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 SlotIndexA, int32 SlotIndexB)
+// {
+// 	// 1. Network & Authority Validation
+// 	if (!PlayerIdentity)
+// 	{
+// 		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerIdentity for skill swap"));
+// 		return;
+// 	}
+//
+// 	if (GetGameInstance()->GetWorld()->GetNetMode() == NM_Client)
+// 	{
+// 		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Skill swap requests should only be made from server"));
+// 		return;
+// 	}
+//
+// 	if (!DomainService)
+// 	{
+// 		UE_LOG(LogTemp, Error, TEXT("SkillSubsystem: DomainService not initialized"));
+// 		return;
+// 	}
+//
+// 	// 2. Transaction Boundary & Logging
+// 	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting skill swap transaction - Player: %s, SlotA: %d, SlotB: %d"), 
+// 		*PlayerIdentity->GetPlayerGuid().ToString(), SlotIndexA, SlotIndexB);
+//
+// 	// 3. Domain Service Call
+// 	DomainService->SwapSkillSlots(PlayerIdentity, SlotIndexA, SlotIndexB);
+// }
+//
+// void USkillSubsystem::RequestLoadPlayerSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity)
+// {
+// 	// 1. Network & Authority Validation
+// 	if (!PlayerIdentity)
+// 	{
+// 		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerIdentity for skill loading"));
+// 		return;
+// 	}
+//
+// 	if (GetGameInstance()->GetWorld()->GetNetMode() == NM_Client)
+// 	{
+// 		UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Client should wait for replicated data, not load from server"));
+// 		return;
+// 	}
+//
+// 	if (!DomainService)
+// 	{
+// 		UE_LOG(LogTemp, Error, TEXT("SkillSubsystem: DomainService not initialized"));
+// 		return;
+// 	}
+//
+// 	// 2. Transaction Boundary & Logging
+// 	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting skill load transaction - Player: %s"), 
+// 		*PlayerIdentity->GetPlayerGuid().ToString());
+//
+// 	// 3. Domain Service Call
+// 	DomainService->LoadSkills(PlayerIdentity);
+// }
+//
+// void USkillSubsystem::RequestSavePlayerSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FSkillDomain& SkillData)
+// {
+// 	// 1. Authority Validation
+// 	if (!PlayerIdentity)
+// 	{
+// 		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerIdentity for skill saving"));
+// 		return;
+// 	}
+//
+// 	if (GetGameInstance()->GetWorld()->GetNetMode() == NM_Client)
+// 	{
+// 		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Skill save requests should only be made from server"));
+// 		return;
+// 	}
+//
+// 	if (!DomainService)
+// 	{
+// 		UE_LOG(LogTemp, Error, TEXT("SkillSubsystem: DomainService not initialized"));
+// 		return;
+// 	}
+//
+// 	// 2. Transaction Boundary & Logging
+// 	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting skill save transaction - Player: %s"), 
+// 		*PlayerIdentity->GetPlayerGuid().ToString());
+//
+// 	// 3. Domain Service Call
+// 	DomainService->SaveSkills(PlayerIdentity, SkillData);
+// }
+//
+// void USkillSubsystem::RequestUpdateSkillCooldown(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 SlotIndex, const FDateTime& LastUsedTime, float RemainingCooldown)
+// {
+// 	// 1. Authority Validation
+// 	if (!PlayerIdentity)
+// 	{
+// 		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerIdentity for cooldown update"));
+// 		return;
+// 	}
+//
+// 	if (GetGameInstance()->GetWorld()->GetNetMode() == NM_Client)
+// 	{
+// 		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Cooldown update requests should only be made from server"));
+// 		return;
+// 	}
+//
+// 	if (!DomainService)
+// 	{
+// 		UE_LOG(LogTemp, Error, TEXT("SkillSubsystem: DomainService not initialized"));
+// 		return;
+// 	}
+//
+// 	// 2. Transaction Boundary & Logging
+// 	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting cooldown update transaction - Player: %s, SlotIndex: %d"), 
+// 		*PlayerIdentity->GetPlayerGuid().ToString(), SlotIndex);
+//
+// 	// 3. Domain Service Call
+// 	DomainService->UpdateSkillCooldown(PlayerIdentity, SlotIndex, LastUsedTime, RemainingCooldown);
+// }

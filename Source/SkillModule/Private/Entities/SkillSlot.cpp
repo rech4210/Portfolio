@@ -6,35 +6,55 @@ void USkillSlot::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifeti
 {
     Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-    DOREPLIFETIME(USkillSlot, SlotId);
+    DOREPLIFETIME(USkillSlot, SlotIndex);
+    DOREPLIFETIME(USkillSlot, SkillId);
     DOREPLIFETIME(USkillSlot, SkillData);
-    DOREPLIFETIME(USkillSlot, AbilityClass);
+    DOREPLIFETIME(USkillSlot, SlotKey);
 }
 
-
-
-void USkillSlot::Initialize(USkillDataAsset* InSkillData, TSubclassOf<UGameplayAbility> InAbilityClass)
+void USkillSlot::Initialize(int32 InSlotIndex, const FString& InSlotKey, USkillDataAsset* InSkillData)
 {
-	SlotId = FGuid::NewGuid();
+	SlotIndex = InSlotIndex;
+	SlotKey = InSlotKey;
 	SkillData = InSkillData;
-	AbilityClass = InAbilityClass;
+	SkillId = InSkillData ? InSkillData->SkillID : 0;
 	LastUsedTime = FDateTime::MinValue();
 }
-//
-// void USkillSlot::SetLastUsedTime(const FDateTime& InTime)
-// {
-// 	LastUsedTime = InTime;
-// }
-//
-// bool USkillSlot::IsOnCooldown(const FDateTime& CurrentTime) const
-// {
-// 	if (!SkillData)
-// 	{
-// 		return false;
-// 	}
-//
-// 	const FTimespan CooldownDuration = FTimespan::FromSeconds(SkillData->CoolTime);
-// 	const FDateTime CooldownEndTime = LastUsedTime + CooldownDuration;
-//
-// 	return CurrentTime < CooldownEndTime;
-// } 
+
+void USkillSlot::SetSkillData(USkillDataAsset* InSkillData, int32 InSkillId)
+{
+	SkillData = InSkillData;
+	SkillId = InSkillId;
+	LastUsedTime = FDateTime::MinValue(); // 새 스킬 설정 시 쿨타임 초기화
+}
+
+void USkillSlot::ClearSkill()
+{
+	SkillData = nullptr;
+	SkillId = 0;
+	LastUsedTime = FDateTime::MinValue();
+}
+
+bool USkillSlot::IsOnCooldown(float BaseCooltime) const
+{
+	if (BaseCooltime <= 0.0f || LastUsedTime <= FDateTime::MinValue())
+	{
+		return false;
+	}
+
+	FDateTime Now = FDateTime::Now();
+	double ElapsedSeconds = (Now - LastUsedTime).GetTotalSeconds();
+	return ElapsedSeconds < BaseCooltime;
+}
+
+float USkillSlot::GetRemainingCooldown(float BaseCooltime) const
+{
+	if (BaseCooltime <= 0.0f || LastUsedTime <= FDateTime::MinValue())
+	{
+		return 0.0f;
+	}
+
+	FDateTime Now = FDateTime::Now();
+	double ElapsedSeconds = (Now - LastUsedTime).GetTotalSeconds();
+	return FMath::Max(0.0f, BaseCooltime - static_cast<float>(ElapsedSeconds));
+} 

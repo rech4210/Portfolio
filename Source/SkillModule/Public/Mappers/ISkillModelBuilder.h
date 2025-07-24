@@ -1,0 +1,120 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "UObject/Interface.h"
+#include "Mappers/ISkillAssetMapper.h"
+#include "ISkillModelBuilder.generated.h"
+
+// Forward declarations
+class USkillSlot;
+class USkillDataAsset;
+
+USTRUCT(BlueprintType)
+struct SKILLMODULE_API FSkillDomainModel
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadOnly)
+	int32 UserId = 0;
+
+	UPROPERTY(BlueprintReadOnly)
+	FString SlotKey;
+
+	UPROPERTY(BlueprintReadOnly)
+	int32 SlotIndex = -1;
+
+	UPROPERTY(BlueprintReadOnly)
+	int32 SkillId = 0;
+
+	UPROPERTY(BlueprintReadOnly)
+	int32 SkillLevel = 1;
+
+	UPROPERTY(BlueprintReadOnly)
+	FDateTime LastUsedTime;
+
+	UPROPERTY(BlueprintReadOnly)
+	bool bIsActive = false;
+
+	// Business Logic Properties
+	UPROPERTY(BlueprintReadOnly)
+	float RemainingCooldown = 0.0f;
+
+	UPROPERTY(BlueprintReadOnly)
+	bool bCanUse = true;
+
+	UPROPERTY(BlueprintReadOnly)
+	USkillDataAsset* SkillDataAsset = nullptr;
+
+	FSkillDomainModel()
+	{
+		UserId = 0;
+		SlotKey = TEXT("");
+		SlotIndex = -1;
+		SkillId = 0;
+		SkillLevel = 1;
+		LastUsedTime = FDateTime::MinValue();
+		bIsActive = false;
+		RemainingCooldown = 0.0f;
+		bCanUse = true;
+	}
+};
+
+UINTERFACE(BlueprintType, meta = (CannotImplementInterfaceInBlueprint))
+class SKILLMODULE_API USkillModelBuilderInterface : public UInterface
+{
+	GENERATED_BODY()
+};
+
+/**
+ * DataAsset → DomainModel 빌딩 인터페이스
+ * DataAsset과 비즈니스 로직을 결합하여 완전한 도메인 모델 생성
+ */
+class SKILLMODULE_API ISkillModelBuilderInterface
+{
+	GENERATED_BODY()
+
+public:
+	// Domain Model 생성
+	virtual FSkillDomainModel BuildDomainModel(
+		const FSkillSlotDatabaseDTO& SlotDTO, 
+		USkillDataAsset* SkillDataAsset
+	) = 0;
+
+	virtual USkillSlot* BuildSkillSlotEntity(const FSkillDomainModel& DomainModel) = 0;
+
+	// Business Logic 계산
+	virtual float CalculateRemainingCooldown(
+		const FDateTime& LastUsedTime, 
+		float BaseCooldown
+	) = 0;
+
+	virtual bool CanUseSkill(
+		const FDateTime& LastUsedTime, 
+		float BaseCooldown,
+		int32 CurrentMana,
+		int32 RequiredMana
+	) = 0;
+
+	virtual int32 CalculateScaledValue(int32 BaseValue, int32 SkillLevel) = 0;
+	virtual float CalculateScaledValue(float BaseValue, int32 SkillLevel) = 0;
+
+	// 역변환 (Entity → DTO)
+	virtual FSkillSlotDatabaseDTO ExtractSlotDTO(const USkillSlot* SkillSlot) = 0;
+	virtual FSkillDomainModel ExtractDomainModel(const USkillSlot* SkillSlot) = 0;
+
+	// 배치 처리
+	virtual TArray<FSkillDomainModel> BuildDomainModels(
+		const TArray<FSkillSlotDatabaseDTO>& SlotDTOs,
+		const TArray<USkillDataAsset*>& SkillDataAssets
+	) = 0;
+
+	virtual TArray<USkillSlot*> BuildSkillSlotEntities(
+		const TArray<FSkillDomainModel>& DomainModels
+	) = 0;
+
+	// Validation
+	virtual bool ValidateDomainModel(const FSkillDomainModel& Model, FString& OutErrorMessage) = 0;
+	virtual bool ValidateSkillSlotEntity(const USkillSlot* SkillSlot, FString& OutErrorMessage) = 0;
+};

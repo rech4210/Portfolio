@@ -168,14 +168,96 @@ struct DATABASEMODULE_API FCharacterData
 	{}
 };
 
-// DTO for skill slots
+// ===============================================================================
+// DTO LAYER - 순수 데이터 구조 (SQL 스키마 반영)
+// ===============================================================================
+
+// SQL 기반 Skill Slot DTO (user_skill_slots 테이블 구조)
+USTRUCT(BlueprintType)
+struct DATABASEMODULE_API FSkillSlotDatabaseDTO
+{
+	GENERATED_BODY()
+
+	// Primary Keys (SQL user_skill_slots 테이블 기준)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillDTO")
+	int32 UserId = 0;                    // user_skill_slots.user_id
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillDTO")
+	FString SlotKey;                   // user_skill_slots.slot_key (Q, W, E, R 등)
+
+	// Skill Binding
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillDTO")
+	int32 SkillId = 0;                 // user_skill_slots.skill_id
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillDTO")
+	int32 SlotIndex = -1;              // user_skill_slots.slot_index
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillDTO")
+	int32 SkillLevel = 1;              // user_skills.skill_level (정규화된 테이블에서)
+
+	// Cooldown Data (최적화된 구조 - last_used_time만 저장)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillDTO")
+	FDateTime LastUsedTime;            // user_skill_slots.last_used_time
+
+	// Metadata
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillDTO")
+	FDateTime CreatedAt;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillDTO")
+	FDateTime UpdatedAt;
+
+	FSkillSlotDatabaseDTO()
+		: UserId(0), SkillId(0), SlotIndex(-1), SkillLevel(1)
+	{
+		LastUsedTime = FDateTime::MinValue();
+		CreatedAt = FDateTime::Now();
+		UpdatedAt = FDateTime::Now();
+	}
+
+	bool IsValid() const
+	{
+		return UserId > 0 && !SlotKey.IsEmpty() && SlotIndex >= 0;
+	}
+};
+
+// SQL 기반 Skill Master DTO (skills 테이블 구조)
+USTRUCT(BlueprintType)
+struct DATABASEMODULE_API FSkillMasterDatabaseDTO
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillDTO")
+	int32 SkillId;                     // skills.skill_id
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillDTO")
+	FString DisplayName;               // skills.display_name
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillDTO")
+	FString Description;               // skills.description
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillDTO")
+	float BaseCooltime = 0.0f;         // skills.base_cooltime
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillDTO")
+	float BaseCost = 0.0f;             // skills.base_cost
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillDTO")
+	int32 MaxLevel = 1;                // skills.max_level
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillDTO")
+	bool bEnabled = true;              // skills.enabled
+
+	FSkillMasterDatabaseDTO()
+		: SkillId(0), BaseCooltime(0.0f), BaseCost(0.0f), MaxLevel(1), bEnabled(true)
+	{
+	}
+};
+
+// 기존 DTO (하위 호환성 유지)
 USTRUCT(BlueprintType)
 struct DATABASEMODULE_API FSkillSlotDTO
 {
 	GENERATED_BODY()
-
-	UPROPERTY()
-	FGuid SlotId;
 
 	UPROPERTY()
 	int32 SkillID;
@@ -198,12 +280,11 @@ struct DATABASEMODULE_API FSkillSlotDTO
 	FSkillSlotDTO()
 		: SkillID(0), SlotIndex(-1), RemainingCooldown(0.0f), bIsActive(true)
 	{
-		SlotId = FGuid::NewGuid();
 		LastUsedTime = FDateTime::Now();
 	}
 
-	FSkillSlotDTO(const FGuid& InSlotId, int32 InSkillID, int32 InSlotIndex)
-		: SlotId(InSlotId), SkillID(InSkillID), SlotIndex(InSlotIndex), RemainingCooldown(0.0f), bIsActive(true)
+	FSkillSlotDTO(int32 InSkillID, int32 InSlotIndex)
+		: SkillID(InSkillID), SlotIndex(InSlotIndex), RemainingCooldown(0.0f), bIsActive(true)
 	{
 		LastUsedTime = FDateTime::Now();
 	}
@@ -488,6 +569,7 @@ public:
 	 * @param SkillSlots The skill slots to save
 	 * @return Task that completes when save finishes
 	 */
+	UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: SaveUserSkillSlots() instead")
 	UE::Tasks::TTask<bool> SaveSkillsForPlayer(const FString& UserId, const TArray<FSkillSlotDTO>& SkillSlots);
 
 	/**
@@ -496,25 +578,48 @@ public:
 	 * @param SkillSlot The skill slot to register
 	 * @return Task that completes when skill is registered
 	 */
+	UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: SaveUserSkillSlots() instead")
 	UE::Tasks::TTask<bool> RegisterSkill(const FString& UserId, const FSkillSlotDTO& SkillSlot);
 
 	/**
-	 * Unregister a skill from player's skill slots
+	 * Unregister a skill from player's skill slots (legacy GUID version)
 	 * @param UserId The player's unique ID (VARCHAR(255) in database)
 	 * @param SlotId The slot ID to unregister
 	 * @return Task that completes when skill is unregistered
 	 */
+	UE_DEPRECATED(5.0, "Legacy GUID-based method. Use 3-Layer Mapping Architecture: ClearUserSkillSlots() instead")
 	UE::Tasks::TTask<bool> UnregisterSkill(const FString& UserId, const FGuid& SlotId);
 
 	/**
-	 * Update skill cooldown state
+	 * Unregister a skill from player's skill slots (SlotIndex version)
+	 * @param UserId The player's unique ID (VARCHAR(255) in database)
+	 * @param SlotIndex The slot index to unregister
+	 * @return Task that completes when skill is unregistered
+	 */
+	UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: ClearUserSkillSlots() instead")
+	UE::Tasks::TTask<bool> UnregisterSkill(const FString& UserId, int32 SlotIndex);
+
+	/**
+	 * Update skill cooldown state (legacy GUID version)
 	 * @param UserId The player's unique ID (VARCHAR(255) in database)
 	 * @param SlotId The slot ID to update
 	 * @param LastUsedTime When the skill was last used
 	 * @param RemainingCooldown Remaining cooldown time
 	 * @return Task that completes when cooldown is updated
 	 */
+	UE_DEPRECATED(5.0, "Legacy GUID-based method. Use 3-Layer Mapping Architecture: UpdateSkillSlotCooldown() instead")
 	UE::Tasks::TTask<bool> UpdateSkillCooldown(const FString& UserId, const FGuid& SlotId, const FDateTime& LastUsedTime, float RemainingCooldown);
+
+	/**
+	 * Update skill cooldown state (SlotIndex version)
+	 * @param UserId The player's unique ID (VARCHAR(255) in database)
+	 * @param SlotIndex The slot index to update
+	 * @param LastUsedTime When the skill was last used
+	 * @param RemainingCooldown Remaining cooldown time
+	 * @return Task that completes when cooldown is updated
+	 */
+	UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: UpdateSkillSlotCooldown() instead")
+	UE::Tasks::TTask<bool> UpdateSkillCooldown(const FString& UserId, int32 SlotIndex, const FDateTime& LastUsedTime, float RemainingCooldown);
 
 	// ============================================================================
 	// Shop Data Management Methods
@@ -703,6 +808,77 @@ public:
 	 * @return Task that returns array of audit logs
 	 */
 	UE::Tasks::TTask<TArray<FDatabaseAuditLogData>> GetRecentAuditLogs(int32 Limit = 50);
+
+	// ============================================================================
+	// SKILL DATABASE OPERATIONS - 3-Layer Mapping Architecture
+	// ============================================================================
+
+	/**
+	 * Load user skill slots using 3-layer mapping architecture
+	 * @param UserId The user ID to load skills for
+	 * @param SlotKey The slot key (e.g., "ActionBar", "QuickSlot")
+	 * @return Task that returns array of skill slot DTOs
+	 */
+	UE::Tasks::TTask<TArray<FSkillSlotDatabaseDTO>> LoadUserSkillSlots(int32 UserId, const FString& SlotKey);
+
+	/**
+	 * Save user skill slots using 3-layer mapping architecture
+	 * @param SkillSlotDTOs Array of skill slot DTOs to save
+	 * @return Task that completes when all slots are saved
+	 */
+	UE::Tasks::TTask<bool> SaveUserSkillSlots(const TArray<FSkillSlotDatabaseDTO>& SkillSlotDTOs);
+
+	/**
+	 * Load skill master data using 3-layer mapping architecture
+	 * @param SkillIds Array of skill IDs to load (empty for all skills)
+	 * @return Task that returns array of skill master DTOs
+	 */
+	UE::Tasks::TTask<TArray<FSkillMasterDatabaseDTO>> LoadSkillMasterData(const TArray<int32>& SkillIds = TArray<int32>());
+
+	/**
+	 * Save or update skill master data
+	 * @param SkillMasterDTOs Array of skill master DTOs to save
+	 * @return Task that completes when all skills are saved
+	 */
+	UE::Tasks::TTask<bool> SaveSkillMasterData(const TArray<FSkillMasterDatabaseDTO>& SkillMasterDTOs);
+
+	/**
+	 * Update skill slot's last used time (for cooldown tracking)
+	 * @param UserId The user ID
+	 * @param SlotKey The slot key
+	 * @param SlotIndex The slot index
+	 * @param LastUsedTime The last used timestamp
+	 * @return Task that completes when update is done
+	 */
+	UE::Tasks::TTask<bool> UpdateSkillSlotCooldown(
+		int32 UserId, 
+		const FString& SlotKey, 
+		int32 SlotIndex, 
+		const FDateTime& LastUsedTime
+	);
+
+	/**
+	 * Clear all skill slots for a user (for skill reset)
+	 * @param UserId The user ID
+	 * @param SlotKey The slot key to clear (empty for all slot keys)
+	 * @return Task that completes when slots are cleared
+	 */
+	UE::Tasks::TTask<bool> ClearUserSkillSlots(int32 UserId, const FString& SlotKey = TEXT(""));
+
+	/**
+	 * Get skill usage statistics for analytics
+	 * @param UserId The user ID (0 for all users)
+	 * @param SkillId The skill ID (0 for all skills)
+	 * @param StartDate Start date for the query
+	 * @param EndDate End date for the query
+	 * @return Task that returns usage statistics
+	 */
+	UE::Tasks::TTask<TMap<int32, int32>> GetSkillUsageStatistics(
+		int32 UserId = 0,
+		int32 SkillId = 0,
+		const FDateTime& StartDate = FDateTime::MinValue(),
+		const FDateTime& EndDate = FDateTime::MaxValue()
+	);
 
 private:
 	// Pointer to the implementation

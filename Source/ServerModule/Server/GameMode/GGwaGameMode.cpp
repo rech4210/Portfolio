@@ -273,7 +273,9 @@ void AGGwaGameMode::PostLogin(APlayerController* NewPlayer)
 	UE_LOG(LogTemp, Warning, TEXT("Loading skills..."));
 	if (auto SkillSubsystem = GetGameInstance()->GetSubsystem<USkillSubsystem>())
 	{
-		SkillSubsystem->RequestLoadPlayerSkills(NewPlayer->PlayerState);
+		
+		SkillSubsystem->RequestLoadPlayerSkills3Layer(NewPlayer->PlayerState, )
+		// SkillSubsystem->RequestLoadPlayerSkills(NewPlayer->PlayerState);
 		UE_LOG(LogTemp, Warning, TEXT("[SUCCESS] Loaded %d skill definitions"), LoadedSkillDefinitions.Num());
 	}
 	else

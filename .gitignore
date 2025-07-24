@@ -104,3 +104,4 @@ clang_build.txt
 *.database/postgres/*
 *프롬프트용/*
 Gemini.bat
+ProjectBuilder.bat

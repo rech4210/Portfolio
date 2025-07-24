@@ -5,6 +5,9 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "DatabaseModule/Public/DatabaseManager.h"
+#include "Mappers/ISkillDtoMapper.h"
+#include "Mappers/ISkillAssetMapper.h"
+#include "Mappers/ISkillModelBuilder.h"
 #include "SkillComponent.generated.h"
 
 class USkillSlot;
@@ -13,9 +16,9 @@ class UGameplayAbility;
 struct FSkillDomain;
 
 // Domain Events for SkillComponent (Aggregate)
-// DECLARE_MULTICAST_DELEGATE_OneParam(FOnSkillRegistered, USkillDataAsset* /* SkillData */);
-// DECLARE_MULTICAST_DELEGATE_OneParam(FOnSkillUnregistered, const FGuid& /* SlotId */);
-DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSkillsSwapped, const FGuid& /* SlotIdA */, const FGuid& /* SlotIdB */);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnSkillRegistered, int32 /* SlotIndex */);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnSkillUnregistered, int32 /* SlotIndex */);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSkillsSwapped, int32 /* SlotIndexA */, int32 /* SlotIndexB */);
 DECLARE_MULTICAST_DELEGATE(FOnSkillsChanged);
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnSkillStateChanged, const TArray<USkillSlot*>&);
@@ -41,8 +44,8 @@ public:
 	FOnSkillStateChanged OnSkillStateChanged;
 
 	// Domain Events (for DDD compliance)
-	// FOnSkillRegistered OnSkillRegistered;
-	// FOnSkillUnregistered OnSkillUnregistered;
+	FOnSkillRegistered OnSkillRegistered;
+	FOnSkillUnregistered OnSkillUnregistered;
 	FOnSkillsSwapped OnSkillsSwapped;
 	FOnSkillsChanged OnSkillsChanged;
 
@@ -53,30 +56,41 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Skill|Component")
 	int32 MaxSkillSlots = 8;
 
+	// 3-Layer Mapping Architecture
+	UPROPERTY()
+	TScriptInterface<ISkillDtoMapperInterface> DtoMapper;
+
+	UPROPERTY()
+	TScriptInterface<ISkillAssetMapperInterface> AssetMapper;
+
+	UPROPERTY()
+	TScriptInterface<ISkillModelBuilderInterface> ModelBuilder;
+
 public:
 	// ========================================================================
 	// AGGREGATE ROOT METHODS - BUSINESS LOGIC WITH INVARIANT PROTECTION
 	// ========================================================================
 
 	/**
-	 * Register a skill to available slot (Domain logic with validation)
+	 * Register a skill to specific slot (Domain logic with validation)
+	 * @param SlotIndex Target slot index
 	 * @param SkillData Skill data to register
 	 * @return True if successfully registered
 	 */
-	bool RegisterSkill(USkillDataAsset* SkillData);
+	bool RegisterSkill(int32 SlotIndex, USkillDataAsset* SkillData);
 
 	/**
 	 * Unregister a skill from slot (Domain logic with validation)
-	 * @param SlotId Slot ID to unregister
+	 * @param SlotIndex Slot index to unregister
 	 */
-	void UnregisterSkill(const FGuid& SlotId);
+	void UnregisterSkill(int32 SlotIndex);
 
 	/**
 	 * Swap skills between two slots (Domain logic with validation)
-	 * @param SlotIdA First slot ID
-	 * @param SlotIdB Second slot ID
+	 * @param SlotIndexA First slot index
+	 * @param SlotIndexB Second slot index
 	 */
-	void SwapSkills(const FGuid& SlotIdA, const FGuid& SlotIdB);
+	void SwapSkills(int32 SlotIndexA, int32 SlotIndexB);
 
 	/**
 	 * Server-side method to set skill slots (used by Repository)
@@ -90,34 +104,35 @@ public:
 
 	/**
 	 * Validate if a skill can be registered (Domain Rule)
+	 * @param SlotIndex Target slot index
 	 * @param SkillData Skill data to validate
 	 * @return True if skill can be registered
 	 */
-	bool CanRegisterSkill(USkillDataAsset* SkillData) const;
+	bool CanRegisterSkill(int32 SlotIndex, USkillDataAsset* SkillData) const;
 
 	/**
 	 * Validate if a skill can be unregistered (Domain Rule)
-	 * @param SlotId Slot ID to validate
+	 * @param SlotIndex Slot index to validate
 	 * @return True if skill can be unregistered
 	 */
-	bool CanUnregisterSkill(const FGuid& SlotId) const;
+	bool CanUnregisterSkill(int32 SlotIndex) const;
 
 	/**
 	 * Validate if skills can be swapped (Domain Rule)
-	 * @param SlotIdA First slot ID
-	 * @param SlotIdB Second slot ID
+	 * @param SlotIndexA First slot index
+	 * @param SlotIndexB Second slot index
 	 * @return True if skills can be swapped
 	 */
-	bool CanSwapSkills(const FGuid& SlotIdA, const FGuid& SlotIdB) const;
+	bool CanSwapSkills(int32 SlotIndexA, int32 SlotIndexB) const;
 
 	/**
 	 * Validate if cooldown can be updated (Domain Rule)
-	 * @param SlotId Slot ID to validate
+	 * @param SlotIndex Slot index to validate
 	 * @param LastUsedTime The last used time
 	 * @param RemainingCooldown The remaining cooldown
 	 * @return True if cooldown can be updated
 	 */
-	bool CanUpdateCooldown(const FGuid& SlotId, const FDateTime& LastUsedTime, float RemainingCooldown) const;
+	bool CanUpdateCooldown(int32 SlotIndex, const FDateTime& LastUsedTime, float RemainingCooldown) const;
 
 	/**
 	 * Validate if skills can be saved (Domain Rule)
@@ -150,18 +165,19 @@ public:
 	// ========================================================================
 
 	/**
-	 * Get skill slot by GUID
-	 * @param SlotId Slot ID to find
+	 * Get skill slot by index
+	 * @param SlotIndex Slot index to find
 	 * @return Found skill slot, nullptr if not found
 	 */
-	USkillSlot* GetSkillSlotByGuid(const FGuid& SlotId) const;
+	USkillSlot* GetSkillSlotByIndex(int32 SlotIndex) const;
 
 	/**
-	 * Get skill slot GUID by index
-	 * @param index Slot index
-	 * @return Slot GUID, invalid GUID if not found
+	 * Get skill slot by slot key and index
+	 * @param SlotKey Slot key to find
+	 * @param SlotIndex Slot index to find
+	 * @return Found skill slot, nullptr if not found
 	 */
-	FGuid GetSkillSlotGuidByIndex(int32 index) const;
+	USkillSlot* GetSkillSlotByKeyAndIndex(const FString& SlotKey, int32 SlotIndex) const;
 
 	/**
 	 * Get all skill slots (read-only access)
@@ -170,21 +186,59 @@ public:
 	const TArray<USkillSlot*>& GetAllSkillSlots() const { return reinterpret_cast<const TArray<USkillSlot*>&>(SkillSlots); }
 
 	// ========================================================================
-	// DOMAIN INTEGRATION METHODS - AGGREGATE SYNCHRONIZATION
+	// 3-LAYER MAPPING INTEGRATION METHODS
 	// ========================================================================
 
 	/**
-	 * Synchronize component state with domain data (called by DomainService)
+	 * Load skill slots from database using 3-layer mapping
+	 * @param UserId User ID to load skills for
+	 * @param SlotKey Slot key (e.g., "ActionBar", "QuickSlot")
+	 */
+	void LoadSkillSlotsFromDatabase(int32 UserId, const FString& SlotKey);
+
+	/**
+	 * Save skill slots to database using 3-layer mapping
+	 * @param UserId User ID to save skills for
+	 */
+	void SaveSkillSlotsToDatabase(int32 UserId);
+
+	/**
+	 * Build skill slots from DTOs and AssetData using mappers
+	 * @param SlotDTOs Skill slot DTOs from database
+	 * @param AssetDataArray Asset data from content
+	 */
+	void BuildSkillSlotsFromMappers(
+		const TArray<FSkillSlotDatabaseDTO>& SlotDTOs,
+		const TArray<USkillDataAsset*>& SkillDataAssets
+	);
+
+	/**
+	 * Extract DTOs from current skill slots using mappers
+	 * @param UserId User ID for the DTOs
+	 * @return Array of skill slot DTOs
+	 */
+	TArray<FSkillSlotDatabaseDTO> ExtractDTOsFromSkillSlots(int32 UserId) const;
+
+	// ========================================================================
+	// LEGACY DOMAIN INTEGRATION METHODS - DEPRECATED
+	// ========================================================================
+
+	/**
+	 * DEPRECATED: Synchronize component state with domain data (called by DomainService)
+	 * Use 3-Layer Mapping Architecture: BuildSkillSlotsFromMappers() instead
 	 * Updates the aggregate's internal state to match the domain data
 	 * @param SkillData Domain data to sync with
 	 */
+	UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: BuildSkillSlotsFromMappers() instead")
 	void SyncWithDomain(const FSkillDomain& SkillData);
 
 	/**
-	 * Extract current domain data from component (called by DomainService)
+	 * DEPRECATED: Extract current domain data from component (called by DomainService)
+	 * Use 3-Layer Mapping Architecture: ExtractDTOsFromSkillSlots() instead
 	 * Creates domain data representation from current aggregate state
 	 * @return Current skill domain data
 	 */
+	UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: ExtractDTOsFromSkillSlots() instead")
 	FSkillDomain ExtractDomain() const;
 
 	// 이미 복제를 수행중.
@@ -201,4 +255,15 @@ private:
 	 * Internal method to notify skill state changes
 	 */
 	void NotifySkillStateChanged();
+
+	/**
+	 * Initialize mappers (called in BeginPlay)
+	 */
+	void InitializeMappers();
+
+	/**
+	 * Validate mapper dependencies
+	 * @return True if all mappers are valid
+	 */
+	bool ValidateMappers() const;
 };

@@ -46,48 +46,113 @@ class SKILLMODULE_API ISkillRepositoryInterface : public IBaseRepositoryInterfac
 
 public:
 	// ========================================================================
-	// PURE REPOSITORY METHODS - NO ENGINE DEPENDENCIES (RECOMMENDED)
+	// 3-LAYER MAPPING ARCHITECTURE METHODS (RECOMMENDED)
 	// ========================================================================
 	
 	/**
-	 * Load skill domain data by player ID
+	 * Load user skill slots using 3-layer mapping architecture
+	 * @param UserId User ID to load skills for
+	 * @param SlotKey Slot key (e.g., "ActionBar", "QuickSlot")
+	 * @return Task returning skill slot DTOs
+	 */
+	virtual UE::Tasks::TTask<FSkillRepositoryResult3Layer> LoadUserSkillSlots(int32 UserId, const FString& SlotKey) = 0;
+
+	/**
+	 * Save user skill slots using 3-layer mapping architecture
+	 * @param UserId User ID to save skills for
+	 * @param SkillSlotDTOs Skill slot DTOs to save
+	 * @return Task returning success/failure result
+	 */
+	virtual UE::Tasks::TTask<FSkillRepositoryResult3Layer> SaveUserSkillSlots(int32 UserId, const TArray<FSkillSlotDatabaseDTO>& SkillSlotDTOs) = 0;
+
+	/**
+	 * Load skill master data using 3-layer mapping architecture
+	 * @param SkillIds Optional list of specific skill IDs to load
+	 * @return Task returning skill master data
+	 */
+	virtual UE::Tasks::TTask<FSkillRepositoryResult3Layer> LoadSkillMasterData(const TArray<int32>& SkillIds = {}) = 0;
+
+	/**
+	 * Update skill slot cooldown using 3-layer mapping architecture
+	 * @param UserId User ID to update
+	 * @param SlotKey Slot key (e.g., "ActionBar", "QuickSlot")
+	 * @param SlotIndex Slot index to update
+	 * @param LastUsedTime When the skill was last used
+	 * @return Task returning updated skill slots
+	 */
+	virtual UE::Tasks::TTask<FSkillRepositoryResult3Layer> UpdateSkillSlotCooldown(int32 UserId, const FString& SlotKey, int32 SlotIndex, const FDateTime& LastUsedTime) = 0;
+
+	/**
+	 * Clear all skill slots for a user using 3-layer mapping architecture
+	 * @param UserId User ID to clear slots for
+	 * @param SlotKey Slot key (e.g., "ActionBar", "QuickSlot")
+	 * @return Task returning success/failure result
+	 */
+	virtual UE::Tasks::TTask<FSkillRepositoryResult3Layer> ClearUserSkillSlots(int32 UserId, const FString& SlotKey) = 0;
+
+	/**
+	 * Get skill usage statistics using 3-layer mapping architecture
+	 * @param UserId User ID to get stats for
+	 * @param SkillId Specific skill ID (optional)
+	 * @param StartDate Start date for statistics
+	 * @param EndDate End date for statistics
+	 * @return Task returning usage statistics
+	 */
+	virtual UE::Tasks::TTask<FSkillRepositoryResult3Layer> GetSkillUsageStatistics(int32 UserId, int32 SkillId, const FDateTime& StartDate, const FDateTime& EndDate) = 0;
+
+	// ========================================================================
+	// LEGACY REPOSITORY METHODS - DEPRECATED
+	// ========================================================================
+	
+	/**
+	 * DEPRECATED: Load skill domain data by player ID
+	 * Use 3-Layer Mapping Architecture: LoadUserSkillSlots() instead
 	 * @param PlayerId The player ID to load skills for
 	 * @return Task that returns skill domain data
 	 */
-	virtual UE::Tasks::TTask<FSkillRepositoryResult> LoadSkillsByPlayerId(const FGuid& PlayerId) = 0;
+	UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: LoadUserSkillSlots() instead")
+	virtual UE::Tasks::TTask<FSkillRepositoryResult> DEP_LoadSkillsByPlayerId(const FGuid& PlayerId) = 0;
 
 	/**
-	 * Save skill domain data
+	 * DEPRECATED: Save skill domain data
+	 * Use 3-Layer Mapping Architecture: SaveUserSkillSlots() instead
 	 * @param SkillData The skill domain data to save
 	 * @return Task that returns success/failure
 	 */
-	virtual UE::Tasks::TTask<FSkillRepositoryResult> SaveSkillData(const FSkillDomain& SkillData) = 0;
+	UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: SaveUserSkillSlots() instead")
+	virtual UE::Tasks::TTask<FSkillRepositoryResult> DEP_SaveSkillData(const FSkillDomain& SkillData) = 0;
 
 	/**
-	 * Register a skill to player's skill slots
+	 * DEPRECATED: Register a skill to player's skill slots
+	 * Use 3-Layer Mapping Architecture: SaveUserSkillSlots() instead
 	 * @param PlayerId Player ID
 	 * @param SkillSlot Skill slot to register
 	 * @return Task that returns updated skill data
 	 */
-	virtual UE::Tasks::TTask<FSkillRepositoryResult> RegisterSkillByPlayerId(const FGuid& PlayerId, const FSkillSlotDTO& SkillSlot) = 0;
+	UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: SaveUserSkillSlots() instead")
+	virtual UE::Tasks::TTask<FSkillRepositoryResult> DEP_RegisterSkillByPlayerId(const FGuid& PlayerId, const FSkillSlotDTO& SkillSlot) = 0;
 
 	/**
-	 * Unregister a skill from player's skill slots
+	 * DEPRECATED: Unregister a skill from player's skill slots
+	 * Use 3-Layer Mapping Architecture: SaveUserSkillSlots() instead
 	 * @param PlayerId Player ID
-	 * @param SlotId Slot ID to unregister
+	 * @param SlotIndex Slot index to unregister
 	 * @return Task that returns updated skill data
 	 */
-	virtual UE::Tasks::TTask<FSkillRepositoryResult> UnregisterSkillByPlayerId(const FGuid& PlayerId, const FGuid& SlotId) = 0;
+	UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: SaveUserSkillSlots() instead")
+	virtual UE::Tasks::TTask<FSkillRepositoryResult> DEP_UnregisterSkillByPlayerId(const FGuid& PlayerId, int32 SlotIndex) = 0;
 
 	/**
-	 * Update skill cooldown state
+	 * DEPRECATED: Update skill cooldown state
+	 * Use 3-Layer Mapping Architecture: UpdateSkillSlotCooldown() instead
 	 * @param PlayerId Player ID
-	 * @param SlotId Slot ID
+	 * @param SlotIndex Slot index
 	 * @param LastUsedTime When the skill was last used
 	 * @param RemainingCooldown Remaining cooldown time
 	 * @return Task that returns success/failure
 	 */
-	virtual UE::Tasks::TTask<FSkillRepositoryResult> UpdateSkillCooldown(const FGuid& PlayerId, const FGuid& SlotId, const FDateTime& LastUsedTime, float RemainingCooldown) = 0;
+	UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: UpdateSkillSlotCooldown() instead")
+	virtual UE::Tasks::TTask<FSkillRepositoryResult> DEP_UpdateSkillCooldown(const FGuid& PlayerId, int32 SlotIndex, const FDateTime& LastUsedTime, float RemainingCooldown) = 0;
 
 };
 

@@ -19,8 +19,8 @@ DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSkillOperationSucceeded, const FGuid& /*
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSkillOperationFailed, const FGuid& /* PlayerGuid */, const FString& /* Reason */);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnSkillLoadCompleted, const FGuid& /* PlayerGuid */);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnSkillSaveCompleted, const FGuid& /* PlayerGuid */);
-DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSkillRegistered, const FGuid& /* PlayerGuid */, const FSkillSlotDTO& /* SkillSlot */);
-DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSkillUnregistered, const FGuid& /* PlayerGuid */, const FGuid& /* SlotId */);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSkillDomainRegistered, const FGuid& /* PlayerGuid */, const FSkillSlotDTO& /* SkillSlot */);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSkillDomainUnregistered, const FGuid& /* PlayerGuid */, const FGuid& /* SlotId */);
 
 /**
  * Domain Service for Skill operations
@@ -41,63 +41,125 @@ public:
 	 */
 	void Initialize(TScriptInterface<ISkillRepositoryInterface> Repository);
 
-	/**
-	 * Domain Service: Register skill to player's skill slots with full business logic
-	 * Uses atomic transaction - triggers domain events for success/failure
-	 * @param PlayerState Target player state containing SkillComponent
-	 * @param SkillData Skill data to register
-	 */
-	void RegisterSkillToPlayer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, USkillDataAsset* SkillData);
+	// ========================================================================
+	// 3-LAYER MAPPING ARCHITECTURE METHODS (RECOMMENDED)
+	// ========================================================================
 
 	/**
-	 * Domain Service: Unregister skill from player's skill slots with full business logic
-	 * Uses atomic transaction - triggers domain events for success/failure
-	 * @param PlayerState Target player state containing SkillComponent
-	 * @param SlotId Slot ID to unregister
+	 * Load player's skills using 3-layer mapping architecture
+	 * @param PlayerIdentity Target player identity containing SkillComponent
+	 * @param UserId User ID to load skills for
+	 * @param SlotKey Slot key (e.g., "ActionBar", "QuickSlot")
 	 */
-	void UnregisterSkillFromPlayer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FGuid& SlotId);
+	void LoadPlayerSkills3Layer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId, const FString& SlotKey);
 
 	/**
-	 * Domain Service: Swap skills between two slots with full business logic
-	 * Uses atomic transaction - triggers domain events for success/failure
-	 * @param PlayerState Target player state containing SkillComponent
-	 * @param SlotIdA First slot ID
-	 * @param SlotIdB Second slot ID
+	 * Save player's skills using 3-layer mapping architecture
+	 * @param PlayerIdentity Target player identity containing SkillComponent
+	 * @param UserId User ID to save skills for
 	 */
-	void SwapSkillSlots(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FGuid& SlotIdA, const FGuid& SlotIdB);
+	void SavePlayerSkills3Layer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId);
 
 	/**
-	 * Domain Service: Update skill cooldown state
-	 * Uses atomic transaction - triggers domain events for success/failure
-	 * @param PlayerState Target player state containing SkillComponent
-	 * @param SlotId Slot ID
+	 * Update player's skill slot using 3-layer mapping architecture
+	 * @param PlayerIdentity Target player identity containing SkillComponent
+	 * @param UserId User ID to update skills for
+	 * @param SlotIndex Slot index to update
+	 * @param SkillData New skill data for the slot (null to unregister)
+	 */
+	void UpdatePlayerSkillSlot3Layer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId, int32 SlotIndex, USkillDataAsset* SkillData);
+
+	/**
+	 * Update skill cooldown using 3-layer mapping architecture
+	 * @param PlayerIdentity Target player identity containing SkillComponent
+	 * @param UserId User ID to update cooldown for
+	 * @param SlotKey Slot key (e.g., "ActionBar", "QuickSlot")
+	 * @param SlotIndex Slot index to update
 	 * @param LastUsedTime When the skill was last used
-	 * @param RemainingCooldown Remaining cooldown time
 	 */
-	void UpdateSkillCooldown(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FGuid& SlotId, const FDateTime& LastUsedTime, float RemainingCooldown);
+	void UpdateSkillCooldown3Layer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId, const FString& SlotKey, int32 SlotIndex, const FDateTime& LastUsedTime);
 
 	/**
-	 * Domain Service: Load player's skills from persistence
-	 * Triggers domain events for success/failure
-	 * @param PlayerState Target player state containing SkillComponent
+	 * Clear all skill slots for a player using 3-layer mapping architecture
+	 * @param PlayerIdentity Target player identity containing SkillComponent
+	 * @param UserId User ID to clear slots for
+	 * @param SlotKey Slot key (e.g., "ActionBar", "QuickSlot")
 	 */
-	void LoadSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity);
+	void ClearPlayerSkills3Layer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId, const FString& SlotKey);
 
-	/**
-	 * Domain Service: Save player's current skill state
-	 * Uses atomic transaction - triggers domain events for success/failure
-	 * @param PlayerState Target player state containing SkillComponent
-	 * @param SkillData The skill domain data to save
-	 */
-	void SaveSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FSkillDomain& SkillData);
+	// ========================================================================
+	// LEGACY DOMAIN SERVICE METHODS - DEPRECATED
+	// ========================================================================
+	//
+	// /**
+	//  * DEPRECATED: Register skill to player's skill slots with full business logic
+	//  * Use 3-Layer Mapping Architecture: UpdatePlayerSkillSlot3Layer() instead
+	//  * Uses atomic transaction - triggers domain events for success/failure
+	//  * @param PlayerIdentity Target player identity containing SkillComponent
+	//  * @param SkillData Skill data to register
+	//  */
+	// UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: UpdatePlayerSkillSlot3Layer() instead")
+	// void RegisterSkillToPlayer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, USkillDataAsset* SkillData);
+	//
+	// /**
+	//  * DEPRECATED: Unregister skill from player's skill slots with full business logic
+	//  * Use 3-Layer Mapping Architecture: UpdatePlayerSkillSlot3Layer() instead
+	//  * Uses atomic transaction - triggers domain events for success/failure
+	//  * @param PlayerIdentity Target player identity containing SkillComponent
+	//  * @param SlotIndex Slot index to unregister
+	//  */
+	// UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: UpdatePlayerSkillSlot3Layer() instead")
+	// void UnregisterSkillFromPlayer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 SlotIndex);
+	//
+	// /**
+	//  * DEPRECATED: Swap skills between two slots with full business logic
+	//  * Use 3-Layer Mapping Architecture: SavePlayerSkills3Layer() instead
+	//  * Uses atomic transaction - triggers domain events for success/failure
+	//  * @param PlayerIdentity Target player identity containing SkillComponent
+	//  * @param SlotIndexA First slot index
+	//  * @param SlotIndexB Second slot index
+	//  */
+	// UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: SavePlayerSkills3Layer() instead")
+	// void SwapSkillSlots(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 SlotIndexA, int32 SlotIndexB);
+	//
+	// /**
+	//  * DEPRECATED: Update skill cooldown state
+	//  * Use 3-Layer Mapping Architecture: SavePlayerSkills3Layer() instead
+	//  * Uses atomic transaction - triggers domain events for success/failure
+	//  * @param PlayerIdentity Target player identity containing SkillComponent
+	//  * @param SlotIndex Slot index
+	//  * @param LastUsedTime When the skill was last used
+	//  * @param RemainingCooldown Remaining cooldown time
+	//  */
+	// UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: SavePlayerSkills3Layer() instead")
+	// void UpdateSkillCooldown(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 SlotIndex, const FDateTime& LastUsedTime, float RemainingCooldown);
+	//
+	// /**
+	//  * DEPRECATED: Load player's skills from persistence
+	//  * Use 3-Layer Mapping Architecture: LoadPlayerSkills3Layer() instead
+	//  * Triggers domain events for success/failure
+	//  * @param PlayerIdentity Target player identity containing SkillComponent
+	//  */
+	// UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: LoadPlayerSkills3Layer() instead")
+	// void LoadSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity);
+	//
+	// /**
+	//  * DEPRECATED: Save player's current skill state
+	//  * Use 3-Layer Mapping Architecture: SavePlayerSkills3Layer() instead
+	//  * Uses atomic transaction - triggers domain events for success/failure
+	//  * @param PlayerIdentity Target player identity containing SkillComponent
+	//  * @param SkillData The skill domain data to save
+	//  */
+	// UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: SavePlayerSkills3Layer() instead")
+	// void SaveSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FSkillDomain& SkillData);
 
 	// Domain Events
 	FOnSkillOperationSucceeded OnSkillOperationSucceeded;
 	FOnSkillOperationFailed OnSkillOperationFailed;
 	FOnSkillLoadCompleted OnSkillLoadCompleted;
 	FOnSkillSaveCompleted OnSkillSaveCompleted;
-	FOnSkillRegistered OnSkillRegistered;
-	FOnSkillUnregistered OnSkillUnregistered;
+	FOnSkillDomainRegistered OnSkillDomainRegistered;
+	FOnSkillDomainUnregistered OnSkillDomainUnregistered;
 
 private:
 	// Repository dependency (injected)

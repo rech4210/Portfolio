@@ -50,58 +50,125 @@ public:
 	USkillDomainService* GetDomainService();
 
 	// ============================================================================
-	// Use Case Orchestration - App Layer Responsibilities Only
+	// 3-LAYER MAPPING ARCHITECTURE USE CASES (RECOMMENDED)
 	// ============================================================================
 
 	/**
-	 * Request skill registration with full validation pipeline
-	 * Handles network authority, logging, and transaction boundaries
-	 * @param PlayerState Target player state containing SkillComponent
-	 * @param SkillData Skill data to register
+	 * Request player skill loading using 3-layer mapping architecture
+	 * @param PlayerIdentity Target player identity containing SkillComponent
+	 * @param UserId User ID to load skills for
+	 * @param SlotKey Slot key (e.g., "ActionBar", "QuickSlot")
 	 */
-	void RequestRegisterSkill(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, USkillDataAsset* SkillData);
+	void RequestLoadPlayerSkills3Layer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId, const FString& SlotKey);
 
 	/**
-	 * Request skill unregistration with full validation pipeline
-	 * Handles network authority, logging, and transaction boundaries
-	 * @param PlayerState Target player state containing SkillComponent
-	 * @param SlotId Slot ID to unregister
+	 * Request player skill saving using 3-layer mapping architecture
+	 * @param PlayerIdentity Target player identity containing SkillComponent
+	 * @param UserId User ID to save skills for
 	 */
-	void RequestUnregisterSkill(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FGuid& SlotId);
+	void RequestSavePlayerSkills3Layer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId);
 
 	/**
-	 * Request skill slot swap with full validation pipeline
-	 * Handles network authority, logging, and transaction boundaries
-	 * @param PlayerState Target player state containing SkillComponent
-	 * @param SlotIdA First slot ID
-	 * @param SlotIdB Second slot ID
+	 * Request skill slot update using 3-layer mapping architecture
+	 * @param PlayerIdentity Target player identity containing SkillComponent
+	 * @param UserId User ID to update skills for
+	 * @param SlotIndex Slot index to update
+	 * @param SkillData New skill data for the slot (null to unregister)
 	 */
-	void RequestSwapSkillSlots(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FGuid& SlotIdA, const FGuid& SlotIdB);
+	void RequestUpdateSkillSlot3Layer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId, int32 SlotIndex, USkillDataAsset* SkillData);
 
 	/**
-	 * Request player skill loading with full validation pipeline
-	 * Handles network authority, logging, and transaction boundaries
-	 * @param PlayerState Target player state containing SkillComponent
-	 */
-	void RequestLoadPlayerSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity);
-
-	/**
-	 * Request player skill saving with full validation pipeline
-	 * Handles network authority, logging, and transaction boundaries
-	 * @param PlayerState Target player state containing SkillComponent
-	 * @param SkillData The skill domain data to save
-	 */
-	void RequestSavePlayerSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FSkillDomain& SkillData);
-
-	/**
-	 * Request skill cooldown update with full validation pipeline
-	 * Handles network authority, logging, and transaction boundaries
-	 * @param PlayerState Target player state containing SkillComponent
-	 * @param SlotId Slot ID
+	 * Request skill cooldown update using 3-layer mapping architecture
+	 * @param PlayerIdentity Target player identity containing SkillComponent
+	 * @param UserId User ID to update cooldown for
+	 * @param SlotKey Slot key (e.g., "ActionBar", "QuickSlot")
+	 * @param SlotIndex Slot index to update
 	 * @param LastUsedTime When the skill was last used
-	 * @param RemainingCooldown Remaining cooldown time
 	 */
-	void RequestUpdateSkillCooldown(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FGuid& SlotId, const FDateTime& LastUsedTime, float RemainingCooldown);
+	void RequestUpdateSkillCooldown3Layer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId, const FString& SlotKey, int32 SlotIndex, const FDateTime& LastUsedTime);
+
+	/**
+	 * Request clearing all skill slots using 3-layer mapping architecture
+	 * @param PlayerIdentity Target player identity containing SkillComponent
+	 * @param UserId User ID to clear slots for
+	 * @param SlotKey Slot key (e.g., "ActionBar", "QuickSlot")
+	 */
+	void RequestClearPlayerSkills3Layer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId, const FString& SlotKey);
+
+	/**
+	 * Request skill swap using 3-layer mapping architecture
+	 * @param PlayerIdentity Target player identity containing SkillComponent
+	 * @param UserId User ID to swap skills for
+	 * @param SlotIndexA First slot index
+	 * @param SlotIndexB Second slot index
+	 */
+	void RequestSwapSkillSlots3Layer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId, int32 SlotIndexA, int32 SlotIndexB);
+
+	// ============================================================================
+	// LEGACY USE CASE ORCHESTRATION - DEPRECATED
+	// ============================================================================
+
+	// /**
+	//  * DEPRECATED: Request skill registration with full validation pipeline
+	//  * Use 3-Layer Mapping Architecture: RequestUpdateSkillSlot3Layer() instead
+	//  * Handles network authority, logging, and transaction boundaries
+	//  * @param PlayerIdentity Target player identity containing SkillComponent
+	//  * @param SkillData Skill data to register
+	//  */
+	// UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: RequestUpdateSkillSlot3Layer() instead")
+	// void RequestRegisterSkill(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, USkillDataAsset* SkillData);
+	//
+	// /**
+	//  * DEPRECATED: Request skill unregistration with full validation pipeline
+	//  * Use 3-Layer Mapping Architecture: RequestUpdateSkillSlot3Layer() instead
+	//  * Handles network authority, logging, and transaction boundaries
+	//  * @param PlayerIdentity Target player identity containing SkillComponent
+	//  * @param SlotIndex Slot index to unregister
+	//  */
+	// UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: RequestUpdateSkillSlot3Layer() instead")
+	// void RequestUnregisterSkill(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 SlotIndex);
+	//
+	// /**
+	//  * DEPRECATED: Request skill slot swap with full validation pipeline
+	//  * Use 3-Layer Mapping Architecture: RequestSavePlayerSkills3Layer() instead
+	//  * Handles network authority, logging, and transaction boundaries
+	//  * @param PlayerIdentity Target player identity containing SkillComponent
+	//  * @param SlotIndexA First slot index
+	//  * @param SlotIndexB Second slot index
+	//  */
+	// UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: RequestSavePlayerSkills3Layer() instead")
+	// void RequestSwapSkillSlots(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 SlotIndexA, int32 SlotIndexB);
+	//
+	// /**
+	//  * DEPRECATED: Request player skill loading with full validation pipeline
+	//  * Use 3-Layer Mapping Architecture: RequestLoadPlayerSkills3Layer() instead
+	//  * Handles network authority, logging, and transaction boundaries
+	//  * @param PlayerIdentity Target player identity containing SkillComponent
+	//  */
+	// UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: RequestLoadPlayerSkills3Layer() instead")
+	// void RequestLoadPlayerSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity);
+	//
+	// /**
+	//  * DEPRECATED: Request player skill saving with full validation pipeline
+	//  * Use 3-Layer Mapping Architecture: RequestSavePlayerSkills3Layer() instead
+	//  * Handles network authority, logging, and transaction boundaries
+	//  * @param PlayerIdentity Target player identity containing SkillComponent
+	//  * @param SkillData The skill domain data to save
+	//  */
+	// UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: RequestSavePlayerSkills3Layer() instead")
+	// void RequestSavePlayerSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FSkillDomain& SkillData);
+	//
+	// /**
+	//  * DEPRECATED: Request skill cooldown update with full validation pipeline
+	//  * Use 3-Layer Mapping Architecture: RequestSavePlayerSkills3Layer() instead
+	//  * Handles network authority, logging, and transaction boundaries
+	//  * @param PlayerIdentity Target player identity containing SkillComponent
+	//  * @param SlotIndex Slot index
+	//  * @param LastUsedTime When the skill was last used
+	//  * @param RemainingCooldown Remaining cooldown time
+	//  */
+	// UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: RequestSavePlayerSkills3Layer() instead")
+	// void RequestUpdateSkillCooldown(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 SlotIndex, const FDateTime& LastUsedTime, float RemainingCooldown);
 
 private:
 	// Repository interface for Dependency Injection

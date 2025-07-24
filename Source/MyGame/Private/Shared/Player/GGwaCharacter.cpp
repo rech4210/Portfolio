@@ -132,14 +132,13 @@ void AGGwaCharacter::CustomKeySet(UInputAction* Action, FKey CustomKey) {
 
 void AGGwaCharacter::OnLocalSkillInput(const FInputActionInstance& Instance, int32 Index)
 {
-	//HOW Get FGuid For Find Getskillslot..?,
+	//HOW Get SlotIndex For Find Getskillslot..?,
 	auto State = GetPlayerState<AGGwaPlayerState>();
 	if (!State->GetSkillComponent()) {
 		return;
 	}
-	//이거 ID 가져오는거 좀 이상하다?
-	FGuid ID = State->GetSkillComponent()->GetSkillSlotGuidByIndex(Index);
-	auto bisSucces  = SkillCastingService->TryCastSkill(this, ID);
+	//SlotIndex 기반으로 변경 - 직접 Index 사용
+	auto bisSucces  = SkillCastingService->TryCastSkill(this, Index);
 	if (bisSucces) {
 		UE_LOG(LogTemp, Log, TEXT("OnLocalSkillInput: Skill cast successful for index %d"), Index);
 	}
