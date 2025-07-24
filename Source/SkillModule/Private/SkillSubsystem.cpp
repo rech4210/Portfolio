@@ -57,15 +57,15 @@ USkillDomainService* USkillSubsystem::GetDomainService() {
 }
 
 // ============================================================================
-// 3-LAYER MAPPING ARCHITECTURE USE CASES (RECOMMENDED)
+// MODERN SKILL SYSTEM USE CASES (RECOMMENDED)
 // ============================================================================
 
-void USkillSubsystem::RequestLoadPlayerSkills3Layer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId, const FString& SlotKey)
+void USkillSubsystem::RequestLoadPlayerSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId)
 {
 	// 1. Network & Authority Validation (App Layer responsibility)
 	if (!PlayerIdentity)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerIdentity for 3-layer skill loading"));
+		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerIdentity for skill loading"));
 		return;
 	}
 
@@ -82,25 +82,25 @@ void USkillSubsystem::RequestLoadPlayerSkills3Layer(TScriptInterface<IPlayerIden
 	}
 
 	// 2. Transaction Boundary & Logging (App Layer responsibility)
-	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting 3-layer skill load transaction - Player: %s, UserId: %d, SlotKey: %s"), 
-		*PlayerIdentity->GetPlayerGuid().ToString(), UserId, *SlotKey);
+	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting skill load transaction - Player: %s, UserId: %d"), 
+		*PlayerIdentity->GetPlayerGuid().ToString(), UserId);
 
 	// 3. Domain Service Call (Delegate business logic)
-	DomainService->LoadPlayerSkills3Layer(PlayerIdentity, UserId, SlotKey);
+	DomainService->LoadPlayerSkills(PlayerIdentity, UserId);
 }
 
-void USkillSubsystem::RequestSavePlayerSkills3Layer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId)
+void USkillSubsystem::RequestSavePlayerSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId)
 {
 	// 1. Network & Authority Validation
 	if (!PlayerIdentity)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerIdentity for 3-layer skill saving"));
+		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerIdentity for skill saving"));
 		return;
 	}
 
 	if (GetGameInstance()->GetWorld()->GetNetMode() == NM_Client)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: 3-layer skill save requests should only be made from server"));
+		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Skill save requests should only be made from server"));
 		return;
 	}
 
@@ -111,25 +111,25 @@ void USkillSubsystem::RequestSavePlayerSkills3Layer(TScriptInterface<IPlayerIden
 	}
 
 	// 2. Transaction Boundary & Logging
-	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting 3-layer skill save transaction - Player: %s, UserId: %d"), 
+	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting skill save transaction - Player: %s, UserId: %d"), 
 		*PlayerIdentity->GetPlayerGuid().ToString(), UserId);
 
 	// 3. Domain Service Call
-	DomainService->SavePlayerSkills3Layer(PlayerIdentity, UserId);
+	DomainService->SavePlayerSkills(PlayerIdentity, UserId);
 }
 
-void USkillSubsystem::RequestUpdateSkillSlot3Layer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId, int32 SlotIndex, USkillDataAsset* SkillData)
+void USkillSubsystem::RequestUpdateSkillSlot(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId, int32 SlotIndex, USkillDataAsset* SkillData)
 {
 	// 1. Network & Authority Validation
 	if (!PlayerIdentity)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerIdentity for 3-layer skill slot update"));
+		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerIdentity for skill slot update"));
 		return;
 	}
 
 	if (GetGameInstance()->GetWorld()->GetNetMode() == NM_Client)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: 3-layer skill slot update requests should only be made from server"));
+		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Skill slot update requests should only be made from server"));
 		return;
 	}
 
@@ -140,25 +140,25 @@ void USkillSubsystem::RequestUpdateSkillSlot3Layer(TScriptInterface<IPlayerIdent
 	}
 
 	// 2. Transaction Boundary & Logging
-	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting 3-layer skill slot update transaction - Player: %s, UserId: %d, SlotIndex: %d, Skill: %d"), 
+	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting skill slot update transaction - Player: %s, UserId: %d, SlotIndex: %d, Skill: %d"), 
 		*PlayerIdentity->GetPlayerGuid().ToString(), UserId, SlotIndex, SkillData ? SkillData->SkillID : -1);
 
 	// 3. Domain Service Call
-	DomainService->UpdatePlayerSkillSlot3Layer(PlayerIdentity, UserId, SlotIndex, SkillData);
+	DomainService->UpdatePlayerSkillSlot(PlayerIdentity, UserId, SlotIndex, SkillData);
 }
 
-void USkillSubsystem::RequestUpdateSkillCooldown3Layer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId, const FString& SlotKey, int32 SlotIndex, const FDateTime& LastUsedTime)
+void USkillSubsystem::RequestUpdateSkillCooldown(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId, int32 SlotIndex, const FDateTime& LastUsedTime)
 {
 	// 1. Network & Authority Validation
 	if (!PlayerIdentity)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerIdentity for 3-layer cooldown update"));
+		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerIdentity for cooldown update"));
 		return;
 	}
 
 	if (GetGameInstance()->GetWorld()->GetNetMode() == NM_Client)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: 3-layer cooldown update requests should only be made from server"));
+		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Cooldown update requests should only be made from server"));
 		return;
 	}
 
@@ -169,25 +169,25 @@ void USkillSubsystem::RequestUpdateSkillCooldown3Layer(TScriptInterface<IPlayerI
 	}
 
 	// 2. Transaction Boundary & Logging
-	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting 3-layer cooldown update transaction - Player: %s, UserId: %d, SlotKey: %s, SlotIndex: %d"), 
-		*PlayerIdentity->GetPlayerGuid().ToString(), UserId, *SlotKey, SlotIndex);
+	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting cooldown update transaction - Player: %s, UserId: %d, SlotIndex: %d"), 
+		*PlayerIdentity->GetPlayerGuid().ToString(), UserId, SlotIndex);
 
 	// 3. Domain Service Call
-	DomainService->UpdateSkillCooldown3Layer(PlayerIdentity, UserId, SlotKey, SlotIndex, LastUsedTime);
+	DomainService->UpdateSkillCooldown(PlayerIdentity, UserId, SlotIndex, LastUsedTime);
 }
 
-void USkillSubsystem::RequestClearPlayerSkills3Layer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId, const FString& SlotKey)
+void USkillSubsystem::RequestClearPlayerSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId)
 {
 	// 1. Network & Authority Validation
 	if (!PlayerIdentity)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerIdentity for 3-layer skill clearing"));
+		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerIdentity for skill clearing"));
 		return;
 	}
 
 	if (GetGameInstance()->GetWorld()->GetNetMode() == NM_Client)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: 3-layer skill clear requests should only be made from server"));
+		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Skill clear requests should only be made from server"));
 		return;
 	}
 
@@ -198,25 +198,25 @@ void USkillSubsystem::RequestClearPlayerSkills3Layer(TScriptInterface<IPlayerIde
 	}
 
 	// 2. Transaction Boundary & Logging
-	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting 3-layer skill clear transaction - Player: %s, UserId: %d, SlotKey: %s"), 
-		*PlayerIdentity->GetPlayerGuid().ToString(), UserId, *SlotKey);
+	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting skill clear transaction - Player: %s, UserId: %d"), 
+		*PlayerIdentity->GetPlayerGuid().ToString(), UserId);
 
 	// 3. Domain Service Call
-	DomainService->ClearPlayerSkills3Layer(PlayerIdentity, UserId, SlotKey);
+	DomainService->ClearPlayerSkills(PlayerIdentity, UserId);
 }
 
-void USkillSubsystem::RequestSwapSkillSlots3Layer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId, int32 SlotIndexA, int32 SlotIndexB)
+void USkillSubsystem::RequestSwapSkillSlots(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId, int32 SlotIndexA, int32 SlotIndexB)
 {
 	// 1. Network & Authority Validation
 	if (!PlayerIdentity)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerIdentity for 3-layer skill swap"));
+		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerIdentity for skill swap"));
 		return;
 	}
 
 	if (GetGameInstance()->GetWorld()->GetNetMode() == NM_Client)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: 3-layer skill swap requests should only be made from server"));
+		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Skill swap requests should only be made from server"));
 		return;
 	}
 
@@ -227,7 +227,7 @@ void USkillSubsystem::RequestSwapSkillSlots3Layer(TScriptInterface<IPlayerIdenti
 	}
 
 	// 2. Transaction Boundary & Logging
-	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting 3-layer skill swap transaction - Player: %s, UserId: %d, SlotA: %d, SlotB: %d"), 
+	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting skill swap transaction - Player: %s, UserId: %d, SlotA: %d, SlotB: %d"), 
 		*PlayerIdentity->GetPlayerGuid().ToString(), UserId, SlotIndexA, SlotIndexB);
 
 	// 3. Domain Service Call - Implement as two update operations
@@ -250,7 +250,7 @@ void USkillSubsystem::RequestSwapSkillSlots3Layer(TScriptInterface<IPlayerIdenti
 	if (SkillComponent->CanSwapSkills(SlotIndexA, SlotIndexB))
 	{
 		SkillComponent->SwapSkills(SlotIndexA, SlotIndexB);
-		DomainService->SavePlayerSkills3Layer(PlayerIdentity, UserId);
+		DomainService->SavePlayerSkills(PlayerIdentity, UserId);
 	}
 	else
 	{

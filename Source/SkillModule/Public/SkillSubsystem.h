@@ -50,59 +50,56 @@ public:
 	USkillDomainService* GetDomainService();
 
 	// ============================================================================
-	// 3-LAYER MAPPING ARCHITECTURE USE CASES (RECOMMENDED)
+	// MODERN SKILL SYSTEM USE CASES (RECOMMENDED)
 	// ============================================================================
 
 	/**
-	 * Request player skill loading using 3-layer mapping architecture
+	 * Request player skill loading - loads all skill slots and master data for player
 	 * @param PlayerIdentity Target player identity containing SkillComponent
 	 * @param UserId User ID to load skills for
-	 * @param SlotKey Slot key (e.g., "ActionBar", "QuickSlot")
 	 */
-	void RequestLoadPlayerSkills3Layer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId, const FString& SlotKey);
+	void RequestLoadPlayerSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId);
 
 	/**
-	 * Request player skill saving using 3-layer mapping architecture
+	 * Request player skill saving - saves all skill slots for player
 	 * @param PlayerIdentity Target player identity containing SkillComponent
 	 * @param UserId User ID to save skills for
 	 */
-	void RequestSavePlayerSkills3Layer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId);
+	void RequestSavePlayerSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId);
 
 	/**
-	 * Request skill slot update using 3-layer mapping architecture
+	 * Request skill slot update
 	 * @param PlayerIdentity Target player identity containing SkillComponent
 	 * @param UserId User ID to update skills for
 	 * @param SlotIndex Slot index to update
 	 * @param SkillData New skill data for the slot (null to unregister)
 	 */
-	void RequestUpdateSkillSlot3Layer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId, int32 SlotIndex, USkillDataAsset* SkillData);
+	void RequestUpdateSkillSlot(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId, int32 SlotIndex, USkillDataAsset* SkillData);
 
 	/**
-	 * Request skill cooldown update using 3-layer mapping architecture
+	 * Request skill cooldown update
 	 * @param PlayerIdentity Target player identity containing SkillComponent
 	 * @param UserId User ID to update cooldown for
-	 * @param SlotKey Slot key (e.g., "ActionBar", "QuickSlot")
 	 * @param SlotIndex Slot index to update
 	 * @param LastUsedTime When the skill was last used
 	 */
-	void RequestUpdateSkillCooldown3Layer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId, const FString& SlotKey, int32 SlotIndex, const FDateTime& LastUsedTime);
+	void RequestUpdateSkillCooldown(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId, int32 SlotIndex, const FDateTime& LastUsedTime);
 
 	/**
-	 * Request clearing all skill slots using 3-layer mapping architecture
+	 * Request clearing all skill slots
 	 * @param PlayerIdentity Target player identity containing SkillComponent
 	 * @param UserId User ID to clear slots for
-	 * @param SlotKey Slot key (e.g., "ActionBar", "QuickSlot")
 	 */
-	void RequestClearPlayerSkills3Layer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId, const FString& SlotKey);
+	void RequestClearPlayerSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId);
 
 	/**
-	 * Request skill swap using 3-layer mapping architecture
+	 * Request skill swap
 	 * @param PlayerIdentity Target player identity containing SkillComponent
 	 * @param UserId User ID to swap skills for
 	 * @param SlotIndexA First slot index
 	 * @param SlotIndexB Second slot index
 	 */
-	void RequestSwapSkillSlots3Layer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId, int32 SlotIndexA, int32 SlotIndexB);
+	void RequestSwapSkillSlots(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId, int32 SlotIndexA, int32 SlotIndexB);
 
 	// ============================================================================
 	// LEGACY USE CASE ORCHESTRATION - DEPRECATED

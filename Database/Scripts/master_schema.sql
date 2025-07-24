@@ -1,5 +1,4 @@
-﻿-- users 테이블: 계정 관리
-CREATE TABLE users (
+﻿CREATE TABLE users (
   user_id         CHAR(36)       PRIMARY KEY,
   username        VARCHAR(30)    NOT NULL UNIQUE,
   password_hash   VARCHAR(255)   NOT NULL,
@@ -12,47 +11,45 @@ CREATE TABLE users (
 ) ENGINE=InnoDB
   CHARACTER SET utf8mb4
   COLLATE utf8mb4_unicode_ci;
--- 캐릭터 기본 정보 테이블(현재 C++ 구현에 맞춤)
 CREATE TABLE characters (
     user_id CHAR(36) PRIMARY KEY,
     character_id VARCHAR(255) NOT NULL,
     character_name VARCHAR(100) NOT NULL,
     level INT DEFAULT 1,
     exp BIGINT DEFAULT 0,
-    json_data JSON, -- 확장 가능한 캐릭터 데이터(Position, Health, Mana 등)
+    json_data JSON,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
     INDEX idx_character_name (character_name),
     INDEX idx_level (level),
     INDEX idx_character_id (character_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;이블 (현재 C++ 구현에 맞춤)
--- user_audit_logs 테이블: 주요 이벤트 감사 로그
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE user_audit_logs (
   log_id     BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   user_id    CHAR(36)           NOT NULL,
   action     VARCHAR(50)        NOT NULL COMMENT '예: registration, login_success',
   detail     JSON               NULL,
   created_at DATETIME(3)        NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-  INDEX(ix_user_action) (user_id, action)
+  INDEX ix_user_action (user_id, action)
 ) ENGINE=InnoDB
   CHARACTER SET utf8mb4
   COLLATE utf8mb4_unicode_ci;
--- 인벤토리 테이블(현재 C++ 구현에 맞춤)
 CREATE TABLE inventory (
     inventory_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id CHAR(36) NOT NULL,
     item_id VARCHAR(100) NOT NULL,
     quantity INT DEFAULT 1,
-    slot_index INT NOT NULL, -- 인벤토리 슬롯 위치
-    item_data JSON, -- FInventoryItemDTO::ItemData (확장 데이터)
+    slot_index INT NOT NULL,
+    item_data JSON,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES characters(user_id) ON DELETE CASCADE,
     UNIQUE KEY unique_user_slot (user_id, slot_index),
     INDEX idx_user_item (user_id, item_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;재 C++ 구현에 맞춤)
--- 스킬 정의 테이블 (마스터 데이터)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE skills (
     skill_id      INT PRIMARY KEY,
     display_name  VARCHAR(100) NOT NULL,
@@ -63,9 +60,6 @@ CREATE TABLE skills (
     created_at    DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     updated_at    DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- 유저가 보유한 스킬 상태 테이블
--- skill_data   JSON NULL, -- 확장 데이터 (기존 FSkillSlotDTO::SkillData 호환) -> AssetManager에서 관리
 
 CREATE TABLE user_skills (
     user_id      CHAR(36) NOT NULL,
@@ -82,12 +76,11 @@ CREATE TABLE user_skills (
     INDEX idx_skill_experience (skill_id, experience)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 스킬 슬롯 바인딩 테이블 (UI 키 매핑) - 쿨타임 최적화 적용
 CREATE TABLE user_skill_slots (
     user_id        CHAR(36) NOT NULL,
     slot_key       VARCHAR(10) NOT NULL,
     skill_id       INT NULL,
-    slot_index     INT NULL, -- UI에서의 슬롯 위치 (기존 FSkillSlotDTO::SlotIndex 호환)
+    slot_index     INT NULL,
     last_used_time DATETIME(3) NULL COMMENT '마지막 사용 시간 (쿨타임 계산 기준점)',
     created_at     DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     updated_at     DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
@@ -98,7 +91,6 @@ CREATE TABLE user_skill_slots (
     INDEX idx_skill_binding (skill_id),
     INDEX idx_user_last_used (user_id, last_used_time)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
--- 장비 테이블(향후 확장용 - 현재 C++ 구현에서는 미사용)
 CREATE TABLE equipment (
     equipment_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id CHAR(36) NOT NULL,
@@ -113,7 +105,8 @@ CREATE TABLE equipment (
     UNIQUE KEY unique_user_equipment_slot (user_id, slot_index),
     INDEX idx_user_equipment_type (user_id, slot_type),
     INDEX idx_equipped_items (user_id, is_equipped)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;용 - 현재 C++ 구현에서는 미사용)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- 상점 테이블 (향후 확장용)
 CREATE TABLE shops (
     shop_id INT PRIMARY KEY, -- FShopDomain::ShopID

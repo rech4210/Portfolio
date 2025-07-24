@@ -42,50 +42,47 @@ public:
 	void Initialize(TScriptInterface<ISkillRepositoryInterface> Repository);
 
 	// ========================================================================
-	// 3-LAYER MAPPING ARCHITECTURE METHODS (RECOMMENDED)
+	// MODERN SKILL SYSTEM METHODS (RECOMMENDED)
 	// ========================================================================
 
 	/**
-	 * Load player's skills using 3-layer mapping architecture
+	 * Load all player's skills and skill slots
 	 * @param PlayerIdentity Target player identity containing SkillComponent
 	 * @param UserId User ID to load skills for
-	 * @param SlotKey Slot key (e.g., "ActionBar", "QuickSlot")
 	 */
-	void LoadPlayerSkills3Layer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId, const FString& SlotKey);
+	void LoadPlayerSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId);
 
 	/**
-	 * Save player's skills using 3-layer mapping architecture
+	 * Save player's skills
 	 * @param PlayerIdentity Target player identity containing SkillComponent
 	 * @param UserId User ID to save skills for
 	 */
-	void SavePlayerSkills3Layer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId);
+	void SavePlayerSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId);
 
 	/**
-	 * Update player's skill slot using 3-layer mapping architecture
+	 * Update player's skill slot
 	 * @param PlayerIdentity Target player identity containing SkillComponent
 	 * @param UserId User ID to update skills for
 	 * @param SlotIndex Slot index to update
 	 * @param SkillData New skill data for the slot (null to unregister)
 	 */
-	void UpdatePlayerSkillSlot3Layer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId, int32 SlotIndex, USkillDataAsset* SkillData);
+	void UpdatePlayerSkillSlot(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId, int32 SlotIndex, USkillDataAsset* SkillData);
 
 	/**
-	 * Update skill cooldown using 3-layer mapping architecture
+	 * Update skill cooldown
 	 * @param PlayerIdentity Target player identity containing SkillComponent
 	 * @param UserId User ID to update cooldown for
-	 * @param SlotKey Slot key (e.g., "ActionBar", "QuickSlot")
 	 * @param SlotIndex Slot index to update
 	 * @param LastUsedTime When the skill was last used
 	 */
-	void UpdateSkillCooldown3Layer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId, const FString& SlotKey, int32 SlotIndex, const FDateTime& LastUsedTime);
+	void UpdateSkillCooldown(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId, int32 SlotIndex, const FDateTime& LastUsedTime);
 
 	/**
-	 * Clear all skill slots for a player using 3-layer mapping architecture
+	 * Clear all skill slots for a player
 	 * @param PlayerIdentity Target player identity containing SkillComponent
 	 * @param UserId User ID to clear slots for
-	 * @param SlotKey Slot key (e.g., "ActionBar", "QuickSlot")
 	 */
-	void ClearPlayerSkills3Layer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId, const FString& SlotKey);
+	void ClearPlayerSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId);
 
 	// ========================================================================
 	// LEGACY DOMAIN SERVICE METHODS - DEPRECATED

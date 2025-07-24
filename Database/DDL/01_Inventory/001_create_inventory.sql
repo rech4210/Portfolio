@@ -11,4 +11,4 @@ CREATE TABLE inventory (
     FOREIGN KEY (user_id) REFERENCES characters(user_id) ON DELETE CASCADE,
     UNIQUE KEY unique_user_slot (user_id, slot_index),
     INDEX idx_user_item (user_id, item_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;재 C++ 구현에 맞춤)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

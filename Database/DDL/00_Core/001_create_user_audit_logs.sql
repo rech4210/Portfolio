@@ -5,7 +5,7 @@ CREATE TABLE user_audit_logs (
   action     VARCHAR(50)        NOT NULL COMMENT '예: registration, login_success',
   detail     JSON               NULL,
   created_at DATETIME(3)        NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-  INDEX(ix_user_action) (user_id, action)
+  INDEX ix_user_action (user_id, action)
 ) ENGINE=InnoDB
   CHARACTER SET utf8mb4
   COLLATE utf8mb4_unicode_ci;

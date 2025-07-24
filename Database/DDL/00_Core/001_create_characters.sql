@@ -12,4 +12,4 @@ CREATE TABLE characters (
     INDEX idx_character_name (character_name),
     INDEX idx_level (level),
     INDEX idx_character_id (character_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;이블 (현재 C++ 구현에 맞춤)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

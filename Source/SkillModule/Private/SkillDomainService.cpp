@@ -42,14 +42,14 @@ void USkillDomainService::Initialize(TScriptInterface<ISkillRepositoryInterface>
 }
 
 // ============================================================================
-// 3-LAYER MAPPING ARCHITECTURE METHODS (RECOMMENDED)
+// MODERN SKILL SYSTEM METHODS (RECOMMENDED)
 // ============================================================================
 
-void USkillDomainService::LoadPlayerSkills3Layer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId, const FString& SlotKey)
+void USkillDomainService::LoadPlayerSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId)
 {
-	if (!PlayerIdentity || UserId <= 0 || SlotKey.IsEmpty() || !SkillRepository.GetInterface())
+	if (!PlayerIdentity || UserId <= 0 || !SkillRepository.GetInterface())
 	{
-		OnSkillOperationFailed.Broadcast(PlayerIdentity ? PlayerIdentity->GetPlayerGuid() : FGuid(), TEXT("Invalid parameters for 3-layer skill loading"));
+		OnSkillOperationFailed.Broadcast(PlayerIdentity ? PlayerIdentity->GetPlayerGuid() : FGuid(), TEXT("Invalid parameters for skill loading"));
 		return;
 	}
 
@@ -76,8 +76,8 @@ void USkillDomainService::LoadPlayerSkills3Layer(TScriptInterface<IPlayerIdentit
 		return;
 	}
 
-	// Load skill slots and master data
-	auto LoadSlotsTask = Repository->LoadUserSkillSlots(UserId, SlotKey);
+	// Load all skill slots and master data (no SlotKey filter)
+	auto LoadSlotsTask = Repository->LoadUserSkillSlots(UserId, FString()); // Empty SlotKey loads all slots
 	auto LoadMasterTask = Repository->LoadSkillMasterData();
 
 	// Execute both tasks asynchronously
@@ -111,7 +111,7 @@ void USkillDomainService::LoadPlayerSkills3Layer(TScriptInterface<IPlayerIdentit
 	});
 }
 
-void USkillDomainService::SavePlayerSkills3Layer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId)
+void USkillDomainService::SavePlayerSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId)
 {
 	if (!PlayerIdentity || UserId <= 0 || !SkillRepository.GetInterface())
 	{
@@ -167,11 +167,11 @@ void USkillDomainService::SavePlayerSkills3Layer(TScriptInterface<IPlayerIdentit
 	});
 }
 
-void USkillDomainService::UpdatePlayerSkillSlot3Layer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId, int32 SlotIndex, USkillDataAsset* SkillData)
+void USkillDomainService::UpdatePlayerSkillSlot(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId, int32 SlotIndex, USkillDataAsset* SkillData)
 {
 	if (!PlayerIdentity || UserId <= 0 || SlotIndex < 0 || !SkillRepository.GetInterface())
 	{
-		OnSkillOperationFailed.Broadcast(PlayerIdentity ? PlayerIdentity->GetPlayerGuid() : FGuid(), TEXT("Invalid parameters for 3-layer skill slot update"));
+		OnSkillOperationFailed.Broadcast(PlayerIdentity ? PlayerIdentity->GetPlayerGuid() : FGuid(), TEXT("Invalid parameters for skill slot update"));
 		return;
 	}
 
@@ -217,15 +217,15 @@ void USkillDomainService::UpdatePlayerSkillSlot3Layer(TScriptInterface<IPlayerId
 		SkillComponent->UnregisterSkill(SlotIndex);
 	}
 
-	// Persist using 3-layer mapping
-	SavePlayerSkills3Layer(PlayerIdentity, UserId);
+	// Persist using skill system
+	SavePlayerSkills(PlayerIdentity, UserId);
 }
 
-void USkillDomainService::UpdateSkillCooldown3Layer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId, const FString& SlotKey, int32 SlotIndex, const FDateTime& LastUsedTime)
+void USkillDomainService::UpdateSkillCooldown(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId, int32 SlotIndex, const FDateTime& LastUsedTime)
 {
-	if (!PlayerIdentity || UserId <= 0 || SlotKey.IsEmpty() || SlotIndex < 0 || !SkillRepository.GetInterface())
+	if (!PlayerIdentity || UserId <= 0 || SlotIndex < 0 || !SkillRepository.GetInterface())
 	{
-		OnSkillOperationFailed.Broadcast(PlayerIdentity ? PlayerIdentity->GetPlayerGuid() : FGuid(), TEXT("Invalid parameters for 3-layer cooldown update"));
+		OnSkillOperationFailed.Broadcast(PlayerIdentity ? PlayerIdentity->GetPlayerGuid() : FGuid(), TEXT("Invalid parameters for cooldown update"));
 		return;
 	}
 
@@ -236,8 +236,9 @@ void USkillDomainService::UpdateSkillCooldown3Layer(TScriptInterface<IPlayerIden
 		return;
 	}
 
-	// Update cooldown in database
-	auto UpdateTask = Repository->UpdateSkillSlotCooldown(UserId, SlotKey, SlotIndex, LastUsedTime);
+	// Update cooldown directly by slot index
+	// Note: This will need to be updated when Repository interface is modified to support slot-index-only cooldown updates
+	auto UpdateTask = Repository->UpdateSkillSlotCooldown(UserId, FString("ActionBar"), SlotIndex, LastUsedTime);
 	
 	UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerIdentity, UpdateTask]() mutable -> void
 	{
@@ -257,11 +258,11 @@ void USkillDomainService::UpdateSkillCooldown3Layer(TScriptInterface<IPlayerIden
 	});
 }
 
-void USkillDomainService::ClearPlayerSkills3Layer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId, const FString& SlotKey)
+void USkillDomainService::ClearPlayerSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId)
 {
-	if (!PlayerIdentity || UserId <= 0 || SlotKey.IsEmpty() || !SkillRepository.GetInterface())
+	if (!PlayerIdentity || UserId <= 0 || !SkillRepository.GetInterface())
 	{
-		OnSkillOperationFailed.Broadcast(PlayerIdentity ? PlayerIdentity->GetPlayerGuid() : FGuid(), TEXT("Invalid parameters for 3-layer skill clearing"));
+		OnSkillOperationFailed.Broadcast(PlayerIdentity ? PlayerIdentity->GetPlayerGuid() : FGuid(), TEXT("Invalid parameters for skill clearing"));
 		return;
 	}
 
@@ -288,8 +289,8 @@ void USkillDomainService::ClearPlayerSkills3Layer(TScriptInterface<IPlayerIdenti
 		return;
 	}
 
-	// Clear skills in database
-	auto ClearTask = Repository->ClearUserSkillSlots(UserId, SlotKey);
+	// Clear all skills for user (no SlotKey filter)
+	auto ClearTask = Repository->ClearUserSkillSlots(UserId, FString());
 	
 	UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerIdentity, PlayerState, ClearTask]() mutable -> void
 	{

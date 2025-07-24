@@ -13,4 +13,4 @@ CREATE TABLE equipment (
     UNIQUE KEY unique_user_equipment_slot (user_id, slot_index),
     INDEX idx_user_equipment_type (user_id, slot_type),
     INDEX idx_equipped_items (user_id, is_equipped)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;용 - 현재 C++ 구현에서는 미사용)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

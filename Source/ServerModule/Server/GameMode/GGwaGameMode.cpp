@@ -273,10 +273,10 @@ void AGGwaGameMode::PostLogin(APlayerController* NewPlayer)
 	UE_LOG(LogTemp, Warning, TEXT("Loading skills..."));
 	if (auto SkillSubsystem = GetGameInstance()->GetSubsystem<USkillSubsystem>())
 	{
-		
-		SkillSubsystem->RequestLoadPlayerSkills3Layer(NewPlayer->PlayerState, )
-		// SkillSubsystem->RequestLoadPlayerSkills(NewPlayer->PlayerState);
-		UE_LOG(LogTemp, Warning, TEXT("[SUCCESS] Loaded %d skill definitions"), LoadedSkillDefinitions.Num());
+		// Load all skills for the player (UserId will need to be determined from PlayerState)
+		int32 UserId = 1; // TODO: Get actual UserId from PlayerState or player identity
+		SkillSubsystem->RequestLoadPlayerSkills(NewPlayer->PlayerState, UserId);
+		UE_LOG(LogTemp, Warning, TEXT("[SUCCESS] Initiated skill loading for UserId: %d"), UserId);
 	}
 	else
 	{

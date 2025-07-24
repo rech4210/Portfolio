@@ -153,25 +153,26 @@ void UAuthSubsystem::RequestServerAuthentication(const FString& Username, const 
 
 		SendAuthenticationToAuthServer(Request, RequestingController);
 	}
-	else
-	{
-		// Use internal domain service
-		if (!DomainService)
-		{
-			UE_LOG(LogTemp, Error, TEXT("AuthSubsystem: DomainService not initialized"));
-			BroadcastAuthenticationResult(false, TEXT(""), TEXT(""), RequestingController);
-			return;
-		}
-
-		FAuthRequestDTO Request;
-		Request.Username = Username;
-		Request.Password = Password;
-		Request.ClientIP = ClientIP;
-
-		// Call domain service asynchronously
-		auto AuthTask = DomainService->AuthenticateUser(Request);
-		UE_LOG(LogTemp, Log, TEXT("AuthSubsystem: Authentication request sent to domain service"));
-	}
+	// TODO: Only Use Login JWT Server
+	// else
+	// {
+	// 	// Use internal domain service
+	// 	if (!DomainService)
+	// 	{
+	// 		UE_LOG(LogTemp, Error, TEXT("AuthSubsystem: DomainService not initialized"));
+	// 		BroadcastAuthenticationResult(false, TEXT(""), TEXT(""), RequestingController);
+	// 		return;
+	// 	}
+	//
+	// 	FAuthRequestDTO Request;
+	// 	Request.Username = Username;
+	// 	Request.Password = Password;
+	// 	Request.ClientIP = ClientIP;
+	//
+	// 	// Call domain service asynchronously
+	// 	auto AuthTask = DomainService->AuthenticateUser(Request);
+	// 	UE_LOG(LogTemp, Log, TEXT("AuthSubsystem: Authentication request sent to domain service"));
+	// }
 }
 
 void UAuthSubsystem::VerifyTokenWithAuthServer(const FString& Token, const FString& UserId)
