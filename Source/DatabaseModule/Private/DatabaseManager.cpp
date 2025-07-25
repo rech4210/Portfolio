@@ -1667,7 +1667,7 @@ UE::Tasks::TTask<bool> UDatabaseManager::UpdateSkillCooldown(const FString& User
 // 3-LAYER MAPPING ARCHITECTURE IMPLEMENTATION
 // ============================================================================
 
-UE::Tasks::TTask<TArray<FSkillSlotDatabaseDTO>> UDatabaseManager::LoadUserSkillSlots(int32 UserId, const FString& SlotKey)
+UE::Tasks::TTask<TArray<FSkillSlotDatabaseDTO>> UDatabaseManager::LoadUserSkillSlots(const FString& UserId, const FString& SlotKey)
 {
 	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, UserId, SlotKey]() -> TArray<FSkillSlotDatabaseDTO>
 	{
@@ -1688,26 +1688,47 @@ UE::Tasks::TTask<TArray<FSkillSlotDatabaseDTO>> UDatabaseManager::LoadUserSkillS
 			};
 			
 			// SQL Query: user_skill_slots와 user_skills를 조인하여 데이터 로드
-			FString Query = TEXT(
-				"SELECT uss.user_id, uss.slot_key, uss.skill_id, uss.slot_index, "
-				"uss.last_used_time, uss.created_at, uss.updated_at, "
-				"COALESCE(us.skill_level, 1) as skill_level "
-				"FROM user_skill_slots uss "
-				"LEFT JOIN user_skills us ON uss.user_id = us.user_id AND uss.skill_id = us.skill_id "
-				"WHERE uss.user_id = ? AND uss.slot_key = ? "
-				"ORDER BY uss.slot_index"
-			);
+			FString Query;
+			if (SlotKey.IsEmpty())
+			{
+				// Load all slots when SlotKey is empty
+				Query = TEXT(
+					"SELECT uss.user_id, uss.slot_key, uss.skill_id, uss.slot_index, "
+					"uss.last_used_time, uss.created_at, uss.updated_at, "
+					"COALESCE(us.unlocked, 0) as unlocked, COALESCE(us.experience, 0) as experience "
+					"FROM user_skill_slots uss "
+					"LEFT JOIN user_skills us ON uss.user_id = us.user_id AND uss.skill_id = us.skill_id "
+					"WHERE uss.user_id = ? "
+					"ORDER BY uss.slot_index"
+				);
+			}
+			else
+			{
+				// Load specific slot key
+				Query = TEXT(
+					"SELECT uss.user_id, uss.slot_key, uss.skill_id, uss.slot_index, "
+					"uss.last_used_time, uss.created_at, uss.updated_at, "
+					"COALESCE(us.unlocked, 0) as unlocked, COALESCE(us.experience, 0) as experience "
+					"FROM user_skill_slots uss "
+					"LEFT JOIN user_skills us ON uss.user_id = us.user_id AND uss.skill_id = us.skill_id "
+					"WHERE uss.user_id = ? AND uss.slot_key = ? "
+					"ORDER BY uss.slot_index"
+				);
+			}
 			
 			std::unique_ptr<sql::PreparedStatement> Stmt(Con->prepareStatement(TCHAR_TO_UTF8(*Query)));
-			Stmt->setInt(1, UserId);
-			Stmt->setString(2, TCHAR_TO_UTF8(*SlotKey));
+			Stmt->setString(1, TCHAR_TO_UTF8(*UserId)); // UserId를 FString으로 처리
+			if (!SlotKey.IsEmpty())
+			{
+				Stmt->setString(2, TCHAR_TO_UTF8(*SlotKey));
+			}
 			
 			std::unique_ptr<sql::ResultSet> Result(Stmt->executeQuery());
 			
 			while (Result->next())
 			{
 				FSkillSlotDatabaseDTO SlotDTO;
-				SlotDTO.UserId = Result->getInt("user_id");
+				SlotDTO.UserId = UTF8_TO_TCHAR(Result->getString("user_id").c_str()); // FString으로 처리
 				SlotDTO.SlotKey = UTF8_TO_TCHAR(Result->getString("slot_key").c_str());
 				SlotDTO.SkillId = Result->getInt("skill_id");
 				SlotDTO.SlotIndex = Result->getInt("slot_index");
@@ -1740,8 +1761,8 @@ UE::Tasks::TTask<TArray<FSkillSlotDatabaseDTO>> UDatabaseManager::LoadUserSkillS
 				SkillSlots.Add(SlotDTO);
 			}
 			
-			UE_LOG(LogTemp, Log, TEXT("LoadUserSkillSlots: Loaded %d skill slots for UserId=%d, SlotKey=%s"), 
-				SkillSlots.Num(), UserId, *SlotKey);
+			UE_LOG(LogTemp, Log, TEXT("LoadUserSkillSlots: Loaded %d skill slots for UserId=%s, SlotKey=%s"), 
+				SkillSlots.Num(), *UserId, *SlotKey);
 		}
 		catch (const sql::SQLException& e)
 		{
@@ -1804,7 +1825,7 @@ UE::Tasks::TTask<bool> UDatabaseManager::SaveUserSkillSlots(const TArray<FSkillS
 			
 			for (const FSkillSlotDatabaseDTO& SlotDTO : SkillSlotDTOs)
 			{
-				Stmt->setInt(1, SlotDTO.UserId);
+				Stmt->setString(1, TCHAR_TO_UTF8(*SlotDTO.UserId));
 				Stmt->setString(2, TCHAR_TO_UTF8(*SlotDTO.SlotKey));
 				Stmt->setInt(3, SlotDTO.SkillId);
 				Stmt->setInt(4, SlotDTO.SlotIndex);
@@ -2002,7 +2023,7 @@ UE::Tasks::TTask<bool> UDatabaseManager::SaveSkillMasterData(const TArray<FSkill
 }
 
 UE::Tasks::TTask<bool> UDatabaseManager::UpdateSkillSlotCooldown(
-	int32 UserId, 
+	const FString& UserId, 
 	const FString& SlotKey, 
 	int32 SlotIndex, 
 	const FDateTime& LastUsedTime)
@@ -2041,7 +2062,7 @@ UE::Tasks::TTask<bool> UDatabaseManager::UpdateSkillSlotCooldown(
 				Stmt->setNull(1, sql::DataType::TIMESTAMP);
 			}
 			
-			Stmt->setInt(2, UserId);
+			Stmt->setString(2, TCHAR_TO_UTF8(*UserId));
 			Stmt->setString(3, TCHAR_TO_UTF8(*SlotKey));
 			Stmt->setInt(4, SlotIndex);
 			
@@ -2049,14 +2070,14 @@ UE::Tasks::TTask<bool> UDatabaseManager::UpdateSkillSlotCooldown(
 			
 			if (AffectedRows > 0)
 			{
-				UE_LOG(LogTemp, Log, TEXT("UpdateSkillSlotCooldown: Updated UserId=%d, SlotKey=%s, SlotIndex=%d"), 
-					UserId, *SlotKey, SlotIndex);
+				UE_LOG(LogTemp, Log, TEXT("UpdateSkillSlotCooldown: Updated UserId=%s, SlotKey=%s, SlotIndex=%d"), 
+					*UserId, *SlotKey, SlotIndex);
 				return true;
 			}
 			else
 			{
-				UE_LOG(LogTemp, Warning, TEXT("UpdateSkillSlotCooldown: No rows affected for UserId=%d, SlotKey=%s, SlotIndex=%d"), 
-					UserId, *SlotKey, SlotIndex);
+				UE_LOG(LogTemp, Warning, TEXT("UpdateSkillSlotCooldown: No rows affected for UserId=%s, SlotKey=%s, SlotIndex=%d"), 
+					*UserId, *SlotKey, SlotIndex);
 				return false;
 			}
 		}
@@ -2068,7 +2089,7 @@ UE::Tasks::TTask<bool> UDatabaseManager::UpdateSkillSlotCooldown(
 	});
 }
 
-UE::Tasks::TTask<bool> UDatabaseManager::ClearUserSkillSlots(int32 UserId, const FString& SlotKey)
+UE::Tasks::TTask<bool> UDatabaseManager::ClearUserSkillSlots(const FString& UserId, const FString& SlotKey)
 {
 	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, UserId, SlotKey]() -> bool
 	{
@@ -2094,21 +2115,21 @@ UE::Tasks::TTask<bool> UDatabaseManager::ClearUserSkillSlots(int32 UserId, const
 				// 모든 슬롯 키 삭제
 				Query = TEXT("DELETE FROM user_skill_slots WHERE user_id = ?");
 				Stmt.reset(Con->prepareStatement(TCHAR_TO_UTF8(*Query)));
-				Stmt->setInt(1, UserId);
+				Stmt->setString(1, TCHAR_TO_UTF8(*UserId));
 			}
 			else
 			{
 				// 특정 슬롯 키만 삭제
 				Query = TEXT("DELETE FROM user_skill_slots WHERE user_id = ? AND slot_key = ?");
 				Stmt.reset(Con->prepareStatement(TCHAR_TO_UTF8(*Query)));
-				Stmt->setInt(1, UserId);
+				Stmt->setString(1, TCHAR_TO_UTF8(*UserId));
 				Stmt->setString(2, TCHAR_TO_UTF8(*SlotKey));
 			}
 			
 			int32 AffectedRows = Stmt->executeUpdate();
 			
-			UE_LOG(LogTemp, Log, TEXT("ClearUserSkillSlots: Cleared %d skill slots for UserId=%d, SlotKey=%s"), 
-				AffectedRows, UserId, SlotKey.IsEmpty() ? TEXT("ALL") : *SlotKey);
+			UE_LOG(LogTemp, Log, TEXT("ClearUserSkillSlots: Cleared %d skill slots for UserId=%s, SlotKey=%s"), 
+				AffectedRows, *UserId, SlotKey.IsEmpty() ? TEXT("ALL") : *SlotKey);
 			
 			return true;
 		}
@@ -2121,7 +2142,7 @@ UE::Tasks::TTask<bool> UDatabaseManager::ClearUserSkillSlots(int32 UserId, const
 }
 
 UE::Tasks::TTask<TMap<int32, int32>> UDatabaseManager::GetSkillUsageStatistics(
-	int32 UserId,
+	const FString& UserId,
 	int32 SkillId,
 	const FDateTime& StartDate,
 	const FDateTime& EndDate)
@@ -2154,10 +2175,10 @@ UE::Tasks::TTask<TMap<int32, int32>> UDatabaseManager::GetSkillUsageStatistics(
 			TArray<FString> WhereConditions;
 			TArray<FString> ParamValues;
 			
-			if (UserId > 0)
+			if (!UserId.IsEmpty())
 			{
 				WhereConditions.Add(TEXT("user_id = ?"));
-				ParamValues.Add(FString::FromInt(UserId));
+				ParamValues.Add(UserId);
 			}
 			
 			if (SkillId > 0)

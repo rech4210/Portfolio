@@ -59,7 +59,7 @@ class MYGAME_API IClientAuthInterface
 
 public:
 	virtual void InitializeAuth() = 0;
-	virtual IClientManagerInterface* GetClientSubSystem() = 0;
+	virtual TScriptInterface<IClientManagerInterface> GetClientSubSystem() = 0;
 	virtual void RequestRegistration(const FString& Username, const FString& Password) = 0;
 	virtual void RequestLogin(const FString& Username, const FString& Password) = 0;
 	virtual void OnServerRegistrationResult(bool bSuccess, const FString& Message) = 0;

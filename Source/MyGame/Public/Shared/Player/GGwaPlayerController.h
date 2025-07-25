@@ -69,7 +69,8 @@ private:
 	// AuthSubsystem Event Handlers
 	// ============================================================================
 
-	IClientManagerInterface* CachedClientManagerInterface;
+	UPROPERTY(EditDefaultsOnly, Category = "Client Interface")
+	TScriptInterface<IClientManagerInterface> CachedClientManagerInterface;
 
 	UPROPERTY(EditDefaultsOnly, Category= "Client Component")
 	TSubclassOf<UActorComponent> ClientAuthComponentClass;
@@ -88,7 +89,7 @@ public:
 	// ============================================================================
 
 	// Get UIManagerSubsystem interface (cached for performance)
-	IClientManagerInterface* GetUIManagerInterface();
+	TScriptInterface<IClientManagerInterface> GetUIManagerInterface();
 
 	// ============================================================================
 	// Subsystem Interface Implementation

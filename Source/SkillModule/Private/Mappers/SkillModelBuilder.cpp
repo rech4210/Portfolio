@@ -25,7 +25,7 @@ FSkillDomainModel USkillModelBuilder::BuildDomainModel(const FSkillSlotDatabaseD
 	}
 
 	// 1. Core Properties from Database DTO
-	DomainModel.UserId = DatabaseDTO.UserId;
+	DomainModel.UserId = FCString::Atoi(*DatabaseDTO.UserId); // FString을 int32로 변환
 	DomainModel.SlotKey = DatabaseDTO.SlotKey;
 	DomainModel.SlotIndex = DatabaseDTO.SlotIndex;
 	DomainModel.SkillId = DatabaseDTO.SkillId;

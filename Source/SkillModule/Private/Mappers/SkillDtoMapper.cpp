@@ -7,10 +7,10 @@ FSkillSlotDatabaseDTO USkillDtoMapper::MapSlotFromSqlResult(const TMap<FString, 
 {
 	FSkillSlotDatabaseDTO DTO;
 	
-	// SQL 결과?�서 DTO�?매핑
+	// SQL 결과에서 DTO로 매핑
 	if (SqlRow.Contains(TEXT("user_id")))
 	{
-		DTO.UserId = FCString::Atoi(*SqlRow[TEXT("user_id")]);
+		DTO.UserId = SqlRow[TEXT("user_id")];
 	}
 	
 	if (SqlRow.Contains(TEXT("slot_key")))
@@ -96,7 +96,7 @@ TMap<FString, FString> USkillDtoMapper::MapSlotToSqlParams(const FSkillSlotDatab
 {
 	TMap<FString, FString> Params;
 	
-	Params.Add(TEXT("user_id"), FString::FromInt(DTO.UserId));
+	Params.Add(TEXT("user_id"), DTO.UserId);
 	Params.Add(TEXT("slot_key"), DTO.SlotKey);
 	Params.Add(TEXT("skill_id"), FString::FromInt(DTO.SkillId));
 	Params.Add(TEXT("slot_index"), FString::FromInt(DTO.SlotIndex));
@@ -132,9 +132,9 @@ TMap<FString, FString> USkillDtoMapper::MapMasterToSqlParams(const FSkillMasterD
 
 bool USkillDtoMapper::ValidateSlotDTO(const FSkillSlotDatabaseDTO& DTO, FString& OutErrorMessage)
 {
-	if (DTO.UserId <= 0)
+	if (DTO.UserId.IsEmpty())
 	{
-		OutErrorMessage = TEXT("Invalid UserId: must be greater than 0");
+		OutErrorMessage = TEXT("Invalid UserId: cannot be empty");
 		return false;
 	}
 	

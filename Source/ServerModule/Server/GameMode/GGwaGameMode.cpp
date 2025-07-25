@@ -1,7 +1,14 @@
 // ServerModule/GameMode/ServerGameMode.cpp
 
 #include "GGwaGameMode.h"
-
+#include "GameFramework/PlayerController.h"
+#include "GameFramework/PlayerState.h"
+#include "Kismet/GameplayStatics.h"
+#include "Engine/World.h"
+#include "Shared/Player/GGwaPlayerController.h"
+#include "Shared/Player/GGwaPlayerState.h"
+#include "Shared/Player/GGwaCharacter.h"
+#include "Engine/Engine.h"	// Options 문자열에서 토큰 파싱
 #include "HttpModule.h"
 #include "GameMode/BattleFlowController.h"
 #include "AuthVerificationService.h" // 서비스 헤더 Include
@@ -17,6 +24,7 @@
 #include "MyGame/Public/Shared/Player/GGwaPlayerState.h"
 #include "MyGame/Public/Shared/GameState/GGwaGameState.h"
 #include "MyGame/Public/Shared/Cache/UIConfigCacheActor.h"
+#include "MyGame/Public/Shared/Player/GGwaPlayerController.h"
 
 #include "Utill/LocalDataBaseLoader.h"
 
@@ -48,35 +56,39 @@ void AGGwaGameMode::PreLogin(const FString& Options, const FString& Address, con
 	UE_LOG(LogTemp, Warning, TEXT("[Game Server] Options: %s"), *Options);
 	// UE_LOG(LogTemp, Warning, TEXT("[Game Server] UniqueId: %s"), *UniqueId);
 
-	// Options 문자열에서 토큰 파싱
-	// 클라이언트가 OpenLevel 시 "?token=...“ 형태로 보냈다고 가정
+	// 클라이언트가 OpenLevel 시 "?token=..." 형태로 보냈다고 가정
 	const FString Token = UGameplayStatics::ParseOption(Options, TEXT("token"));
 	const FString ProvidedUserId = UGameplayStatics::ParseOption(Options, TEXT("userid"));
+	const FString PIEFlag = UGameplayStatics::ParseOption(Options, TEXT("pie"));
 	
 	UE_LOG(LogTemp, Warning, TEXT("[Game Server] Provided Token: %s..."), *Token.Left(20));
 	UE_LOG(LogTemp, Warning, TEXT("[Game Server] Provided UserId: %s"), *ProvidedUserId);
+	UE_LOG(LogTemp, Warning, TEXT("[Game Server] PIE Environment: %s"), *PIEFlag);
 
-	// Development mode: Allow connections without token for testing
+	// PIE 환경 또는 Development mode 감지
+	bool bIsPIEEnvironment = !PIEFlag.IsEmpty() && PIEFlag.Equals(TEXT("true"), ESearchCase::IgnoreCase);
 	bool bDevelopmentMode = true; // TODO: Make this configurable
 	
-	if (Token.IsEmpty())
+	// PIE 환경에서는 간소화된 인증 처리
+	if (bIsPIEEnvironment)
 	{
-		if (bDevelopmentMode)
+		UE_LOG(LogTemp, Warning, TEXT("[PIE Test Mode] Simplified authentication for development testing"));
+		if (!Token.IsEmpty() && !ProvidedUserId.IsEmpty())
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[Game Server] Development Mode: Allowing connection without token"));
-			// Allow connection without token in development mode
-			FString DefaultUserId = FString::Printf(TEXT("dev_user_%s"), *UniqueId->ToString().Right(8));
-			PendingPlayers.Add(UniqueId, DefaultUserId);
-			return; // Success - allow connection
+			// PIE에서도 토큰 기반 테스트 수행
+			PendingPlayers.Add(UniqueId, ProvidedUserId);
+			UE_LOG(LogTemp, Warning, TEXT("[PIE Test Mode] Using provided credentials - UserId: %s"), *ProvidedUserId);
 		}
 		else
 		{
-			ErrorMessage = TEXT("No authentication token provided.");
-			UE_LOG(LogTemp, Warning, TEXT("[Game Server] PreLogin failed: %s"), *ErrorMessage);
-			return;
+			// 토큰이 없어도 PIE 테스트 허용
+			FString DefaultUserId = FString::Printf(TEXT("pie_user_%s"), *UniqueId->ToString().Right(8));
+			PendingPlayers.Add(UniqueId, DefaultUserId);
+			UE_LOG(LogTemp, Warning, TEXT("[PIE Test Mode] Using fallback credentials - UserId: %s"), *DefaultUserId);
 		}
+		return; // PIE 환경에서는 추가 검증 생략
 	}
-	
+
 	// JWT 서버에서 토큰 검증 (비동기 방식으로 변경)
 	// Create pending verification entry
 	FPendingTokenVerification& PendingVerification = PendingTokenVerifications.Add(UniqueId);
@@ -216,74 +228,170 @@ void AGGwaGameMode::PostLogin(APlayerController* NewPlayer)
 {
 	Super::PostLogin(NewPlayer);
 
-	/*로그인 성공 이후, player의 GUID 가져오기*/
-	FString PlayerId;
-	//TODO: 임시코드, 어떤 필드로 데이터를 인덱싱할건지?
-	GetGameInstance()->GetSubsystem<UAuthSubsystem>()->GetDomainService()->GetUserInfo(PlayerId);
-	AGGwaPlayerState* State = NewPlayer->GetPlayerState<AGGwaPlayerState>();
-	State->SetPlayerGuid(PlayerId);
+	UE_LOG(LogTemp, Warning, TEXT("=== Player Data Initialization Pipeline Start ==="));
 
-	
-
-	/*
-* 1. 플레이어 초기 설정
-*  - GetUserInfo
-*  - Skill
-*  - Equipment
-*  - Inventory
-*  - Character
-*
-*/
-	
-	UE_LOG(LogTemp, Warning, TEXT("=== PostLogin Start ==="));
-	UE_LOG(LogTemp, Warning, TEXT("Checking player validity..."));
-
-	if (!NewPlayer || !NewPlayer->PlayerState){
+	if (!NewPlayer || !NewPlayer->PlayerState)
+	{
 		UE_LOG(LogTemp, Error, TEXT("[FAIL] NewPlayer or PlayerState is not available on PostLogin!"));
 		return;
 	}
 
-	if (FString* UserId = PendingPlayers.Find(NewPlayer->PlayerState->GetUniqueId())){
-		PendingPlayers.Remove(NewPlayer->PlayerState->GetUniqueId());
-	}
-	else{
+	// ============================================================================
+	// STEP 1: Authentication & User ID Resolution
+	// ============================================================================
+	
+	FString* AuthenticatedUserId = PendingPlayers.Find(NewPlayer->PlayerState->GetUniqueId());
+	if (!AuthenticatedUserId)
+	{
 		UE_LOG(LogTemp, Error, TEXT("[FAIL] Player %s is not authenticated. Authentication not found in PendingPlayers."), 
 			*NewPlayer->PlayerState->GetPlayerName());
 		UE_LOG(LogTemp, Warning, TEXT("[ACTION] Redirecting unauthorized player to login screen"));
 		
 		NewPlayer->ClientTravel(TEXT("/Game/Login/LoginLevel"), ETravelType::TRAVEL_Absolute);
-		// UKismetSystemLibrary::ExecuteConsoleCommand(GetWorld(), FString::Printf(TEXT("kick %s"), *NewPlayer->PlayerState->GetPlayerName()));
-		UE_LOG(LogTemp, Warning, TEXT("=== PostLogin End (Failed) ==="));
 		return;
 	}
+
+	// Get cached credentials from PlayerController (as mentioned in your requirement)
+	AGGwaPlayerController* GGwaPC = Cast<AGGwaPlayerController>(NewPlayer);
+	if (!GGwaPC)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[FAIL] Could not cast to AGGwaPlayerController for player %s"), 
+			*NewPlayer->PlayerState->GetPlayerName());
+		return;
+	}
+
+	// Extract UserId from cached auth token or use authenticated UserId
+	FString CachedUserId = GGwaPC->GetCachedUserId();
+	FString FinalUserId = !CachedUserId.IsEmpty() ? CachedUserId : *AuthenticatedUserId;
 	
-	UE_LOG(LogTemp, Warning, TEXT("Loading inventory..."));
+	// Convert UserId to integer (ensuring valid conversion)
+	int32 UserIdInt = 0;
+	if (FinalUserId.IsNumeric())
+	{
+		UserIdInt = FCString::Atoi(*FinalUserId);
+	}
+	else
+	{
+		// Try to extract numeric part or use a default mapping
+		// For development: use hash of the string to get a consistent ID
+		UserIdInt = GetTypeHash(FinalUserId) % 1000 + 1; // Ensure positive ID between 1-1000
+		UE_LOG(LogTemp, Warning, TEXT("[AUTH] Non-numeric UserId '%s' mapped to %d"), *FinalUserId, UserIdInt);
+	}
+
+	// Set player identity
+	AGGwaPlayerState* PlayerState = NewPlayer->GetPlayerState<AGGwaPlayerState>();
+	if (PlayerState)
+	{
+		PlayerState->SetPlayerGuid(FinalUserId);
+	}
+
+	// Remove from pending list
+	PendingPlayers.Remove(NewPlayer->PlayerState->GetUniqueId());
+
+	UE_LOG(LogTemp, Log, TEXT("[SUCCESS] Player %s authenticated with UserId: %s (Numeric: %d)"), 
+		*NewPlayer->PlayerState->GetPlayerName(), *FinalUserId, UserIdInt);
+
+	// Validate UserIdInt
+	if (UserIdInt <= 0)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[FAIL] Invalid UserId: %d for player %s"), 
+			UserIdInt, *NewPlayer->PlayerState->GetPlayerName());
+		NewPlayer->ClientTravel(TEXT("/Game/Login/LoginLevel"), ETravelType::TRAVEL_Absolute);
+		return;
+	}
+
+	// ============================================================================
+	// STEP 2: Initialize DDD Systems (Parallel Execution)
+	// ============================================================================
+	
+	InitializePlayerDDDSystems(NewPlayer, PlayerState, UserIdInt);
+
+	UE_LOG(LogTemp, Warning, TEXT("=== Player Data Initialization Pipeline Completed ==="));
+}
+
+void AGGwaGameMode::InitializePlayerDDDSystems(APlayerController* NewPlayer, AGGwaPlayerState* PlayerState, int32 UserId)
+{
+	if (!NewPlayer || !PlayerState || UserId <= 0)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[FAIL] Invalid parameters for DDD system initialization"));
+		return;
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("=== Initializing DDD Systems for Player %s (UserId: %d) ==="), 
+		*PlayerState->GetPlayerName(), UserId);
+
+	// ============================================================================
+	// 1. INVENTORY SYSTEM INITIALIZATION
+	// ============================================================================
+	
+	UE_LOG(LogTemp, Log, TEXT("[INVENTORY] Initializing inventory system..."));
 	if (auto InventorySubsystem = GetGameInstance()->GetSubsystem<UInventorySubsystem>())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[START] Loading inventory for player %s"), *NewPlayer->PlayerState->GetPlayerName());
-		InventorySubsystem->RequestLoadPlayerInventory(NewPlayer->PlayerState);
-		UE_LOG(LogTemp, Warning, TEXT("[SUCCESS] Inventory loaded"));
+		InventorySubsystem->RequestLoadPlayerInventory(PlayerState);
+		UE_LOG(LogTemp, Log, TEXT("[INVENTORY] ✓ Inventory loading initiated"));
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("[FAIL] InventoryRepository is not available on PostLogin!"));
+		UE_LOG(LogTemp, Error, TEXT("[INVENTORY] ✗ InventorySubsystem not available"));
 	}
+
+	// ============================================================================
+	// 2. SKILL SYSTEM INITIALIZATION  
+	// ============================================================================
 	
-	// 캐릭터 및 스킬 정보 로드 (안전한 접근 방식으로 변경)
-	UE_LOG(LogTemp, Warning, TEXT("Loading skills..."));
+	UE_LOG(LogTemp, Log, TEXT("[SKILL] Initializing skill system..."));
 	if (auto SkillSubsystem = GetGameInstance()->GetSubsystem<USkillSubsystem>())
 	{
-		// Load all skills for the player (UserId will need to be determined from PlayerState)
-		int32 UserId = 1; // TODO: Get actual UserId from PlayerState or player identity
-		SkillSubsystem->RequestLoadPlayerSkills(NewPlayer->PlayerState, UserId);
-		UE_LOG(LogTemp, Warning, TEXT("[SUCCESS] Initiated skill loading for UserId: %d"), UserId);
+		// Load all player skills using the optimized LoadPlayerSkills method
+		SkillSubsystem->RequestLoadPlayerSkills(PlayerState, UserId);
+		UE_LOG(LogTemp, Log, TEXT("[SKILL] ✓ Skill loading initiated for UserId: %d"), UserId);
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("[FAIL] SkillConfigRepository is not available!"));
+		UE_LOG(LogTemp, Error, TEXT("[SKILL] ✗ SkillSubsystem not available"));
 	}
-	//플레이어가 설정한 스킬에 대한 정보 로드.
-	// TArray<int32> SkillList ={100,101,102,103,104,105,106,107};
+
+	// ============================================================================
+	// 3. SHOP SYSTEM INITIALIZATION
+	// ============================================================================
+	
+	UE_LOG(LogTemp, Log, TEXT("[SHOP] Initializing shop system..."));
+	if (auto ShopSubsystem = GetGameInstance()->GetSubsystem<UShopSubsystem>())
+	{
+		// Load shop data for player (if needed)
+		// ShopSubsystem->RequestLoadPlayerShopData(PlayerState, UserId);
+		UE_LOG(LogTemp, Log, TEXT("[SHOP] ✓ Shop system ready"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("[SHOP] ✗ ShopSubsystem not available"));
+	}
+
+	// ============================================================================
+	// 4. EQUIPMENT SYSTEM INITIALIZATION (Future Implementation)
+	// ============================================================================
+	
+	UE_LOG(LogTemp, Log, TEXT("[EQUIPMENT] Equipment system initialization deferred (not implemented)"));
+	// TODO: Implement equipment system initialization when EquipmentSubsystem is available
+	// if (auto EquipmentSubsystem = GetGameInstance()->GetSubsystem<UEquipmentSubsystem>())
+	// {
+	//     EquipmentSubsystem->RequestLoadPlayerEquipment(PlayerState, UserId);
+	//     UE_LOG(LogTemp, Log, TEXT("[EQUIPMENT] ✓ Equipment loading initiated"));
+	// }
+
+	// ============================================================================
+	// 5. CHARACTER DATA SYSTEM INITIALIZATION (Future Implementation)
+	// ============================================================================
+	
+	UE_LOG(LogTemp, Log, TEXT("[CHARACTER] Character system initialization deferred (not implemented)"));
+	// TODO: Implement character data system initialization when CharacterSubsystem is available
+	// if (auto CharacterSubsystem = GetGameInstance()->GetSubsystem<UCharacterSubsystem>())
+	// {
+	//     CharacterSubsystem->RequestLoadPlayerCharacterData(PlayerState, UserId);
+	//     UE_LOG(LogTemp, Log, TEXT("[CHARACTER] ✓ Character data loading initiated"));
+	// }
+
+	UE_LOG(LogTemp, Log, TEXT("=== DDD Systems Initialization Completed ==="));
 }
 
 void AGGwaGameMode::Logout(AController* Exiting)

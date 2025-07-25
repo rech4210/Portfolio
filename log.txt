@@ -1,199 +1,287 @@
-아래 로그를 분석
-
-추측 : 예상하기로는 Client Travel과 Server의 Travel 호출에 문제가 있는것이 아닐가 판단중..
-
-# server
-ime: 0.00. IpNetDriver_2147482493
-[2025.07.04-15.28.12:100][518]LogNet: NotifyAcceptingConnection accepted from: 127.0.0.1:61943
-[2025.07.04-15.28.12:100][518]LogHandshake: SendConnectChallenge. Timestamp: 166.651642, Cookie: 207118237117148044004249006123205054137196156043206161164217
-[2025.07.04-15.28.12:100][518]LogNet: NotifyAcceptingConnection accepted from: 127.0.0.1:61943
-[2025.07.04-15.28.12:100][518]LogHandshake: SendConnectChallenge. Timestamp: 166.651642, Cookie: 207118237117148044004249006123205054137196156043206161164217
-[2025.07.04-15.28.12:101][518]LogNet: NotifyAcceptingConnection accepted from: 127.0.0.1:61943
-[2025.07.04-15.28.12:101][518]LogHandshake: SendConnectChallenge. Timestamp: 166.651642, Cookie: 207118237117148044004249006123205054137196156043206161164217
-[2025.07.04-15.28.12:101][518]LogNet: NotifyAcceptingConnection accepted from: 127.0.0.1:61943
-[2025.07.04-15.28.12:101][518]LogHandshake: SendConnectChallenge. Timestamp: 166.651642, Cookie: 207118237117148044004249006123205054137196156043206161164217
-[2025.07.04-15.28.12:101][518]LogHandshake: SendConnectChallenge. Timestamp: 166.651642, Cookie: 207118237117148044004249006123205054137196156043206161164217
-[2025.07.04-15.28.12:101][518]LogHandshake: SendConnectChallenge. Timestamp: 166.651642, Cookie: 207118237117148044004249006123205054137196156043206161164217
-[2025.07.04-15.28.12:101][518]LogHandshake: SendConnectChallenge. Timestamp: 166.651642, Cookie: 207118237117148044004249006123205054137196156043206161164217
-[2025.07.04-15.28.12:133][519]LogHandshake: SendChallengeAck. InCookie: 207118237117148044004249006123205054137196156043206161164217
-[2025.07.04-15.28.12:133][519]LogNet: Server accepting post-challenge connection from: 127.0.0.1:61943
-[2025.07.04-15.28.12:134][519]LogNet: IpConnection_2147482371 setting maximum channels to: 32767
-[2025.07.04-15.28.12:134][519]PacketHandlerLog: Loaded PacketHandler component: Engine.EngineHandlerComponentFactory (StatelessConnectHandlerComponent)
-[2025.07.04-15.28.12:137][519]LogNet: NotifyAcceptedConnection: Name: ThirdPersonMap, TimeStamp: 07/05/25 00:28:12, [UNetConnection] RemoteAddr: 127.0.0.1:61943, Name: IpConnection_2147482371, Driver: Name:GameNetDriver Def:GameNetDriver IpNetDriver_2147482493, IsServer: YES, PC: NULL, Owner: NULL, UniqueId: INVALID
-[2025.07.04-15.28.12:138][519]LogNet: AddClientConnection: Added client connection: [UNetConnection] RemoteAddr: 127.0.0.1:61943, Name: IpConnection_2147482371, Driver: Name:GameNetDriver Def:GameNetDriver IpNetDriver_2147482493, IsServer: YES, PC: NULL, Owner: NULL, UniqueId: INVALID
-[2025.07.04-15.28.12:139][519]LogHandshake: Received unexpected post-connect handshake packet - resending ack for LastChallengeSuccessAddress 127.0.0.1:61943 and LastCookie 207118237117148044004249006123205054137196156043206161164217.
-[2025.07.04-15.28.12:140][519]LogHandshake: SendChallengeAck. InCookie: 207118237117148044004249006123205054137196156043206161164217
-[2025.07.04-15.28.12:141][519]LogHandshake: Received unexpected post-connect handshake packet - resending ack for LastChallengeSuccessAddress 127.0.0.1:61943 and LastCookie 207118237117148044004249006123205054137196156043206161164217.
-[2025.07.04-15.28.12:144][519]LogHandshake: SendChallengeAck. InCookie: 207118237117148044004249006123205054137196156043206161164217
-[2025.07.04-15.28.12:144][519]LogHandshake: Received unexpected post-connect handshake packet - resending ack for LastChallengeSuccessAddress 127.0.0.1:61943 and LastCookie 207118237117148044004249006123205054137196156043206161164217.
-[2025.07.04-15.28.12:145][519]LogHandshake: SendChallengeAck. InCookie: 207118237117148044004249006123205054137196156043206161164217
-[2025.07.04-15.28.12:146][519]LogHandshake: Received unexpected post-connect handshake packet - resending ack for LastChallengeSuccessAddress 127.0.0.1:61943 and LastCookie 207118237117148044004249006123205054137196156043206161164217.
-[2025.07.04-15.28.12:148][519]LogHandshake: SendChallengeAck. InCookie: 207118237117148044004249006123205054137196156043206161164217
-[2025.07.04-15.28.12:148][519]LogHandshake: Received unexpected post-connect handshake packet - resending ack for LastChallengeSuccessAddress 127.0.0.1:61943 and LastCookie 207118237117148044004249006123205054137196156043206161164217.
-[2025.07.04-15.28.12:150][519]LogHandshake: SendChallengeAck. InCookie: 207118237117148044004249006123205054137196156043206161164217
-[2025.07.04-15.28.12:153][519]LogHandshake: Received unexpected post-connect handshake packet - resending ack for LastChallengeSuccessAddress 127.0.0.1:61943 and LastCookie 207118237117148044004249006123205054137196156043206161164217.
-[2025.07.04-15.28.12:154][519]LogHandshake: SendChallengeAck. InCookie: 207118237117148044004249006123205054137196156043206161164217
-[2025.07.04-15.28.12:158][519]LogNet: NotifyAcceptingChannel Control 0 server World /Game/Map/ThirdPersonMap.ThirdPersonMap: Accepted
-[2025.07.04-15.28.12:159][519]LogNet: Remote platform little endian=1
-[2025.07.04-15.28.12:159][519]LogNet: This platform little endian=1
-[2025.07.04-15.28.12:199][521]LogNet: Login request: ?token=Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxMjMyMTMiLCJyb2xlcyI6WyJwbGF5ZXIiXSwiaWF0IjoxNzUxNjQyODg0LCJleHAiOjE3NTE2NDY0ODR9.KyWkUcYkfw60Yfiw13LUK25TzVh3hS7lqbs_YLoEkdA?Name=DESKTOP-44E40J8-A814C5FA47D47F999905FB9906C0A6D5 userId: NULL:DESKTOP-44E40J8-A814C5FA47D47F999905FB9906C0A6D5 platform: NULL
-[2025.07.04-15.28.12:200][521]LogTemp: Warning: [Game Server] PreLogin attempt
-[2025.07.04-15.28.12:201][521]LogTemp: Warning: [Game Server] Connection from address: 127.0.0.1
-[2025.07.04-15.28.12:206][521]LogTemp: Warning: [Game Server] Options: ?token=Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxMjMyMTMiLCJyb2xlcyI6WyJwbGF5ZXIiXSwiaWF0IjoxNzUxNjQyODg0LCJleHAiOjE3NTE2NDY0ODR9.KyWkUcYkfw60Yfiw13LUK25TzVh3hS7lqbs_YLoEkdA?Name=DESKTOP-44E40J8-A814C5FA47D47F999905FB9906C0A6D5?SplitscreenCount=1
-[2025.07.04-15.28.12:208][521]LogTemp: Warning: Token: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxMjMyMTMiLCJyb2xlcyI6WyJwbGF5ZXIiXSwiaWF0IjoxNzUxNjQyODg0LCJleHAiOjE3NTE2NDY0ODR9.KyWkUcYkfw60Yfiw13LUK25TzVh3hS7lqbs_YLoEkdA
-[2025.07.04-15.28.12:211][521]LogTemp: Warning: Token verification successful for user: VerifiedUser_From_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxMjMyMTMiLCJyb2xlcyI6WyJwbGF5ZXIiXSwiaWF0IjoxNzUxNjQyODg0LCJleHAiOjE3NTE2NDY0ODR9.KyWkUcYkfw60Yfiw13LUK25TzVh3hS7lqbs_YLoEkdA
-[2025.07.04-15.28.12:212][521]LogTemp: PreLogin successful for user: VerifiedUser_From_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxMjMyMTMiLCJyb2xlcyI6WyJwbGF5ZXIiXSwiaWF0IjoxNzUxNjQyODg0LCJleHAiOjE3NTE2NDY0ODR9.KyWkUcYkfw60Yfiw13LUK25TzVh3hS7lqbs_YLoEkdA
-[2025.07.04-15.28.12:232][522]LogNet: Client netspeed is 100000
-[2025.07.04-15.28.12:299][524]LogNet: Join request: /Game/Map/ThirdPersonMap?token=Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxMjMyMTMiLCJyb2xlcyI6WyJwbGF5ZXIiXSwiaWF0IjoxNzUxNjQyODg0LCJleHAiOjE3NTE2NDY0ODR9.KyWkUcYkfw60Yfiw13LUK25TzVh3hS7lqbs_YLoEkdA?Name=DESKTOP-44E40J8-A814C5FA47D47F999905FB9906C0A6D5?SplitscreenCount=1
-[2025.07.04-15.28.12:299][524]LogTemp: Mapped SkillID 100 → Skill:DA_BattlCry
-[2025.07.04-15.28.12:300][524]LogTemp: Mapped SkillID 999 → Skill:DA_BlitzStrike
-[2025.07.04-15.28.12:300][524]LogTemp: Mapped SkillID 999 → Skill:DA_BossArea
-[2025.07.04-15.28.12:302][524]LogTemp: Mapped SkillID 999 → Skill:DA_DeadlyFocus
-[2025.07.04-15.28.12:302][524]LogTemp: Mapped SkillID 999 → Skill:DA_Haste
-[2025.07.04-15.28.12:303][524]LogTemp: Mapped SkillID 999 → Skill:DA_IronSkin
-[2025.07.04-15.28.12:303][524]LogTemp: Mapped SkillID 999 → Skill:DA_Purity
-[2025.07.04-15.28.12:304][524]LogTemp: Mapped SkillID 999 → Skill:DA_Renewal
-[2025.07.04-15.28.12:304][524]LogTemp: Mapped SkillID 999 → Skill:DA_Resonance
-[2025.07.04-15.28.12:305][524]LogTemp: Warning: IsServer: 1 | IsLocallyControlled: 0
-[2025.07.04-15.28.12:306][524]LogTemp: PlayerState found: DESKTOP-44E40J8-A814
-[2025.07.04-15.28.12:306][524]LogTemp: Warning: Player already has Pawn
-[2025.07.04-15.28.12:307][524]LogTemp: Player DESKTOP-44E40J8-A814 (VerifiedUser_From_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxMjMyMTMiLCJyb2xlcyI6WyJwbGF5ZXIiXSwiaWF0IjoxNzUxNjQyODg0LCJleHAiOjE3NTE2NDY0ODR9.KyWkUcYkfw60Yfiw13LUK25TzVh3hS7lqbs_YLoEkdA) has logged in. Traveling to main map.
-[2025.07.04-15.28.12:308][524]LogNet: Join succeeded: DESKTOP-44E40J8-A814
-[2025.07.04-15.28.12:366][526]LogNet: UChannel::ReceivedSequencedBunch: Bunch.bClose == true. ChIndex == 0. Calling ConditionalCleanUp.
-[2025.07.04-15.28.12:366][526]LogNet: UChannel::CleanUp: ChIndex == 0. Closing connection. [UChannel] ChIndex: 0, Closing: 0 [UNetConnection] RemoteAddr: 127.0.0.1:61943, Name: IpConnection_2147482371, Driver: Name:GameNetDriver Def:GameNetDriver IpNetDriver_2147482493, IsServer: YES, PC: GGwaPlayerController_2147482365, Owner: GGwaPlayerController_2147482365, UniqueId: NULL:DESKTOP-44E40J8-A814C5FA47D47F999905FB9906C0A6D5
-[2025.07.04-15.28.12:366][526]LogNet: UNetConnection::Close: [UNetConnection] RemoteAddr: 127.0.0.1:61943, Name: IpConnection_2147482371, Driver: Name:GameNetDriver Def:GameNetDriver IpNetDriver_2147482493, IsServer: YES, PC: GGwaPlayerController_2147482365, Owner: GGwaPlayerController_2147482365, UniqueId: NULL:DESKTOP-44E40J8-A814C5FA47D47F999905FB9906C0A6D5, Channels: 11, Time: 2025.07.04-15.28.12
-[2025.07.04-15.28.12:367][526]LogNet: UNetConnection::SendCloseReason:
-[2025.07.04-15.28.12:373][526]LogNet:  - Result=ControlChannelClose, ErrorContext="ControlChannelClose"
-[2025.07.04-15.28.12:373][526]LogNet: UChannel::Close: Sending CloseBunch. ChIndex == 0. Name: [UChannel] ChIndex: 0, Closing: 0 [UNetConnection] RemoteAddr: 127.0.0.1:61943, Name: IpConnection_2147482371, Driver: Name:GameNetDriver Def:GameNetDriver IpNetDriver_2147482493, IsServer: YES, PC: GGwaPlayerController_2147482365, Owner: GGwaPlayerController_2147482365, UniqueId: NULL:DESKTOP-44E40J8-A814C5FA47D47F999905FB9906C0A6D5
-[2025.07.04-15.28.12:375][526]LogNet: UNetDriver::RemoveClientConnection - Removed address 127.0.0.1:61943 from MappedClientConnections for: [UNetConnection] RemoteAddr: 127.0.0.1:61943, Name: IpConnection_2147482371, Driver: Name:GameNetDriver Def:GameNetDriver IpNetDriver_2147482493, IsServer: YES, PC: GGwaPlayerController_2147482365, Owner: GGwaPlayerController_2147482365, UniqueId: NULL:DESKTOP-44E40J8-A814C5FA47D47F999905FB9906C0A6D5
-[2025.07.04-15.28.12:378][526]LogTemp: Mapped SkillID 100 → Skill:DA_BattlCry
-[2025.07.04-15.28.12:379][526]LogTemp: Mapped SkillID 999 → Skill:DA_BlitzStrike
-[2025.07.04-15.28.12:379][526]LogTemp: Mapped SkillID 999 → Skill:DA_BossArea
-[2025.07.04-15.28.12:380][526]LogTemp: Mapped SkillID 999 → Skill:DA_DeadlyFocus
-[2025.07.04-15.28.12:380][526]LogTemp: Mapped SkillID 999 → Skill:DA_Haste
-[2025.07.04-15.28.12:381][526]LogTemp: Mapped SkillID 999 → Skill:DA_IronSkin
-[2025.07.04-15.28.12:381][526]LogTemp: Mapped SkillID 999 → Skill:DA_Purity
-[2025.07.04-15.28.12:382][526]LogTemp: Mapped SkillID 999 → Skill:DA_Renewal
-[2025.07.04-15.28.12:382][526]LogTemp: Mapped SkillID 999 → Skill:DA_Resonance
-[2025.07.04-15.28.12:383][526]LogTemp: Player logging out. Saving inventory data for DESKTOP-44E40J8-A814.
-[2025.07.04-15.28.12:728][537]LogTemp: Warning: Server is ALIVE. Current GameMode is [ GGwaGameMode_2147482494 ] running in map [ ThirdPersonMap ]
-#client
-[2025.07.04-15.28.47:682][853]LogTemp: Warning: Client is ALIVE. Current GameMode is [ BP_LoginGameMode_C_2147481934 ] running in map [ LoginLevel ]
-[2025.07.04-15.28.47:683][853]LogHandshake: Cached server SessionID: 0
-[2025.07.04-15.28.47:683][853]LogHandshake: SendChallengeResponse. Timestamp: 166.651642, Cookie: 207118237117148044004249006123205054137196156043206161164217
-[2025.07.04-15.28.47:683][853]LogHandshake: Cached server SessionID: 0
-[2025.07.04-15.28.47:684][853]LogHandshake: SendChallengeResponse. Timestamp: 166.651642, Cookie: 207118237117148044004249006123205054137196156043206161164217
-[2025.07.04-15.28.47:684][853]LogHandshake: Cached server SessionID: 0
-[2025.07.04-15.28.47:685][854]LogHandshake: SendChallengeResponse. Timestamp: 166.651642, Cookie: 207118237117148044004249006123205054137196156043206161164217
-[2025.07.04-15.28.47:686][854]LogHandshake: Cached server SessionID: 0
-[2025.07.04-15.28.47:687][854]LogHandshake: SendChallengeResponse. Timestamp: 166.651642, Cookie: 207118237117148044004249006123205054137196156043206161164217
-[2025.07.04-15.28.47:687][854]LogHandshake: Cached server SessionID: 0
-[2025.07.04-15.28.47:687][854]LogHandshake: SendChallengeResponse. Timestamp: 166.651642, Cookie: 207118237117148044004249006123205054137196156043206161164217
-[2025.07.04-15.28.47:687][854]LogHandshake: Cached server SessionID: 0
-[2025.07.04-15.28.47:687][854]LogHandshake: SendChallengeResponse. Timestamp: 166.651642, Cookie: 207118237117148044004249006123205054137196156043206161164217
-[2025.07.04-15.28.47:687][854]LogHandshake: Cached server SessionID: 0
-[2025.07.04-15.28.47:687][854]LogHandshake: SendChallengeResponse. Timestamp: 166.651642, Cookie: 207118237117148044004249006123205054137196156043206161164217
-[2025.07.04-15.28.47:687][854]LogNet: UPendingNetGame::SendInitialJoin: Sending hello. [UNetConnection] RemoteAddr: 127.0.0.1:7777, Name: IpConnection_2147481846, Driver: Name:PendingNetDriver Def:GameNetDriver IpNetDriver_2147481909, IsServer: NO, PC: NULL, Owner: NULL, UniqueId: INVALID
-[2025.07.04-15.28.47:688][854]LogNet: Welcomed by server (Level: /Game/Map/ThirdPersonMap, Game: /Script/ServerModule.GGwaGameMode)
-[2025.07.04-15.28.47:688][854]LogLoad: LoadMap: 127.0.0.1/Game/Map/ThirdPersonMap?token=Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxMjMyMTMiLCJyb2xlcyI6WyJwbGF5ZXIiXSwiaWF0IjoxNzUxNjQyODg0LCJleHAiOjE3NTE2NDY0ODR9.KyWkUcYkfw60Yfiw13LUK25TzVh3hS7lqbs_YLoEkdA?game=/Script/ServerModule.GGwaGameMode
-[2025.07.04-15.28.47:689][854]LogWorld: BeginTearingDown for /Game/Map/LoginLevel
-[2025.07.04-15.28.47:689][854]LogWorld: UWorld::CleanupWorld for LoginLevel, bSessionEnded=true, bCleanupResources=true
-[2025.07.04-15.28.47:690][854]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
-[2025.07.04-15.28.47:690][854]LogAudio: Display: Audio Device unregistered from world 'None'.
-[2025.07.04-15.28.47:691][854]LogUObjectHash: Compacting FUObjectHashTables data took   0.54ms
-[2025.07.04-15.28.47:691][854]LogStreaming: Display: FlushAsyncLoading(105): 1 QueuedPackages, 0 AsyncPackages
-[2025.07.04-15.28.47:692][854]LogAudio: Display: Audio Device (ID: 1) registered with world 'ThirdPersonMap'.
-[2025.07.04-15.28.47:692][854]LogChaosDD: Creating Chaos Debug Draw Scene for world ThirdPersonMap
-[2025.07.04-15.28.47:693][854]LogWorldPartition: ULevel::OnLevelLoaded(ThirdPersonMap)(bIsOwningWorldGameWorld=1, bIsOwningWorldPartitioned=1, InitializeForMainWorld=1, InitializeForEditor=0, InitializeForGame=1)
-[2025.07.04-15.28.47:695][854]LogWorldPartition: Display: WorldPartition initialize started...
-[2025.07.04-15.28.47:695][854]LogWorldPartition: UWorldPartition::Initialize : World = /Game/Map/ThirdPersonMap.ThirdPersonMap, World Type = Game, IsMainWorldPartition = 1, Location = V(0), Rotation = R(0), IsEditor = 0, IsGame = 1, IsPIEWorldTravel = 0, IsCooking = 0
-[2025.07.04-15.28.47:695][854]LogWorldPartition: UWorldPartition::Initialize Context : World NetMode = Client, IsServer = 0, IsDedicatedServer = 0, IsServerStreamingEnabled = 0, IsServerStreamingOutEnabled = 0, IsUsingMakingVisibleTransaction = 0, IsUsingMakingInvisibleTransaction = 0
-[2025.07.04-15.28.47:697][855]LogWorldPartition: Display: WorldPartition initialize took 50 us (total: 198 us)
-[2025.07.04-15.28.47:697][855]LogWorld: Bringing World /Game/Map/ThirdPersonMap.ThirdPersonMap up for play (max tick rate 0) at 2025.07.05-00.28.12
-[2025.07.04-15.28.47:697][855]LogWorld: Bringing up level for play took: 0.001194
-[2025.07.04-15.28.47:699][855]LogLoad: Took 0.064149 seconds to LoadMap(/Game/Map/ThirdPersonMap)
-[2025.07.04-15.28.47:699][855]LogGlobalStatus: UEngine::LoadMap Load map complete /Game/Map/ThirdPersonMap
-[2025.07.04-15.28.47:699][855]LogGlobalStatus: UPendingNetGame::TravelCompleted Pending net game travel completed
-[2025.07.04-15.28.47:700][855]LogViewport: Display: Viewport MouseLockMode Changed, LockOnCapture -> DoNotLock
-[2025.07.04-15.28.47:700][855]LogViewport: Display: Viewport MouseCaptureMode Changed, CapturePermanently -> CaptureDuringMouseDown
-[2025.07.04-15.28.47:702][855]LogTemp: Warning: IsServer: 0 | IsLocallyControlled: 1
-[2025.07.04-15.28.47:703][855]LogEnhancedInput: Warning: Called AddMappingContext with a null Mapping Context! No changes have been applied.
-[2025.07.04-15.28.47:703][855]PIE: Warning: Mobility of /Game/Map/ThirdPersonMap.ThirdPersonMap:PersistentLevel.BP_BossCharacter_C_2147481781 : CollisionCylinder has to be 'Movable' if you'd like to move.
-[2025.07.04-15.28.47:705][855]LogTemp: BossData Called From Server
-[2025.07.04-15.28.47:705][855]LogTemp: Mapped SkillID 100 → Skill:DA_BattlCry
-[2025.07.04-15.28.47:705][855]LogTemp: Mapped SkillID 999 → Skill:DA_BlitzStrike
-[2025.07.04-15.28.47:706][855]LogTemp: Mapped SkillID 999 → Skill:DA_BossArea
-[2025.07.04-15.28.47:706][855]LogTemp: Mapped SkillID 999 → Skill:DA_DeadlyFocus
-[2025.07.04-15.28.47:706][855]LogTemp: Mapped SkillID 999 → Skill:DA_Haste
-[2025.07.04-15.28.47:709][856]LogTemp: Mapped SkillID 999 → Skill:DA_IronSkin
-[2025.07.04-15.28.47:710][856]LogTemp: Mapped SkillID 999 → Skill:DA_Purity
-[2025.07.04-15.28.47:711][856]LogTemp: Mapped SkillID 999 → Skill:DA_Renewal
-[2025.07.04-15.28.47:711][856]LogTemp: Mapped SkillID 999 → Skill:DA_Resonance
-[2025.07.04-15.28.47:711][856]LogGlobalStatus: UEngine::Browse Started Browse: "/Game/ThirdPerson/Maps/ThirdPersonMap"
-[2025.07.04-15.28.47:712][856]LogNet: Browse: /Game/ThirdPerson/Maps/ThirdPersonMap
-[2025.07.04-15.28.47:712][856]LogLoad: LoadMap: /Game/ThirdPerson/Maps/ThirdPersonMap
-[2025.07.04-15.28.47:713][856]LogWorld: BeginTearingDown for /Game/Map/ThirdPersonMap
-[2025.07.04-15.28.47:714][856]LogNet: World NetDriver shutdown IpNetDriver_2147481909 [GameNetDriver]
-[2025.07.04-15.28.47:714][856]LogNet: DestroyNamedNetDriver IpNetDriver_2147481909 [GameNetDriver]
-[2025.07.04-15.28.47:714][856]LogNet: UNetConnection::Close: [UNetConnection] RemoteAddr: 127.0.0.1:7777, Name: IpConnection_2147481846, Driver: Name:GameNetDriver Def:GameNetDriver IpNetDriver_2147481909, IsServer: NO, PC: GGwaPlayerController_2147481793, Owner: GGwaPlayerController_2147481793, UniqueId: NULL:DESKTOP-44E40J8-A814C5FA47D47F999905FB9906C0A6D5, Channels: 11, Time: 2025.07.04-15.28.12
-[2025.07.04-15.28.47:715][856]LogNet: UChannel::Close: Sending CloseBunch. ChIndex == 0. Name: [UChannel] ChIndex: 0, Closing: 0 [UNetConnection] RemoteAddr: 127.0.0.1:7777, Name: IpConnection_2147481846, Driver: Name:GameNetDriver Def:GameNetDriver IpNetDriver_2147481909, IsServer: NO, PC: GGwaPlayerController_2147481793, Owner: GGwaPlayerController_2147481793, UniqueId: NULL:DESKTOP-44E40J8-A814C5FA47D47F999905FB9906C0A6D5
-[2025.07.04-15.28.47:715][857]LogExit: Name:GameNetDriver Def:GameNetDriver IpNetDriver_2147481909 shut down
-[2025.07.04-15.28.47:717][857]LogWorld: UWorld::CleanupWorld for ThirdPersonMap, bSessionEnded=true, bCleanupResources=true
-[2025.07.04-15.28.47:718][857]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
-[2025.07.04-15.28.47:718][857]LogWorldPartition: UWorldPartition::Uninitialize : World = /Game/Map/ThirdPersonMap.ThirdPersonMap
-[2025.07.04-15.28.47:718][857]LogAudio: Display: Audio Device unregistered from world 'None'.
-[2025.07.04-15.28.47:718][857]LogUObjectHash: Compacting FUObjectHashTables data took   0.53ms
-[2025.07.04-15.28.47:718][857]LogStreaming: Display: FlushAsyncLoading(106): 1 QueuedPackages, 0 AsyncPackages
-[2025.07.04-15.28.47:718][857]LogGlobalStatus: UEngine::Browse Started Browse: "/Game/Map/LoginLevel?Name=Player"
-[2025.07.04-15.28.47:718][857]LogNet: Browse: /Game/Map/LoginLevel?Name=Player
-[2025.07.04-15.28.47:718][857]LogLoad: LoadMap: /Game/Map/LoginLevel?Name=Player
-[2025.07.04-15.28.47:718][857]LogUObjectHash: Compacting FUObjectHashTables data took   0.33ms
-[2025.07.04-15.28.47:720][857]LogAudio: Display: Audio Device (ID: 1) registered with world 'LoginLevel'.
-[2025.07.04-15.28.47:720][857]LogChaosDD: Creating Chaos Debug Draw Scene for world LoginLevel
-[2025.07.04-15.28.47:720][857]LogLoad: Game class is 'BP_LoginGameMode_C'
-[2025.07.04-15.28.47:721][857]LogWorld: Bringing World /Game/Map/LoginLevel.LoginLevel up for play (max tick rate 0) at 2025.07.05-00.28.12
-[2025.07.04-15.28.47:721][857]LogWorld: Bringing up level for play took: 0.000168
-[2025.07.04-15.28.47:721][857]LogGameMode: FindPlayerStart: PATHS NOT DEFINED or NO PLAYERSTART with positive rating
-[2025.07.04-15.28.47:722][857]LogSpawn: Warning: SpawnActor failed because no class was specified
-[2025.07.04-15.28.47:727][858]LogTemp: Warning: Player Pawn not spawned yet
-[2025.07.04-15.28.47:727][858]LogGameMode: Display: Match State Changed from EnteringMap to WaitingToStart
-[2025.07.04-15.28.47:727][858]LogGameState: Match State Changed from EnteringMap to WaitingToStart
-[2025.07.04-15.28.47:728][858]LogGameMode: Display: Match State Changed from WaitingToStart to InProgress
-[2025.07.04-15.28.47:729][858]LogViewport: Display: Viewport MouseLockMode Changed, DoNotLock -> LockInFullscreen
-[2025.07.04-15.28.47:729][858]LogViewport: Display: Viewport MouseCaptureMode Changed, CaptureDuringMouseDown -> NoCapture
-[2025.07.04-15.28.47:729][858]LogGameState: Match State Changed from WaitingToStart to InProgress
-[2025.07.04-15.28.47:729][858]LogLoad: Took 0.006280 seconds to LoadMap(/Game/Map/LoginLevel)
-[2025.07.04-15.28.47:729][858]LogGlobalStatus: UEngine::LoadMap Load map complete /Game/Map/LoginLevel
-[2025.07.04-15.28.47:729][858]LogGlobalStatus: Warning: UEngine::BroadcastTravelFailure Travel failed, type: ETravelFailure::ClientTravelFailure, reason: "Failed to load package '/Game/ThirdPerson/Maps/ThirdPersonMap'"
-[2025.07.04-15.28.47:730][858]LogNet: Warning: Travel Failure: [ClientTravelFailure]: Failed to load package '/Game/ThirdPerson/Maps/ThirdPersonMap'
-[2025.07.04-15.28.47:731][858]LogNet: TravelFailure: ClientTravelFailure, Reason for Failure: 'Failed to load package '/Game/ThirdPerson/Maps/ThirdPersonMap''
-[2025.07.04-15.28.47:731][858]LogGameMode: Display: Match State Changed from InProgress to Aborted
-[2025.07.04-15.28.47:732][858]LogGameState: Match State Changed from InProgress to Aborted
-[2025.07.04-15.28.47:732][858]LogGameMode: Display: Match State Changed from Aborted to LeavingMap
-[2025.07.04-15.28.47:733][858]LogGameState: Match State Changed from Aborted to LeavingMap
-[2025.07.04-15.28.47:733][858]LogGlobalStatus: UEngine::Browse Started Browse: "/Game/Map/LoginLevel?closed"
-[2025.07.04-15.28.47:735][859]LogNet: Browse: /Game/Map/LoginLevel?closed
-[2025.07.04-15.28.47:738][859]LogNet: Connection failed; returning to Entry
-[2025.07.04-15.28.47:740][859]LogLoad: LoadMap: /Game/Map/LoginLevel?closed
-[2025.07.04-15.28.47:740][859]LogWorld: BeginTearingDown for /Game/Map/LoginLevel
-[2025.07.04-15.28.47:740][859]LogWorld: UWorld::CleanupWorld for LoginLevel, bSessionEnded=true, bCleanupResources=true
-[2025.07.04-15.28.47:740][859]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
-[2025.07.04-15.28.47:742][859]LogAudio: Display: Audio Device unregistered from world 'None'.
-[2025.07.04-15.28.47:743][859]LogUObjectHash: Compacting FUObjectHashTables data took   0.42ms
-[2025.07.04-15.28.47:743][859]LogStreaming: Display: FlushAsyncLoading(109): 1 QueuedPackages, 0 AsyncPackages
-[2025.07.04-15.28.47:743][859]LogAudio: Display: Audio Device (ID: 1) registered with world 'LoginLevel'.
-[2025.07.04-15.28.47:743][859]LogChaosDD: Creating Chaos Debug Draw Scene for world LoginLevel
-[2025.07.04-15.28.47:745][859]LogLoad: Game class is 'BP_LoginGameMode_C'
-[2025.07.04-15.28.47:745][859]LogWorld: Bringing World /Game/Map/LoginLevel.LoginLevel up for play (max tick rate 0) at 2025.07.05-00.28.12
-[2025.07.04-15.28.47:745][860]LogWorld: Bringing up level for play took: 0.000147
-[2025.07.04-15.28.47:749][860]LogGameMode: FindPlayerStart: PATHS NOT DEFINED or NO PLAYERSTART with positive rating
-[2025.07.04-15.28.47:750][860]LogSpawn: Warning: SpawnActor failed because no class was specified
-[2025.07.04-15.28.47:750][860]LogTemp: Warning: Player Pawn not spawned yet
-[2025.07.04-15.28.47:751][860]LogGameMode: Display: Match State Changed from EnteringMap to WaitingToStart
-[2025.07.04-15.28.47:752][860]LogGameState: Match State Changed from EnteringMap to WaitingToStart
-[2025.07.04-15.28.47:752][860]LogGameMode: Display: Match State Changed from WaitingToStart to InProgress
-[2025.07.04-15.28.47:753][860]LogGameState: Match State Changed from WaitingToStart to InProgress
-[2025.07.04-15.28.47:755][860]LogLoad: Took 0.030413 seconds to LoadMap(/Game/Map/LoginLevel)
-[2025.07.04-15.28.47:757][861]LogGlobalStatus: UEngine::LoadMap Load map complete /Game/Map/LoginLevel
-[2025.07.04-15.28.47:759][861]LogUObjectHash: Compacting FUObjectHashTables data took   0.62ms
-[2025.07.04-15.28.47:759][861]LogTemp: Warning: Client is ALIVE. Current GameMode is [ BP_LoginGameMode_C_2147481668 ] running in map [ LoginLevel ]
+[2025.07.25-02.10.55:908][122]LogLinker: Warning: [AssetLog] C:\Users\QWER\Git_indie\MyGame\Content\UI\HUD\BP_GGwaHUD.uasset: CreateExport: Failed to load Class /Script/ClientModule.GGwaHUD as Parent for BlueprintGeneratedClass /Game/UI/HUD/BP_GGwaHUD.BP_GGwaHUD_C - both will fail to load
+[2025.07.25-02.10.55:909][122]LogLinker: Warning: [AssetLog] C:\Users\QWER\Git_indie\MyGame\Content\UI\HUD\BP_GGwaHUD.uasset: CreateExport: Failed to load Class /Script/ClientModule.GGwaHUD as Parent for BlueprintGeneratedClass /Game/UI/HUD/BP_GGwaHUD.BP_GGwaHUD_C - both will fail to load
+[2025.07.25-02.10.55:910][122]LogLinker: Warning: [AssetLog] C:\Users\QWER\Git_indie\MyGame\Content\Blueprints\UIComponent\BP_ClientAuthComponent.uasset: CreateExport: Failed to load Class /Script/ClientModule.ClientAuthComponent as Parent for BlueprintGeneratedClass /Game/Blueprints/UIComponent/BP_ClientAuthComponent.BP_ClientAuthComponent_C - both will fail to load
+[2025.07.25-02.10.55:911][122]LogLinker: Warning: [AssetLog] C:\Users\QWER\Git_indie\MyGame\Content\Blueprints\UIComponent\BP_ClientAuthComponent.uasset: CreateExport: Failed to load Class /Script/ClientModule.ClientAuthComponent as Parent for BlueprintGeneratedClass /Game/Blueprints/UIComponent/BP_ClientAuthComponent.BP_ClientAuthComponent_C - both will fail to load
+[2025.07.25-02.10.55:912][122]LogLinker: Warning: [AssetLog] C:\Users\QWER\Git_indie\MyGame\Content\Blueprints\UIComponent\BP_ClientUIComponent.uasset: CreateExport: Failed to load Class /Script/ClientModule.ClientUIComponent as Parent for BlueprintGeneratedClass /Game/Blueprints/UIComponent/BP_ClientUIComponent.BP_ClientUIComponent_C - both will fail to load
+[2025.07.25-02.10.55:913][122]LogLinker: Warning: [AssetLog] C:\Users\QWER\Git_indie\MyGame\Content\Blueprints\UIComponent\BP_ClientUIComponent.uasset: CreateExport: Failed to load Class /Script/ClientModule.ClientUIComponent as Parent for BlueprintGeneratedClass /Game/Blueprints/UIComponent/BP_ClientUIComponent.BP_ClientUIComponent_C - both will fail to load
+[2025.07.25-02.10.56:187][122]LogLinker: Warning: [AssetLog] C:\Users\QWER\Git_indie\MyGame\Content\UI\HUD\BP_GGwaHUD.uasset: CreateExport: Failed to load Class /Script/ClientModule.GGwaHUD as Parent for BlueprintGeneratedClass /Game/UI/HUD/BP_GGwaHUD.BP_GGwaHUD_C - both will fail to load
+[2025.07.25-02.10.56:188][122]LogLinker: Warning: [AssetLog] C:\Users\QWER\Git_indie\MyGame\Content\UI\HUD\BP_GGwaHUD.uasset: CreateExport: Failed to load Class /Script/ClientModule.GGwaHUD as Parent for BlueprintGeneratedClass /Game/UI/HUD/BP_GGwaHUD.BP_GGwaHUD_C - both will fail to load
+[2025.07.25-02.10.56:608][122]LogSkeletalMesh: Building Skeletal Mesh SKM_Manny...
+[2025.07.25-02.10.56:609][122]LoadErrors: Warning: CreateExport: Failed to load Outer for resource 'DefaultSceneRoot_GEN_VARIABLE': BlueprintGeneratedClass /Game/UI/HUD/BP_GGwaHUD.BP_GGwaHUD_C
+[2025.07.25-02.10.56:610][122]LoadErrors: Warning: CreateExport: Failed to load Outer for resource 'SimpleConstructionScript_0': BlueprintGeneratedClass /Game/UI/HUD/BP_GGwaHUD.BP_GGwaHUD_C
+[2025.07.25-02.10.56:612][122]LoadErrors: Warning: CreateExport: Failed to load Outer for resource 'SCS_Node_0': SimpleConstructionScript /Game/UI/HUD/BP_GGwaHUD.BP_GGwaHUD_C:SimpleConstructionScript_0
+[2025.07.25-02.10.56:628][122]LogChaosDD: Creating Chaos Debug Draw Scene for world ThirdPersonMap
+[2025.07.25-02.10.56:630][122]LogWorldPartition: ULevel::OnLevelLoaded(ThirdPersonMap)(bIsOwningWorldGameWorld=1, bIsOwningWorldPartitioned=1, InitializeForMainWorld=1, InitializeForEditor=0, InitializeForGame=1)
+[2025.07.25-02.10.56:631][122]LogWorldPartition: Display: WorldPartition initialize started...
+[2025.07.25-02.10.56:633][122]LogWorldPartition: UWorldPartition::Initialize : World = /Game/Map/ThirdPersonMap.ThirdPersonMap, World Type = Game, IsMainWorldPartition = 1, Location = V(0), Rotation = R(0), IsEditor = 0, IsGame = 1, IsPIEWorldTravel = 0, IsCooking = 0
+[2025.07.25-02.10.56:634][122]LogWorldPartition: UWorldPartition::Initialize Context : World NetMode = Dedicated Server, IsServer = 1, IsDedicatedServer = 1, IsServerStreamingEnabled = 0, IsServerStreamingOutEnabled = 0, IsUsingMakingVisibleTransaction = 0, IsUsingMakingInvisibleTransaction = 0
+[2025.07.25-02.10.56:638][122]LogWorldPartition: Display: GenerateStreaming for 'ThirdPersonMap' started...
+[2025.07.25-02.10.56:696][122]LogLinker: Warning: [AssetLog] C:\Users\QWER\Git_indie\MyGame\Content\Blueprints\Character\AI\BP_GA_BossAreaAttack.uasset: Resolved import with name 'DA_BossArea' from '/Game/Data/Skill/DA_BossArea' with a different class: import class '/Script/MyGame.SkillDataAsset', package class '/Script/SkillModule.SkillDataAsset'. Resave to fix.
+[2025.07.25-02.10.56:833][122]LogWorldPartition: Display: GenerateStreaming for 'ThirdPersonMap' took 194.698 ms (total: 392.549 ms)
+[2025.07.25-02.10.56:836][122]LogWorldPartition: Display: WorldPartition initialize took 204.835 ms (total: 412.333 ms)
+[2025.07.25-02.10.56:836][122]LogLoad: Game class is 'BP_ServerGameMode_C'
+[2025.07.25-02.10.56:838][122]LogNet: ReplicationDriverClass is null! Not using ReplicationDriver.
+[2025.07.25-02.10.56:838][122]LogNetCore: DDoS detection status: detection enabled: 0 analytics enabled: 0
+[2025.07.25-02.10.56:838][122]LogPushModel: PushModel HandleCreation is now enabled
+[2025.07.25-02.10.56:839][122]LogNet: InitBase GameNetDriver (NetDriverDefinition GameNetDriver) using replication model Generic
+[2025.07.25-02.10.56:840][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsCSV_Replication for metric NumConnections
+[2025.07.25-02.10.56:840][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsCSV_Replication for metric Connections
+[2025.07.25-02.10.56:842][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsCSV_Replication for metric GatherPrioritizeTimeMS
+[2025.07.25-02.10.56:843][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsCSV_Replication for metric InPacketsClientAvg
+[2025.07.25-02.10.56:844][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsCSV_Replication for metric InPacketsClientMax
+[2025.07.25-02.10.56:844][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsCSV_Replication for metric NumberOfActiveActors
+[2025.07.25-02.10.56:845][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsCSV_Replication for metric NumberOfFullyDormantActors
+[2025.07.25-02.10.56:845][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsCSV_Replication for metric NumClientUpdateLevelVisibility
+[2025.07.25-02.10.56:847][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsCSV_Replication for metric NumOpenChannels
+[2025.07.25-02.10.56:847][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsCSV_Replication for metric NumReplicateActorCallsPerConAvg
+[2025.07.25-02.10.56:848][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsCSV_Replication for metric NumSkippedObjectEmptyUpdates
+[2025.07.25-02.10.56:848][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsCSV_Replication for metric NumTickingChannels
+[2025.07.25-02.10.56:849][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsCSV_Replication for metric OutKBytes
+[2025.07.25-02.10.56:849][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsCSV_Replication for metric OutNetGUIDKBytesSec
+[2025.07.25-02.10.56:850][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsCSV_Replication for metric OutPacketsClientAvg
+[2025.07.25-02.10.56:851][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsCSV_Replication for metric OutPacketsClientMax
+[2025.07.25-02.10.56:851][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsCSV_Replication for metric ReplicateActorTimeMS
+[2025.07.25-02.10.56:852][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsCSV_Replication for metric SatConnections
+[2025.07.25-02.10.56:853][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsCSV_Replication for metric ServerReplicateActorTimeMS
+[2025.07.25-02.10.56:853][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsCSV_Replication for metric SharedSerializationPropertyHit
+[2025.07.25-02.10.56:853][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsCSV_Replication for metric SharedSerializationPropertyMiss
+[2025.07.25-02.10.56:854][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsCSV_Replication for metric SharedSerializationRPCHit
+[2025.07.25-02.10.56:854][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsCSV_Replication for metric SharedSerializationRPCMiss
+[2025.07.25-02.10.56:856][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsCSV_Replication for metric OutgoingReliableMessageQueueMaxSize
+[2025.07.25-02.10.56:856][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsCSV_Replication for metric IncomingReliableMessageQueueMaxSize
+[2025.07.25-02.10.56:857][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsCSV_Replication for metric InPacketsPerFrame
+[2025.07.25-02.10.56:858][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsCSV_Replication for metric OutPacketsPerFrame
+[2025.07.25-02.10.56:861][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsCSV_Replication for metric InLostPacketsFoundPerFrame
+[2025.07.25-02.10.56:861][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsCSV_Replication for metric OutLostPacketsFoundPerFrame
+[2025.07.25-02.10.56:863][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsCSV_Replication for metric Ping
+[2025.07.25-02.10.56:863][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsCSV_Replication for metric InRate
+[2025.07.25-02.10.56:864][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsCSV_Replication for metric OutRate
+[2025.07.25-02.10.56:864][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsCSV_Replication for metric AverageJitterInMS
+[2025.07.25-02.10.56:865][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsCSV_Replication for metric InPacketsLost
+[2025.07.25-02.10.56:866][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsCSV_Replication for metric OutPacketsLost
+[2025.07.25-02.10.56:866][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsPerfCounters for metric NumConnections
+[2025.07.25-02.10.56:867][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsPerfCounters for metric AvgPing
+[2025.07.25-02.10.56:868][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsPerfCounters for metric InBunches
+[2025.07.25-02.10.56:870][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsPerfCounters for metric InPackets
+[2025.07.25-02.10.56:870][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsPerfCounters for metric InPacketsClientPerSecondAvg
+[2025.07.25-02.10.56:871][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsPerfCounters for metric InPacketsClientPerSecondMax
+[2025.07.25-02.10.56:871][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsPerfCounters for metric InPacketsClientPerSecondMin
+[2025.07.25-02.10.56:872][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsPerfCounters for metric InPacketsLost
+[2025.07.25-02.10.56:873][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsPerfCounters for metric InRate
+[2025.07.25-02.10.56:874][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsPerfCounters for metric InRateClientAvg
+[2025.07.25-02.10.56:876][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsPerfCounters for metric InRateClientMax
+[2025.07.25-02.10.56:878][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsPerfCounters for metric InRateClientMin
+[2025.07.25-02.10.56:879][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsPerfCounters for metric MaxPacketOverhead
+[2025.07.25-02.10.56:879][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsPerfCounters for metric MaxPing
+[2025.07.25-02.10.56:880][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsPerfCounters for metric MinPing
+[2025.07.25-02.10.56:881][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsPerfCounters for metric NumClients
+[2025.07.25-02.10.56:882][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsPerfCounters for metric Connections
+[2025.07.25-02.10.56:882][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsPerfCounters for metric OutBunches
+[2025.07.25-02.10.56:883][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsPerfCounters for metric OutPackets
+[2025.07.25-02.10.56:883][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsPerfCounters for metric OutPacketsClientPerSecondAvg
+[2025.07.25-02.10.56:884][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsPerfCounters for metric OutPacketsClientPerSecondMax
+[2025.07.25-02.10.56:884][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsPerfCounters for metric OutPacketsClientPerSecondMin
+[2025.07.25-02.10.56:885][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsPerfCounters for metric OutPacketsLost
+[2025.07.25-02.10.56:886][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsPerfCounters for metric OutRate
+[2025.07.25-02.10.56:886][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsPerfCounters for metric OutRateClientAvg
+[2025.07.25-02.10.56:887][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsPerfCounters for metric OutRateClientMax
+[2025.07.25-02.10.56:887][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsPerfCounters for metric OutRateClientMin
+[2025.07.25-02.10.56:888][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsPerfCounters for metric PingBucketInt0
+[2025.07.25-02.10.56:890][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsPerfCounters for metric PingBucketInt1
+[2025.07.25-02.10.56:890][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsPerfCounters for metric PingBucketInt2
+[2025.07.25-02.10.56:890][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsPerfCounters for metric PingBucketInt3
+[2025.07.25-02.10.56:891][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsPerfCounters for metric PingBucketInt4
+[2025.07.25-02.10.56:892][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsPerfCounters for metric PingBucketInt5
+[2025.07.25-02.10.56:893][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsPerfCounters for metric PingBucketInt6
+[2025.07.25-02.10.56:893][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsPerfCounters for metric PingBucketInt7
+[2025.07.25-02.10.56:894][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsPerfCounters for metric ClosedConnectionsDueToReliableBufferOverflow
+[2025.07.25-02.10.56:895][122]LogNet: Registering network metrics listener /Script/Engine.NetworkMetricsPerfCounters for metric AddedConnections
+[2025.07.25-02.10.56:896][122]LogInit: WinSock: Socket queue. Rx: 131072 (config 131072) Tx: 131072 (config 131072)
+[2025.07.25-02.10.56:897][122]LogNet: Created socket for bind address: 0.0.0.0:7777
+[2025.07.25-02.10.56:898][122]PacketHandlerLog: Loaded PacketHandler component: Engine.EngineHandlerComponentFactory (StatelessConnectHandlerComponent)
+[2025.07.25-02.10.56:899][122]LogNet: Name:GameNetDriver Def:GameNetDriver IpNetDriver_2 IpNetDriver listening on port 7777
+[2025.07.25-02.10.56:899][122]LogStaticMesh: Display: Waiting on static mesh StaticMesh /Game/LevelPrototyping/Meshes/SM_QuarterCylinder.SM_QuarterCylinder being ready before playing
+[2025.07.25-02.10.56:900][122]LogStaticMesh: Display: Waiting on static mesh StaticMesh /Game/LevelPrototyping/Meshes/SM_Cube.SM_Cube being ready before playing
+[2025.07.25-02.10.56:901][122]LogStaticMesh: Display: Waiting on static mesh StaticMesh /Game/LevelPrototyping/Meshes/SM_ChamferCube.SM_ChamferCube being ready before playing
+[2025.07.25-02.10.56:901][122]LogStaticMesh: Display: Waiting on static mesh StaticMesh /Game/LevelPrototyping/Meshes/SM_Ramp.SM_Ramp being ready before playing
+[2025.07.25-02.10.56:902][122]LogStaticMesh: Display: Waiting on static mesh StaticMesh /Engine/EngineSky/SM_SkySphere.SM_SkySphere being ready before playing
+[2025.07.25-02.10.56:906][122]LogWorld: Bringing World /Game/Map/ThirdPersonMap.ThirdPersonMap up for play (max tick rate 30) at 2025.07.25-11.10.56
+[2025.07.25-02.10.56:907][122]LogGameMode: Error: Mixing AGameStateBase with AGameMode is not compatible. Change AGameStateBase subclass (GGwaGameState) to derive from AGameState, or make both derive from Base
+[2025.07.25-02.10.56:908][122]LogWorld: Bringing up level for play took: 0.005451
+[2025.07.25-02.10.56:909][122]LogGameMode: Display: Match State Changed from EnteringMap to WaitingToStart
+[2025.07.25-02.10.56:911][122]LogTemp: Error: is not a AI Controller
+[2025.07.25-02.10.56:911][122]PIE: Warning: Mobility of /Game/Map/ThirdPersonMap.ThirdPersonMap:PersistentLevel.BP_BossCharacter_C_0 : CollisionCylinder has to be 'Movable' if you'd like to move.
+[2025.07.25-02.10.56:913][122]LogTemp: Warning: LocalDataBaseLoader is already initialized
+[2025.07.25-02.10.56:913][122]LogTemp: GGwaGameMode::BeginPlay - Creating UI Cache Actor on server
+[2025.07.25-02.10.56:914][122]LogTemp: UIConfigCacheActor::BeginPlay - HasAuthority: true, MapWidgetMap entries: 0
+[2025.07.25-02.10.56:915][122]LogTemp: GGwaGameMode::BeginPlay - UI Cache Actor spawned successfully
+[2025.07.25-02.10.56:915][122]LogTemp: UIConfigCacheActor::InitializeDefaultMappings - Setting up default UI mappings
+[2025.07.25-02.10.56:916][122]LogTemp: UIConfigCacheActor::InitializeDefaultMappings - Completed with 0 mappings
+[2025.07.25-02.10.56:917][122]LogTemp: GGwaGameState::SetCacheActor - Cache actor set on server
+[2025.07.25-02.10.56:918][122]LogTemp: Warning: ShopRepository: Failed to load shop 0: Shop with ID 0 not found
+[2025.07.25-02.10.56:918][122]LogTemp: GGwaGameState::Multicast_InitCacheActor - Received cache actor: UIConfigCacheActor_0
+[2025.07.25-02.10.56:921][122]LogTemp: Warning: GGwaGameState::Multicast_InitCacheActor - UIManagerSubsystem not found
+[2025.07.25-02.10.56:921][122]LogTemp: GGwaGameMode::BeginPlay - Cache Actor assigned to GameState
+[2025.07.25-02.10.56:921][122]LogTemp: GGwaGameState::BeginPlay - HasAuthority: true
+[2025.07.25-02.10.56:922][122]LogLoad: Took 15.439058 seconds to LoadMap(/Game/Map/ThirdPersonMap)
+[2025.07.25-02.10.56:923][122]LogGlobalStatus: UEngine::LoadMap Load map complete /Game/Map/ThirdPersonMap
+[2025.07.25-02.10.56:940][122]LogSkeletalMesh: Display: Waiting for skinned assets to be ready 0/1 (SKM_Manny) ...
+[2025.07.25-02.11.10:456][122]LogSkeletalMeshReduction: Reducing skeletal mesh for LOD 2
+[2025.07.25-02.11.10:456][122]LogSkeletalMeshReduction: Reducing skeletal mesh for LOD 3
+[2025.07.25-02.11.10:456][122]LogSkeletalMesh: Skeletal mesh [/Game/Characters/Mannequins/Meshes/SKM_Manny.SKM_Manny]: The derived data key is different after the build. Save the asset to avoid rebuilding it everytime the editor load it.
+[2025.07.25-02.11.10:457][122]LogSkeletalMesh: Built Skeletal Mesh [13.81s] /Game/Characters/Mannequins/Meshes/SKM_Manny.SKM_Manny
+[2025.07.25-02.11.10:458][122]LogUObjectHash: Compacting FUObjectHashTables data took   1.79ms
+[2025.07.25-02.11.10:460][122]LogNet: UNetDriver::TickDispatch: Very long time between ticks. DeltaTime: 9.78, Realtime: 0.00. IpNetDriver_2
+[2025.07.25-02.11.10:460][122]LogNet: NotifyAcceptingConnection accepted from: 127.0.0.1:53619
+[2025.07.25-02.11.10:461][122]LogHandshake: SendConnectChallenge. Timestamp: 9.777261, Cookie: 040035211241029024121251093087211196031123075145145234064254
+[2025.07.25-02.11.10:462][122]LogNet: NotifyAcceptingConnection accepted from: 127.0.0.1:53619
+[2025.07.25-02.11.10:462][122]LogHandshake: SendConnectChallenge. Timestamp: 9.777261, Cookie: 040035211241029024121251093087211196031123075145145234064254
+[2025.07.25-02.11.10:463][122]LogNet: NotifyAcceptingConnection accepted from: 127.0.0.1:53619
+[2025.07.25-02.11.10:464][122]LogHandshake: SendConnectChallenge. Timestamp: 9.777261, Cookie: 040035211241029024121251093087211196031123075145145234064254
+[2025.07.25-02.11.10:464][122]LogNet: NotifyAcceptingConnection accepted from: 127.0.0.1:53619
+[2025.07.25-02.11.10:465][122]LogHandshake: SendConnectChallenge. Timestamp: 9.777261, Cookie: 040035211241029024121251093087211196031123075145145234064254
+[2025.07.25-02.11.10:466][122]LogHandshake: SendConnectChallenge. Timestamp: 9.777261, Cookie: 040035211241029024121251093087211196031123075145145234064254
+[2025.07.25-02.11.10:467][122]LogHandshake: SendConnectChallenge. Timestamp: 9.777261, Cookie: 040035211241029024121251093087211196031123075145145234064254
+[2025.07.25-02.11.10:468][122]LogHandshake: SendConnectChallenge. Timestamp: 9.777261, Cookie: 040035211241029024121251093087211196031123075145145234064254
+[2025.07.25-02.11.10:469][122]LogHandshake: SendConnectChallenge. Timestamp: 9.777261, Cookie: 040035211241029024121251093087211196031123075145145234064254
+[2025.07.25-02.11.10:470][122]LogHandshake: SendConnectChallenge. Timestamp: 9.777261, Cookie: 040035211241029024121251093087211196031123075145145234064254
+[2025.07.25-02.11.10:471][122]LogHandshake: SendConnectChallenge. Timestamp: 9.777261, Cookie: 040035211241029024121251093087211196031123075145145234064254
+[2025.07.25-02.11.10:471][122]LogHandshake: SendConnectChallenge. Timestamp: 9.777261, Cookie: 040035211241029024121251093087211196031123075145145234064254
+[2025.07.25-02.11.10:473][122]PIE: Warning: Mobility of /Game/Map/ThirdPersonMap.ThirdPersonMap:PersistentLevel.BP_BossCharacter_C_0 : CollisionCylinder has to be 'Movable' if you'd like to move it with CharacterMovementComponent.
+[2025.07.25-02.11.10:475][122]LogAutomationController: Ignoring very large delta of 28.99 seconds in calls to FAutomationControllerManager::Tick() and not penalizing unresponsive tests
+[2025.07.25-02.11.10:489][123]LogNet: UNetDriver::TickDispatch: Very long time between ticks. DeltaTime: 29.00, Realtime: 0.00. IpNetDriver_2
+[2025.07.25-02.11.10:490][123]LogNet: NotifyAcceptingConnection accepted aggregation: 127.0.0.1:53619 (11)
+[2025.07.25-02.11.10:777][132]LogNet: NotifyAcceptingConnection accepted from: 127.0.0.1:53619
+[2025.07.25-02.11.10:777][132]LogHandshake: SendChallengeAck. InCookie: 040035211241029024121251093087211196031123075145145234064254
+[2025.07.25-02.11.10:778][132]LogNet: Server accepting post-challenge connection from: 127.0.0.1:53619
+[2025.07.25-02.11.10:779][132]LogNet: IpConnection_1 setting maximum channels to: 32767
+[2025.07.25-02.11.10:780][132]PacketHandlerLog: Loaded PacketHandler component: Engine.EngineHandlerComponentFactory (StatelessConnectHandlerComponent)
+[2025.07.25-02.11.10:781][132]LogNet: NotifyAcceptedConnection: Name: ThirdPersonMap, TimeStamp: 07/25/25 11:11:10, [UNetConnection] RemoteAddr: 127.0.0.1:53619, Name: IpConnection_1, Driver: Name:GameNetDriver Def:GameNetDriver IpNetDriver_2, IsServer: YES, PC: NULL, Owner: NULL, UniqueId: INVALID
+[2025.07.25-02.11.10:782][132]LogNet: AddClientConnection: Added client connection: [UNetConnection] RemoteAddr: 127.0.0.1:53619, Name: IpConnection_1, Driver: Name:GameNetDriver Def:GameNetDriver IpNetDriver_2, IsServer: YES, PC: NULL, Owner: NULL, UniqueId: INVALID
+[2025.07.25-02.11.10:783][132]LogHandshake: Received unexpected post-connect handshake packet - resending ack for LastChallengeSuccessAddress 127.0.0.1:53619 and LastCookie 040035211241029024121251093087211196031123075145145234064254.
+[2025.07.25-02.11.10:784][132]LogHandshake: SendChallengeAck. InCookie: 040035211241029024121251093087211196031123075145145234064254
+[2025.07.25-02.11.10:784][132]LogHandshake: Received unexpected post-connect handshake packet - resending ack for LastChallengeSuccessAddress 127.0.0.1:53619 and LastCookie 040035211241029024121251093087211196031123075145145234064254.
+[2025.07.25-02.11.10:785][132]LogHandshake: SendChallengeAck. InCookie: 040035211241029024121251093087211196031123075145145234064254
+[2025.07.25-02.11.10:786][132]LogHandshake: Received unexpected post-connect handshake packet - resending ack for LastChallengeSuccessAddress 127.0.0.1:53619 and LastCookie 040035211241029024121251093087211196031123075145145234064254.
+[2025.07.25-02.11.10:787][132]LogHandshake: SendChallengeAck. InCookie: 040035211241029024121251093087211196031123075145145234064254
+[2025.07.25-02.11.10:787][132]LogHandshake: Received unexpected post-connect handshake packet - resending ack for LastChallengeSuccessAddress 127.0.0.1:53619 and LastCookie 040035211241029024121251093087211196031123075145145234064254.
+[2025.07.25-02.11.10:788][132]LogHandshake: SendChallengeAck. InCookie: 040035211241029024121251093087211196031123075145145234064254
+[2025.07.25-02.11.10:789][132]LogHandshake: Received unexpected post-connect handshake packet - resending ack for LastChallengeSuccessAddress 127.0.0.1:53619 and LastCookie 040035211241029024121251093087211196031123075145145234064254.
+[2025.07.25-02.11.10:789][132]LogHandshake: SendChallengeAck. InCookie: 040035211241029024121251093087211196031123075145145234064254
+[2025.07.25-02.11.10:790][132]LogHandshake: Received unexpected post-connect handshake packet - resending ack for LastChallengeSuccessAddress 127.0.0.1:53619 and LastCookie 040035211241029024121251093087211196031123075145145234064254.
+[2025.07.25-02.11.10:791][132]LogHandshake: SendChallengeAck. InCookie: 040035211241029024121251093087211196031123075145145234064254
+[2025.07.25-02.11.10:792][132]LogHandshake: Received unexpected post-connect handshake packet - resending ack for LastChallengeSuccessAddress 127.0.0.1:53619 and LastCookie 040035211241029024121251093087211196031123075145145234064254.
+[2025.07.25-02.11.10:792][132]LogHandshake: SendChallengeAck. InCookie: 040035211241029024121251093087211196031123075145145234064254
+[2025.07.25-02.11.10:794][132]LogHandshake: Received unexpected post-connect handshake packet - resending ack for LastChallengeSuccessAddress 127.0.0.1:53619 and LastCookie 040035211241029024121251093087211196031123075145145234064254.
+[2025.07.25-02.11.10:796][132]LogHandshake: SendChallengeAck. InCookie: 040035211241029024121251093087211196031123075145145234064254
+[2025.07.25-02.11.10:796][132]LogHandshake: Received unexpected post-connect handshake packet - resending ack for LastChallengeSuccessAddress 127.0.0.1:53619 and LastCookie 040035211241029024121251093087211196031123075145145234064254.
+[2025.07.25-02.11.10:797][132]LogHandshake: SendChallengeAck. InCookie: 040035211241029024121251093087211196031123075145145234064254
+[2025.07.25-02.11.10:798][132]LogHandshake: Received unexpected post-connect handshake packet - resending ack for LastChallengeSuccessAddress 127.0.0.1:53619 and LastCookie 040035211241029024121251093087211196031123075145145234064254.
+[2025.07.25-02.11.10:799][132]LogHandshake: SendChallengeAck. InCookie: 040035211241029024121251093087211196031123075145145234064254
+[2025.07.25-02.11.11:109][142]LogNet: NotifyAcceptingChannel Control 0 server World /Game/Map/ThirdPersonMap.ThirdPersonMap: Accepted
+[2025.07.25-02.11.11:109][142]LogNet: Remote platform little endian=1
+[2025.07.25-02.11.11:110][142]LogNet: This platform little endian=1
+[2025.07.25-02.11.11:442][152]LogNet: Login request: ?Name=DESKTOP-44E40J8-9E839B534E67F26C41CCD2B53888B11F userId: NULL:DESKTOP-44E40J8-9E839B534E67F26C41CCD2B53888B11F platform: NULL
+[2025.07.25-02.11.11:443][152]LogTemp: Warning: [Game Server] PreLogin attempt
+[2025.07.25-02.11.11:444][152]LogTemp: Warning: [Game Server] Connection from address: 127.0.0.1
+[2025.07.25-02.11.11:445][152]LogTemp: Warning: [Game Server] Options: ?Name=DESKTOP-44E40J8-9E839B534E67F26C41CCD2B53888B11F?SplitscreenCount=1
+[2025.07.25-02.11.11:446][152]LogTemp: Warning: [Game Server] Provided Token: ...
+[2025.07.25-02.11.11:446][152]LogTemp: Warning: [Game Server] Provided UserId:
+[2025.07.25-02.11.11:447][152]LogTemp: Warning: [Game Server] Development Mode: Allowing connection without token
+[2025.07.25-02.11.11:575][156]LogTemp: Warning: Server is ALIVE. Current GameMode is [ BP_ServerGameMode_C_0 ] running in map [ ThirdPersonMap ]
+[2025.07.25-02.11.11:774][162]LogNet: Client netspeed is 100000
+[2025.07.25-02.11.11:841][164]LogNet: Join request: /Game/Map/ThirdPersonMap?Name=DESKTOP-44E40J8-9E839B534E67F26C41CCD2B53888B11F?SplitscreenCount=1
+[2025.07.25-02.11.11:843][164]LogTemp: Warning: GGwaPlayerController::BeginPlay - IsServer: 1 | IsLocalPlayerController: 0
+[2025.07.25-02.11.11:843][164]LogGameMode: Display: Match State Changed from WaitingToStart to InProgress
+[2025.07.25-02.11.11:850][164]LogTemp: Warning: Ability: Default__GA_BPMoveAbility_C | InputID: 0
+[2025.07.25-02.11.11:853][164]LogTemp: Warning: Ability: Default__BP_GA_Skill1_C | InputID: 1
+[2025.07.25-02.11.11:853][164]LogTemp: Warning: Ability: Default__BP_GA_Skill2_C | InputID: 2
+[2025.07.25-02.11.11:854][164]LogTemp: Warning: Ability: Default__BP_GA_Skill3_C | InputID: 3
+[2025.07.25-02.11.11:855][164]LogTemp: Warning: Ability: Default__BP_GA_Skill4_C | InputID: 4
+[2025.07.25-02.11.11:856][164]LogTemp: Warning: Ability: Default__BP_GA_Skill5_C | InputID: 5
+[2025.07.25-02.11.11:857][164]LogTemp: Warning: Ability: Default__BP_GA_Skill6_C | InputID: 6
+[2025.07.25-02.11.11:858][164]LogTemp: Warning: Ability: Default__BP_GA_Skill7_C | InputID: 7
+[2025.07.25-02.11.11:858][164]LogTemp: Warning: Ability: Default__BP_GA_Skill8_C | InputID: 8
+[2025.07.25-02.11.11:860][164]LogTemp: PlayerState found: DESKTOP-44E40J8-9E83
+[2025.07.25-02.11.11:860][164]LogTemp: Warning: Player already has Pawn
+[2025.07.25-02.11.11:860][164]LogTemp: Warning: === Player Data Initialization Pipeline Start ===
+[2025.07.25-02.11.11:861][164]LogTemp: Warning: [AUTH] Non-numeric UserId 'dev_user_3888B11F' mapped to 722
+[2025.07.25-02.11.11:861][164]LogTemp: [SUCCESS] Player DESKTOP-44E40J8-9E83 authenticated with UserId: dev_user_3888B11F (Numeric: 722)
+[2025.07.25-02.11.11:861][164]LogTemp: === Initializing DDD Systems for Player DESKTOP-44E40J8-9E83 (UserId: 722) ===
+[2025.07.25-02.11.11:862][164]LogTemp: [INVENTORY] Initializing inventory system...
+[2025.07.25-02.11.11:863][164]LogTemp: InventorySubsystem: Starting inventory load transaction - Player: 00000000000000000000000000000000
+[2025.07.25-02.11.11:864][164]LogTemp: [INVENTORY] ✓ Inventory loading initiated
+[2025.07.25-02.11.11:865][164]LogTemp: [SKILL] Initializing skill system...
+[2025.07.25-02.11.11:865][164]LogTemp: SkillSubsystem: Starting skill load transaction - Player: 00000000000000000000000000000000, UserId: 722
+[2025.07.25-02.11.11:866][164]LogTemp: [SKILL] ✓ Skill loading initiated for UserId: 722
+[2025.07.25-02.11.11:866][164]LogTemp: [SHOP] Initializing shop system...
+[2025.07.25-02.11.11:866][164]LogTemp: [SHOP] ✓ Shop system ready
+[2025.07.25-02.11.11:872][164]LogTemp: LoadSkillMasterData: Loaded 10 skill master entries
+[2025.07.25-02.11.11:873][164]LogTemp: [EQUIPMENT] Equipment system initialization deferred (not implemented)
+[2025.07.25-02.11.11:873][164]LogTemp: [CHARACTER] Character system initialization deferred (not implemented)
+[2025.07.25-02.11.11:874][164]LogTemp: === DDD Systems Initialization Completed ===
+[2025.07.25-02.11.11:875][164]LogTemp: Warning: === Player Data Initialization Pipeline Completed ===
+[2025.07.25-02.11.11:875][164]LogNet: Join succeeded: DESKTOP-44E40J8-9E83
+[2025.07.25-02.11.11:877][164]LogTemp: Error: Skill operation failed for player DESKTOP-44E40J8-9E83: Failed to load skills: Slots=SlotKey cannot be empty, Master=OK
+[2025.07.25-02.11.14:582][246]LogTemp: Warning: Server is ALIVE. Current GameMode is [ BP_ServerGameMode_C_0 ] running in map [ ThirdPersonMap ]
+[2025.07.25-02.11.17:615][337]LogTemp: Warning: Server is ALIVE. Current GameMode is [ BP_ServerGameMode_C_0 ] running in map [ ThirdPersonMap ]
+[2025.07.25-02.11.20:633][427]LogTemp: Warning: Server is ALIVE. Current GameMode is [ BP_ServerGameMode_C_0 ] running in map [ ThirdPersonMap ]
+[2025.07.25-02.11.23:641][517]LogTemp: Warning: Server is ALIVE. Current GameMode is [ BP_ServerGameMode_C_0 ] running in map [ ThirdPersonMap ]
+[2025.07.25-02.11.26:642][607]LogTemp: Warning: Server is ALIVE. Current GameMode is [ BP_ServerGameMode_C_0 ] running in map [ ThirdPersonMap ]
+[2025.07.25-02.11.29:648][697]LogTemp: Warning: Server is ALIVE. Current GameMode is [ BP_ServerGameMode_C_0 ] running in map [ ThirdPersonMap ]
+[2025.07.25-02.11.32:089][770]LogNet: NotifyAcceptingConnection accepted from: 127.0.0.1:64688
+[2025.07.25-02.11.32:089][770]LogHandshake: SendConnectChallenge. Timestamp: 60.385481, Cookie: 182225167137037018095196052068220246164064036255129108006180
+[2025.07.25-02.11.32:122][771]LogNet: NotifyAcceptingConnection accepted from: 127.0.0.1:64688
+[2025.07.25-02.11.32:122][771]LogHandshake: SendChallengeAck. InCookie: 182225167137037018095196052068220246164064036255129108006180
+[2025.07.25-02.11.32:124][771]LogNet: Server accepting post-challenge connection from: 127.0.0.1:64688
+[2025.07.25-02.11.32:124][771]LogNet: IpConnection_2 setting maximum channels to: 32767
+[2025.07.25-02.11.32:125][771]PacketHandlerLog: Loaded PacketHandler component: Engine.EngineHandlerComponentFactory (StatelessConnectHandlerComponent)
+[2025.07.25-02.11.32:126][771]LogNet: NotifyAcceptedConnection: Name: ThirdPersonMap, TimeStamp: 07/25/25 11:11:32, [UNetConnection] RemoteAddr: 127.0.0.1:64688, Name: IpConnection_2, Driver: Name:GameNetDriver Def:GameNetDriver IpNetDriver_2, IsServer: YES, PC: NULL, Owner: NULL, UniqueId: INVALID
+[2025.07.25-02.11.32:126][771]LogNet: AddClientConnection: Added client connection: [UNetConnection] RemoteAddr: 127.0.0.1:64688, Name: IpConnection_2, Driver: Name:GameNetDriver Def:GameNetDriver IpNetDriver_2, IsServer: YES, PC: NULL, Owner: NULL, UniqueId: INVALID
+[2025.07.25-02.11.32:155][772]LogNet: NotifyAcceptingChannel Control 0 server World /Game/Map/ThirdPersonMap.ThirdPersonMap: Accepted
+[2025.07.25-02.11.32:155][772]LogNet: Remote platform little endian=1
+[2025.07.25-02.11.32:156][772]LogNet: This platform little endian=1
+[2025.07.25-02.11.32:188][773]LogNet: Login request: ?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJhNWNmNGJhZC1kMTQ4LTQ2ZmUtODJjYS04YjM5OGJjMWUzOWMiLCJ1c2VybmFtZSI6InRlc3QxIiwiaWF0IjoxNzUzNDA5NDkxLCJleHAiOjE3NTM0MTMwOTF9.5BQ0qOhKpNR0YizznqIgXRpTtegtRxH2nL_jgkYlISM&userid=a5cf4bad-d148-46fe-82ca-8b398bc1e39c?Name=DESKTOP-44E40J8-B0B005764D81E13AE41BFE8CCAB3E82F userId: NULL:DESKTOP-44E40J8-B0B005764D81E13AE41BFE8CCAB3E82F platform: NULL
+[2025.07.25-02.11.32:190][773]LogTemp: Warning: [Game Server] PreLogin attempt
+[2025.07.25-02.11.32:190][773]LogTemp: Warning: [Game Server] Connection from address: 127.0.0.1
+[2025.07.25-02.11.32:190][773]LogTemp: Warning: [Game Server] Options: ?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJhNWNmNGJhZC1kMTQ4LTQ2ZmUtODJjYS04YjM5OGJjMWUzOWMiLCJ1c2VybmFtZSI6InRlc3QxIiwiaWF0IjoxNzUzNDA5NDkxLCJleHAiOjE3NTM0MTMwOTF9.5BQ0qOhKpNR0YizznqIgXRpTtegtRxH2nL_jgkYlISM&userid=a5cf4bad-d148-46fe-82ca-8b398bc1e39c?Name=DESKTOP-44E40J8-B0B005764D81E13AE41BFE8CCAB3E82F?SplitscreenCount=1
+[2025.07.25-02.11.32:192][773]LogTemp: Warning: [Game Server] Provided Token: eyJhbGciOiJIUzI1NiIs...
+[2025.07.25-02.11.32:192][773]LogTemp: Warning: [Game Server] Provided UserId:
+[2025.07.25-02.11.32:193][773]LogTemp: [Game Server] Starting async token verification for user:
+[2025.07.25-02.11.32:193][773]LogTemp: Warning: [Game Server] Development Mode: AuthVerificationService not available, allowing connection
+[2025.07.25-02.11.32:653][787]LogTemp: Warning: Server is ALIVE. Current GameMode is [ BP_ServerGameMode_C_0 ] running in map [ ThirdPersonMap ]
+[2025.07.25-02.11.32:986][797]LogNet: Client netspeed is 100000
+[2025.07.25-02.11.32:986][797]LogNet: Join request: /Game/Map/ThirdPersonMap?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJhNWNmNGJhZC1kMTQ4LTQ2ZmUtODJjYS04YjM5OGJjMWUzOWMiLCJ1c2VybmFtZSI6InRlc3QxIiwiaWF0IjoxNzUzNDA5NDkxLCJleHAiOjE3NTM0MTMwOTF9.5BQ0qOhKpNR0YizznqIgXRpTtegtRxH2nL_jgkYlISM&userid=a5cf4bad-d148-46fe-82ca-8b398bc1e39c?Name=DESKTOP-44E40J8-B0B005764D81E13AE41BFE8CCAB3E82F?SplitscreenCount=1
+[2025.07.25-02.11.32:989][797]LogTemp: Warning: GGwaPlayerController::BeginPlay - IsServer: 1 | IsLocalPlayerController: 0
+[2025.07.25-02.11.32:994][797]LogTemp: Warning: Ability: Default__GA_BPMoveAbility_C | InputID: 0
+[2025.07.25-02.11.32:995][797]LogTemp: Warning: Ability: Default__BP_GA_Skill1_C | InputID: 1
+[2025.07.25-02.11.32:996][797]LogTemp: Warning: Ability: Default__BP_GA_Skill2_C | InputID: 2
+[2025.07.25-02.11.32:997][797]LogTemp: Warning: Ability: Default__BP_GA_Skill3_C | InputID: 3
+[2025.07.25-02.11.32:999][797]LogTemp: Warning: Ability: Default__BP_GA_Skill4_C | InputID: 4
+[2025.07.25-02.11.33:000][797]LogTemp: Warning: Ability: Default__BP_GA_Skill5_C | InputID: 5
+[2025.07.25-02.11.33:000][797]LogTemp: Warning: Ability: Default__BP_GA_Skill6_C | InputID: 6
+[2025.07.25-02.11.33:001][797]LogTemp: Warning: Ability: Default__BP_GA_Skill7_C | InputID: 7
+[2025.07.25-02.11.33:002][797]LogTemp: Warning: Ability: Default__BP_GA_Skill8_C | InputID: 8
+[2025.07.25-02.11.33:002][797]LogTemp: PlayerState found: DESKTOP-44E40J8-B0B0
+[2025.07.25-02.11.33:003][797]LogTemp: Warning: Player already has Pawn
+[2025.07.25-02.11.33:004][797]LogTemp: Warning: === Player Data Initialization Pipeline Start ===
+[2025.07.25-02.11.33:006][797]LogTemp: Warning: [AUTH] Non-numeric UserId 'dev_user_CAB3E82F' mapped to 876
+[2025.07.25-02.11.33:009][797]LogTemp: [SUCCESS] Player DESKTOP-44E40J8-B0B0 authenticated with UserId: dev_user_CAB3E82F (Numeric: 876)
+[2025.07.25-02.11.33:010][797]LogTemp: === Initializing DDD Systems for Player DESKTOP-44E40J8-B0B0 (UserId: 876) ===
+[2025.07.25-02.11.33:011][797]LogTemp: [INVENTORY] Initializing inventory system...
+[2025.07.25-02.11.33:012][797]LogTemp: InventorySubsystem: Starting inventory load transaction - Player: 00000000000000000000000000000000
+[2025.07.25-02.11.33:013][797]LogTemp: [INVENTORY] ✓ Inventory loading initiated
+[2025.07.25-02.11.33:014][797]LogTemp: [SKILL] Initializing skill system...
+[2025.07.25-02.11.33:014][797]LogTemp: SkillSubsystem: Starting skill load transaction - Player: 00000000000000000000000000000000, UserId: 876
+[2025.07.25-02.11.33:014][797]LogTemp: [SKILL] ✓ Skill loading initiated for UserId: 876
+[2025.07.25-02.11.33:015][797]LogTemp: [SHOP] Initializing shop system...
+[2025.07.25-02.11.33:015][797]LogTemp: [SHOP] ✓ Shop system ready
+[2025.07.25-02.11.33:015][797]LogTemp: [EQUIPMENT] Equipment system initialization deferred (not implemented)
+[2025.07.25-02.11.33:016][797]LogTemp: [CHARACTER] Character system initialization deferred (not implemented)
+[2025.07.25-02.11.33:016][797]LogTemp: === DDD Systems Initialization Completed ===
+[2025.07.25-02.11.33:017][797]LogTemp: Warning: === Player Data Initialization Pipeline Completed ===
+[2025.07.25-02.11.33:017][797]LogNet: Join succeeded: DESKTOP-44E40J8-B0B0
+[2025.07.25-02.11.33:121][801]LogTemp: LoadSkillMasterData: Loaded 10 skill master entries
+[2025.07.25-02.11.33:121][801]LogTemp: Error: Skill operation failed for player DESKTOP-44E40J8-B0B0: Failed to load skills: Slots=SlotKey cannot be empty, Master=OK
+[2025.07.25-02.11.33:126][801]LogTemp: Error: Skill operation failed for player DESKTOP-44E40J8-9E83: Failed to load skills: Slots=SlotKey cannot be empty, Master=OK
+[2025.07.25-02.11.35:667][877]LogTemp: Warning: Server is ALIVE. Current GameMode is [ BP_ServerGameMode_C_0 ] running in map [ ThirdPersonMap ]

@@ -180,7 +180,7 @@ struct DATABASEMODULE_API FSkillSlotDatabaseDTO
 
 	// Primary Keys (SQL user_skill_slots 테이블 기준)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillDTO")
-	int32 UserId = 0;                    // user_skill_slots.user_id
+	FString UserId;                    // user_skill_slots.user_id (CHAR(36) UUID)
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillDTO")
 	FString SlotKey;                   // user_skill_slots.slot_key (Q, W, E, R 등)
@@ -207,7 +207,7 @@ struct DATABASEMODULE_API FSkillSlotDatabaseDTO
 	FDateTime UpdatedAt;
 
 	FSkillSlotDatabaseDTO()
-		: UserId(0), SkillId(0), SlotIndex(-1), SkillLevel(1)
+		: UserId(TEXT("")), SkillId(0), SlotIndex(-1), SkillLevel(1)
 	{
 		LastUsedTime = FDateTime::MinValue();
 		CreatedAt = FDateTime::Now();
@@ -216,7 +216,7 @@ struct DATABASEMODULE_API FSkillSlotDatabaseDTO
 
 	bool IsValid() const
 	{
-		return UserId > 0 && !SlotKey.IsEmpty() && SlotIndex >= 0;
+		return !UserId.IsEmpty() && !SlotKey.IsEmpty() && SlotIndex >= 0;
 	}
 };
 
@@ -819,7 +819,7 @@ public:
 	 * @param SlotKey The slot key (e.g., "ActionBar", "QuickSlot")
 	 * @return Task that returns array of skill slot DTOs
 	 */
-	UE::Tasks::TTask<TArray<FSkillSlotDatabaseDTO>> LoadUserSkillSlots(int32 UserId, const FString& SlotKey);
+	UE::Tasks::TTask<TArray<FSkillSlotDatabaseDTO>> LoadUserSkillSlots(const FString& UserId, const FString& SlotKey);
 
 	/**
 	 * Save user skill slots using 3-layer mapping architecture
@@ -851,7 +851,7 @@ public:
 	 * @return Task that completes when update is done
 	 */
 	UE::Tasks::TTask<bool> UpdateSkillSlotCooldown(
-		int32 UserId, 
+		const FString& UserId, 
 		const FString& SlotKey, 
 		int32 SlotIndex, 
 		const FDateTime& LastUsedTime
@@ -863,7 +863,7 @@ public:
 	 * @param SlotKey The slot key to clear (empty for all slot keys)
 	 * @return Task that completes when slots are cleared
 	 */
-	UE::Tasks::TTask<bool> ClearUserSkillSlots(int32 UserId, const FString& SlotKey = TEXT(""));
+	UE::Tasks::TTask<bool> ClearUserSkillSlots(const FString& UserId, const FString& SlotKey = TEXT(""));
 
 	/**
 	 * Get skill usage statistics for analytics
@@ -874,7 +874,7 @@ public:
 	 * @return Task that returns usage statistics
 	 */
 	UE::Tasks::TTask<TMap<int32, int32>> GetSkillUsageStatistics(
-		int32 UserId = 0,
+		const FString& UserId = TEXT(""),
 		int32 SkillId = 0,
 		const FDateTime& StartDate = FDateTime::MinValue(),
 		const FDateTime& EndDate = FDateTime::MaxValue()

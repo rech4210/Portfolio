@@ -31,7 +31,7 @@ void UClientAuthComponent::InitializeAuth()
 		return;
 	}
 	
-	if (!OwnerController || !OwnerController->IsLocalController()){
+	if (!OwnerController || !OwnerController->IsLocalPlayerController()){
 		return;
 	}
 
@@ -126,7 +126,7 @@ void UClientAuthComponent::OnServerLoginResult(bool bSuccess, const FString& Tok
 	// }
 }
 
-IClientManagerInterface* UClientAuthComponent::GetClientSubSystem() {
+TScriptInterface<IClientManagerInterface> UClientAuthComponent::GetClientSubSystem() {
 	if (auto UISubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UUIManagerSubsystem>()) {
 		return UISubsystem;
 	}

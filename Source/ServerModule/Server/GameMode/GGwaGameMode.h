@@ -11,6 +11,7 @@ class UBattleFlowController;
 class UDatabaseManager;
 class IInventoryRepositoryInterface;
 class IShopRepositoryInterface;
+class AGGwaPlayerState;
 
 UCLASS()
 class SERVERMODULE_API AGGwaGameMode : public ABaseGameMode
@@ -28,6 +29,19 @@ public:
 	void OnCharacterDataLoaded(const TOptional<struct FCharacterData>& CharacterData, APlayerController* NewPlayer);
 	virtual void Logout(AController* Exiting) override;
 	void OnCharacterDataSaved(bool bSuccess);
+
+private:
+	// ============================================================================
+	// DDD SYSTEM INITIALIZATION
+	// ============================================================================
+	
+	/**
+	 * Initialize all Domain-Driven Design systems for a newly connected player
+	 * @param NewPlayer The player controller that just connected
+	 * @param PlayerState The player's state object
+	 * @param UserId The authenticated user ID from cached credentials
+	 */
+	void InitializePlayerDDDSystems(APlayerController* NewPlayer, class AGGwaPlayerState* PlayerState, int32 UserId);
 
 protected:
 	// BaseGameMode의 훅을 이용해 서버 매니저 초기화

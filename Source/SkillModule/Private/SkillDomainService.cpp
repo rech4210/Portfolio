@@ -9,6 +9,7 @@
 #include "Components/SkillComponent.h"
 #include "GameFramework/PlayerState.h"
 #include "Interface/PlayerIdentityInterface.h"
+#include "Utill/LocalDataBaseLoader.h"
 
 USkillDomainService::USkillDomainService()
 {
@@ -77,7 +78,7 @@ void USkillDomainService::LoadPlayerSkills(TScriptInterface<IPlayerIdentityInter
 	}
 
 	// Load all skill slots and master data (no SlotKey filter)
-	auto LoadSlotsTask = Repository->LoadUserSkillSlots(UserId, FString()); // Empty SlotKey loads all slots
+	auto LoadSlotsTask = Repository->LoadUserSkillSlots(FString::FromInt(UserId), FString()); // Empty SlotKey loads all slots
 	auto LoadMasterTask = Repository->LoadSkillMasterData();
 
 	// Execute both tasks asynchronously
@@ -93,12 +94,56 @@ void USkillDomainService::LoadPlayerSkills(TScriptInterface<IPlayerIdentityInter
 				USkillComponent* SkillComponent = PlayerState->FindComponentByClass<USkillComponent>();
 				if (SkillComponent)
 				{
-					// Use SkillComponent's 3-layer mapping
-					SkillComponent->BuildSkillSlotsFromMappers(SlotsResult.SkillSlots, TArray<USkillDataAsset*>());
+					// ============================================================================
+					// 3-LAYER MAPPING: Database → DTO → Asset → Domain Model → Entity
+					// ============================================================================
+					
+					TArray<USkillDataAsset*> SkillDataAssets;
+					
+					// Extract unique skill IDs from database results
+					TSet<int32> UniqueSkillIDs;
+					for (const auto& SlotDTO : SlotsResult.SkillSlots)
+					{
+						if (SlotDTO.SkillId > 0) // Valid skill ID
+						{
+							UniqueSkillIDs.Add(SlotDTO.SkillId);
+						}
+					}
+					
+					// Load SkillDataAssets using Asset Manager for each unique skill ID
+					for (int32 SkillID : UniqueSkillIDs)
+					{
+						FPrimaryAssetId PrimaryAssetId;
+						if (ULocalDataBaseLoader::CheckPrimaryAssetId(SkillID, PrimaryAssetId))
+						{
+							USkillDataAsset* SkillDataAsset = ULocalDataBaseLoader::GetDataFromAssetId<USkillDataAsset>(PrimaryAssetId);
+							if (SkillDataAsset)
+							{
+								SkillDataAssets.Add(SkillDataAsset);
+								UE_LOG(LogTemp, Log, TEXT("[SKILL] Loaded SkillDataAsset for SkillID: %d, Name: %s"), 
+									SkillID, *SkillDataAsset->GetName());
+							}
+							else
+							{
+								UE_LOG(LogTemp, Warning, TEXT("[SKILL] Failed to load SkillDataAsset for SkillID: %d"), SkillID);
+							}
+						}
+						else
+						{
+							UE_LOG(LogTemp, Warning, TEXT("[SKILL] Invalid PrimaryAssetId for SkillID: %d"), SkillID);
+						}
+					}
+					
+					// Use SkillComponent's 3-layer mapping to build skill slots
+					// This will handle: DTO → VO (SkillDataAsset) → DomainModel → Entity mapping
+					SkillComponent->BuildSkillSlotsFromMappers(SlotsResult.SkillSlots, SkillDataAssets);
+					
+					UE_LOG(LogTemp, Log, TEXT("[SKILL] ✓ Built skill slots from %d database entries and %d assets"), 
+						SlotsResult.SkillSlots.Num(), SkillDataAssets.Num());
 				}
 				
 				OnSkillLoadCompleted.Broadcast(PlayerIdentity->GetPlayerGuid());
-				OnSkillOperationSucceeded.Broadcast(PlayerIdentity->GetPlayerGuid(), TEXT("LoadPlayerSkills3Layer"));
+				OnSkillOperationSucceeded.Broadcast(PlayerIdentity->GetPlayerGuid(), TEXT("LoadPlayerSkills"));
 			}
 			else
 			{
@@ -146,7 +191,7 @@ void USkillDomainService::SavePlayerSkills(TScriptInterface<IPlayerIdentityInter
 	}
 
 	// Save skill slots
-	auto SaveTask = Repository->SaveUserSkillSlots(UserId, SkillSlotDTOs);
+	auto SaveTask = Repository->SaveUserSkillSlots(FString::FromInt(UserId), SkillSlotDTOs);
 	
 	UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerIdentity, SaveTask]() mutable -> void
 	{
@@ -238,7 +283,7 @@ void USkillDomainService::UpdateSkillCooldown(TScriptInterface<IPlayerIdentityIn
 
 	// Update cooldown directly by slot index
 	// Note: This will need to be updated when Repository interface is modified to support slot-index-only cooldown updates
-	auto UpdateTask = Repository->UpdateSkillSlotCooldown(UserId, FString("ActionBar"), SlotIndex, LastUsedTime);
+	auto UpdateTask = Repository->UpdateSkillSlotCooldown(FString::FromInt(UserId), FString("ActionBar"), SlotIndex, LastUsedTime);
 	
 	UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerIdentity, UpdateTask]() mutable -> void
 	{
@@ -290,7 +335,7 @@ void USkillDomainService::ClearPlayerSkills(TScriptInterface<IPlayerIdentityInte
 	}
 
 	// Clear all skills for user (no SlotKey filter)
-	auto ClearTask = Repository->ClearUserSkillSlots(UserId, FString());
+	auto ClearTask = Repository->ClearUserSkillSlots(FString::FromInt(UserId), FString());
 	
 	UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerIdentity, PlayerState, ClearTask]() mutable -> void
 	{

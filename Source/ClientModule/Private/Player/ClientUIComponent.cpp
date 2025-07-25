@@ -42,8 +42,9 @@ void UClientUIComponent::BeginPlay()
 
 void UClientUIComponent::InitializeUI(const USkillComponent* SkillComponent)
 {
-	if (!OwnerController || !OwnerController->IsLocalController())
+	if (!OwnerController || !OwnerController->IsLocalPlayerController())
 	{
+		UE_LOG(LogTemp, Warning, TEXT("ClientUIComponent: is not Local controller"));
 		return;
 	}
 
@@ -100,13 +101,13 @@ void UClientUIComponent::InitializeUI(const USkillComponent* SkillComponent)
 
 void UClientUIComponent::HandleMouseOverDetection()
 {
-	if (!OwnerController || !OwnerController->IsLocalController() || !GGwaHUD)
+	if (!OwnerController || !OwnerController->IsLocalPlayerController() || !GGwaHUD)
 	{
 		return;
 	}
 
 	FHitResult Hit;
-	// Visibility 채널로 마우스 밑 Actor 판별
+	// Visibility 채널�?마우??�?Actor ?�별
 	if (OwnerController->GetHitResultUnderCursorByChannel(
 			UEngineTypes::ConvertToTraceType(ECC_Visibility),
 			true, Hit))
@@ -119,7 +120,7 @@ void UClientUIComponent::HandleMouseOverDetection()
 			{
 				LastHoveredEnemy = Enemy;
 
-				// ASC와 AttributeSet 가져오기
+				// ASC?� AttributeSet 가?�오�?
 				UEnemyAbilitySystemComponent* ASC = Cast<UEnemyAbilitySystemComponent>(Enemy->GetAbilitySystemComponent());
 				const UEnemyAttributeSet* AttrSet = ASC ? ASC->GetSet<UEnemyAttributeSet>() : nullptr;
 				if (!ASC || !AttrSet) return;
@@ -137,7 +138,7 @@ void UClientUIComponent::HandleMouseOverDetection()
 		}
 	}
 
-	// 커서가 적 이외 영역에 있을 때: 클리어
+	// 커서가 ???�외 ?�역???�을 ?? ?�리??
 	if (LastHoveredEnemy.IsValid())
 	{
 		LastHoveredEnemy = nullptr;
@@ -150,7 +151,7 @@ void UClientUIComponent::HandleMouseOverDetection()
 
 void UClientUIComponent::NotifyStateChanged()
 {
-	if (!OwnerController || !OwnerController->IsLocalController() || !GGwaHUD)
+	if (!OwnerController || !OwnerController->IsLocalPlayerController() || !GGwaHUD)
 	{
 		return;
 	}
@@ -176,7 +177,7 @@ void UClientUIComponent::ReceiveBossData(const FBossDataStruct& BossData)
 
 void UClientUIComponent::ReceiveSkillData(const USkillComponent* SkillComponent)
 {
-	if (!OwnerController || !OwnerController->IsLocalController() || !GGwaHUD)
+	if (!OwnerController || !OwnerController->IsLocalPlayerController() || !GGwaHUD)
 	{
 		return;
 	}
@@ -201,7 +202,7 @@ AGGwaPlayerController* UClientUIComponent::GetGGwaPlayerController() const
 
 void UClientUIComponent::SetupClientInputMode()
 {
-	if (!OwnerController || !OwnerController->IsLocalController())
+	if (!OwnerController || !OwnerController->IsLocalPlayerController())
 	{
 		return;
 	}

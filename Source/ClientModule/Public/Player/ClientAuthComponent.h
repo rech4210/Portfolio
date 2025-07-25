@@ -110,7 +110,7 @@ public:
 	 */
 	UFUNCTION(BlueprintImplementableEvent, Category = "Client Auth")
 	void BP_OnLoginResult(bool bSuccess, const FString& Token, const FString& UserId);
-	virtual IClientManagerInterface* GetClientSubSystem() override;
+	virtual TScriptInterface<IClientManagerInterface> GetClientSubSystem() override;
 
 private:
 	// ============================================================================

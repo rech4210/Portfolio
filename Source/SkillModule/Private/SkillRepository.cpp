@@ -24,7 +24,7 @@ void USkillRepository::Initialize()
 // 3-LAYER MAPPING ARCHITECTURE METHODS (RECOMMENDED)
 // ============================================================================
 
-UE::Tasks::TTask<FSkillRepositoryResult3Layer> USkillRepository::LoadUserSkillSlots(int32 UserId, const FString& SlotKey)
+UE::Tasks::TTask<FSkillRepositoryResult3Layer> USkillRepository::LoadUserSkillSlots(const FString& UserId, const FString& SlotKey)
 {
 	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, UserId, SlotKey]() -> FSkillRepositoryResult3Layer
 	{
@@ -33,7 +33,7 @@ UE::Tasks::TTask<FSkillRepositoryResult3Layer> USkillRepository::LoadUserSkillSl
 			return FSkillRepositoryResult3Layer::Failure(TEXT("DatabaseManager not available"));
 		}
 
-		if (UserId <= 0)
+		if (UserId.IsEmpty())
 		{
 			return FSkillRepositoryResult3Layer::Failure(TEXT("Invalid UserId"));
 		}
@@ -52,7 +52,7 @@ UE::Tasks::TTask<FSkillRepositoryResult3Layer> USkillRepository::LoadUserSkillSl
 	});
 }
 
-UE::Tasks::TTask<FSkillRepositoryResult3Layer> USkillRepository::SaveUserSkillSlots(int32 UserId, const TArray<FSkillSlotDatabaseDTO>& SkillSlotDTOs)
+UE::Tasks::TTask<FSkillRepositoryResult3Layer> USkillRepository::SaveUserSkillSlots(const FString& UserId, const TArray<FSkillSlotDatabaseDTO>& SkillSlotDTOs)
 {
 	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, UserId, SkillSlotDTOs]() -> FSkillRepositoryResult3Layer
 	{
@@ -61,7 +61,7 @@ UE::Tasks::TTask<FSkillRepositoryResult3Layer> USkillRepository::SaveUserSkillSl
 			return FSkillRepositoryResult3Layer::Failure(TEXT("DatabaseManager not available"));
 		}
 
-		if (UserId <= 0)
+		if (UserId.IsEmpty())
 		{
 			return FSkillRepositoryResult3Layer::Failure(TEXT("Invalid UserId"));
 		}
@@ -104,7 +104,7 @@ UE::Tasks::TTask<FSkillRepositoryResult3Layer> USkillRepository::LoadSkillMaster
 	});
 }
 
-UE::Tasks::TTask<FSkillRepositoryResult3Layer> USkillRepository::UpdateSkillSlotCooldown(int32 UserId, const FString& SlotKey, int32 SlotIndex, const FDateTime& LastUsedTime)
+UE::Tasks::TTask<FSkillRepositoryResult3Layer> USkillRepository::UpdateSkillSlotCooldown(const FString& UserId, const FString& SlotKey, int32 SlotIndex, const FDateTime& LastUsedTime)
 {
 	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, UserId, SlotKey, SlotIndex, LastUsedTime]() -> FSkillRepositoryResult3Layer
 	{
@@ -113,7 +113,7 @@ UE::Tasks::TTask<FSkillRepositoryResult3Layer> USkillRepository::UpdateSkillSlot
 			return FSkillRepositoryResult3Layer::Failure(TEXT("DatabaseManager not available"));
 		}
 
-		if (UserId <= 0)
+		if (UserId.IsEmpty())
 		{
 			return FSkillRepositoryResult3Layer::Failure(TEXT("Invalid UserId"));
 		}
@@ -146,7 +146,7 @@ UE::Tasks::TTask<FSkillRepositoryResult3Layer> USkillRepository::UpdateSkillSlot
 	});
 }
 
-UE::Tasks::TTask<FSkillRepositoryResult3Layer> USkillRepository::ClearUserSkillSlots(int32 UserId, const FString& SlotKey)
+UE::Tasks::TTask<FSkillRepositoryResult3Layer> USkillRepository::ClearUserSkillSlots(const FString& UserId, const FString& SlotKey)
 {
 	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, UserId, SlotKey]() -> FSkillRepositoryResult3Layer
 	{
@@ -155,7 +155,7 @@ UE::Tasks::TTask<FSkillRepositoryResult3Layer> USkillRepository::ClearUserSkillS
 			return FSkillRepositoryResult3Layer::Failure(TEXT("DatabaseManager not available"));
 		}
 
-		if (UserId <= 0)
+		if (UserId.IsEmpty())
 		{
 			return FSkillRepositoryResult3Layer::Failure(TEXT("Invalid UserId"));
 		}
@@ -180,7 +180,7 @@ UE::Tasks::TTask<FSkillRepositoryResult3Layer> USkillRepository::ClearUserSkillS
 	});
 }
 
-UE::Tasks::TTask<FSkillRepositoryResult3Layer> USkillRepository::GetSkillUsageStatistics(int32 UserId, int32 SkillId, const FDateTime& StartDate, const FDateTime& EndDate)
+UE::Tasks::TTask<FSkillRepositoryResult3Layer> USkillRepository::GetSkillUsageStatistics(const FString& UserId, int32 SkillId, const FDateTime& StartDate, const FDateTime& EndDate)
 {
 	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, UserId, SkillId, StartDate, EndDate]() -> FSkillRepositoryResult3Layer
 	{
@@ -189,7 +189,7 @@ UE::Tasks::TTask<FSkillRepositoryResult3Layer> USkillRepository::GetSkillUsageSt
 			return FSkillRepositoryResult3Layer::Failure(TEXT("DatabaseManager not available"));
 		}
 
-		if (UserId <= 0)
+		if (UserId.IsEmpty())
 		{
 			return FSkillRepositoryResult3Layer::Failure(TEXT("Invalid UserId"));
 		}

@@ -56,6 +56,7 @@ CREATE TABLE skills (
     description   TEXT NULL,
     base_cooltime FLOAT NOT NULL DEFAULT 0,
     base_cost     FLOAT NOT NULL DEFAULT 0,
+    max_level     INT NOT NULL DEFAULT 10,
     enabled       TINYINT(1) NOT NULL DEFAULT 1,
     created_at    DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     updated_at    DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3)

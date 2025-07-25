@@ -81,13 +81,11 @@ protected:
 public:
 	UFUNCTION(BlueprintCallable)
 	virtual FGuid GetPlayerGuid() const override {
-		try {
-			if (UserKey.IsValid()) {
-				return UserKey;
-			}
+		if (UserKey.IsValid()) {
+			return UserKey;
 		}
-		catch (...) {
-			UE_LOG(LogTemp, Error, TEXT("failed! Load Guid"));
+		else {
+			UE_LOG(LogTemp, Warning, TEXT("PlayerState: UserKey is not valid, returning empty GUID"));
 		}
 		return FGuid();
 	} 

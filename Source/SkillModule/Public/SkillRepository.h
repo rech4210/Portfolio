@@ -34,7 +34,7 @@ public:
 	 * @param SlotKey Slot key (e.g., "ActionBar", "QuickSlot")
 	 * @return Task returning skill slot DTOs and master data
 	 */
-	virtual UE::Tasks::TTask<FSkillRepositoryResult3Layer> LoadUserSkillSlots(int32 UserId, const FString& SlotKey) override;
+	virtual UE::Tasks::TTask<FSkillRepositoryResult3Layer> LoadUserSkillSlots(const FString& UserId, const FString& SlotKey) override;
 
 	/**
 	 * Save user skill slots using 3-layer mapping architecture
@@ -42,7 +42,7 @@ public:
 	 * @param SkillSlotDTOs Skill slot DTOs to save
 	 * @return Task returning success/failure result
 	 */
-	virtual UE::Tasks::TTask<FSkillRepositoryResult3Layer> SaveUserSkillSlots(int32 UserId, const TArray<FSkillSlotDatabaseDTO>& SkillSlotDTOs) override;
+	virtual UE::Tasks::TTask<FSkillRepositoryResult3Layer> SaveUserSkillSlots(const FString& UserId, const TArray<FSkillSlotDatabaseDTO>& SkillSlotDTOs) override;
 
 	/**
 	 * Load skill master data using 3-layer mapping architecture
@@ -59,7 +59,7 @@ public:
 	 * @param LastUsedTime When the skill was last used
 	 * @return Task returning updated skill slots
 	 */
-	virtual UE::Tasks::TTask<FSkillRepositoryResult3Layer> UpdateSkillSlotCooldown(int32 UserId, const FString& SlotKey, int32 SlotIndex, const FDateTime& LastUsedTime) override;
+	virtual UE::Tasks::TTask<FSkillRepositoryResult3Layer> UpdateSkillSlotCooldown(const FString& UserId, const FString& SlotKey, int32 SlotIndex, const FDateTime& LastUsedTime) override;
 
 	/**
 	 * Clear all skill slots for a user using 3-layer mapping architecture
@@ -67,7 +67,7 @@ public:
 	 * @param SlotKey Slot key (e.g., "ActionBar", "QuickSlot")
 	 * @return Task returning success/failure result
 	 */
-	virtual UE::Tasks::TTask<FSkillRepositoryResult3Layer> ClearUserSkillSlots(int32 UserId, const FString& SlotKey) override;
+	virtual UE::Tasks::TTask<FSkillRepositoryResult3Layer> ClearUserSkillSlots(const FString& UserId, const FString& SlotKey) override;
 
 	/**
 	 * Get skill usage statistics using 3-layer mapping architecture
@@ -77,7 +77,7 @@ public:
 	 * @param EndDate End date for statistics
 	 * @return Task returning usage statistics
 	 */
-	virtual UE::Tasks::TTask<FSkillRepositoryResult3Layer> GetSkillUsageStatistics(int32 UserId, int32 SkillId, const FDateTime& StartDate, const FDateTime& EndDate) override;
+	virtual UE::Tasks::TTask<FSkillRepositoryResult3Layer> GetSkillUsageStatistics(const FString& UserId, int32 SkillId, const FDateTime& StartDate, const FDateTime& EndDate) override;
 
 	// ========================================================================
 	// LEGACY REPOSITORY METHODS - DEPRECATED

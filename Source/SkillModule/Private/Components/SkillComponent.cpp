@@ -388,7 +388,7 @@ TArray<FSkillSlotDatabaseDTO> USkillComponent::ExtractDTOsFromSkillSlots(int32 U
 		if (Slot && !Slot->IsEmpty() && ModelBuilder.GetInterface())
 		{
 			FSkillSlotDatabaseDTO DTO = ModelBuilder.GetInterface()->ExtractSlotDTO(Slot);
-			DTO.UserId = UserId; // UserId 설정
+			DTO.UserId = FString::FromInt(UserId); // int32 UserId를 FString으로 변환
 			DTOs.Add(DTO);
 		}
 	}

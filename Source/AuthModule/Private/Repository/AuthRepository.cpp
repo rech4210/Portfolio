@@ -35,26 +35,17 @@ UE::Tasks::TTask<bool> UAuthRepository::CreateUser(const FUserAccountDTO& UserDa
 			return false;
 		}
 
-		try
-		{
-			// Delegate user creation to DatabaseManager
-			UE_LOG(LogTemp, Log, TEXT("AuthRepository::CreateUser: Creating user %s with ID %s"), 
-				*UserData.Username, *UserData.UserId);
+		// Delegate user creation to DatabaseManager
+		UE_LOG(LogTemp, Log, TEXT("AuthRepository::CreateUser: Creating user %s with ID %s"), 
+			*UserData.Username, *UserData.UserId);
 
-			// Use DatabaseManager's CreateUserAccount method
-			// Note: DatabaseManager auth methods are deprecated - this should use external auth service
-			UE_LOG(LogTemp, Warning, TEXT("AuthRepository::CreateUser: Using deprecated DatabaseManager method"));
-			
-			// Since DatabaseManager auth methods are deprecated, return false to indicate 
-			// that user creation should be handled by external auth service
-			return false;
-		}
-		catch (const std::exception& e)
-		{
-			UE_LOG(LogTemp, Error, TEXT("AuthRepository::CreateUser: Database error - %hs"), 
-				e.what());
-			return false;
-		}
+		// Use DatabaseManager's CreateUserAccount method
+		// Note: DatabaseManager auth methods are deprecated - this should use external auth service
+		UE_LOG(LogTemp, Warning, TEXT("AuthRepository::CreateUser: Using deprecated DatabaseManager method"));
+		
+		// Since DatabaseManager auth methods are deprecated, return false to indicate 
+		// that user creation should be handled by external auth service
+		return false;
 	});
 }
 
@@ -68,24 +59,15 @@ UE::Tasks::TTask<TOptional<FUserAccountDTO>> UAuthRepository::GetUserByUsername(
 			return TOptional<FUserAccountDTO>();
 		}
 
-		try
-		{
-			UE_LOG(LogTemp, Log, TEXT("AuthRepository::GetUserByUsername: Searching for user %s"), *Username);
+		UE_LOG(LogTemp, Log, TEXT("AuthRepository::GetUserByUsername: Searching for user %s"), *Username);
 
-			// Use DatabaseManager's GetUserByUsername method
-			// Note: DatabaseManager auth methods are deprecated - this should use external auth service
-			UE_LOG(LogTemp, Warning, TEXT("AuthRepository::GetUserByUsername: Using deprecated DatabaseManager method"));
-			
-			// Since DatabaseManager auth methods are deprecated, return empty result to indicate 
-			// that user queries should be handled by external auth service
-			return TOptional<FUserAccountDTO>();
-		}
-		catch (const std::exception& e)
-		{
-			UE_LOG(LogTemp, Error, TEXT("AuthRepository::GetUserByUsername: Database error - %hs"), 
-				e.what());
-			return TOptional<FUserAccountDTO>();
-		}
+		// Use DatabaseManager's GetUserByUsername method
+		// Note: DatabaseManager auth methods are deprecated - this should use external auth service
+		UE_LOG(LogTemp, Warning, TEXT("AuthRepository::GetUserByUsername: Using deprecated DatabaseManager method"));
+		
+		// Since DatabaseManager auth methods are deprecated, return empty result to indicate 
+		// that user queries should be handled by external auth service
+		return TOptional<FUserAccountDTO>();
 	});
 }
 
@@ -99,8 +81,7 @@ UE::Tasks::TTask<TOptional<FUserAccountDTO>> UAuthRepository::GetUserById(const 
 			return TOptional<FUserAccountDTO>();
 		}
 
-		try
-		{
+		
 			UE_LOG(LogTemp, Log, TEXT("AuthRepository::GetUserById: Searching for user ID %s"), *UserId);
 
 			// Convert string UserId to int32 for DatabaseManager
@@ -110,13 +91,7 @@ UE::Tasks::TTask<TOptional<FUserAccountDTO>> UAuthRepository::GetUserById(const 
 			
 			// For now, since DatabaseManager auth methods are deprecated, return empty result
 			return TOptional<FUserAccountDTO>();
-		}
-		catch (const std::exception& e)
-		{
-			UE_LOG(LogTemp, Error, TEXT("AuthRepository::GetUserById: Database error - %hsp"), 
-				e.what());
-			return TOptional<FUserAccountDTO>();
-		}
+		
 	});
 }
 
@@ -130,8 +105,7 @@ UE::Tasks::TTask<bool> UAuthRepository::UpdateUser(const FUserAccountDTO& UserDa
 			return false;
 		}
 
-		try
-		{
+		
 			UE_LOG(LogTemp, Log, TEXT("AuthRepository::UpdateUser: Updating user %s"), *UserData.UserId);
 
 			// Note: DatabaseManager doesn't have a direct UpdateUser method for auth-specific fields
@@ -140,13 +114,7 @@ UE::Tasks::TTask<bool> UAuthRepository::UpdateUser(const FUserAccountDTO& UserDa
 			
 			UE_LOG(LogTemp, Warning, TEXT("AuthRepository::UpdateUser: Auth-specific user updates not yet implemented"));
 			return true; // Placeholder - needs custom implementation
-		}
-		catch (const std::exception& e)
-		{
-			UE_LOG(LogTemp, Error, TEXT("AuthRepository::UpdateUser: Database error - %hsp"), 
-				e.what());
-			return false;
-		}
+		
 	});
 }
 
@@ -180,21 +148,14 @@ UE::Tasks::TTask<bool> UAuthRepository::UpdateLastLogin(const FString& UserId)
 			return false;
 		}
 
-		try
-		{
+		
 			UE_LOG(LogTemp, Log, TEXT("AuthRepository::UpdateLastLogin: Updating last login for user %s"), *UserId);
 
 			// TODO: Implement last login update
 			// Example SQL: UPDATE users SET last_login_at=NOW() WHERE user_id=?
 			
 			return true;
-		}
-		catch (const std::exception& e)
-		{
-			UE_LOG(LogTemp, Error, TEXT("AuthRepository::UpdateLastLogin: Database error - %hsp"), 
-				e.what());
-			return false;
-		}
+		
 	});
 }
 
@@ -208,8 +169,7 @@ UE::Tasks::TTask<bool> UAuthRepository::LockUser(const FString& UserId, const FD
 			return false;
 		}
 
-		try
-		{
+		
 			UE_LOG(LogTemp, Log, TEXT("AuthRepository::LockUser: Locking user %s until %s"), 
 				*UserId, *ExpiresAt.ToString());
 
@@ -217,13 +177,7 @@ UE::Tasks::TTask<bool> UAuthRepository::LockUser(const FString& UserId, const FD
 			// Example SQL: UPDATE users SET is_locked=1, lock_expires_at=? WHERE user_id=?
 			
 			return true;
-		}
-		catch (const std::exception& e)
-		{
-			UE_LOG(LogTemp, Error, TEXT("AuthRepository::LockUser: Database error - %hsp"), 
-				e.what());
-			return false;
-		}
+		
 	});
 }
 
@@ -237,21 +191,14 @@ UE::Tasks::TTask<bool> UAuthRepository::UnlockUser(const FString& UserId)
 			return false;
 		}
 
-		try
-		{
+		
 			UE_LOG(LogTemp, Log, TEXT("AuthRepository::UnlockUser: Unlocking user %s"), *UserId);
 
 			// TODO: Implement user unlocking
 			// Example SQL: UPDATE users SET is_locked=0, lock_expires_at=NULL WHERE user_id=?
 			
 			return true;
-		}
-		catch (const std::exception& e)
-		{
-			UE_LOG(LogTemp, Error, TEXT("AuthRepository::UnlockUser: Database error - %hsp"), 
-				e.what());
-			return false;
-		}
+		
 	});
 }
 
@@ -265,8 +212,7 @@ UE::Tasks::TTask<bool> UAuthRepository::AddAuditLog(const FUserAuditLogDTO& Audi
 			return false;
 		}
 
-		try
-		{
+		
 			UE_LOG(LogTemp, Log, TEXT("AuthRepository::AddAuditLog: Adding audit log for user %s, action %s"), 
 				*AuditLog.UserId, *AuditLog.Action);
 
@@ -276,13 +222,7 @@ UE::Tasks::TTask<bool> UAuthRepository::AddAuditLog(const FUserAuditLogDTO& Audi
 			
 			UE_LOG(LogTemp, Warning, TEXT("AuthRepository::AddAuditLog: Audit logging should be handled by external auth server"));
 			return true; // Placeholder - delegate to external auth server
-		}
-		catch (const std::exception& e)
-		{
-			UE_LOG(LogTemp, Error, TEXT("AuthRepository::AddAuditLog: Database error - %hsp"), 
-				e.what());
-			return false;
-		}
+		
 	});
 }
 
@@ -298,8 +238,7 @@ UE::Tasks::TTask<TArray<FUserAuditLogDTO>> UAuthRepository::GetAuditLogs(const F
 			return AuditLogs;
 		}
 
-		try
-		{
+		
 			UE_LOG(LogTemp, Log, TEXT("AuthRepository::GetAuditLogs: Getting audit logs for user %s (limit: %d)"), 
 				*UserId, Limit);
 
@@ -307,13 +246,7 @@ UE::Tasks::TTask<TArray<FUserAuditLogDTO>> UAuthRepository::GetAuditLogs(const F
 			// Example SQL: SELECT * FROM user_audit_logs WHERE user_id=? ORDER BY created_at DESC LIMIT ?
 			
 			return AuditLogs;
-		}
-		catch (const std::exception& e)
-		{
-			UE_LOG(LogTemp, Error, TEXT("AuthRepository::GetAuditLogs: Database error - %hsp"), 
-				e.what());
-			return AuditLogs;
-		}
+		
 	});
 }
 
@@ -327,8 +260,7 @@ UE::Tasks::TTask<bool> UAuthRepository::CheckUsernameExists(const FString& Usern
 			return false;
 		}
 
-		try
-		{
+		
 			UE_LOG(LogTemp, Log, TEXT("AuthRepository::CheckUsernameExists: Checking if username %s exists"), *Username);
 
 			// Use DatabaseManager's GetUserByUsername to check existence
@@ -340,13 +272,7 @@ UE::Tasks::TTask<bool> UAuthRepository::CheckUsernameExists(const FString& Usern
 				*Username, bExists ? TEXT("true") : TEXT("false"));
 			
 			return bExists;
-		}
-		catch (const std::exception& e)
-		{
-			UE_LOG(LogTemp, Error, TEXT("AuthRepository::CheckUsernameExists: Database error - %hsp"), 
-				e.what());
-			return false;
-		}
+		
 	});
 }
 
@@ -362,21 +288,14 @@ UE::Tasks::TTask<TArray<FUserAccountDTO>> UAuthRepository::GetExpiredLockedUsers
 			return ExpiredUsers;
 		}
 
-		try
-		{
+		
 			UE_LOG(LogTemp, Log, TEXT("AuthRepository::GetExpiredLockedUsers: Getting expired locked users"));
 
 			// TODO: Implement expired locked users retrieval
 			// Example SQL: SELECT * FROM users WHERE is_locked=1 AND lock_expires_at <= NOW()
 			
 			return ExpiredUsers;
-		}
-		catch (const std::exception& e)
-		{
-			UE_LOG(LogTemp, Error, TEXT("AuthRepository::GetExpiredLockedUsers: Database error - %hsp"), 
-				e.what());
-			return ExpiredUsers;
-		}
+		
 	});
 }
 
@@ -390,21 +309,14 @@ UE::Tasks::TTask<bool> UAuthRepository::UnlockExpiredUsers()
 			return false;
 		}
 
-		try
-		{
+		
 			UE_LOG(LogTemp, Log, TEXT("AuthRepository::UnlockExpiredUsers: Unlocking expired users"));
 
 			// TODO: Implement batch unlock of expired users
 			// Example SQL: UPDATE users SET is_locked=0, lock_expires_at=NULL WHERE is_locked=1 AND lock_expires_at <= NOW()
 			
 			return true;
-		}
-		catch (const std::exception& e)
-		{
-			UE_LOG(LogTemp, Error, TEXT("AuthRepository::UnlockExpiredUsers: Database error - %hsp"), 
-				e.what());
-			return false;
-		}
+		
 	});
 }
 
@@ -449,3 +361,4 @@ FDateTime UAuthRepository::ConvertStringToDateTime(const FString& DateTimeString
 	FDateTime::ParseIso8601(*DateTimeString, DateTime);
 	return DateTime;
 }
+

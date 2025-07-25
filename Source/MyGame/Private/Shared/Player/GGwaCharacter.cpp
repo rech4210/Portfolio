@@ -51,11 +51,27 @@ void AGGwaCharacter::PossessedBy(AController* NewController) {
 void AGGwaCharacter::OnRep_PlayerState() {
 	Super::OnRep_PlayerState();
 	InitASC();
+	
+	// Get current controller and validate
 	if (auto PC = GetController()) {
 		if (auto GGwaPC = Cast<AGGwaPlayerController>(PC))	{
-			GGwaPC->InitializeUI(Cast<AGGwaPlayerState>(GetPlayerState())->GetSkillComponent());
+			UE_LOG(LogTemp, Warning, TEXT("AGGwaCharacter::OnRep_PlayerState - PlayerController: %p"), GGwaPC);
+			
+			// Check if controller has valid cached interface
+			if (!GGwaPC->GetUIManagerInterface().GetInterface()) {
+				UE_LOG(LogTemp, Warning, TEXT("AGGwaCharacter::OnRep_PlayerState - PlayerController cache invalid, forcing reinitialization"));
+				
+				// Force controller to reinitialize its components
+				GGwaPC->BeginPlay();
+			}
+			
+			// Initialize UI with validated controller
+			if (auto GGwaPlayerState = Cast<AGGwaPlayerState>(GetPlayerState())) {
+				GGwaPC->InitializeUI(GGwaPlayerState->GetSkillComponent());
+			}
 		}
 	}
+	
 	Cast<AGGwaPlayerState>(GetPlayerState())->InitPlayerState();
 }
 
