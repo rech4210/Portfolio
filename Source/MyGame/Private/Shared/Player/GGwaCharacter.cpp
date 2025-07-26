@@ -52,25 +52,12 @@ void AGGwaCharacter::OnRep_PlayerState() {
 	Super::OnRep_PlayerState();
 	InitASC();
 	
-	// Get current controller and validate
-	if (auto PC = GetController()) {
-		if (auto GGwaPC = Cast<AGGwaPlayerController>(PC))	{
-			UE_LOG(LogTemp, Warning, TEXT("AGGwaCharacter::OnRep_PlayerState - PlayerController: %p"), GGwaPC);
-			
-			// Check if controller has valid cached interface
-			if (!GGwaPC->GetUIManagerInterface().GetInterface()) {
-				UE_LOG(LogTemp, Warning, TEXT("AGGwaCharacter::OnRep_PlayerState - PlayerController cache invalid, forcing reinitialization"));
-				
-				// Force controller to reinitialize its components
-				GGwaPC->BeginPlay();
-			}
-			
-			// Initialize UI with validated controller
-			if (auto GGwaPlayerState = Cast<AGGwaPlayerState>(GetPlayerState())) {
-				GGwaPC->InitializeUI(GGwaPlayerState->GetSkillComponent());
-			}
-		}
-	}
+	UE_LOG(LogTemp, Warning, TEXT("=== AGGwaCharacter::OnRep_PlayerState DEBUG ==="));
+	UE_LOG(LogTemp, Warning, TEXT("Character: %p | PlayerState: %p"), this, GetPlayerState());
+	
+	// UI initialization moved to GameMode::PreLogin
+	// Server will handle UI initialization through PlayerController interface
+	UE_LOG(LogTemp, Log, TEXT("AGGwaCharacter::OnRep_PlayerState - UI initialization handled by server"));
 	
 	Cast<AGGwaPlayerState>(GetPlayerState())->InitPlayerState();
 }

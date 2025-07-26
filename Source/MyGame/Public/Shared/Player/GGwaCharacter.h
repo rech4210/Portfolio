@@ -71,6 +71,9 @@ private:
 	void OnLocalSkillInput(const FInputActionInstance& Instance, int32 Index);
 	TObjectPtr<UPlayerReactionComponent> ReactionComponent;
 	TObjectPtr<USkillCastingService> SkillCastingService;
+	
+	// Timer for delayed UI initialization to avoid race conditions
+	FTimerHandle UIInitializationTimer;
 };
 
 

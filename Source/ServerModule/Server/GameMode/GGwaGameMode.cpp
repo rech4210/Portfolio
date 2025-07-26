@@ -14,6 +14,8 @@
 #include "AuthVerificationService.h" // 서비스 헤더 Include
 #include "GameFramework/PlayerState.h" // APlayerState 사용을 위해
 #include "Kismet/GameplayStatics.h"
+#include "Misc/Parse.h"
+#include "Misc/CommandLine.h"
 // #include "DatabaseModule/Public/DatabaseManager.h"
 // #include "DatabaseModule/Public/Data/FCharacterData.h"
 #include "AuthSubsystem.h"
@@ -51,90 +53,79 @@ AGGwaGameMode::AGGwaGameMode()
 void AGGwaGameMode::PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage)
 {
 	Super::PreLogin(Options, Address, UniqueId, ErrorMessage);
-	UE_LOG(LogTemp, Warning, TEXT("[Game Server] PreLogin attempt"));
+	UE_LOG(LogTemp, Warning, TEXT("=== PRELOGIN DEBUG ==="));
+	UE_LOG(LogTemp, Warning, TEXT("NetMode: %d | HasAuthority: %s"), GetWorld()->GetNetMode(), HasAuthority() ? TEXT("YES") : TEXT("NO"));
 	UE_LOG(LogTemp, Warning, TEXT("[Game Server] Connection from address: %s"), *Address);
 	UE_LOG(LogTemp, Warning, TEXT("[Game Server] Options: %s"), *Options);
-	// UE_LOG(LogTemp, Warning, TEXT("[Game Server] UniqueId: %s"), *UniqueId);
 
-	// 클라이언트가 OpenLevel 시 "?token=..." 형태로 보냈다고 가정
-	const FString Token = UGameplayStatics::ParseOption(Options, TEXT("token"));
-	const FString ProvidedUserId = UGameplayStatics::ParseOption(Options, TEXT("userid"));
-	const FString PIEFlag = UGameplayStatics::ParseOption(Options, TEXT("pie"));
+	// ============================================================================
+	// SAFE PARAMETER PARSING WITH VALIDATION
+	// ============================================================================
+	
+	FString Token, ProvidedUserId, PIEFlag;
+	
+	// Safe parsing with null checks
+	if (!FParse::Value(*Options, TEXT("token="), Token))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[Game Server] No token parameter found in Options"));
+	}
+	
+	if (!FParse::Value(*Options, TEXT("userid="), ProvidedUserId))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[Game Server] No userid parameter found in Options"));
+	}
+	
+	if (!FParse::Value(*Options, TEXT("pie="), PIEFlag))
+	{
+		UE_LOG(LogTemp, Log, TEXT("[Game Server] No PIE flag found (normal for production)"));
+	}
+	
+	// Parameter validation
+	bool bValidToken = !Token.IsEmpty() && Token.Len() >= 10 && Token.Len() <= 512;
+	bool bValidUserId = !ProvidedUserId.IsEmpty() && ProvidedUserId.Len() <= 50;
+	
+	UE_LOG(LogTemp, Warning, TEXT("[Game Server] Token Valid: %s | UserId Valid: %s"), 
+		bValidToken ? TEXT("YES") : TEXT("NO"), bValidUserId ? TEXT("YES") : TEXT("NO"));
+	
+	if (!bValidToken)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[Game Server] Invalid token format - Length: %d"), Token.Len());
+	}
+	
+	if (!bValidUserId)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[Game Server] Invalid UserId format - Length: %d"), ProvidedUserId.Len());
+	}
 	
 	UE_LOG(LogTemp, Warning, TEXT("[Game Server] Provided Token: %s..."), *Token.Left(20));
 	UE_LOG(LogTemp, Warning, TEXT("[Game Server] Provided UserId: %s"), *ProvidedUserId);
 	UE_LOG(LogTemp, Warning, TEXT("[Game Server] PIE Environment: %s"), *PIEFlag);
 
-	// PIE 환경 또는 Development mode 감지
-	bool bIsPIEEnvironment = !PIEFlag.IsEmpty() && PIEFlag.Equals(TEXT("true"), ESearchCase::IgnoreCase);
-	bool bDevelopmentMode = true; // TODO: Make this configurable
+	// ============================================================================
+	// SERVER MODE: SIMPLIFIED AUTHENTICATION 
+	// ============================================================================
 	
-	// PIE 환경에서는 간소화된 인증 처리
-	if (bIsPIEEnvironment)
+	// Server always allows connections - no external auth service dependency
+	UE_LOG(LogTemp, Warning, TEXT("[SERVER MODE] Direct connection allowed - bypassing external auth"));
+	
+	// Use provided UserId or generate a fallback
+	FString FinalUserId;
+	if (!ProvidedUserId.IsEmpty())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[PIE Test Mode] Simplified authentication for development testing"));
-		if (!Token.IsEmpty() && !ProvidedUserId.IsEmpty())
-		{
-			// PIE에서도 토큰 기반 테스트 수행
-			PendingPlayers.Add(UniqueId, ProvidedUserId);
-			UE_LOG(LogTemp, Warning, TEXT("[PIE Test Mode] Using provided credentials - UserId: %s"), *ProvidedUserId);
-		}
-		else
-		{
-			// 토큰이 없어도 PIE 테스트 허용
-			FString DefaultUserId = FString::Printf(TEXT("pie_user_%s"), *UniqueId->ToString().Right(8));
-			PendingPlayers.Add(UniqueId, DefaultUserId);
-			UE_LOG(LogTemp, Warning, TEXT("[PIE Test Mode] Using fallback credentials - UserId: %s"), *DefaultUserId);
-		}
-		return; // PIE 환경에서는 추가 검증 생략
-	}
-
-	// JWT 서버에서 토큰 검증 (비동기 방식으로 변경)
-	// Create pending verification entry
-	FPendingTokenVerification& PendingVerification = PendingTokenVerifications.Add(UniqueId);
-	PendingVerification.Token = Token;
-	PendingVerification.ProvidedUserId = ProvidedUserId;
-	PendingVerification.Address = Address;
-	PendingVerification.UniqueId = UniqueId;
-	PendingVerification.StartTime = FPlatformTime::Seconds();
-	PendingVerification.bCompleted = false;
-	PendingVerification.bSuccess = false;
-
-	UE_LOG(LogTemp, Log, TEXT("[Game Server] Starting async token verification for user: %s"), *ProvidedUserId);
-
-	// Start async token verification
-	if (AuthVerificationService)
-	{
-		FOnTokenVerified OnComplete;
-		OnComplete.BindLambda([this, UniqueId](bool bSuccess, const FString& UserId) {
-			OnTokenVerificationComplete(bSuccess, UserId, UniqueId);
-		});
-		AuthVerificationService->VerifyTokenAsync(Token, OnComplete);
-		
-		UE_LOG(LogTemp, Log, TEXT("[Game Server] PreLogin initiated async token verification"));
-		// Note: Connection approval/denial will be handled in OnTokenVerificationComplete callback
+		FinalUserId = ProvidedUserId;
+		UE_LOG(LogTemp, Log, TEXT("[SERVER MODE] Using provided UserId: %s"), *FinalUserId);
 	}
 	else
 	{
-		if (bDevelopmentMode)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("[Game Server] Development Mode: AuthVerificationService not available, allowing connection"));
-			// Remove the pending verification since we won't use it
-			PendingTokenVerifications.Remove(UniqueId);
-			
-			// Use provided UserId or generate a default one
-			FString FallbackUserId = !ProvidedUserId.IsEmpty() ? ProvidedUserId : FString::Printf(TEXT("dev_user_%s"), *UniqueId->ToString().Right(8));
-			PendingPlayers.Add(UniqueId, FallbackUserId);
-			return; // Success - allow connection
-		}
-		else
-		{
-			ErrorMessage = TEXT("Authentication service unavailable.");
-			UE_LOG(LogTemp, Error, TEXT("[Game Server] PreLogin failed: AuthVerificationService not available"));
-			PendingTokenVerifications.Remove(UniqueId);
-			return;
-		}
+		// Generate fallback UserId from UniqueId
+		FinalUserId = FString::Printf(TEXT("server_user_%s"), *UniqueId->ToString().Right(8));
+		UE_LOG(LogTemp, Warning, TEXT("[SERVER MODE] Generated fallback UserId: %s"), *FinalUserId);
 	}
+	
+	// Add to pending players for PostLogin processing
+	PendingPlayers.Add(UniqueId, FinalUserId);
+	
+	UE_LOG(LogTemp, Log, TEXT("[SERVER MODE] Player %s added to pending list"), *FinalUserId);
 	
 
 }
@@ -142,6 +133,71 @@ void AGGwaGameMode::PreLogin(const FString& Options, const FString& Address, con
 void AGGwaGameMode::BeginPlay()
 {
 	Super::BeginPlay();
+
+	UE_LOG(LogTemp, Warning, TEXT("=== AGGwaGameMode::BeginPlay ==="));
+
+	// Environment detection
+	UWorld* World = GetWorld();
+	bool bIsPIEEnvironment = World && World->WorldType == EWorldType::PIE;
+	bool bIsDedicatedServer = HasAuthority() && World->GetNetMode() == NM_DedicatedServer;
+	FString CurrentMapName = World->GetMapName();
+	
+	UE_LOG(LogTemp, Warning, TEXT("PIE: %s | DedicatedServer: %s | CurrentMap: %s"), 
+		bIsPIEEnvironment ? TEXT("Yes") : TEXT("No"),
+		bIsDedicatedServer ? TEXT("Yes") : TEXT("No"),
+		*CurrentMapName);
+
+	// ============================================================================
+	// INITIAL MAP TRANSITION LOGIC (DEVELOPMENT MODE ONLY)
+	// ============================================================================
+	
+	// Development mode auto-transition for standalone testing
+	bool bDevelopmentMode = UE_BUILD_DEVELOPMENT || UE_BUILD_DEBUG;
+	bool bIsLoginLevel = CurrentMapName.Contains(TEXT("LoginLevel"));
+	
+	UE_LOG(LogTemp, Warning, TEXT("[DEV MODE] bDevelopmentMode: %s | bIsDedicatedServer: %s | bIsLoginLevel: %s"), 
+		bDevelopmentMode ? TEXT("Yes") : TEXT("No"),
+		bIsDedicatedServer ? TEXT("Yes") : TEXT("No"),
+		bIsLoginLevel ? TEXT("Yes") : TEXT("No"));
+	
+	// PIE 환경에서는 자동 전환하지 않음 (클라이언트 인증 테스트를 위해)
+	if (bIsPIEEnvironment)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[PIE MODE] Auto-transition disabled for authentication testing"));
+		return;
+	}
+	
+	if (bDevelopmentMode && bIsDedicatedServer && bIsLoginLevel)
+	{
+		// Check if we should auto-transition for testing
+		bool bAutoTransition = FParse::Param(FCommandLine::Get(), TEXT("AutoStart")) ||
+							   FParse::Param(FCommandLine::Get(), TEXT("TestMode"));
+		
+		if (bAutoTransition)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[DEV MODE] Auto-transitioning to MainMap for testing"));
+			
+			FTimerHandle AutoTransitionTimer;
+			GetWorldTimerManager().SetTimer(
+				AutoTransitionTimer,
+				[this]()
+				{
+					UE_LOG(LogTemp, Warning, TEXT("[DEV MODE] Executing auto ServerTravel to MainMap"));
+					// GetWorld()->ServerTravel(TEXT("/Game/Maps/ThirdPersonMap"), true, false);
+				},
+				3.0f, // 3 second delay to allow for potential player connections
+				false
+			);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[DEV MODE] LoginLevel detected, waiting for player authentication"));
+		}
+	}
+
+	// ============================================================================
+	// SERVER INITIALIZATION
+	// ============================================================================
 
 	// Server only: Create and configure UI Cache Actor
 	if (HasAuthority())
@@ -188,8 +244,7 @@ void AGGwaGameMode::BeginPlay()
 void AGGwaGameMode::Tick(float DeltaSeconds) {
 	Super::Tick(DeltaSeconds);
 	
-	// Process pending token verifications
-	ProcessPendingTokenVerifications();
+	// Token verification removed - server uses direct authentication
 	
 	static float LogTimer = 0.0f;
 	LogTimer += DeltaSeconds;
@@ -237,7 +292,7 @@ void AGGwaGameMode::PostLogin(APlayerController* NewPlayer)
 	}
 
 	// ============================================================================
-	// STEP 1: Authentication & User ID Resolution
+	// AUTHENTICATION & USER ID RESOLUTION
 	// ============================================================================
 	
 	FString* AuthenticatedUserId = PendingPlayers.Find(NewPlayer->PlayerState->GetUniqueId());
@@ -251,7 +306,7 @@ void AGGwaGameMode::PostLogin(APlayerController* NewPlayer)
 		return;
 	}
 
-	// Get cached credentials from PlayerController (as mentioned in your requirement)
+	// Get cached credentials from PlayerController
 	AGGwaPlayerController* GGwaPC = Cast<AGGwaPlayerController>(NewPlayer);
 	if (!GGwaPC)
 	{
@@ -298,6 +353,84 @@ void AGGwaGameMode::PostLogin(APlayerController* NewPlayer)
 			UserIdInt, *NewPlayer->PlayerState->GetPlayerName());
 		NewPlayer->ClientTravel(TEXT("/Game/Login/LoginLevel"), ETravelType::TRAVEL_Absolute);
 		return;
+	}
+
+	// ============================================================================
+	// MAP TRANSITION LOGIC - Check if we should move to MainMap
+	// ============================================================================
+	
+	// Check current map and decide on transition
+	FString CurrentMapName = GetWorld()->GetMapName();
+	bool bIsLoginLevel = CurrentMapName.Contains(TEXT("LoginLevel"));
+	
+	UE_LOG(LogTemp, Warning, TEXT("[SERVER] Current Map: %s | Is Login Level: %s"), 
+		*CurrentMapName, bIsLoginLevel ? TEXT("YES") : TEXT("NO"));
+	
+	if (bIsLoginLevel)
+	{
+		// Check if we have enough players for transition (configurable)
+		int32 AuthenticatedPlayerCount = GetNumPlayers();
+		int32 RequiredPlayers = 1; // Minimum players to start game
+		
+		UE_LOG(LogTemp, Warning, TEXT("[SERVER] Authenticated Players: %d | Required: %d"), 
+			AuthenticatedPlayerCount, RequiredPlayers);
+		
+		// Only transition when we have enough players
+		if (AuthenticatedPlayerCount >= RequiredPlayers)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[SERVER] Sufficient players authenticated, scheduling MainMap transition"));
+			
+			// Schedule the transition to avoid immediate travel during PostLogin
+			FTimerHandle DelayedTransitionTimer;
+			GetWorldTimerManager().SetTimer(
+				DelayedTransitionTimer,
+				[this]()
+				{
+					UE_LOG(LogTemp, Warning, TEXT("[SERVER] Executing delayed ServerTravel to MainMap"));
+					// GetWorld()->ServerTravel(TEXT("/Game/Maps/ThirdPersonMap"), true, false);
+				},
+				2.0f, // 2 second delay to ensure all players are fully connected
+				false
+			);
+			
+			// Don't initialize DDD systems yet - wait for main map
+			UE_LOG(LogTemp, Warning, TEXT("[SERVER] DDD system initialization deferred until MainMap"));
+			return;
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[SERVER] Waiting for more players before transitioning to MainMap"));
+		}
+	}
+
+	// ============================================================================
+	// STEP 1: Initialize UI System (Server-Initiated)
+	// ============================================================================
+	
+	// Initialize UI through PlayerController interface (moved from Character OnRep_PlayerState)
+	if (GGwaPC && PlayerState)
+	{
+		UE_LOG(LogTemp, Log, TEXT("[UI] Initializing UI system for player %s"), *PlayerState->GetPlayerName());
+		
+		// Use delayed timer to ensure all components are ready
+		FTimerHandle UIInitTimer;
+		GetWorldTimerManager().SetTimer(
+			UIInitTimer,
+			[this, GGwaPC, PlayerState]()
+			{
+				if (GGwaPC->GetUIManagerInterface().GetInterface() && PlayerState->GetSkillComponent())
+				{
+					GGwaPC->InitializeUI(PlayerState->GetSkillComponent());
+					UE_LOG(LogTemp, Log, TEXT("[UI] ✓ UI initialization successful for player %s"), *PlayerState->GetPlayerName());
+				}
+				else
+				{
+					UE_LOG(LogTemp, Warning, TEXT("[UI] UI initialization failed - interface or skill component not ready for player %s"), *PlayerState->GetPlayerName());
+				}
+			},
+			0.5f, // 500ms delay to ensure components are ready
+			false
+		);
 	}
 
 	// ============================================================================
@@ -466,75 +599,8 @@ void AGGwaGameMode::RequestFlowControllerInit(EModeType ModeType)
 
 void AGGwaGameMode::OnTokenVerificationComplete(bool bSuccess, const FString& VerifiedUserId, const FUniqueNetIdRepl& UniqueId)
 {
-	UE_LOG(LogTemp, Log, TEXT("[Game Server] Token verification completed for UniqueId: %s, Success: %s"), 
-		*UniqueId->ToString(), bSuccess ? TEXT("true") : TEXT("false"));
-
-	// Find the pending verification
-	FPendingTokenVerification* PendingVerification = PendingTokenVerifications.Find(UniqueId);
-	if (!PendingVerification)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("[Game Server] No pending verification found for UniqueId: %s"), *UniqueId->ToString());
-		return;
-	}
-
-	// Development mode: Allow failed token verification
-	bool bDevelopmentMode = true; // TODO: Make this configurable
-	
-	// Update pending verification status
-	PendingVerification->bCompleted = true;
-	PendingVerification->bSuccess = bSuccess;
-
-	if (bSuccess)
-	{
-		// 추가 보안: 제공된 UserId가 검증된 UserId와 일치하는지 확인
-		if (!PendingVerification->ProvidedUserId.IsEmpty() && PendingVerification->ProvidedUserId != VerifiedUserId)
-		{
-			if (bDevelopmentMode)
-			{
-				UE_LOG(LogTemp, Warning, TEXT("[Game Server] Development Mode: User ID mismatch but allowing connection. Provided: %s, Verified: %s"), 
-					*PendingVerification->ProvidedUserId, *VerifiedUserId);
-				// Use verified UserId in development mode
-				PendingPlayers.Add(UniqueId, VerifiedUserId);
-			}
-			else
-			{
-				PendingVerification->bSuccess = false;
-				PendingVerification->ErrorMessage = TEXT("User ID mismatch with token.");
-				UE_LOG(LogTemp, Warning, TEXT("[Game Server] Token verification failed: User ID mismatch. Provided: %s, Verified: %s"), 
-					*PendingVerification->ProvidedUserId, *VerifiedUserId);
-			}
-		}
-		else
-		{
-			// 토큰 검증 성공!
-			UE_LOG(LogTemp, Log, TEXT("[Game Server] Token verification successful for user: %s"), *VerifiedUserId);
-			UE_LOG(LogTemp, Log, TEXT("[Game Server] Token verified, allowing connection to ThirdPersonMap"));
-			
-			// PostLogin에서 사용하기 위해 플레이어 정보 저장
-			PendingPlayers.Add(UniqueId, VerifiedUserId);
-		}
-	}
-	else
-	{
-		// 토큰 검증 실패
-		if (bDevelopmentMode)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("[Game Server] Development Mode: Token verification failed but allowing connection for user: %s"), *PendingVerification->ProvidedUserId);
-			// Use provided UserId or generate a fallback
-			FString FallbackUserId = !PendingVerification->ProvidedUserId.IsEmpty() ? 
-				PendingVerification->ProvidedUserId : 
-				FString::Printf(TEXT("dev_user_%s"), *UniqueId->ToString().Right(8));
-			PendingPlayers.Add(UniqueId, FallbackUserId);
-			PendingVerification->bSuccess = true; // Override for development
-		}
-		else
-		{
-			PendingVerification->ErrorMessage = TEXT("Invalid authentication token.");
-			UE_LOG(LogTemp, Warning, TEXT("[Game Server] Token verification failed for user: %s"), *PendingVerification->ProvidedUserId);
-		}
-	}
-
-	// Process completed verifications will be handled in Tick()
+	// This function is no longer used - server uses direct authentication
+	UE_LOG(LogTemp, Warning, TEXT("[LEGACY] OnTokenVerificationComplete called but no longer used in server mode"));
 }
 
 void AGGwaGameMode::ProcessPendingTokenVerifications()

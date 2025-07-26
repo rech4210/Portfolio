@@ -98,4 +98,7 @@ private:
 
 	// Check and process completed token verifications
 	void ProcessPendingTokenVerifications();
+
+	// Timer for delayed map transitions
+	FTimerHandle MapTransitionTimer;
 };

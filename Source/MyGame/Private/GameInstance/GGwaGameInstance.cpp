@@ -29,42 +29,38 @@ void UGGwaGameInstance::HandleMapLoading() {
 	bool bIsPIEEnvironment = GetWorld()->WorldType == EWorldType::PIE;
 	bool bIsActualDedicatedServer = IsDedicatedServerInstance();
 	ENetMode NetMode = GetWorld()->GetNetMode();
+	FString CurrentMapName = GetWorld()->GetMapName();
 	
-	UE_LOG(LogTemp, Warning, TEXT("GGwaGameInstance: PIE: %s, NetMode: %d, DedicatedServer: %s"), 
+	UE_LOG(LogTemp, Warning, TEXT("=== GGwaGameInstance::HandleMapLoading ==="));
+	UE_LOG(LogTemp, Warning, TEXT("PIE: %s, NetMode: %d, DedicatedServer: %s"), 
 		bIsPIEEnvironment ? TEXT("Yes") : TEXT("No"),
 		(int32)NetMode,
 		bIsActualDedicatedServer ? TEXT("Yes") : TEXT("No"));
-
-	// PIE 환경에서는 서버 Travel 사용하지 않음 (클라이언트들이 각자 인증 필요)
-	if (bIsPIEEnvironment)
+	UE_LOG(LogTemp, Warning, TEXT("Current Map: %s"), *CurrentMapName);
+	
+	// Check if we're already in ThirdPersonMap (서버가 잘못된 맵에서 시작된 경우)
+	if (CurrentMapName.Contains(TEXT("ThirdPersonMap")))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("PIE 환경: 각 클라이언트가 개별적으로 LoginLevel에서 인증을 시작합니다."));
-		// PIE에서는 ServerTravel 하지 않음 - 각 클라이언트가 개별적으로 처리
-		return;
+		UE_LOG(LogTemp, Error, TEXT("PROBLEM: Server started with ThirdPersonMap instead of LoginLevel!"));
+		UE_LOG(LogTemp, Error, TEXT("This causes clients to auto-travel to ThirdPersonMap"));
+		UE_LOG(LogTemp, Error, TEXT("Check PIE settings or Blueprint GameMode logic"));
 	}
 
-	// 실제 전용 서버 환경에서만 서버 Travel 실행
-	if (bIsActualDedicatedServer && NetMode == NM_DedicatedServer)
+	// GameInstance는 초기 환경 설정과 로깅만 담당
+	// 실제 맵 전환 로직은 GameMode에서 플레이어 수 등을 고려하여 처리
+	
+	if (bIsPIEEnvironment)
 	{
-		// 개발/테스트 모드 감지
-		bool bDevelopmentMode = FParse::Param(FCommandLine::Get(), TEXT("DevMode")) ||
-			FParse::Param(FCommandLine::Get(), TEXT("TestMode")) ||
-			UE_BUILD_DEVELOPMENT || UE_BUILD_DEBUG;
-		
-		if (bDevelopmentMode)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("전용 서버 개발 환경: 테스트를 위해 MainMap으로 자동 이동합니다."));
-			GetWorld()->ServerTravel(GetGameWorldURL());
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("전용 서버 운영 환경: JWT 인증 후에만 게임 월드 접근 가능. LoginLevel에서 대기합니다."));
-			// 실제 게임 월드 접근은 AuthSubsystem::OnGameDataLoaded()에서 토큰 검증 후에만 허용
-		}
+		UE_LOG(LogTemp, Warning, TEXT("PIE Environment: LoginLevel로 시작, 각 클라이언트가 개별 인증 수행"));
+	}
+	else if (bIsActualDedicatedServer)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Dedicated Server: LoginLevel로 시작, GameMode에서 플레이어 상태에 따라 맵 전환 결정"));
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("클라이언트/리슨서버: LoginLevel에서 인증 프로세스를 시작합니다."));
-		// 클라이언트는 LoginLevel에서 시작하여 인증 UI 표시
+		UE_LOG(LogTemp, Warning, TEXT("Client/ListenServer: LoginLevel에서 인증 프로세스 시작"));
 	}
+	
+	// Note: 맵 전환 로직은 AGGwaGameMode에서 플레이어 접속 상황을 보고 결정
 }

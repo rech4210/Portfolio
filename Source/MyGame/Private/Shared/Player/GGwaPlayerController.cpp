@@ -15,8 +15,9 @@ AGGwaPlayerController::AGGwaPlayerController() {
 
 void AGGwaPlayerController::BeginPlay() {
 	Super::BeginPlay();
-	UE_LOG(LogTemp, Warning, TEXT("GGwaPlayerController::BeginPlay - IsServer: %d | IsLocalPlayerController: %d"), 
-		HasAuthority(), IsLocalPlayerController());
+	UE_LOG(LogTemp, Warning, TEXT("=== GGwaPlayerController::BeginPlay DEBUG ==="));
+	UE_LOG(LogTemp, Warning, TEXT("Controller Address: %p | IsServer: %d | IsLocalPlayerController: %d"), 
+		this, HasAuthority(), IsLocalPlayerController());
 
 #if !UE_SERVER
 	if (IsLocalPlayerController())
@@ -29,14 +30,40 @@ void AGGwaPlayerController::BeginPlay() {
 			return;
 		}
 		
-		// Step 2: Check if components are already cached (prevents re-initialization after map travel)
+		// Step 2: Check for cached token/userid from previous instance
+		if (CachedAuthToken.IsEmpty() || CachedUserId.IsEmpty())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("GGwaPlayerController::BeginPlay - No cached credentials, this may be initial login"));
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("GGwaPlayerController::BeginPlay - Found cached credentials: UserId=%s"), *CachedUserId);
+		}
+		
+		// Step 3: Check if components are already cached (prevents re-initialization after map travel)
 		if (CachedClientManagerInterface.GetInterface() != nullptr && 
 			ClientAuthComponent != nullptr && 
 			ClientUIComponent != nullptr)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("GGwaPlayerController::BeginPlay - Components already cached, skipping initialization"));
-			return;
+			UE_LOG(LogTemp, Warning, TEXT("GGwaPlayerController::BeginPlay - Components already cached, validating..."));
+			
+			// Validate cached interface is still functional
+			if (CachedClientManagerInterface.GetObject() && IsValid(CachedClientManagerInterface.GetObject()))
+			{
+				UE_LOG(LogTemp, Warning, TEXT("GGwaPlayerController::BeginPlay - Cached interface still valid, skipping re-initialization"));
+				return;
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("GGwaPlayerController::BeginPlay - Cached interface invalid, forcing re-initialization"));
+				// Clear invalid cache
+				CachedClientManagerInterface = TScriptInterface<IClientManagerInterface>();
+				ClientAuthComponent = nullptr;
+				ClientUIComponent = nullptr;
+			}
 		}
+		
+		UE_LOG(LogTemp, Warning, TEXT("GGwaPlayerController::BeginPlay - Initializing components..."));
 		
 		if (ClientAuthComponentClass && ClientUIComponentClass) {
 			ClientAuthComponent = NewObject<UActorComponent>(this, ClientAuthComponentClass);
@@ -63,6 +90,12 @@ void AGGwaPlayerController::BeginPlay() {
 			ClientUIComponent = NewObject<UActorComponent>(this, ClientUIComponentClass);
 			// Cast<IClientUIInterface>(ClientUIComponent)->InitializeUI();
 			RegistClientComponent(ClientUIComponent);
+			
+			UE_LOG(LogTemp, Warning, TEXT("GGwaPlayerController::BeginPlay - Component initialization completed"));
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("GGwaPlayerController::BeginPlay - ClientAuthComponentClass or ClientUIComponentClass is null"));
 		}
 	}
 #endif
@@ -386,24 +419,27 @@ void AGGwaPlayerController::ConnectToGameServerWithToken(const FString& Token, c
 	bool bIsPIEEnvironment = World && World->WorldType == EWorldType::PIE;
 	ENetMode NetMode = World ? World->GetNetMode() : NM_Standalone;
 	
-	UE_LOG(LogTemp, Warning, TEXT("GGwaPlayerController::ConnectToGameServerWithToken - PIE: %s, NetMode: %d"), 
-		bIsPIEEnvironment ? TEXT("Yes") : TEXT("No"), (int32)NetMode);
-	
-	if (bIsPIEEnvironment)
-	{
-		// PIE 환경에서도 서버 인증 플로우 유지하되, 로컬 서버로 연결
-		const FString PIEServerURL = FString::Printf(
-			TEXT("127.0.0.1:7777?token=%s&userid=%s&pie=true"),
-			*Token,
-			*UserId
-		);
-		
-		UE_LOG(LogTemp, Warning, TEXT("PIE Environment: Connecting to local server for testing - %s"), *PIEServerURL);
-		
-		// PIE에서도 실제 서버 연결 시도 (테스트 목적)
-		ClientTravel(PIEServerURL, TRAVEL_Absolute);
-		return;
-	}
+	UE_LOG(LogTemp, Warning, TEXT("=== GGwaPlayerController::ConnectToGameServerWithToken DEBUG ==="));
+	UE_LOG(LogTemp, Warning, TEXT("Controller: %p | PIE: %s | NetMode: %d"), 
+		this, bIsPIEEnvironment ? TEXT("Yes") : TEXT("No"), (int32)NetMode);
+	UE_LOG(LogTemp, Warning, TEXT("Token: %s... | UserId: %s"), *Token.Left(20), *UserId);
+	//
+	// if (bIsPIEEnvironment)
+	// {
+	// 	// PIE 환경: LoginLevel에서 바로 서버로 연결 (PreLogin/PostLogin 테스트)
+	// 	const FString PIEServerURL = FString::Printf(
+	// 		TEXT("127.0.0.1:7777?token=%s&userid=%s&pie=true"),
+	// 		*Token,
+	// 		*UserId
+	// 	);
+	// 	
+	// 	UE_LOG(LogTemp, Warning, TEXT("PIE Environment: Connecting with token authentication - %s"), *PIEServerURL);
+	// 	
+	// 	// PIE에서 TRAVEL_Absolute 사용하여 실제 서버 연결 흐름 테스트
+	// 	// 이는 PreLogin/PostLogin을 정상적으로 호출함
+	// 	ClientTravel(PIEServerURL, TRAVEL_Absolute);
+	// 	return;
+	// }
 	
 	// Production environment: Connect to actual server
 	const FString ServerIP = TEXT("127.0.0.1");
@@ -419,6 +455,8 @@ void AGGwaPlayerController::ConnectToGameServerWithToken(const FString& Token, c
 	UE_LOG(LogTemp, Log, TEXT("GGwaPlayerController::ConnectToGameServerWithToken - Connecting to: %s"), *ServerURL);
 	UE_LOG(LogTemp, Log, TEXT("GGwaPlayerController::ConnectToGameServerWithToken - Token: %s"), *Token.Left(20)); // Log first 20 chars for security
 
-	// Use TRAVEL_Relative to preserve PlayerController state and cached components
-	ClientTravel(ServerURL, TRAVEL_Relative);
+	// Production: TRAVEL_Absolute for inter-server connections
+	// Note: This will create a new PlayerController instance, losing cached components
+	// Component re-initialization will be handled in BeginPlay()
+	ClientTravel(ServerURL, TRAVEL_Absolute);
 }
