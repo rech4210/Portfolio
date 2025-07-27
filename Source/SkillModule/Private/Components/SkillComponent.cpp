@@ -372,7 +372,7 @@ void USkillComponent::BuildSkillSlotsFromMappers(
 	NotifySkillStateChanged();
 }
 
-TArray<FSkillSlotDatabaseDTO> USkillComponent::ExtractDTOsFromSkillSlots(int32 UserId) const
+TArray<FSkillSlotDatabaseDTO> USkillComponent::ExtractDTOsFromSkillSlots(const FString& UserId) const
 {
 	TArray<FSkillSlotDatabaseDTO> DTOs;
 
@@ -388,7 +388,7 @@ TArray<FSkillSlotDatabaseDTO> USkillComponent::ExtractDTOsFromSkillSlots(int32 U
 		if (Slot && !Slot->IsEmpty() && ModelBuilder.GetInterface())
 		{
 			FSkillSlotDatabaseDTO DTO = ModelBuilder.GetInterface()->ExtractSlotDTO(Slot);
-			DTO.UserId = FString::FromInt(UserId); // int32 UserId를 FString으로 변환
+			DTO.UserId = UserId; // UserId를 그대로 할당
 			DTOs.Add(DTO);
 		}
 	}

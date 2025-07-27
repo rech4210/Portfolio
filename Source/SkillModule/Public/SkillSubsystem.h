@@ -16,6 +16,9 @@ class USkillComponent;
 class USkillDataAsset;
 struct FSkillDomain;
 
+// Delegate for skill data loading completion callback
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnSkillDataLoadCompleted, TScriptInterface<IPlayerIdentityInterface>, PlayerIdentity, USkillComponent*, SkillComponent);
+
 /**
  * Skill Subsystem - Pure Repository Management
  * Responsibility: Only manages repository instances and provides DI for domain services
@@ -56,41 +59,41 @@ public:
 	/**
 	 * Request player skill loading - loads all skill slots and master data for player
 	 * @param PlayerIdentity Target player identity containing SkillComponent
-	 * @param UserId User ID to load skills for
+	 * @param UserId User ID to load skills for (UUID string format)
 	 */
-	void RequestLoadPlayerSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId);
+	void RequestLoadPlayerSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FString& UserId);
 
 	/**
 	 * Request player skill saving - saves all skill slots for player
 	 * @param PlayerIdentity Target player identity containing SkillComponent
-	 * @param UserId User ID to save skills for
+	 * @param UserId User ID to save skills for (UUID string format)
 	 */
-	void RequestSavePlayerSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId);
+	void RequestSavePlayerSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FString& UserId);
 
 	/**
 	 * Request skill slot update
 	 * @param PlayerIdentity Target player identity containing SkillComponent
-	 * @param UserId User ID to update skills for
+	 * @param UserId User ID to update skills for (UUID string format)
 	 * @param SlotIndex Slot index to update
 	 * @param SkillData New skill data for the slot (null to unregister)
 	 */
-	void RequestUpdateSkillSlot(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId, int32 SlotIndex, USkillDataAsset* SkillData);
+	void RequestUpdateSkillSlot(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FString& UserId, int32 SlotIndex, USkillDataAsset* SkillData);
 
 	/**
 	 * Request skill cooldown update
 	 * @param PlayerIdentity Target player identity containing SkillComponent
-	 * @param UserId User ID to update cooldown for
+	 * @param UserId User ID to update cooldown for (UUID string format)
 	 * @param SlotIndex Slot index to update
 	 * @param LastUsedTime When the skill was last used
 	 */
-	void RequestUpdateSkillCooldown(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId, int32 SlotIndex, const FDateTime& LastUsedTime);
+	void RequestUpdateSkillCooldown(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FString& UserId, int32 SlotIndex, const FDateTime& LastUsedTime);
 
 	/**
 	 * Request clearing all skill slots
 	 * @param PlayerIdentity Target player identity containing SkillComponent
 	 * @param UserId User ID to clear slots for
 	 */
-	void RequestClearPlayerSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId);
+	void RequestClearPlayerSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FString& UserId);
 
 	/**
 	 * Request skill swap
@@ -99,7 +102,7 @@ public:
 	 * @param SlotIndexA First slot index
 	 * @param SlotIndexB Second slot index
 	 */
-	void RequestSwapSkillSlots(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId, int32 SlotIndexA, int32 SlotIndexB);
+	void RequestSwapSkillSlots(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FString& UserId, int32 SlotIndexA, int32 SlotIndexB);
 
 	// ============================================================================
 	// LEGACY USE CASE ORCHESTRATION - DEPRECATED
@@ -167,7 +170,16 @@ public:
 	// UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: RequestSavePlayerSkills3Layer() instead")
 	// void RequestUpdateSkillCooldown(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 SlotIndex, const FDateTime& LastUsedTime, float RemainingCooldown);
 
+public:
+	// Delegate for notifying when skill data loading is completed
+	UPROPERTY(BlueprintAssignable)
+	FOnSkillDataLoadCompleted OnSkillDataLoadCompleted;
+
 private:
+	// Callback function for when player skills are loaded
+	UFUNCTION()
+	void OnPlayerSkillsLoaded(const FGuid& PlayerGuid);
+
 	// Repository interface for Dependency Injection
 	UPROPERTY()
 	TScriptInterface<ISkillRepositoryInterface> SkillRepositoryInterface;

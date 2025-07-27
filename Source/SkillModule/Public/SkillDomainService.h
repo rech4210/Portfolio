@@ -50,14 +50,14 @@ public:
 	 * @param PlayerIdentity Target player identity containing SkillComponent
 	 * @param UserId User ID to load skills for
 	 */
-	void LoadPlayerSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId);
+	void LoadPlayerSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FString& UserId);
 
 	/**
 	 * Save player's skills
 	 * @param PlayerIdentity Target player identity containing SkillComponent
 	 * @param UserId User ID to save skills for
 	 */
-	void SavePlayerSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId);
+	void SavePlayerSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FString& UserId);
 
 	/**
 	 * Update player's skill slot
@@ -66,7 +66,7 @@ public:
 	 * @param SlotIndex Slot index to update
 	 * @param SkillData New skill data for the slot (null to unregister)
 	 */
-	void UpdatePlayerSkillSlot(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId, int32 SlotIndex, USkillDataAsset* SkillData);
+	void UpdatePlayerSkillSlot(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FString& UserId, int32 SlotIndex, USkillDataAsset* SkillData);
 
 	/**
 	 * Update skill cooldown
@@ -75,14 +75,14 @@ public:
 	 * @param SlotIndex Slot index to update
 	 * @param LastUsedTime When the skill was last used
 	 */
-	void UpdateSkillCooldown(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId, int32 SlotIndex, const FDateTime& LastUsedTime);
+	void UpdateSkillCooldown(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FString& UserId, int32 SlotIndex, const FDateTime& LastUsedTime);
 
 	/**
 	 * Clear all skill slots for a player
 	 * @param PlayerIdentity Target player identity containing SkillComponent
 	 * @param UserId User ID to clear slots for
 	 */
-	void ClearPlayerSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 UserId);
+	void ClearPlayerSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FString& UserId);
 
 	// ========================================================================
 	// LEGACY DOMAIN SERVICE METHODS - DEPRECATED

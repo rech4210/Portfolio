@@ -1,33 +1,24 @@
-// ServerModule/GameMode/ServerGameMode.cpp
-
 #include "GGwaGameMode.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/PlayerState.h"
-#include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
 #include "Shared/Player/GGwaPlayerController.h"
 #include "Shared/Player/GGwaPlayerState.h"
-#include "Shared/Player/GGwaCharacter.h"
 #include "Engine/Engine.h"	// Options 문자열에서 토큰 파싱
 #include "HttpModule.h"
 #include "GameMode/BattleFlowController.h"
 #include "AuthVerificationService.h" // 서비스 헤더 Include
-#include "GameFramework/PlayerState.h" // APlayerState 사용을 위해
-#include "Kismet/GameplayStatics.h"
 #include "Misc/Parse.h"
 #include "Misc/CommandLine.h"
 // #include "DatabaseModule/Public/DatabaseManager.h"
 // #include "DatabaseModule/Public/Data/FCharacterData.h"
-#include "AuthSubsystem.h"
-#include "InventoryDomainService.h"
+// #include "AuthSubsystem.h"
+// #include "InventoryDomainService.h"
 #include "InventorySubsystem.h"
 #include "ShopSubsystem.h"
 #include "SkillSubsystem.h"
-#include "MyGame/Public/Shared/Player/GGwaPlayerState.h"
 #include "MyGame/Public/Shared/GameState/GGwaGameState.h"
 #include "MyGame/Public/Shared/Cache/UIConfigCacheActor.h"
-#include "MyGame/Public/Shared/Player/GGwaPlayerController.h"
-
 #include "Utill/LocalDataBaseLoader.h"
 
 // TODO: The concrete implementation class headers would be here.
@@ -70,7 +61,23 @@ void AGGwaGameMode::PreLogin(const FString& Options, const FString& Address, con
 		UE_LOG(LogTemp, Warning, TEXT("[Game Server] No token parameter found in Options"));
 	}
 	
-	if (!FParse::Value(*Options, TEXT("userid="), ProvidedUserId))
+	// Parse UserId carefully - extract only the UUID part before any additional parameters
+	FString RawUserId;
+	if (FParse::Value(*Options, TEXT("userid="), RawUserId))
+	{
+		// Split by '?' to get only the UUID part, ignoring Name and other parameters
+		FString LeftPart, RightPart;
+		if (RawUserId.Split(TEXT("?"), &LeftPart, &RightPart))
+		{
+			ProvidedUserId = LeftPart; // Use only the UUID part
+		}
+		else
+		{
+			ProvidedUserId = RawUserId; // No '?' found, use as is
+		}
+		UE_LOG(LogTemp, Log, TEXT("[Game Server] Extracted clean UserId: %s (from raw: %s)"), *ProvidedUserId, *RawUserId);
+	}
+	else
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[Game Server] No userid parameter found in Options"));
 	}
@@ -80,59 +87,62 @@ void AGGwaGameMode::PreLogin(const FString& Options, const FString& Address, con
 		UE_LOG(LogTemp, Log, TEXT("[Game Server] No PIE flag found (normal for production)"));
 	}
 	
-	// Parameter validation
+	// Parameter validation - updated for UUID format
 	bool bValidToken = !Token.IsEmpty() && Token.Len() >= 10 && Token.Len() <= 512;
-	bool bValidUserId = !ProvidedUserId.IsEmpty() && ProvidedUserId.Len() <= 50;
+	bool bValidUserId = !ProvidedUserId.IsEmpty() && ProvidedUserId.Len() >= 32 && ProvidedUserId.Len() <= 50; // UUID format
 	
 	UE_LOG(LogTemp, Warning, TEXT("[Game Server] Token Valid: %s | UserId Valid: %s"), 
 		bValidToken ? TEXT("YES") : TEXT("NO"), bValidUserId ? TEXT("YES") : TEXT("NO"));
 	
-	if (!bValidToken)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("[Game Server] Invalid token format - Length: %d"), Token.Len());
-	}
+	// if (!bValidToken)
+	// {
+	// 	UE_LOG(LogTemp, Warning, TEXT("[Game Server] Invalid token format - Length: %d"), Token.Len());
+	// }
 	
-	if (!bValidUserId)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("[Game Server] Invalid UserId format - Length: %d"), ProvidedUserId.Len());
-	}
-	
-	UE_LOG(LogTemp, Warning, TEXT("[Game Server] Provided Token: %s..."), *Token.Left(20));
-	UE_LOG(LogTemp, Warning, TEXT("[Game Server] Provided UserId: %s"), *ProvidedUserId);
-	UE_LOG(LogTemp, Warning, TEXT("[Game Server] PIE Environment: %s"), *PIEFlag);
+	// if (!bValidUserId)
+	// {
+	// 	UE_LOG(LogTemp, Warning, TEXT("[Game Server] Invalid UserId format - Length: %d (Expected UUID format)"), ProvidedUserId.Len());
+	// }
+	//
+
 
 	// ============================================================================
 	// SERVER MODE: SIMPLIFIED AUTHENTICATION 
 	// ============================================================================
 	
 	// Server always allows connections - no external auth service dependency
-	UE_LOG(LogTemp, Warning, TEXT("[SERVER MODE] Direct connection allowed - bypassing external auth"));
+	// UE_LOG(LogTemp, Warning, TEXT("[SERVER MODE] Direct connection allowed - bypassing external auth"));
 	
 	// Use provided UserId or generate a fallback
-	FString FinalUserId;
-	if (!ProvidedUserId.IsEmpty())
-	{
-		FinalUserId = ProvidedUserId;
-		UE_LOG(LogTemp, Log, TEXT("[SERVER MODE] Using provided UserId: %s"), *FinalUserId);
-	}
-	else
-	{
-		// Generate fallback UserId from UniqueId
-		FinalUserId = FString::Printf(TEXT("server_user_%s"), *UniqueId->ToString().Right(8));
-		UE_LOG(LogTemp, Warning, TEXT("[SERVER MODE] Generated fallback UserId: %s"), *FinalUserId);
-	}
+	// FString FinalUserId;
+	// if (!ProvidedUserId.IsEmpty())
+	// {
+	// 	FinalUserId = ProvidedUserId;
+	// 	UE_LOG(LogTemp, Log, TEXT("[SERVER MODE] Using provided UserId: %s"), *FinalUserId);
+	// }
+	// else
+	// {
+	// 	// Generate fallback UserId from UniqueId
+	// 	FinalUserId = FString::Printf(TEXT("server_user_%s"), *UniqueId->ToString().Right(8));
+	// 	UE_LOG(LogTemp, Warning, TEXT("[SERVER MODE] Generated fallback UserId: %s"), *FinalUserId);
+	// }
 	
 	// Add to pending players for PostLogin processing
-	PendingPlayers.Add(UniqueId, FinalUserId);
+	FPlayerIdentityFair PlayerIdentityFair;
+	PlayerIdentityFair.UserId = ProvidedUserId;
+	PlayerIdentityFair.Token = Token;
+	PendingPlayers.Add(UniqueId, PlayerIdentityFair);
 	
-	UE_LOG(LogTemp, Log, TEXT("[SERVER MODE] Player %s added to pending list"), *FinalUserId);
-	
-
+	UE_LOG(LogTemp, Warning, TEXT("[Game Server] Provided Token: %s..."), *PlayerIdentityFair.Token.Left(20));
+	UE_LOG(LogTemp, Warning, TEXT("[Game Server] Provided UserId: %s"), *PlayerIdentityFair.UserId);
+	UE_LOG(LogTemp, Warning, TEXT("[Game Server] PIE Environment: %s"), *PIEFlag);
+	UE_LOG(LogTemp, Warning, TEXT("=== END PRE LOGIN ==="));
 }
 
 void AGGwaGameMode::BeginPlay()
 {
 	Super::BeginPlay();
+	ULocalDataBaseLoader::Initialize();
 
 	UE_LOG(LogTemp, Warning, TEXT("=== AGGwaGameMode::BeginPlay ==="));
 
@@ -160,40 +170,40 @@ void AGGwaGameMode::BeginPlay()
 		bIsDedicatedServer ? TEXT("Yes") : TEXT("No"),
 		bIsLoginLevel ? TEXT("Yes") : TEXT("No"));
 	
-	// PIE 환경에서는 자동 전환하지 않음 (클라이언트 인증 테스트를 위해)
-	if (bIsPIEEnvironment)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("[PIE MODE] Auto-transition disabled for authentication testing"));
-		return;
-	}
-	
-	if (bDevelopmentMode && bIsDedicatedServer && bIsLoginLevel)
-	{
-		// Check if we should auto-transition for testing
-		bool bAutoTransition = FParse::Param(FCommandLine::Get(), TEXT("AutoStart")) ||
-							   FParse::Param(FCommandLine::Get(), TEXT("TestMode"));
-		
-		if (bAutoTransition)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("[DEV MODE] Auto-transitioning to MainMap for testing"));
-			
-			FTimerHandle AutoTransitionTimer;
-			GetWorldTimerManager().SetTimer(
-				AutoTransitionTimer,
-				[this]()
-				{
-					UE_LOG(LogTemp, Warning, TEXT("[DEV MODE] Executing auto ServerTravel to MainMap"));
-					// GetWorld()->ServerTravel(TEXT("/Game/Maps/ThirdPersonMap"), true, false);
-				},
-				3.0f, // 3 second delay to allow for potential player connections
-				false
-			);
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("[DEV MODE] LoginLevel detected, waiting for player authentication"));
-		}
-	}
+	// // PIE 환경에서는 자동 전환하지 않음 (클라이언트 인증 테스트를 위해)
+	// if (bIsPIEEnvironment)
+	// {
+	// 	UE_LOG(LogTemp, Warning, TEXT("[PIE MODE] Auto-transition disabled for authentication testing"));
+	// 	return;
+	// }
+	//
+	// if (bDevelopmentMode && bIsDedicatedServer && bIsLoginLevel)
+	// {
+	// 	// Check if we should auto-transition for testing
+	// 	bool bAutoTransition = FParse::Param(FCommandLine::Get(), TEXT("AutoStart")) ||
+	// 						   FParse::Param(FCommandLine::Get(), TEXT("TestMode"));
+	// 	
+	// 	if (bAutoTransition)
+	// 	{
+	// 		UE_LOG(LogTemp, Warning, TEXT("[DEV MODE] Auto-transitioning to MainMap for testing"));
+	// 		
+	// 		FTimerHandle AutoTransitionTimer;
+	// 		GetWorldTimerManager().SetTimer(
+	// 			AutoTransitionTimer,
+	// 			[this]()
+	// 			{
+	// 				UE_LOG(LogTemp, Warning, TEXT("[DEV MODE] Executing auto ServerTravel to MainMap"));
+	// 				// GetWorld()->ServerTravel(TEXT("/Game/Maps/ThirdPersonMap"), true, false);
+	// 			},
+	// 			3.0f, // 3 second delay to allow for potential player connections
+	// 			false
+	// 		);
+	// 	}
+	// 	else
+	// 	{
+	// 		UE_LOG(LogTemp, Warning, TEXT("[DEV MODE] LoginLevel detected, waiting for player authentication"));
+	// 	}
+	// }
 
 	// ============================================================================
 	// SERVER INITIALIZATION
@@ -258,7 +268,6 @@ void AGGwaGameMode::Tick(float DeltaSeconds) {
 void AGGwaGameMode::InitializeServerManagers()
 {
 	Super::InitializeServerManagers();
-	ULocalDataBaseLoader::Initialize();
 	if (HasAuthority())
 	{
 		// BattleFlowController creation
@@ -291,69 +300,59 @@ void AGGwaGameMode::PostLogin(APlayerController* NewPlayer)
 		return;
 	}
 
+
 	// ============================================================================
 	// AUTHENTICATION & USER ID RESOLUTION
 	// ============================================================================
 	
-	FString* AuthenticatedUserId = PendingPlayers.Find(NewPlayer->PlayerState->GetUniqueId());
-	if (!AuthenticatedUserId)
-	{
-		UE_LOG(LogTemp, Error, TEXT("[FAIL] Player %s is not authenticated. Authentication not found in PendingPlayers."), 
-			*NewPlayer->PlayerState->GetPlayerName());
-		UE_LOG(LogTemp, Warning, TEXT("[ACTION] Redirecting unauthorized player to login screen"));
-		
-		NewPlayer->ClientTravel(TEXT("/Game/Login/LoginLevel"), ETravelType::TRAVEL_Absolute);
-		return;
-	}
+	// if (!*PlayerIdentityFair->UserId)
+	// {
+	// 	UE_LOG(LogTemp, Error, TEXT("[FAIL] Player %s is not authenticated. Authentication not found in PendingPlayers."), 
+	// 		*NewPlayer->PlayerState->GetPlayerName());
+	// 	UE_LOG(LogTemp, Warning, TEXT("[ACTION] Redirecting unauthorized player to login screen"));
+	// 	
+	// 	NewPlayer->ClientTravel(TEXT("/Game/Login/LoginLevel"), ETravelType::TRAVEL_Absolute);
+	// 	return;
+	// }
 
 	// Get cached credentials from PlayerController
 	AGGwaPlayerController* GGwaPC = Cast<AGGwaPlayerController>(NewPlayer);
+	AGGwaPlayerState* GGwaPlayerState = NewPlayer->GetPlayerState<AGGwaPlayerState>();
+
 	if (!GGwaPC)
 	{
 		UE_LOG(LogTemp, Error, TEXT("[FAIL] Could not cast to AGGwaPlayerController for player %s"), 
-			*NewPlayer->PlayerState->GetPlayerName());
+			*GGwaPlayerState->GetPlayerName());
 		return;
 	}
-
-	// Extract UserId from cached auth token or use authenticated UserId
-	FString CachedUserId = GGwaPC->GetCachedUserId();
-	FString FinalUserId = !CachedUserId.IsEmpty() ? CachedUserId : *AuthenticatedUserId;
+	FPlayerIdentityFair* PlayerIdentityFair = PendingPlayers.Find(NewPlayer->PlayerState->GetUniqueId());
 	
-	// Convert UserId to integer (ensuring valid conversion)
-	int32 UserIdInt = 0;
-	if (FinalUserId.IsNumeric())
-	{
-		UserIdInt = FCString::Atoi(*FinalUserId);
-	}
-	else
-	{
-		// Try to extract numeric part or use a default mapping
-		// For development: use hash of the string to get a consistent ID
-		UserIdInt = GetTypeHash(FinalUserId) % 1000 + 1; // Ensure positive ID between 1-1000
-		UE_LOG(LogTemp, Warning, TEXT("[AUTH] Non-numeric UserId '%s' mapped to %d"), *FinalUserId, UserIdInt);
-	}
+	GGwaPC->InitializeClientComponent();
+	GGwaPC->SetCachedUserId(PlayerIdentityFair->UserId);
+	GGwaPC->SetCachedAuthToken(PlayerIdentityFair->Token);
+	FString FinalUserId = *PlayerIdentityFair->UserId;
+	
+	UE_LOG(LogTemp, Warning, TEXT("[AUTH] Using UserID as string: '%s'"), *FinalUserId);
 
-	// Set player identity
-	AGGwaPlayerState* PlayerState = NewPlayer->GetPlayerState<AGGwaPlayerState>();
-	if (PlayerState)
+	if (GGwaPlayerState)
 	{
-		PlayerState->SetPlayerGuid(FinalUserId);
+		GGwaPlayerState->SetPlayerGuid(FinalUserId);
 	}
+	UE_LOG(LogTemp, Log, TEXT("[SUCCESS] Player %s authenticated with UserId: %s"), 
+		*GGwaPlayerState->GetPlayerName(), *FinalUserId);
 
 	// Remove from pending list
-	PendingPlayers.Remove(NewPlayer->PlayerState->GetUniqueId());
+	PendingPlayers.Remove(GGwaPlayerState->GetUniqueId());
 
-	UE_LOG(LogTemp, Log, TEXT("[SUCCESS] Player %s authenticated with UserId: %s (Numeric: %d)"), 
-		*NewPlayer->PlayerState->GetPlayerName(), *FinalUserId, UserIdInt);
-
-	// Validate UserIdInt
-	if (UserIdInt <= 0)
-	{
-		UE_LOG(LogTemp, Error, TEXT("[FAIL] Invalid UserId: %d for player %s"), 
-			UserIdInt, *NewPlayer->PlayerState->GetPlayerName());
-		NewPlayer->ClientTravel(TEXT("/Game/Login/LoginLevel"), ETravelType::TRAVEL_Absolute);
-		return;
-	}
+	//
+	// // Validate UserID format (should be UUID string)
+	// if (FinalUserId.IsEmpty() || FinalUserId.Len() < 32)
+	// {
+	// 	UE_LOG(LogTemp, Error, TEXT("[FAIL] Invalid UserId format: '%s' for player %s"), 
+	// 		*FinalUserId, *NewPlayer->PlayerState->GetPlayerName());
+	// 	NewPlayer->ClientTravel(TEXT("/Game/Login/LoginLevel"), ETravelType::TRAVEL_Absolute);
+	// 	return;
+	// }
 
 	// ============================================================================
 	// MAP TRANSITION LOGIC - Check if we should move to MainMap
@@ -361,97 +360,63 @@ void AGGwaGameMode::PostLogin(APlayerController* NewPlayer)
 	
 	// Check current map and decide on transition
 	FString CurrentMapName = GetWorld()->GetMapName();
-	bool bIsLoginLevel = CurrentMapName.Contains(TEXT("LoginLevel"));
+	UE_LOG(LogTemp, Warning, TEXT("[SERVER] Current Map: %s)"), *CurrentMapName);
 	
-	UE_LOG(LogTemp, Warning, TEXT("[SERVER] Current Map: %s | Is Login Level: %s"), 
-		*CurrentMapName, bIsLoginLevel ? TEXT("YES") : TEXT("NO"));
-	
-	if (bIsLoginLevel)
-	{
-		// Check if we have enough players for transition (configurable)
-		int32 AuthenticatedPlayerCount = GetNumPlayers();
-		int32 RequiredPlayers = 1; // Minimum players to start game
-		
-		UE_LOG(LogTemp, Warning, TEXT("[SERVER] Authenticated Players: %d | Required: %d"), 
-			AuthenticatedPlayerCount, RequiredPlayers);
-		
-		// Only transition when we have enough players
-		if (AuthenticatedPlayerCount >= RequiredPlayers)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("[SERVER] Sufficient players authenticated, scheduling MainMap transition"));
-			
-			// Schedule the transition to avoid immediate travel during PostLogin
-			FTimerHandle DelayedTransitionTimer;
-			GetWorldTimerManager().SetTimer(
-				DelayedTransitionTimer,
-				[this]()
-				{
-					UE_LOG(LogTemp, Warning, TEXT("[SERVER] Executing delayed ServerTravel to MainMap"));
-					// GetWorld()->ServerTravel(TEXT("/Game/Maps/ThirdPersonMap"), true, false);
-				},
-				2.0f, // 2 second delay to ensure all players are fully connected
-				false
-			);
-			
-			// Don't initialize DDD systems yet - wait for main map
-			UE_LOG(LogTemp, Warning, TEXT("[SERVER] DDD system initialization deferred until MainMap"));
-			return;
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("[SERVER] Waiting for more players before transitioning to MainMap"));
-		}
-	}
+	// if (bIsLoginLevel)
+	// {
+	// 	// Check if we have enough players for transition (configurable)
+	// 	int32 AuthenticatedPlayerCount = GetNumPlayers();
+	// 	int32 RequiredPlayers = 1; // Minimum players to start game
+	// 	
+	// 	UE_LOG(LogTemp, Warning, TEXT("[SERVER] Authenticated Players: %d | Required: %d"), 
+	// 		AuthenticatedPlayerCount, RequiredPlayers);
+	// 	
+	// 	// Only transition when we have enough players
+	// 	if (AuthenticatedPlayerCount >= RequiredPlayers)
+	// 	{
+	// 		UE_LOG(LogTemp, Warning, TEXT("[SERVER] Sufficient players authenticated, scheduling MainMap transition"));
+	// 		
+	// 		// Schedule the transition to avoid immediate travel during PostLogin
+	// 		FTimerHandle DelayedTransitionTimer;
+	// 		GetWorldTimerManager().SetTimer(
+	// 			DelayedTransitionTimer,
+	// 			[this]()
+	// 			{
+	// 				UE_LOG(LogTemp, Warning, TEXT("[SERVER] Executing delayed ServerTravel to MainMap"));
+	// 				// GetWorld()->ServerTravel(TEXT("/Game/Maps/ThirdPersonMap"), true, false);
+	// 			},
+	// 			2.0f, // 2 second delay to ensure all players are fully connected
+	// 			false
+	// 		);
+	// 		
+	// 		// Don't initialize DDD systems yet - wait for main map
+	// 		UE_LOG(LogTemp, Warning, TEXT("[SERVER] DDD system initialization deferred until MainMap"));
+	// 		return;
+	// 	}
+	// 	else
+	// 	{
+	// 		UE_LOG(LogTemp, Warning, TEXT("[SERVER] Waiting for more players before transitioning to MainMap"));
+	// 	}
 
 	// ============================================================================
-	// STEP 1: Initialize UI System (Server-Initiated)
+	// STEP 1: Initialize DDD Systems First (Required for UI Data)
 	// ============================================================================
 	
-	// Initialize UI through PlayerController interface (moved from Character OnRep_PlayerState)
-	if (GGwaPC && PlayerState)
-	{
-		UE_LOG(LogTemp, Log, TEXT("[UI] Initializing UI system for player %s"), *PlayerState->GetPlayerName());
-		
-		// Use delayed timer to ensure all components are ready
-		FTimerHandle UIInitTimer;
-		GetWorldTimerManager().SetTimer(
-			UIInitTimer,
-			[this, GGwaPC, PlayerState]()
-			{
-				if (GGwaPC->GetUIManagerInterface().GetInterface() && PlayerState->GetSkillComponent())
-				{
-					GGwaPC->InitializeUI(PlayerState->GetSkillComponent());
-					UE_LOG(LogTemp, Log, TEXT("[UI] ✓ UI initialization successful for player %s"), *PlayerState->GetPlayerName());
-				}
-				else
-				{
-					UE_LOG(LogTemp, Warning, TEXT("[UI] UI initialization failed - interface or skill component not ready for player %s"), *PlayerState->GetPlayerName());
-				}
-			},
-			0.5f, // 500ms delay to ensure components are ready
-			false
-		);
-	}
+	InitializePlayerDDDSystems(NewPlayer, GGwaPlayerState, FinalUserId);
 
-	// ============================================================================
-	// STEP 2: Initialize DDD Systems (Parallel Execution)
-	// ============================================================================
-	
-	InitializePlayerDDDSystems(NewPlayer, PlayerState, UserIdInt);
-
-	UE_LOG(LogTemp, Warning, TEXT("=== Player Data Initialization Pipeline Completed ==="));
+	UE_LOG(LogTemp, Warning, TEXT("=== END POST LOGIN ==="));
 }
 
-void AGGwaGameMode::InitializePlayerDDDSystems(APlayerController* NewPlayer, AGGwaPlayerState* PlayerState, int32 UserId)
+void AGGwaGameMode::InitializePlayerDDDSystems(APlayerController* NewPlayer, AGGwaPlayerState* PlayerState, const FString& UserId)
 {
-	if (!NewPlayer || !PlayerState || UserId <= 0)
-	{
-		UE_LOG(LogTemp, Error, TEXT("[FAIL] Invalid parameters for DDD system initialization"));
-		return;
-	}
+	// if (!NewPlayer || !PlayerState || UserId.IsEmpty())
+	// {
+	// 	UE_LOG(LogTemp, Error, TEXT("[FAIL] Invalid parameters for DDD system initialization - UserId: '%s'"), *UserId);
+	// 	return;
+	// }
 
-	UE_LOG(LogTemp, Log, TEXT("=== Initializing DDD Systems for Player %s (UserId: %d) ==="), 
-		*PlayerState->GetPlayerName(), UserId);
+	UE_LOG(LogTemp, Log, TEXT("=== Initializing DDD Systems for Player %s (UserId: %s) ==="), 
+		*PlayerState->GetPlayerName(), *UserId);
 
 	// ============================================================================
 	// 1. INVENTORY SYSTEM INITIALIZATION
@@ -475,9 +440,12 @@ void AGGwaGameMode::InitializePlayerDDDSystems(APlayerController* NewPlayer, AGG
 	UE_LOG(LogTemp, Log, TEXT("[SKILL] Initializing skill system..."));
 	if (auto SkillSubsystem = GetGameInstance()->GetSubsystem<USkillSubsystem>())
 	{
-		// Load all player skills using the optimized LoadPlayerSkills method
+		// Bind to skill data loading completion for UI initialization
+		SkillSubsystem->OnSkillDataLoadCompleted.AddDynamic(this, &AGGwaGameMode::OnSkillDataLoadCompleted);
+		
+		// Load all player skills using the optimized LoadPlayerSkills method with string UserId
 		SkillSubsystem->RequestLoadPlayerSkills(PlayerState, UserId);
-		UE_LOG(LogTemp, Log, TEXT("[SKILL] ✓ Skill loading initiated for UserId: %d"), UserId);
+		UE_LOG(LogTemp, Log, TEXT("[SKILL] ✓ Skill loading initiated for UserId: %s"), *UserId);
 	}
 	else
 	{
@@ -525,6 +493,63 @@ void AGGwaGameMode::InitializePlayerDDDSystems(APlayerController* NewPlayer, AGG
 	// }
 
 	UE_LOG(LogTemp, Log, TEXT("=== DDD Systems Initialization Completed ==="));
+}
+
+void AGGwaGameMode::OnSkillDataLoadCompleted(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, USkillComponent* SkillComponent)
+{
+	if (!PlayerIdentity || !SkillComponent)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[UI] Invalid parameters for UI initialization"));
+		return;
+	}
+	if (AGGwaPlayerState* GGwaState = Cast<AGGwaPlayerState>(PlayerIdentity.GetObject())) {
+		if (AGGwaPlayerController * GGwaController = Cast<AGGwaPlayerController>(GGwaState->GetPlayerController())) {
+			GGwaController->InitializeUI(SkillComponent);
+		}
+	}
+	// //
+	// // UE_LOG(LogTemp, Log, TEXT("[UI] Skill data loaded, initializing UI for player %s"), 
+	// // 	*PlayerIdentity->GetPlayerGuid().ToString());
+	//
+	// // Find the PlayerController for this PlayerState
+	// UWorld* World = GetWorld();
+	// if (!World)
+	// {
+	// 	UE_LOG(LogTemp, Error, TEXT("[UI] World not available for UI initialization"));
+	// 	return;
+	// }
+	//
+	// for (FConstPlayerControllerIterator Iterator = World->GetPlayerControllerIterator(); Iterator; ++Iterator)
+	// {
+	// 	APlayerController* PC = Iterator->Get();
+	// 	if (!PC || !PC->PlayerState)
+	// 		continue;
+	//
+	// 	// Check if this PlayerController belongs to the PlayerState we're looking for
+	// 	if (PC->PlayerState == PlayerIdentity.GetObject())
+	// 	{
+	// 		// Cast to GGwaPlayerController to access InitializeUI
+	// 		if (auto GGwaPC = Cast<AGGwaPlayerController>(PC))
+	// 		{
+	// 			UE_LOG(LogTemp, Log, TEXT("[UI] Initializing UI system for player %s with loaded skill data"), 
+	// 				*PC->PlayerState->GetPlayerName());
+	// 			
+	// 			// Initialize UI with the loaded SkillComponent
+	// 			GGwaPC->InitializeUI(SkillComponent);
+	// 			
+	// 			UE_LOG(LogTemp, Log, TEXT("[UI] ✓ UI initialization completed for player %s"), 
+	// 				*PC->PlayerState->GetPlayerName());
+	// 			return;
+	// 		}
+	// 		else
+	// 		{
+	// 			UE_LOG(LogTemp, Error, TEXT("[UI] Could not cast PlayerController to AGGwaPlayerController"));
+	// 		}
+	// 		break;
+	// 	}
+	// }
+	
+	UE_LOG(LogTemp, Warning, TEXT("[UI] PlayerController not found for UI initialization"));
 }
 
 void AGGwaGameMode::Logout(AController* Exiting)
@@ -597,11 +622,11 @@ void AGGwaGameMode::RequestFlowControllerInit(EModeType ModeType)
 // ASYNC TOKEN VERIFICATION
 // ============================================================================
 
-void AGGwaGameMode::OnTokenVerificationComplete(bool bSuccess, const FString& VerifiedUserId, const FUniqueNetIdRepl& UniqueId)
-{
-	// This function is no longer used - server uses direct authentication
-	UE_LOG(LogTemp, Warning, TEXT("[LEGACY] OnTokenVerificationComplete called but no longer used in server mode"));
-}
+// void AGGwaGameMode::OnTokenVerificationComplete(bool bSuccess, const FString& VerifiedUserId, const FUniqueNetIdRepl& UniqueId)
+// {
+// 	// This function is no longer used - server uses direct authentication
+// 	UE_LOG(LogTemp, Warning, TEXT("[LEGACY] OnTokenVerificationComplete called but no longer used in server mode"));
+// }
 
 void AGGwaGameMode::ProcessPendingTokenVerifications()
 {

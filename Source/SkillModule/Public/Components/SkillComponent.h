@@ -217,7 +217,7 @@ public:
 	 * @param UserId User ID for the DTOs
 	 * @return Array of skill slot DTOs
 	 */
-	TArray<FSkillSlotDatabaseDTO> ExtractDTOsFromSkillSlots(int32 UserId) const;
+	TArray<FSkillSlotDatabaseDTO> ExtractDTOsFromSkillSlots(const FString& UserId) const;
 
 	// ========================================================================
 	// LEGACY DOMAIN INTEGRATION METHODS - DEPRECATED

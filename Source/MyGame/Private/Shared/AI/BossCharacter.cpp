@@ -85,6 +85,7 @@ void ABossCharacter::OnRep_BossData() {
 	// Client Base Replication
 	// ForceNetUpdate()
 	if (AGGwaPlayerController* PC = Cast<AGGwaPlayerController>(UGameplayStatics::GetPlayerController(this, 0))) {
+		PC->InitializeClientComponent();
 		PC->ProcessBossData(CachedBossData);
 	}
 }

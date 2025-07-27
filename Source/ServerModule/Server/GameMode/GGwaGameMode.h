@@ -4,6 +4,7 @@
 #include "MyGame/Public/Shared/Mode/ModeType.h"
 #include "GameFramework/GameMode.h"
 #include "Repositories/ISkillRepositoryInterface.h"
+#include "Interface/PlayerIdentityInterface.h"
 #include "GGwaGameMode.generated.h"
 
 class UAuthVerificationService;
@@ -12,6 +13,14 @@ class UDatabaseManager;
 class IInventoryRepositoryInterface;
 class IShopRepositoryInterface;
 class AGGwaPlayerState;
+class USkillComponent;
+
+USTRUCT()
+struct FPlayerIdentityFair {
+	GENERATED_BODY()
+	FString UserId;
+	FString Token;
+};
 
 UCLASS()
 class SERVERMODULE_API AGGwaGameMode : public ABaseGameMode
@@ -39,9 +48,9 @@ private:
 	 * Initialize all Domain-Driven Design systems for a newly connected player
 	 * @param NewPlayer The player controller that just connected
 	 * @param PlayerState The player's state object
-	 * @param UserId The authenticated user ID from cached credentials
+	 * @param UserId The authenticated user ID as string (UUID format)
 	 */
-	void InitializePlayerDDDSystems(APlayerController* NewPlayer, class AGGwaPlayerState* PlayerState, int32 UserId);
+	void InitializePlayerDDDSystems(APlayerController* NewPlayer, class AGGwaPlayerState* PlayerState, const FString& UserId);
 
 protected:
 	// BaseGameMode의 훅을 이용해 서버 매니저 초기화
@@ -51,6 +60,10 @@ protected:
 	virtual void RequestFlowControllerInit(EModeType ModeType) override;
 	virtual void PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage) override;
 	virtual void Tick(float DeltaSeconds) override;
+
+	// Callback for when skill data loading is completed - triggers UI initialization
+	UFUNCTION()
+	void OnSkillDataLoadCompleted(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, USkillComponent* SkillComponent);
 
 private:
 	UPROPERTY()
@@ -72,7 +85,7 @@ private:
 	TArray<USkillDataAsset*> LoadedSkillDefinitions;
 
 	// PreLogin에서 인증에 성공한 유저 정보를 임시 저장하는 맵
-	TMap<FUniqueNetIdRepl, FString> PendingPlayers;
+	TMap<FUniqueNetIdRepl, FPlayerIdentityFair> PendingPlayers;
 
 	// Async token verification management
 	struct FPendingTokenVerification

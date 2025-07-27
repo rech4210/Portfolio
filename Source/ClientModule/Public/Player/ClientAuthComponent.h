@@ -58,6 +58,7 @@ public:
 	 * @param bSuccess - Whether registration was successful
 	 * @param Message - Success or error message from server
 	 */
+	UFUNCTION()
 	virtual void OnServerRegistrationResult(bool bSuccess, const FString& Message) override;
 
 	/**
@@ -66,6 +67,7 @@ public:
 	 * @param Token - JWT token if successful
 	 * @param UserId - User ID if successful
 	 */
+	UFUNCTION()
 	virtual void OnServerLoginResult(bool bSuccess, const FString& Token, const FString& UserId) override;
 
 	// ============================================================================

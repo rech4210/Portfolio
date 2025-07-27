@@ -20,84 +20,7 @@ void AGGwaPlayerController::BeginPlay() {
 		this, HasAuthority(), IsLocalPlayerController());
 
 #if !UE_SERVER
-	if (IsLocalPlayerController())
-	{
-		// Step 1: Check World validity
-		UWorld* World = GetWorld();
-		if (!World)
-		{
-			UE_LOG(LogTemp, Error, TEXT("- Client Only Controller::BeginPlay - World is null!"));
-			return;
-		}
-		
-		// Step 2: Check for cached token/userid from previous instance
-		if (CachedAuthToken.IsEmpty() || CachedUserId.IsEmpty())
-		{
-			UE_LOG(LogTemp, Warning, TEXT("GGwaPlayerController::BeginPlay - No cached credentials, this may be initial login"));
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("GGwaPlayerController::BeginPlay - Found cached credentials: UserId=%s"), *CachedUserId);
-		}
-		
-		// Step 3: Check if components are already cached (prevents re-initialization after map travel)
-		if (CachedClientManagerInterface.GetInterface() != nullptr && 
-			ClientAuthComponent != nullptr && 
-			ClientUIComponent != nullptr)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("GGwaPlayerController::BeginPlay - Components already cached, validating..."));
-			
-			// Validate cached interface is still functional
-			if (CachedClientManagerInterface.GetObject() && IsValid(CachedClientManagerInterface.GetObject()))
-			{
-				UE_LOG(LogTemp, Warning, TEXT("GGwaPlayerController::BeginPlay - Cached interface still valid, skipping re-initialization"));
-				return;
-			}
-			else
-			{
-				UE_LOG(LogTemp, Warning, TEXT("GGwaPlayerController::BeginPlay - Cached interface invalid, forcing re-initialization"));
-				// Clear invalid cache
-				CachedClientManagerInterface = TScriptInterface<IClientManagerInterface>();
-				ClientAuthComponent = nullptr;
-				ClientUIComponent = nullptr;
-			}
-		}
-		
-		UE_LOG(LogTemp, Warning, TEXT("GGwaPlayerController::BeginPlay - Initializing components..."));
-		
-		if (ClientAuthComponentClass && ClientUIComponentClass) {
-			ClientAuthComponent = NewObject<UActorComponent>(this, ClientAuthComponentClass);
-			
-			// Initialize auth component
-			if (auto AuthInterface = Cast<IClientAuthInterface>(ClientAuthComponent))
-			{
-				AuthInterface->InitializeAuth();
-				
-				// Get and cache the client subsystem properly
-				TScriptInterface<IClientManagerInterface> SubSystem = AuthInterface->GetClientSubSystem();
-				if (SubSystem.GetInterface())
-				{
-					CachedClientManagerInterface = SubSystem;
-					UE_LOG(LogTemp, Warning, TEXT("GGwaPlayerController::BeginPlay - CachedClientManagerInterface successfully assigned"));
-				}
-				else
-				{
-					UE_LOG(LogTemp, Error, TEXT("GGwaPlayerController::BeginPlay - Failed to get ClientSubSystem"));
-				}
-			}
-			
-			RegistClientComponent(ClientAuthComponent);
-			ClientUIComponent = NewObject<UActorComponent>(this, ClientUIComponentClass);
-			// Cast<IClientUIInterface>(ClientUIComponent)->InitializeUI();
-			RegistClientComponent(ClientUIComponent);
-			
-			UE_LOG(LogTemp, Warning, TEXT("GGwaPlayerController::BeginPlay - Component initialization completed"));
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("GGwaPlayerController::BeginPlay - ClientAuthComponentClass or ClientUIComponentClass is null"));
-		}
-	}
+	InitializeClientComponent();
 #endif
 }
 
@@ -247,6 +170,9 @@ void AGGwaPlayerController::RegistClientComponent(UActorComponent* Component) {
 
 void AGGwaPlayerController::InitializeUI(const USkillComponent* SkillComponent) {
 	if (!IsLocalPlayerController()) return;
+	if (!CachedClientManagerInterface) {
+		InitializeClientComponent();
+	}
 	
 	// Additional validation for TScriptInterface
 	if (CachedClientManagerInterface.GetInterface() && CachedClientManagerInterface.GetObject())
@@ -276,6 +202,96 @@ void AGGwaPlayerController::InitializeUI(const USkillComponent* SkillComponent) 
 			}
 		}
 	}
+}
+
+void AGGwaPlayerController::InitializeClientComponent() {
+	UE_LOG(LogTemp, Warning, TEXT("InitializeClientComponent : Called"));
+
+#if !UE_SERVER
+	if (IsLocalPlayerController())
+	{
+		// Step 1: Check World validity
+		UWorld* World = GetWorld();
+		if (!World)
+		{
+			UE_LOG(LogTemp, Error, TEXT("- Client Only Controller::BeginPlay - World is null!"));
+			return;
+		}
+		
+		// Step 2: Check for cached token/userid from previous instance
+		if (CachedAuthToken.IsEmpty() || CachedUserId.IsEmpty())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("GGwaPlayerController::BeginPlay - No cached credentials, this may be initial login"));
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("GGwaPlayerController::BeginPlay - Found cached credentials: UserId=%s"), *CachedUserId);
+		}
+		
+		// Step 3: Check if components are already cached (prevents re-initialization after map travel)
+		if (CachedClientManagerInterface.GetInterface() != nullptr && 
+			ClientAuthComponent != nullptr && 
+			ClientUIComponent != nullptr)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("GGwaPlayerController::BeginPlay - Components already cached, validating..."));
+			
+			// Validate cached interface is still functional
+			if (CachedClientManagerInterface.GetObject() && IsValid(CachedClientManagerInterface.GetObject()))
+			{
+				UE_LOG(LogTemp, Warning, TEXT("GGwaPlayerController::BeginPlay - Cached interface still valid, skipping re-initialization"));
+				return;
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("GGwaPlayerController::BeginPlay - Cached interface invalid, forcing re-initialization"));
+				// Clear invalid cache
+				CachedClientManagerInterface = TScriptInterface<IClientManagerInterface>();
+				ClientAuthComponent = nullptr;
+				ClientUIComponent = nullptr;
+			}
+		}
+		
+		UE_LOG(LogTemp, Warning, TEXT("GGwaPlayerController::BeginPlay - Initializing components..."));
+
+		UClass * AuthComponentClass = ClientAuthComponentClass.LoadSynchronous();
+		UClass * UIComponentClass = ClientUIComponentClass.LoadSynchronous();
+
+		if (AuthComponentClass && UIComponentClass) {
+		// if (UClass * AuthComponentClass = ClientAuthComponentClass.LoadSynchronous()) {
+			ClientAuthComponent = NewObject<UActorComponent>(this, AuthComponentClass);
+			if (auto AuthInterface = Cast<IClientAuthInterface>(ClientAuthComponent))
+			{
+				AuthInterface->InitializeAuth();
+			
+				// Get and cache the client subsystem properly
+				TScriptInterface<IClientManagerInterface> SubSystem = AuthInterface->GetClientSubSystem();
+				if (SubSystem.GetInterface())
+				{
+					CachedClientManagerInterface = SubSystem;
+					RegistClientComponent(ClientAuthComponent);
+					UE_LOG(LogTemp, Warning, TEXT("GGwaPlayerController::BeginPlay - CachedClientManagerInterface successfully assigned"));
+				}
+				else
+				{
+					UE_LOG(LogTemp, Error, TEXT("GGwaPlayerController::BeginPlay - Failed to get ClientSubSystem"));
+				}
+			}
+		// }
+		// if (UClass * UIComponentClass = ClientUIComponentClass.LoadSynchronous()) {
+			ClientUIComponent = NewObject<UActorComponent>(this, UIComponentClass);
+			if (auto AuthInterface = Cast<IClientUIInterface>(ClientUIComponent))
+			{
+				RegistClientComponent(ClientUIComponent);
+				// AuthInterface->InitializeUI();
+			}
+		// }
+			UE_LOG(LogTemp, Warning, TEXT("GGwaPlayerController::BeginPlay - Component initialization completed"));
+		}
+		else{
+			UE_LOG(LogTemp, Error, TEXT("GGwaPlayerController::BeginPlay - ClientAuthComponentClass or ClientUIComponentClass is null"));
+		}
+	}
+#endif
 }
 
 void AGGwaPlayerController::ProcessRegistration(const FString& Username, const FString& Password) {
@@ -458,5 +474,5 @@ void AGGwaPlayerController::ConnectToGameServerWithToken(const FString& Token, c
 	// Production: TRAVEL_Absolute for inter-server connections
 	// Note: This will create a new PlayerController instance, losing cached components
 	// Component re-initialization will be handled in BeginPlay()
-	ClientTravel(ServerURL, TRAVEL_Absolute);
+	ClientTravel(ServerURL, TRAVEL_Relative);
 }

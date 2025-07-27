@@ -57,9 +57,18 @@ void UClientAuthComponent::RequestRegistration(const FString& Username, const FS
 		return;
 	}
 
-	// Create delegate for registration result
+	// Validate component state before binding delegate
+	if (!IsValid(this) || IsBeingDestroyed())
+	{
+		UE_LOG(LogTemp, Error, TEXT("ClientAuthComponent: Component is invalid or being destroyed"));
+		BP_OnRegistrationResult(false, TEXT("Component is invalid"));
+		return;
+	}
+
+	// Create delegate for registration result with validation
 	FRegistrationDelegate RegistrationDelegate;
-	RegistrationDelegate.BindDynamic(this, &UClientAuthComponent::OnServerRegistrationResult);
+
+	UE_LOG(LogTemp, Log, TEXT("ClientAuthComponent: Successfully bound registration delegate"));
 
 	// Request registration through AuthService
 	AuthService->RequestRegistration(Username, Password, OwnerController, RegistrationDelegate);
@@ -76,9 +85,18 @@ void UClientAuthComponent::RequestLogin(const FString& Username, const FString& 
 		return;
 	}
 
-	// Create delegate for login result
+	// Validate component state before binding delegate
+	if (!IsValid(this) || IsBeingDestroyed())
+	{
+		UE_LOG(LogTemp, Error, TEXT("ClientAuthComponent: Component is invalid or being destroyed"));
+		BP_OnLoginResult(false, TEXT(""), TEXT(""));
+		return;
+	}
+
+	// Create delegate for login result with validation
 	FLoginDelegate LoginDelegate;
-	LoginDelegate.BindDynamic(this, &UClientAuthComponent::OnServerLoginResult);
+
+	UE_LOG(LogTemp, Log, TEXT("ClientAuthComponent: Successfully bound login delegate"));
 
 	// Request login through AuthService
 	AuthService->RequestLogin(Username, Password, OwnerController, LoginDelegate);

@@ -60,6 +60,7 @@ void AGGwaCharacter::OnRep_PlayerState() {
 	UE_LOG(LogTemp, Log, TEXT("AGGwaCharacter::OnRep_PlayerState - UI initialization handled by server"));
 	
 	Cast<AGGwaPlayerState>(GetPlayerState())->InitPlayerState();
+	Cast<AGGwaPlayerController>(GetController())->InitializeClientComponent();
 }
 
 

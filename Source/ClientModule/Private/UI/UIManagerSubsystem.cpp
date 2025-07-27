@@ -201,14 +201,14 @@ void UUIManagerSubsystem::ProcessRegistration(const FString& Username, const FSt
 
 void UUIManagerSubsystem::ProcessLogin(const FString& Username, const FString& Password)
 {
-	if (ClientAuthService)
+	if (ClientAuthService && IsValid(ClientAuthService))
 	{
 		ClientAuthService->RequestLogin(Username, Password);
 		UE_LOG(LogTemp, Log, TEXT("UIManagerSubsystem: Processing login for user: %s"), *Username);
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("UIManagerSubsystem: No auth service registered for login"));
+		UE_LOG(LogTemp, Warning, TEXT("UIManagerSubsystem: No valid auth service registered for login"));
 	}
 }
 

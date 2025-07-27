@@ -4,7 +4,6 @@
 #include "UI/GGwaHUD.h"
 #include "MyGame/Public/Shared/AI/EnemySystemCore/FBossDataStruct.h"
 #include "UI/Enemy/BossStatusWidget.h"
-#include "GameSharedModule/Public/Data/BaseDataAsset.h"
 
 void AGGwaHUD::HandleAbilityDataApplied(UBaseDataAsset* Data)
 {

@@ -19,6 +19,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAbilityDataAssetApplied, UBaseDat
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBossDataReceived, const FBossDataStruct&, BossData);
 DECLARE_DELEGATE_OneParam(FClientSubsystemDelegate, TScriptInterface<IClientManagerInterface>);
 
+
 UCLASS(Blueprintable)
 class MYGAME_API AGGwaPlayerController : public APlayerController, public IAuthRPCInterface, public IClientManagerInterface {
 	GENERATED_BODY()
@@ -69,19 +70,19 @@ private:
 	// AuthSubsystem Event Handlers
 	// ============================================================================
 
-	UPROPERTY(EditDefaultsOnly, Category = "Client Interface")
+	UPROPERTY(Transient)
 	TScriptInterface<IClientManagerInterface> CachedClientManagerInterface;
 
 	UPROPERTY(EditDefaultsOnly, Category= "Client Component")
-	TSubclassOf<UActorComponent> ClientAuthComponentClass;
+	TSoftClassPtr<UActorComponent> ClientAuthComponentClass;
 
 	UPROPERTY(EditDefaultsOnly, Category= "Client Component")
-	TSubclassOf<UActorComponent> ClientUIComponentClass;
+	TSoftClassPtr<UActorComponent> ClientUIComponentClass;
 
-	UPROPERTY(EditDefaultsOnly, Category= "Client Component")
+	UPROPERTY(Transient)
 	TObjectPtr<UActorComponent> ClientAuthComponent;
 
-	UPROPERTY(EditDefaultsOnly, Category= "Client Component")
+	UPROPERTY(Transient)
 	TObjectPtr<UActorComponent> ClientUIComponent;
 public:
 	// ============================================================================
@@ -98,6 +99,9 @@ public:
 	
 	UFUNCTION(BlueprintCallable, Category = "Client Service")
 	virtual void InitializeUI(const USkillComponent* SkillComponent) override;
+
+	UFUNCTION(BlueprintCallable, Category = "Client Service")
+	void InitializeClientComponent();
 	
 	UFUNCTION(BlueprintCallable, Category = "Client Service")
 	virtual void ProcessRegistration(const FString& Username, const FString& Password) override;
@@ -133,6 +137,14 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Authentication")
 	FString GetCachedUserId() const { return CachedUserId; }
+
+	
+	UFUNCTION()
+	void SetCachedAuthToken(const FString& Token) {CachedAuthToken = Token; }
+
+	UFUNCTION()
+	void SetCachedUserId(const FString& Id) {CachedUserId = Id; }
+
 
 private:
 	// ============================================================================
