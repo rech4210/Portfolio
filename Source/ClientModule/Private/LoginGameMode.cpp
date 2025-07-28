@@ -1,13 +1,13 @@
-﻿#include "LoginGameMode.h"
+#include "LoginGameMode.h"
 #include "Player/LoginPlayerController.h"
 #include "Shared/Player/GGwaPlayerController.h"
 
 constexpr static float GAME_MODE_FREQUENCY = 3.0f;
 ALoginGameMode::ALoginGameMode() {
-	// 이 게임 모드의 기본 플레이어 컨트롤러를 LoginPlayerController로 설정합니다.
+	// �� ���� ����� �⺻ �÷��̾� ��Ʈ�ѷ��� LoginPlayerController�� �����մϴ�.
 	PlayerControllerClass = AGGwaPlayerController::StaticClass();
 
-	// 로그인 화면에서는 플레이어가 조종할 캐릭터나 HUD가 필요 없습니다.
+	// �α��� ȭ�鿡���� �÷��̾ ������ ĳ���ͳ� HUD�� �ʿ� �����ϴ�.
 	DefaultPawnClass = nullptr;
 	HUDClass = nullptr;
 }

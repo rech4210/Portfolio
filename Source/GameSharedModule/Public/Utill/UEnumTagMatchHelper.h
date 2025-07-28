@@ -1,4 +1,5 @@
-ï»¿#pragma once
+// @Needmodifi
+#pragma once
 
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
@@ -11,12 +12,12 @@
 /**
  * UEnumTagMatchHelper
  *
- * Unreal Engineì˜ ëª¨ë“ˆ ì‹œìŠ¤í…œì—ì„œëŠ” í…œí”Œë¦¿ static ë©¤ë²„(StateMap<T>)ë¥¼ ì‚¬ìš©í•  ê²½ìš°,
- * ê° ëª¨ë“ˆ(ì˜ˆ: MyGame, ServerModule)ë§ˆë‹¤ ë³„ë„ì˜ ì¸ìŠ¤í„´ìŠ¤ê°€ ìƒì„±ë˜ì–´ ë§ì»¤ ì˜¤ë¥˜(LNK2001) ë° ë°ì´í„° ë¶ˆì¼ì¹˜ê°€ ë°œìƒí•  ìˆ˜ ìˆìŠµë‹ˆë‹¤.
- * ë”°ë¼ì„œ enumë³„ë¡œ ëª…ì‹œì ìœ¼ë¡œ static TMapì„ ì„ ì–¸í•˜ì—¬ ëª¨ë“  ëª¨ë“ˆì—ì„œ ë™ì¼í•œ ë©”ëª¨ë¦¬ ê³µê°„ì„ ì°¸ì¡°í•˜ë„ë¡ ì„¤ê³„í•˜ì˜€ìŠµë‹ˆë‹¤.
+ * Unreal EngineÀÇ ¸ğµâ ½Ã½ºÅÛ¿¡¼­´Â ÅÛÇÃ¸´ static ¸â¹ö(StateMap<T>)¸¦ »ç¿ëÇÒ °æ¿ì,
+ * °¢ ¸ğµâ(¿¹: MyGame, ServerModule)¸¶´Ù º°µµÀÇ ÀÎ½ºÅÏ½º°¡ »ı¼ºµÇ¾î ¸µÄ¿ ¿À·ù(LNK2001) ¹× µ¥ÀÌÅÍ ºÒÀÏÄ¡°¡ ¹ß»ıÇÒ ¼ö ÀÖ½À´Ï´Ù.
+ * µû¶ó¼­ enumº°·Î ¸í½ÃÀûÀ¸·Î static TMapÀ» ¼±¾ğÇÏ¿© ¸ğµç ¸ğµâ¿¡¼­ µ¿ÀÏÇÑ ¸Ş¸ğ¸® °ø°£À» ÂüÁ¶ÇÏµµ·Ï ¼³°èÇÏ¿´½À´Ï´Ù.
  *
- * - ê¸°ì¡´ template static ë°©ì‹: enum ì¶”ê°€ ì‹œ í—¤ë”ì— ì •ì˜ë§Œ ì¶”ê°€í•˜ë©´ ë˜ì§€ë§Œ, ëª¨ë“ˆë³„ë¡œ ë¶„ë¦¬ë˜ì–´ ë§ì»¤ ì˜¤ë¥˜ ë°œìƒ
- * - ëª…ì‹œì  static ë©¤ë²„ ë°©ì‹: enumë³„ë¡œ static ë©¤ë²„ë¥¼ ì„ ì–¸í•˜ì—¬ ëª¨ë“ˆ ì „ì²´ì—ì„œ ê³µìœ , ë§ì»¤ ì˜¤ë¥˜ ë° ë°ì´í„° ë¶ˆì¼ì¹˜ í•´ê²°
+ * - ±âÁ¸ template static ¹æ½Ä: enum Ãß°¡ ½Ã Çì´õ¿¡ Á¤ÀÇ¸¸ Ãß°¡ÇÏ¸é µÇÁö¸¸, ¸ğµâº°·Î ºĞ¸®µÇ¾î ¸µÄ¿ ¿À·ù ¹ß»ı
+ * - ¸í½ÃÀû static ¸â¹ö ¹æ½Ä: enumº°·Î static ¸â¹ö¸¦ ¼±¾ğÇÏ¿© ¸ğµâ ÀüÃ¼¿¡¼­ °øÀ¯, ¸µÄ¿ ¿À·ù ¹× µ¥ÀÌÅÍ ºÒÀÏÄ¡ ÇØ°á
  *
  * 
  */
@@ -27,15 +28,15 @@ public:
 	static void Shutdown();
 
 	/**
-	 * enum íƒ€ì…ì— ë”°ë¼ í•´ë‹¹í•˜ëŠ” TMapì—ì„œ FGameplayTagë¥¼ ë°˜í™˜í•©ë‹ˆë‹¤.
-	 * (ê¸°ì¡´ ëª…ì¹­ ìœ ì§€: GetTagFromEnum)
+	 * enum Å¸ÀÔ¿¡ µû¶ó ÇØ´çÇÏ´Â TMap¿¡¼­ FGameplayTag¸¦ ¹İÈ¯ÇÕ´Ï´Ù.
+	 * (±âÁ¸ ¸íÄª À¯Áö: GetTagFromEnum)
 	 */
-	// ì•„ë˜ static ë§µë“¤ì€ Unreal ëª¨ë“ˆ ì‹œìŠ¤í…œì—ì„œì˜ ë§ì»¤ ì˜¤ë¥˜ ë° ë°ì´í„° ë¶ˆì¼ì¹˜ ë°©ì§€ë¥¼ ìœ„í•´ ëª…ì‹œì ìœ¼ë¡œ ì„ ì–¸í•©ë‹ˆë‹¤.
-	static TMap<EPlayerState, FGameplayTag> PlayerStateMap; ///< PlayerStateìš© íƒœê·¸ ë§µ
-	static TMap<ECueType, FGameplayTag> CueMap;             ///< CueTypeìš© íƒœê·¸ ë§µ
-	static TMap<EGasEventType, FGameplayTag> EventMap;      ///< GAS EventTypeìš© íƒœê·¸ ë§µ
-	static TMap<ESkillType, FGameplayTag> SkillMap;         ///< SkillTypeìš© íƒœê·¸ ë§µ
-	static TMap<EGasDataType, FGameplayTag> DataMap;        ///< GAS DataTypeìš© íƒœê·¸ ë§µ
+	// ¾Æ·¡ static ¸ÊµéÀº Unreal ¸ğµâ ½Ã½ºÅÛ¿¡¼­ÀÇ ¸µÄ¿ ¿À·ù ¹× µ¥ÀÌÅÍ ºÒÀÏÄ¡ ¹æÁö¸¦ À§ÇØ ¸í½ÃÀûÀ¸·Î ¼±¾ğÇÕ´Ï´Ù.
+	static TMap<EPlayerState, FGameplayTag> PlayerStateMap; ///< PlayerState¿ë ÅÂ±× ¸Ê
+	static TMap<ECueType, FGameplayTag> CueMap;             ///< CueType¿ë ÅÂ±× ¸Ê
+	static TMap<EGasEventType, FGameplayTag> EventMap;      ///< GAS EventType¿ë ÅÂ±× ¸Ê
+	static TMap<ESkillType, FGameplayTag> SkillMap;         ///< SkillType¿ë ÅÂ±× ¸Ê
+	static TMap<EGasDataType, FGameplayTag> DataMap;        ///< GAS DataType¿ë ÅÂ±× ¸Ê
 	
 	template <typename T>
 	static FGameplayTag GetTagFromEnum(const T& InEnum);

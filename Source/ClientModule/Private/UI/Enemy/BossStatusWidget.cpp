@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "UI/Enemy/BossStatusWidget.h"
@@ -11,7 +11,7 @@
 
 
 void UBossStatusWidget::SetWidget(const FEnemyWidgetData& WidgetData, const FBossDataStruct& Data){
-	// 1) 심볼 세팅
+	// 1) ?�볼 ?�팅
 	if (Symbol_Image && WidgetData.Symbol)
 	{
 		Symbol_Image->SetBrushFromTexture(WidgetData.Symbol);
@@ -22,7 +22,7 @@ void UBossStatusWidget::SetWidget(const FEnemyWidgetData& WidgetData, const FBos
 	}
 	
 
-	// 2) 이름 세팅
+	// 2) ?�름 ?�팅
 	if (Name_Text)
 	{
 		Name_Text->SetText(FText::FromName(WidgetData.Name));
@@ -30,7 +30,7 @@ void UBossStatusWidget::SetWidget(const FEnemyWidgetData& WidgetData, const FBos
 
 	UpdateWidget(Data);
 
-	// 4) 타이머 설정 (음수면 무시)
+	// 4) ?�?�머 ?�정 (?�수�?무시)
 	if (WidgetData.LimitTime > 0.f)
 	{
 		SetBossTimer(WidgetData.LimitTime);

@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "UI/Widget/GGwaWidget.h"
@@ -31,8 +31,8 @@
 // }
 
 
-// buff의 경우 재생성 하므로 우선 구현. 나중에 Pooling 적용후 삭제 예정
-// 사용과 widget 바인딩을 분리할것.
+// buff??경우 ?�생???��?�??�선 구현. ?�중??Pooling ?�용????�� ?�정
+// ?�용�?widget 바인?�을 분리?�것.
 void UGGwaWidget::BindWidgetWithTooltip(UBaseDataAsset* Data) {
 	if (auto* ValueWidget = SlotTooltipCachePair.FindRef(Data); ValueWidget!= nullptr) {
 		if (Cast<UBuffToolTip>(ValueWidget)) {

@@ -14,6 +14,7 @@ class UAuthRepository;
 class UAuthDomainService;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnServerAuthenticationComplete, bool, bSuccess, const FString&, Token, const FString&, UserId);
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnServerRegistrationComplete, bool, bSuccess, const FString&, Message);
 
 /**
@@ -72,7 +73,7 @@ public:
 	 * Called from PlayerController RPC
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Auth Subsystem")
-	void RequestServerRegistration(const FString& Username, const FString& Password, const FString& ClientIP);
+	void RequestServerRegistration(const FString& Username, const FString& Password, const FString& ClientIP, APlayerController* RequestingController);
 
 	/**
 	 * Server-side authentication request handler  
@@ -101,23 +102,23 @@ public:
 	void AdminDeactivateUserAccount(const FString& UserId, const FString& Reason);
 
 	// Events - For broadcasting results to PlayerController
-	UPROPERTY(BlueprintAssignable, Category = "Auth Events")
-	FOnServerAuthenticationComplete OnServerAuthenticationComplete;
-
-	UPROPERTY(BlueprintAssignable, Category = "Auth Events")
-	FOnServerRegistrationComplete OnServerRegistrationComplete;
+	// UPROPERTY(BlueprintAssignable, Category = "Auth Events")
+	// FOnServerAuthenticationComplete OnServerAuthenticationComplete;
+	//
+	// UPROPERTY(BlueprintAssignable, Category = "Auth Events")
+	// FOnServerRegistrationComplete OnServerRegistrationComplete;
 
 private:
 	// ============================================================================
 	// External Auth Server Communication (Node.js)
 	// ============================================================================
 	
-	void SendRegistrationToAuthServer(const FAuthRequestDTO& Request);
+	void SendRegistrationToAuthServer(const FAuthRequestDTO& Request, APlayerController* RequestingController);
 	void SendAuthenticationToAuthServer(const FAuthRequestDTO& Request, class APlayerController* RequestingController);
 	void SendTokenVerificationToAuthServer(const FString& Token, const FString& UserId);
 
 	// HTTP Response Handlers
-	void OnRegistrationResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
+	void OnRegistrationResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful, APlayerController* RequestingController);
 	void OnAuthenticationResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful, class APlayerController* RequestingController);
 	void OnTokenVerificationResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful, const FString& UserId);
 
@@ -126,16 +127,16 @@ private:
 	// ============================================================================
 	
 	bool ValidateServerAuthority() const;
-	void BroadcastAuthenticationResult(bool bSuccess, const FString& Token, const FString& UserId, class APlayerController* TargetController = nullptr);
-	void BroadcastRegistrationResult(bool bSuccess, const FString& Message);
+	// void BroadcastAuthenticationResult(bool bSuccess, const FString& Token, const FString& UserId, class APlayerController* TargetController = nullptr);
+	// void BroadcastRegistrationResult(bool bSuccess, const FString& Message);
 	void LogSecurityEvent(const FString& Event, const FString& Details) const;
 	FString CreateAuthRequestJson(const FAuthRequestDTO& Request) const;
 	bool ParseAuthResponseJson(const FString& ResponseBody, FAuthResponseDTO& OutResponse) const;
 	bool ParseDetailedErrorMessage(const FString& ResponseBody, FString& OutErrorMessage);
 
 	// Game Data Loading after successful authentication
-	void LoadGameDataForUser(const FString& UserId, class APlayerController* PlayerController);
-	void OnGameDataLoaded(bool bSuccess, const FString& UserId, class APlayerController* PlayerController);
+	// void LoadGameDataForUser(const FString& UserId, class APlayerController* PlayerController);
+	void RequestConnectingServer(bool bSuccess, const FString& UserId, class APlayerController* PlayerController);
 	
 	// Token caching management
 	void CacheTokenForUser(const FString& UserId, const FString& Token);

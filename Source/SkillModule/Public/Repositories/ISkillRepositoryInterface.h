@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -14,7 +14,7 @@ class USkillComponent;
 class APlayerState;
 
 /**
- * 스킬의 정의(DataAsset)를 로드하기 위한 리포지토리 인터페이스입니다.
+ * ?�킬???�의(DataAsset)�?로드?�기 ?�한 리포지?�리 ?�터?�이?�입?�다.
  */
 UINTERFACE(MinimalAPI, Blueprintable)
 class USkillConfigRepositoryInterface : public UBaseRepositoryInterface

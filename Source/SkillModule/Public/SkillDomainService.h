@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -83,72 +83,6 @@ public:
 	 * @param UserId User ID to clear slots for
 	 */
 	void ClearPlayerSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FString& UserId);
-
-	// ========================================================================
-	// LEGACY DOMAIN SERVICE METHODS - DEPRECATED
-	// ========================================================================
-	//
-	// /**
-	//  * DEPRECATED: Register skill to player's skill slots with full business logic
-	//  * Use 3-Layer Mapping Architecture: UpdatePlayerSkillSlot3Layer() instead
-	//  * Uses atomic transaction - triggers domain events for success/failure
-	//  * @param PlayerIdentity Target player identity containing SkillComponent
-	//  * @param SkillData Skill data to register
-	//  */
-	// UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: UpdatePlayerSkillSlot3Layer() instead")
-	// void RegisterSkillToPlayer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, USkillDataAsset* SkillData);
-	//
-	// /**
-	//  * DEPRECATED: Unregister skill from player's skill slots with full business logic
-	//  * Use 3-Layer Mapping Architecture: UpdatePlayerSkillSlot3Layer() instead
-	//  * Uses atomic transaction - triggers domain events for success/failure
-	//  * @param PlayerIdentity Target player identity containing SkillComponent
-	//  * @param SlotIndex Slot index to unregister
-	//  */
-	// UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: UpdatePlayerSkillSlot3Layer() instead")
-	// void UnregisterSkillFromPlayer(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 SlotIndex);
-	//
-	// /**
-	//  * DEPRECATED: Swap skills between two slots with full business logic
-	//  * Use 3-Layer Mapping Architecture: SavePlayerSkills3Layer() instead
-	//  * Uses atomic transaction - triggers domain events for success/failure
-	//  * @param PlayerIdentity Target player identity containing SkillComponent
-	//  * @param SlotIndexA First slot index
-	//  * @param SlotIndexB Second slot index
-	//  */
-	// UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: SavePlayerSkills3Layer() instead")
-	// void SwapSkillSlots(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 SlotIndexA, int32 SlotIndexB);
-	//
-	// /**
-	//  * DEPRECATED: Update skill cooldown state
-	//  * Use 3-Layer Mapping Architecture: SavePlayerSkills3Layer() instead
-	//  * Uses atomic transaction - triggers domain events for success/failure
-	//  * @param PlayerIdentity Target player identity containing SkillComponent
-	//  * @param SlotIndex Slot index
-	//  * @param LastUsedTime When the skill was last used
-	//  * @param RemainingCooldown Remaining cooldown time
-	//  */
-	// UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: SavePlayerSkills3Layer() instead")
-	// void UpdateSkillCooldown(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 SlotIndex, const FDateTime& LastUsedTime, float RemainingCooldown);
-	//
-	// /**
-	//  * DEPRECATED: Load player's skills from persistence
-	//  * Use 3-Layer Mapping Architecture: LoadPlayerSkills3Layer() instead
-	//  * Triggers domain events for success/failure
-	//  * @param PlayerIdentity Target player identity containing SkillComponent
-	//  */
-	// UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: LoadPlayerSkills3Layer() instead")
-	// void LoadSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity);
-	//
-	// /**
-	//  * DEPRECATED: Save player's current skill state
-	//  * Use 3-Layer Mapping Architecture: SavePlayerSkills3Layer() instead
-	//  * Uses atomic transaction - triggers domain events for success/failure
-	//  * @param PlayerIdentity Target player identity containing SkillComponent
-	//  * @param SkillData The skill domain data to save
-	//  */
-	// UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: SavePlayerSkills3Layer() instead")
-	// void SaveSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FSkillDomain& SkillData);
 
 	// Domain Events
 	FOnSkillOperationSucceeded OnSkillOperationSucceeded;

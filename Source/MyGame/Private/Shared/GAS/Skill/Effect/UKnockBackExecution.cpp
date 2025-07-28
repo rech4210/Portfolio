@@ -1,4 +1,4 @@
-ï»¿// Fill out your copyright notice in the Description page of Project Settings.
+// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Shared/GAS/Skill/Effect/UKnockBackExecution.h"
@@ -28,7 +28,7 @@ void UKnockBackExecution::Execute_Implementation(const FGameplayEffectCustomExec
 	if (!TargetCharacter)
 		return;
 
-	// ë„‰ë°± ë°©í–¥ê³¼ ì„¸ê¸°
+	// ³Ë¹é ¹æÇâ°ú ¼¼±â
 	FVector KnockbackDir = (TargetActor->GetActorLocation() - SourceActor->GetActorLocation()).GetSafeNormal();
 
 	TargetCharacter->LaunchCharacter(KnockbackDir * KnockbackStrength + FVector(0, KnockbackHeight, KnockbackDistance), true, true);

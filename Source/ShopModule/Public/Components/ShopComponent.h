@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -29,8 +29,8 @@ struct FShopItemState
 };
 
 /**
- * 상점 아이템들을 관리하는 컴포넌트입니다.
- * 실질적으로 ItemDataAsset이 아닌, 표면적인 데이터를 다룬다. ItemDataAsset은 부가 기능이 많기 때문.
+ * ?�점 ?�이?�들??관리하??컴포?�트?�니??
+ * ?�질?�으�?ItemDataAsset???�닌, ?�면?�인 ?�이?��? ?�룬?? ItemDataAsset?� 부가 기능??많기 ?�문.
  * 
  * Enhanced as aggregate root for shop domain with business rule validation and domain events.
  */

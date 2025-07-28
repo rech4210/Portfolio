@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "UI/Widget/PlayerStatusWidget.h"
@@ -32,7 +32,7 @@ void UPlayerStatusWidget::UpdateManaBar(float Current, float Max) const{
 
 void UPlayerStatusWidget::SetWidgetData(UPrimaryDataAsset* Data) {
 	UE_LOG(LogTemp, Warning, TEXT("PlayerStatusWidget SetWidgetData"));
-	//저장해두고 사용 + visible
+	//?�?�해?�고 ?�용 + visible
 	UBuffDataAsset* BuffData = Cast<UBuffDataAsset>(Data);
 	UBuffSlotWidget* Widget = CreateWidget<UBuffSlotWidget>(this, BuffSlotWidgetClass);
 	Widget->SetWidgetData(BuffData);

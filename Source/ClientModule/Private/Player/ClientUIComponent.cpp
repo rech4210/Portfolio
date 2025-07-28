@@ -29,11 +29,9 @@ void UClientUIComponent::BeginPlay()
 	
 	// Cache owner controller reference
 	OwnerController = Cast<AGGwaPlayerController>(GetOwner());
-	if (!OwnerController)
-	{
-		UE_LOG(LogTemp, Error, TEXT("ClientUIComponent: Owner is not AGGwaPlayerController"));
-		return;
-	}
+	check(OwnerController)
+	
+	SetupClientInputMode();
 }
 
 // ============================================================================
@@ -47,12 +45,12 @@ void UClientUIComponent::InitializeUI(const USkillComponent* SkillComponent)
 		UE_LOG(LogTemp, Warning, TEXT("ClientUIComponent: is not Local controller"));
 		return;
 	}
-
-	if (OwnerController->HasAuthority())
-	{
-		UE_LOG(LogTemp, Warning, TEXT("ClientUIComponent: Server controller - UI initialization skipped"));
-		return;
-	}
+	//
+	// if (OwnerController->HasAuthority())
+	// {
+	// 	UE_LOG(LogTemp, Warning, TEXT("ClientUIComponent: Server controller - UI initialization skipped"));
+	// 	return;
+	// }
 
 	UE_LOG(LogTemp, Warning, TEXT("ClientUIComponent: Client widget initialization"));
 	
@@ -120,7 +118,7 @@ void UClientUIComponent::HandleMouseOverDetection()
 			{
 				LastHoveredEnemy = Enemy;
 
-				// ASC?� AttributeSet 가?�오�?
+				// ASC?�?AttributeSet 가?�오�?
 				UEnemyAbilitySystemComponent* ASC = Cast<UEnemyAbilitySystemComponent>(Enemy->GetAbilitySystemComponent());
 				const UEnemyAttributeSet* AttrSet = ASC ? ASC->GetSet<UEnemyAttributeSet>() : nullptr;
 				if (!ASC || !AttrSet) return;

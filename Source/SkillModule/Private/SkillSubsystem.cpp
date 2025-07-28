@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #include "SkillSubsystem.h"
 #include "DatabaseModule/Public/DatabaseManager.h"
 #include "SkillRepository.h"
@@ -11,7 +9,7 @@
 
 void USkillSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
-	// DB를 우선 초기화 진행
+	// DB�??�선 초기??진행
 	Collection.InitializeDependency(UDatabaseManager::StaticClass());
 	Super::Initialize(Collection);
 	

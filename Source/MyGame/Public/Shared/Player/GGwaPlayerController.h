@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -9,6 +7,7 @@
 #include "Shared/AI/EnemySystemCore/FBossDataStruct.h"
 #include "Shared/Utill/FRewardRequest.h"
 #include "Shared/Interface/IClientComponentProvider.h"
+#include "GameSharedModule/Public/Enums/EClientUIKey.h"
 #include "GGwaPlayerController.generated.h"
 
 class ABossCharacter;
@@ -27,8 +26,6 @@ public:
 	AGGwaPlayerController();
 	virtual void BeginPlay() override;
 	virtual void PlayerTick(float DeltaTime) override;
-
-	//클라이언트가 자신에게 Possess한 Pawn을 인식(승인)하도록 알려주는 함수
 	virtual void AcknowledgePossession(APawn* PossessedPawn) override;
 
 	UPROPERTY(BlueprintAssignable, Category = "UI")
@@ -37,32 +34,23 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "UI")
 	FOnBossDataReceived OnBossDataReceived;
 
-	FClientSubsystemDelegate OnClientSubsystemDelegate;
-
 	// ============================================================================
 	// AUTHENTICATION RPC METHODS
 	// ============================================================================
 	UFUNCTION(Server, Reliable)
 	void Server_InitiateReward(const FString& PlayerId, const FRewardRequest& Payload);
 	
-	// RPC Call Interface DI From ClientAuthService
 	virtual void RequestServerRegistration(const FString& Username, const FString& Password) override;
 	virtual void RequestServerLogin(const FString& Username, const FString& Password) override;
 	virtual void Request_Client_TravelToGameWorld(const FString& MapURL) override;
 	virtual void Request_Client_ConnectToGameServerWithToken(const FString& Token, const FString& UserId) override;
 	virtual bool IsAuthRPCAvailable() const override;
-	
 
 private:
-	// RPC
 	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_Register(const FString& Username, const FString& Password);
 	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_Login(const FString& Username, const FString& Password);
-	UFUNCTION(Client, Reliable)
-	void Client_OnRegistrationResult(bool bSuccess, const FString& Message);
-	UFUNCTION(Client, Reliable)
-	void Client_OnLoginResult(bool bSuccess, const FString& Token, const FString& UserId);
 	UFUNCTION(Client, Reliable)
 	void Client_TravelToGameWorld(const FString& MapURL);
 	
@@ -73,25 +61,36 @@ private:
 	UPROPERTY(Transient)
 	TScriptInterface<IClientManagerInterface> CachedClientManagerInterface;
 
-	UPROPERTY(EditDefaultsOnly, Category= "Client Component")
-	TSoftClassPtr<UActorComponent> ClientAuthComponentClass;
-
-	UPROPERTY(EditDefaultsOnly, Category= "Client Component")
-	TSoftClassPtr<UActorComponent> ClientUIComponentClass;
-
+	// ============================================================================
+	// 간소화된 클라이언트 컴포넌트 관리 (문자열 기반)
+	// ============================================================================
+	
 	UPROPERTY(Transient)
 	TObjectPtr<UActorComponent> ClientAuthComponent;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UActorComponent> ClientUIComponent;
+
+	UFUNCTION(BlueprintCallable, Category = "Client Component")
+	UActorComponent* CreateUIComponent(EClientUIKey UIKey);
+
+	UFUNCTION(BlueprintCallable, Category = "Client Component")
+	void CreateDefaultClientComponents();
 public:
 	// ============================================================================
 	// CLIENT SERVICE ACCESS - Interface-based approach
 	// ============================================================================
 
-	// Get UIManagerSubsystem interface (cached for performance)
 	TScriptInterface<IClientManagerInterface> GetUIManagerInterface();
 
+	// ============================================================================
+	// CLIENT SERVICE ACCESS - RPC-based approach
+	// ============================================================================
+
+	UFUNCTION(Client, Reliable)
+	void Client_InitializeUI(const USkillComponent* SkillComponent);
+	UFUNCTION(Client, Reliable)
+	void Client_InitializeClientComponent();
 	// ============================================================================
 	// Subsystem Interface Implementation
 	// ============================================================================

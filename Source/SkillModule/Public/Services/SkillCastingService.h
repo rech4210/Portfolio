@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -12,7 +12,7 @@ class ISkillStateRepositoryInterface;
 struct FSkillUsedEvent;
 
 /**
- * 스킬 시전 로직을 트랜잭션 단위로 처리하는 도메인 서비스입니다.
+ * ?�킬 ?�전 로직???�랜??�� ?�위�?처리?�는 ?�메???�비?�입?�다.
  */
 UCLASS()
 class SKILLMODULE_API USkillCastingService : public UObject
@@ -21,15 +21,15 @@ class SKILLMODULE_API USkillCastingService : public UObject
 
 public:
 	/**
-	 * 스킬 시전을 시도하는 메인 트랜잭션 메서드입니다.
-	 * @param Caster 스킬을 시전하는 액터
-	 * @param SlotIndex 시전할 스킬 슬롯의 인덱스
-	 * @return 성공적으로 시전 과정을 시작했으면 true를 반환합니다.
+	 * ?�킬 ?�전???�도?�는 메인 ?�랜??�� 메서?�입?�다.
+	 * @param Caster ?�킬???�전?�는 ?�터
+	 * @param SlotIndex ?�전???�킬 ?�롯???�덱??
+	 * @return ?�공?�으�??�전 과정???�작?�으�?true�?반환?�니??
 	 */
 	bool TryCastSkill(ACharacter* Caster, int32 SlotIndex);
 
 private:
-	// 실제 구현에서는 Event Bus 시스템을 통해 이벤트를 발행해야 합니다.
+	// ?�제 구현?�서??Event Bus ?�스?�을 ?�해 ?�벤?��? 발행?�야 ?�니??
 	// void PublishSkillUsedEvent(const FSkillUsedEvent& Event);
 	
 }; 

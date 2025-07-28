@@ -1,4 +1,4 @@
-ï»¿// Fill out your copyright notice in the Description page of Project Settings.
+// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -19,27 +19,27 @@ public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override
 	{
 		Super::Initialize(Collection);
-		// Optional: ìžê¸° ìžì‹ ì„ Registryì— ë“±ë¡í•  ìˆ˜ë„ ìžˆìŒ
+		// Optional: ÀÚ±â ÀÚ½ÅÀ» Registry¿¡ µî·ÏÇÒ ¼öµµ ÀÖÀ½
 	}
 
 	void StartRewardFlow(const FString& PlayerId,
 						const FRewardRequest& Payload,
 						FOnFlowComplete Callback)
 	{
-		// 1) í”Œë ˆì´ì–´ ê²€ì¦
+		// 1) ÇÃ·¹ÀÌ¾î °ËÁõ
 		UPlayerValidationSubsystem* PV = GetWorld()->GetSubsystem<UPlayerValidationSubsystem>();
 		PV->CheckPlayer(PlayerId,
 			FOnPlayerCheck::CreateLambda([this, Payload, Callback](bool bValid, FString Reason)
 		{
 			// if (!bValid) return Callback.Execute(false, {}, Reason);
 
-			// 2) ë³´ìƒ ìš”ì²­
+			// 2) º¸»ó ¿äÃ»
 			URewardServiceSubsystem* RS = GetWorld()->GetSubsystem<URewardServiceSubsystem>();
 		// 	RS->RequestReward(Payload,
 		// 		FOnRewardResult::CreateLambda([Callback](bool bOK, FRewardData Data)
 		// 	{
 		// 		if (!bOK) return Callback.Execute(false, {}, TEXT("Reward Failed"));
-		// 		// 3) ì¶”ê°€ ì„œë¹„ìŠ¤ ê°€ëŠ¥...
+		// 		// 3) Ãß°¡ ¼­ºñ½º °¡´É...
 		// 		Callback.Execute(true, Data, TEXT(""));
 		// 	}));
 		}));

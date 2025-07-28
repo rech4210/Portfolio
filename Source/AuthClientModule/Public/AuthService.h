@@ -43,14 +43,14 @@ public:
 	 * Called from UI, sends request to PlayerController RPC
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Auth Service")
-	void RequestRegistration(const FString& Username, const FString& Password, APlayerController* PC, FRegistrationDelegate OnResult);
+	void RequestRegistration(const FString& Username, const FString& Password, APlayerController* PC);
 
 	/**
 	 * Request user login through server
 	 * Called from UI, sends request to PlayerController RPC
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Auth Service")
-	void RequestLogin(const FString& Username, const FString& Password, APlayerController* PC, FLoginDelegate OnResult);
+	void RequestLogin(const FString& Username, const FString& Password, APlayerController* PC);
 
 	/**
 	 * Logout current user
@@ -79,14 +79,14 @@ public:
 	// ============================================================================
 	// Callbacks from PlayerController (called when server responds)
 	// ============================================================================
-
-	/**
-	 * Called by PlayerController when server responds to registration request
-	 */
-	void OnServerRegistrationResult(bool bSuccess, const FString& Message);
-
-	/**
-	 * Called by PlayerController when server responds to login request
-	 */
-	void OnServerLoginResult(bool bSuccess, const FString& Token, const FString& UserId);
+	//
+	// /**
+	//  * Called by PlayerController when server responds to registration request
+	//  */
+	// void OnServerRegistrationResult(bool bSuccess, const FString& Message);
+	//
+	// /**
+	//  * Called by PlayerController when server responds to login request
+	//  */
+	// void OnServerLoginResult(bool bSuccess, const FString& Token, const FString& UserId);
 }; 

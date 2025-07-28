@@ -14,7 +14,7 @@ public class GameSharedModule : ModuleRules
                 "Engine",
                 "GameplayAbilities",
                 "GameplayTags",
-                "UMG", // UMG는 제거 대상
+                "UMG",
                 "Json",
                 "JsonUtilities"
             }

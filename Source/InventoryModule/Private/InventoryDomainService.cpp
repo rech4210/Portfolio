@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "InventoryDomainService.h"
 #include "InventoryComponent.h"
@@ -282,9 +282,9 @@ UE::Tasks::TTask<void> UInventoryDomainService::LoadInventory(TScriptInterface<I
 }
 
 /*
- * 1. 도메인 서비스 라인의 호출은 반환값을 가지지 않도록 한다.
- * 2. 영속 계층의 작업은 WorkerThread로 이어지게 하고, 도메인 서비스 내부에서 GameThread를 호출하여 작업을 마무리한다.
- * 3. Save와 Load 기능을 다시 살펴보기.
+ * 1. ?�메???�비???�인???�출?� 반환값을 가지지 ?�도�??�다.
+ * 2. ?�속 계층???�업?� WorkerThread�??�어지�??�고, ?�메???�비???��??�서 GameThread�??�출?�여 ?�업??마무리한??
+ * 3. Save?� Load 기능???�시 ?�펴보기.
  */
 
 UE::Tasks::TTask<void> UInventoryDomainService::SaveInventory(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FInventoryDomain& InventoryData)

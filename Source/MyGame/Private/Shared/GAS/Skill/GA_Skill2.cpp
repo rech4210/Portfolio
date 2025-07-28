@@ -1,4 +1,4 @@
-ï»¿// Fill out your copyright notice in the Description page of Project Settings.
+// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Shared/GAS/Skill/GA_Skill2.h"
@@ -29,20 +29,20 @@ void UGA_Skill2::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const 
 		return;
 	}
 
-	// AvatarActor ìœ íš¨ì„± ê²€ì‚¬
+	// AvatarActor À¯È¿¼º °Ë»ç
 	AActor* AvatarActor = GetAvatarActorFromActorInfo();
 	if (!IsValid(AvatarActor)){
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}
 
-	// 2) íƒ€ê²ŸíŒ… Task
+	// 2) Å¸°ÙÆÃ Task
 	if (SkillDataAsset->TargetStrategyClass->IsChildOf(USkillTarget_Self::StaticClass())){
 		OnTargetDataReceived(FGameplayAbilityTargetDataHandle());
 	}
 	else
 	{
-		// ë§ˆìš°ìŠ¤ ê¸°ë°˜ ìœ„ì¹˜ íƒ€ê²ŸíŒ…
+		// ¸¶¿ì½º ±â¹Ý À§Ä¡ Å¸°ÙÆÃ
 		ASkillTargetActor_Mouse* TargetActor = NewObject<ASkillTargetActor_Mouse>(this);
 
 		UAbilityTask_WaitTargetData* TargetTask = UAbilityTask_WaitTargetData::WaitTargetDataUsingActor(
@@ -59,7 +59,7 @@ void UGA_Skill2::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const 
 
 void UGA_Skill2::OnTargetDataCancelled(const FGameplayAbilityTargetDataHandle& Data)
 {
-	// ì·¨ì†Œ ì‹œì—” Ability ì¢…ë£Œ
+	// Ãë¼Ò ½Ã¿£ Ability Á¾·á
 	// GetActorInfo().AbilitySystemComponent->RemoveGameplayCue(UEnumTagMatchHelper::GetTagFromEnum(ECueType::DirectionPreview));
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, false, true);
 }
@@ -76,7 +76,7 @@ void UGA_Skill2::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Da
 		return;
 	}
 
-	//Cue ì‹œê° íš¨ê³¼ ì ìš©
+	//Cue ½Ã°¢ È¿°ú Àû¿ë
 	if (Data.Num() > 0 && Data.Get(0)){
 		const FHitResult* Hit = Data.Get(0)->GetHitResult();
 		if (Hit){
@@ -94,7 +94,7 @@ void UGA_Skill2::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Da
 		}
 	}
 
-	// 4) ëª½íƒ€ì£¼ Task
+	// 4) ¸ùÅ¸ÁÖ Task
 	UGGwaPlayMontageAndWaitForEvent* MontageTask =
 		UGGwaPlayMontageAndWaitForEvent::PlayMontageAndWaitForEvent(
 			this,

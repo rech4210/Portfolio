@@ -1,30 +1,31 @@
-// 1) Windows 타입 래퍼 & 매크로 충돌 방지
+// @Needmodifi
+// 1) Windows ?�???�퍼 & 매크�?충돌 방�?
 /* 
- * 문제 원인:
- * - Unreal Engine은 전처리 단계에서 'check(...)' 매크로를 정의하고 사용함.
- * - MySQL Connector/C++는 전역 함수 'check(const std::string&)' 등을 정의함.
- * - 두 정의가 이름을 공유하며, include 순서에 따라 서로 다른 방식으로 해석됨.
+ * 문제 ?�인:
+ * - Unreal Engine?� ?�처�??�계?�서 'check(...)' 매크로�? ?�의?�고 ?�용??
+ * - MySQL Connector/C++???�역 ?�수 'check(const std::string&)' ?�을 ?�의??
+ * - ???�의가 ?�름??공유?�며, include ?�서???�라 ?�로 ?�른 방식?�로 ?�석??
  *
- * include 순서에 따른 차이:
- * 1) UE 헤더 먼저 포함 → 매크로 정의 → #undef check → MySQL 헤더 포함
- *    - UE 매크로가 이미 사용된 이후이므로 MySQL 함수 정의만 잠깐 가려져 충돌 없음.
- * 2) MySQL 헤더 먼저 포함 → 전역 함수 정의 → #undef check → UE 헤더 포함
- *    - UE 매크로가 아직 정의되지 않은 상태이므로 전역 함수가 남아 UE 코드의 check 호출과 충돌.
+ * include ?�서???�른 차이:
+ * 1) UE ?�더 먼�? ?�함 ??매크�??�의 ??#undef check ??MySQL ?�더 ?�함
+ *    - UE 매크로�? ?��? ?�용???�후?��?�?MySQL ?�수 ?�의�??�깐 가?�져 충돌 ?�음.
+ * 2) MySQL ?�더 먼�? ?�함 ???�역 ?�수 ?�의 ??#undef check ??UE ?�더 ?�함
+ *    - UE 매크로�? ?�직 ?�의?��? ?��? ?�태?��?�??�역 ?�수가 ?�아 UE 코드??check ?�출�?충돌.
  *
- * 해결책:
- * - MySQL 헤더는 매크로가 제거된 상태에서만 포함하고,
- * - Unreal 헤더들은 MySQL 헤더 이후 'CoreMinimal.h' 등에서 매크로가 복원된 뒤에 포함해야 함.
+ * ?�결�?
+ * - MySQL ?�더??매크로�? ?�거???�태?�서�??�함?�고,
+ * - Unreal ?�더?��? MySQL ?�더 ?�후 'CoreMinimal.h' ?�에??매크로�? 복원???�에 ?�함?�야 ??
  */
 #include "DatabaseManager.h"
 
-// 3) 언리얼 코어 헤더로 매크로 복원
+// 3) ?�리??코어 ?�더�?매크�?복원
 #include "CoreMinimal.h"
 #include "Tasks/Task.h"
 #include "HAL/PlatformProcess.h"
 #include "Misc/ScopeExit.h"
 
 #include "Data/DatabaseSettings.h"
-// 4) 그 뒤에 나머지 UE4 헤더들
+// 4) �??�에 ?�머지 UE4 ?�더??
 #include "Async/Async.h"
 #include "Misc/Optional.h"
 #include "HAL/PlatformProcess.h"
@@ -43,10 +44,10 @@
 
 #include "Windows/HideWindowsPlatformTypes.h"
 
-// …PIMPL 구현체 정의…
-// C4150: 불완전한 형식 'FDatabaseManagerImpl'에 대한 포인터를 삭제했습니다.
-// -> PIMPL 구조 사용시 unique_ptr에서 소멸자 delete를 하는데, 컴파일 시점에 FDatabaseManagerImpl의 정의가 불완전하기에 해당 에러가 출력됨
-// 해결 : FDatabaseManagerImpl 구조체를 완전하게 정의하거나, UniquePtr를 사용하지 않고 raw 포인터를 사용하여 소멸자를 직접 구현합니다.
+// ?�PIMPL 구현�??�의??
+// C4150: 불완?�한 ?�식 'FDatabaseManagerImpl'???�???�인?��? ??��?�습?�다.
+// -> PIMPL 구조 ?�용??unique_ptr?�서 ?�멸??delete�??�는?? 컴파???�점??FDatabaseManagerImpl???�의가 불완?�하기에 ?�당 ?�러가 출력??
+// ?�결 : FDatabaseManagerImpl 구조체�? ?�전?�게 ?�의?�거?? UniquePtr�??�용?��? ?�고 raw ?�인?��? ?�용?�여 ?�멸?��? 직접 구현?�니??
 struct FDatabaseManagerImpl
 {
 	sql::Driver* Driver = nullptr;
@@ -236,13 +237,13 @@ void UDatabaseManager::Initialize(FSubsystemCollectionBase& Collection)
 		return;
 	}
 
-	// [디버그 로그 추가] 어떤 설정으로 접속을 시도하는지 확인합니다.
+	// [?�버�?로그 추�?] ?�떤 ?�정?�로 ?�속???�도?�는지 ?�인?�니??
 	UE_LOG(LogTemp, Log, TEXT("Attempting DB connection with the following settings:"));
 	UE_LOG(LogTemp, Log, TEXT(" - Host: %s"), *Settings->DBHost);
 	UE_LOG(LogTemp, Log, TEXT(" - Port: %d"), Settings->DBPort);
 	UE_LOG(LogTemp, Log, TEXT(" - User: %s"), *Settings->DBUser);
 	UE_LOG(LogTemp, Log, TEXT(" - Schema: %s"), *Settings->DBSchema);
-	// 경고: 보안을 위해 비밀번호는 절대 로그로 출력하지 마세요.
+	// 경고: 보안???�해 비�?번호???��? 로그�?출력?��? 마세??
 
 	try
 	{
@@ -257,7 +258,7 @@ void UDatabaseManager::Initialize(FSubsystemCollectionBase& Collection)
 
 		for (int32 i = 0; i < Impl->PoolSize; ++i)
 		{
-			//connectionPool의 초기화가 이루어졌는가?
+			//connectionPool??초기?��? ?�루?�졌?��??
 			Impl->ConnectionPool.Enqueue(Impl->Driver->connect(Impl->ConnectionProperties));
 		}
 		UE_LOG(LogTemp, Log, TEXT("Database connection pool initialized with %d connections."), Impl->PoolSize);
@@ -441,7 +442,7 @@ UE::Tasks::TTask<bool> UDatabaseManager::WithTransaction(F&& Function, const TCH
 					return false;
 				}
 			}
-			//Try가 성공하면 TransactionGuard의 종료자가 호출되지 않는건가?
+			//Try가 ?�공?�면 TransactionGuard??종료?��? ?�출?��? ?�는건�??
 		}
 		catch (const sql::SQLException& e)
 		{
@@ -1289,13 +1290,13 @@ UE::Tasks::TTask<bool> UDatabaseManager::UpdateShopItemPrice(int32 ShopID, int32
 
 FString UPlayerIdHelper::ConvertPlayerIdToUserId(int32 PlayerId)
 {
-	// 프로토타입용 간단 변환: player_[PlayerId] 형식
+	// ?�로?��??�용 간단 변?? player_[PlayerId] ?�식
 	return FString::Printf(TEXT("player_%d"), PlayerId);
 }
 
 int32 UPlayerIdHelper::ConvertUserIdToPlayerId(const FString& UserId)
 {
-	// player_[number] 형식에서 number 추출
+	// player_[number] ?�식?�서 number 추출
 	if (UserId.IsEmpty())
 	{
 		UE_LOG(LogTemp, Error, TEXT("UPlayerIdHelper::ConvertUserIdToPlayerId: Empty UserId"));
@@ -1305,7 +1306,7 @@ int32 UPlayerIdHelper::ConvertUserIdToPlayerId(const FString& UserId)
 	FString PlayerPrefix = TEXT("player_");
 	if (!UserId.StartsWith(PlayerPrefix))
 	{
-		// 숫자만 있는 경우 직접 변환 시도
+		// ?�자�??�는 경우 직접 변???�도
 		if (UserId.IsNumeric())
 		{
 			return FCString::Atoi(*UserId);
@@ -1338,13 +1339,13 @@ bool UPlayerIdHelper::IsValidUserId(const FString& UserId)
 		return false;
 	}
 	
-	// VARCHAR(255) 제한 검사
+	// VARCHAR(255) ?�한 검??
 	if (UserId.Len() > 255)
 	{
 		return false;
 	}
 	
-	// 기본적인 문자열 유효성 검사 (공백, 특수문자 등)
+	// 기본?�인 문자???�효??검??(공백, ?�수문자 ??
 	for (const TCHAR& Char : UserId)
 	{
 		if (FChar::IsWhitespace(Char) || Char == TEXT('\0'))
@@ -1539,12 +1540,12 @@ UE::Tasks::TTask<bool> UDatabaseManager::UpdateUserAccount(const FDatabaseUserDa
 
 FString UDatabaseJsonHelper::SerializeSkillData(const TMap<FString, FString>& SkillProperties)
 {
-	return SerializeInventoryItemData(SkillProperties); // 같은 구조 재사용
+	return SerializeInventoryItemData(SkillProperties); // 같�? 구조 ?�사??
 }
 
 TMap<FString, FString> UDatabaseJsonHelper::DeserializeSkillData(const FString& JsonData)
 {
-	return DeserializeInventoryItemData(JsonData); // 같은 구조 재사용
+	return DeserializeInventoryItemData(JsonData); // 같�? 구조 ?�사??
 }
 
 FString UDatabaseJsonHelper::SerializeEquipmentEnhancement(int32 EnhancementLevel, const TArray<FString>& EnhancementEffects)
@@ -1687,7 +1688,7 @@ UE::Tasks::TTask<TArray<FSkillSlotDatabaseDTO>> UDatabaseManager::LoadUserSkillS
 				Impl->ReturnConnection(Con);
 			};
 			
-			// SQL Query: user_skill_slots와 user_skills를 조인하여 데이터 로드
+			// SQL Query: user_skill_slots?� user_skills�?조인?�여 ?�이??로드
 			FString Query;
 			if (SlotKey.IsEmpty())
 			{
@@ -1717,7 +1718,7 @@ UE::Tasks::TTask<TArray<FSkillSlotDatabaseDTO>> UDatabaseManager::LoadUserSkillS
 			}
 			
 			std::unique_ptr<sql::PreparedStatement> Stmt(Con->prepareStatement(TCHAR_TO_UTF8(*Query)));
-			Stmt->setString(1, TCHAR_TO_UTF8(*UserId)); // UserId를 FString으로 처리
+			Stmt->setString(1, TCHAR_TO_UTF8(*UserId)); // UserId�?FString?�로 처리
 			if (!SlotKey.IsEmpty())
 			{
 				Stmt->setString(2, TCHAR_TO_UTF8(*SlotKey));
@@ -1728,7 +1729,7 @@ UE::Tasks::TTask<TArray<FSkillSlotDatabaseDTO>> UDatabaseManager::LoadUserSkillS
 			while (Result->next())
 			{
 				FSkillSlotDatabaseDTO SlotDTO;
-				SlotDTO.UserId = UTF8_TO_TCHAR(Result->getString("user_id").c_str()); // FString으로 처리
+				SlotDTO.UserId = UTF8_TO_TCHAR(Result->getString("user_id").c_str()); // FString?�로 처리
 				SlotDTO.SlotKey = UTF8_TO_TCHAR(Result->getString("slot_key").c_str());
 				SlotDTO.SkillId = Result->getInt("skill_id");
 				SlotDTO.SlotIndex = Result->getInt("slot_index");
@@ -1797,7 +1798,7 @@ UE::Tasks::TTask<bool> UDatabaseManager::SaveUserSkillSlots(const TArray<FSkillS
 				Impl->ReturnConnection(Con);
 			};
 			
-			// 트랜잭션 시작
+			// ?�랜??�� ?�작
 			Con->setAutoCommit(false);
 			
 			ON_SCOPE_EXIT
@@ -1882,7 +1883,7 @@ UE::Tasks::TTask<TArray<FSkillMasterDatabaseDTO>> UDatabaseManager::LoadSkillMas
 			
 			if (SkillIds.IsEmpty())
 			{
-				// 모든 스킬 마스터 데이터 로드
+				// 모든 ?�킬 마스???�이??로드
 				Query = TEXT(
 					"SELECT skill_id, display_name, description, base_cooltime, base_cost, max_level, enabled "
 					"FROM skills "
@@ -1893,7 +1894,7 @@ UE::Tasks::TTask<TArray<FSkillMasterDatabaseDTO>> UDatabaseManager::LoadSkillMas
 			}
 			else
 			{
-				// 특정 스킬 ID들만 로드
+				// ?�정 ?�킬 ID?�만 로드
 				FString PlaceholderList;
 				for (int32 i = 0; i < SkillIds.Num(); ++i)
 				{
@@ -1967,7 +1968,7 @@ UE::Tasks::TTask<bool> UDatabaseManager::SaveSkillMasterData(const TArray<FSkill
 				Impl->ReturnConnection(Con);
 			};
 			
-			// 트랜잭션 시작
+			// ?�랜??�� ?�작
 			Con->setAutoCommit(false);
 			
 			ON_SCOPE_EXIT
@@ -2112,14 +2113,14 @@ UE::Tasks::TTask<bool> UDatabaseManager::ClearUserSkillSlots(const FString& User
 			
 			if (SlotKey.IsEmpty())
 			{
-				// 모든 슬롯 키 삭제
+				// 모든 ?�롯 ????��
 				Query = TEXT("DELETE FROM user_skill_slots WHERE user_id = ?");
 				Stmt.reset(Con->prepareStatement(TCHAR_TO_UTF8(*Query)));
 				Stmt->setString(1, TCHAR_TO_UTF8(*UserId));
 			}
 			else
 			{
-				// 특정 슬롯 키만 삭제
+				// ?�정 ?�롯 ?�만 ??��
 				Query = TEXT("DELETE FROM user_skill_slots WHERE user_id = ? AND slot_key = ?");
 				Stmt.reset(Con->prepareStatement(TCHAR_TO_UTF8(*Query)));
 				Stmt->setString(1, TCHAR_TO_UTF8(*UserId));
@@ -2165,7 +2166,7 @@ UE::Tasks::TTask<TMap<int32, int32>> UDatabaseManager::GetSkillUsageStatistics(
 				Impl->ReturnConnection(Con);
 			};
 			
-			// 통계 쿼리 (간단한 버전 - 실제로는 별도의 usage_logs 테이블이 필요할 수 있음)
+			// ?�계 쿼리 (간단??버전 - ?�제로는 별도??usage_logs ?�이블이 ?�요?????�음)
 			FString Query = TEXT(
 				"SELECT skill_id, COUNT(*) as usage_count "
 				"FROM user_skill_slots "
@@ -2208,7 +2209,7 @@ UE::Tasks::TTask<TMap<int32, int32>> UDatabaseManager::GetSkillUsageStatistics(
 			
 			std::unique_ptr<sql::PreparedStatement> Stmt(Con->prepareStatement(TCHAR_TO_UTF8(*Query)));
 			
-			// 파라미터 바인딩
+			// ?�라미터 바인??
 			for (int32 i = 0; i < ParamValues.Num(); ++i)
 			{
 				Stmt->setString(i + 1, TCHAR_TO_UTF8(*ParamValues[i]));

@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "ShopRepository.h"
 #include "DatabaseModule/Public/DatabaseManager.h"
@@ -144,7 +144,7 @@ UE::Tasks::TTask<bool> UShopRepository::DeleteShop(int32 ShopID)
 }
 
 UE::Tasks::TTask<bool> UShopRepository::ShopExists(int32 ShopID) {
-	// 비즈니스 로직 아닌가? check?
+	// 비즈?�스 로직 ?�닌가? check?
 	auto CheckTask = DBManager->CheckShopExists(ShopID);
 	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, ShopID, CheckTask]() mutable -> bool
 	{

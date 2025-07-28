@@ -1,4 +1,5 @@
-﻿#pragma once
+// @Needmodifi
+#pragma once
 #include "Engine/EngineTypes.h"
 #include "FSkillShapeConfig.generated.h"
 

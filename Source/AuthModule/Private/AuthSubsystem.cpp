@@ -58,20 +58,20 @@ TScriptInterface<IAuthRepositoryInterface> UAuthSubsystem::GetAuthRepository() c
 // Use Case Orchestration - App Layer Responsibilities Only
 // ============================================================================
 
-void UAuthSubsystem::RequestServerRegistration(const FString& Username, const FString& Password, const FString& ClientIP)
+void UAuthSubsystem::RequestServerRegistration(const FString& Username, const FString& Password, const FString& ClientIP, APlayerController* RequestingController)
 {
 	// 1. Authority Validation (App Layer responsibility)
 	if (!ValidateServerAuthority())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("AuthSubsystem: Registration requests should only be made from server"));
-		BroadcastRegistrationResult(false, TEXT("Unauthorized request"));
+		// BroadcastRegistrationResult(false, TEXT("Unauthorized request"));
 		return;
 	}
 
 	if (Username.IsEmpty() || Password.IsEmpty())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("AuthSubsystem: Invalid registration parameters"));
-		BroadcastRegistrationResult(false, TEXT("Username and password are required"));
+		// BroadcastRegistrationResult(false, TEXT("Username and password are required"));
 		return;
 	}
 
@@ -88,7 +88,7 @@ void UAuthSubsystem::RequestServerRegistration(const FString& Username, const FS
 		Request.ClientIP = ClientIP;
 		Request.UserAgent = TEXT("UE5-Server");
 
-		SendRegistrationToAuthServer(Request);
+		SendRegistrationToAuthServer(Request, RequestingController);
 	}
 	else
 	{
@@ -96,7 +96,7 @@ void UAuthSubsystem::RequestServerRegistration(const FString& Username, const FS
 		if (!DomainService)
 		{
 			UE_LOG(LogTemp, Error, TEXT("AuthSubsystem: DomainService not initialized"));
-			BroadcastRegistrationResult(false, TEXT("Authentication service unavailable"));
+			// BroadcastRegistrationResult(false, TEXT("Authentication service unavailable"));
 			return;
 		}
 
@@ -118,21 +118,21 @@ void UAuthSubsystem::RequestServerAuthentication(const FString& Username, const 
 	if (!ValidateServerAuthority())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("AuthSubsystem: Authentication requests should only be made from server"));
-		BroadcastAuthenticationResult(false, TEXT(""), TEXT(""), RequestingController);
+		// BroadcastAuthenticationResult(false, TEXT(""), TEXT(""), RequestingController);
 		return;
 	}
 
 	if (!RequestingController)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("AuthSubsystem: Invalid PlayerController for authentication"));
-		BroadcastAuthenticationResult(false, TEXT(""), TEXT(""));
+		// BroadcastAuthenticationResult(false, TEXT(""), TEXT(""));
 		return;
 	}
 
 	if (Username.IsEmpty() || Password.IsEmpty())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("AuthSubsystem: Invalid authentication parameters"));
-		BroadcastAuthenticationResult(false, TEXT(""), TEXT(""), RequestingController);
+		// BroadcastAuthenticationResult(false, TEXT(""), TEXT(""), RequestingController);
 		return;
 	}
 
@@ -175,6 +175,7 @@ void UAuthSubsystem::RequestServerAuthentication(const FString& Username, const 
 	// }
 }
 
+// TODO: Verify Never Used
 void UAuthSubsystem::VerifyTokenWithAuthServer(const FString& Token, const FString& UserId)
 {
 	if (!ValidateServerAuthority())
@@ -239,7 +240,7 @@ void UAuthSubsystem::AdminDeactivateUserAccount(const FString& UserId, const FSt
 // External Auth Server Communication (Node.js)
 // ============================================================================
 
-void UAuthSubsystem::SendRegistrationToAuthServer(const FAuthRequestDTO& Request)
+void UAuthSubsystem::SendRegistrationToAuthServer(const FAuthRequestDTO& Request, APlayerController* RequestingController)
 {
 	FHttpModule& HttpModule = FHttpModule::Get();
 	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = HttpModule.CreateRequest();
@@ -250,7 +251,9 @@ void UAuthSubsystem::SendRegistrationToAuthServer(const FAuthRequestDTO& Request
 	HttpRequest->SetTimeout(RequestTimeoutSeconds);
 	HttpRequest->SetContentAsString(CreateAuthRequestJson(Request));
 
-	HttpRequest->OnProcessRequestComplete().BindUObject(this, &UAuthSubsystem::OnRegistrationResponse);
+	HttpRequest->OnProcessRequestComplete().BindLambda([this, RequestingController](FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful) {
+		OnRegistrationResponse(Request, Response, bWasSuccessful, RequestingController);
+	});
 
 	if (HttpRequest->ProcessRequest())
 	{
@@ -259,7 +262,7 @@ void UAuthSubsystem::SendRegistrationToAuthServer(const FAuthRequestDTO& Request
 	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("AuthSubsystem: Failed to send registration request"));
-		BroadcastRegistrationResult(false, TEXT("Failed to connect to authentication server"));
+		// BroadcastRegistrationResult(false, TEXT("Failed to connect to authentication server"));
 	}
 }
 
@@ -283,7 +286,7 @@ void UAuthSubsystem::SendAuthenticationToAuthServer(const FAuthRequestDTO& Reque
 	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("AuthSubsystem: Failed to send authentication request"));
-		BroadcastAuthenticationResult(false, TEXT(""), TEXT(""), RequestingController);
+		// BroadcastAuthenticationResult(false, TEXT(""), TEXT(""), RequestingController);
 	}
 }
 
@@ -324,12 +327,12 @@ void UAuthSubsystem::SendTokenVerificationToAuthServer(const FString& Token, con
 // HTTP Response Handlers
 // ============================================================================
 
-void UAuthSubsystem::OnRegistrationResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
+void UAuthSubsystem::OnRegistrationResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful, APlayerController* RequestingController)
 {
 	if (!bWasSuccessful || !Response.IsValid())
 	{
 		UE_LOG(LogTemp, Error, TEXT("AuthSubsystem: Registration request failed"));
-		BroadcastRegistrationResult(false, TEXT("Failed to connect to authentication server"));
+		// BroadcastRegistrationResult(false, TEXT("Failed to connect to authentication server"));
 		return;
 	}
 
@@ -340,7 +343,8 @@ void UAuthSubsystem::OnRegistrationResponse(FHttpRequestPtr Request, FHttpRespon
 
 	if (ResponseCode == 201) // Created
 	{
-		// Parse success response
+		//TODO: Handle success response 를 추가하기. Iclient~ 인터페이스를 game Shared 모듈로 옮겨야함.
+		// Cast<IClientManagerInterface>(RequestingController)->Handle...
 		TSharedPtr<FJsonObject> JsonObject;
 		TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ResponseBody);
 		
@@ -350,12 +354,15 @@ void UAuthSubsystem::OnRegistrationResponse(FHttpRequestPtr Request, FHttpRespon
 			JsonObject->TryGetStringField(TEXT("message"), Message);
 			
 			LogSecurityEvent(TEXT("registration_success"), Message);
-			BroadcastRegistrationResult(true, Message);
+			// BroadcastRegistrationResult(true, Message);
 		}
-		else
-		{
-			BroadcastRegistrationResult(true, TEXT("User registered successfully"));
+		else {
+			UE_LOG(LogTemp, Error, TEXT("AuthSubsystem: Deserialize failed"));
 		}
+		// else
+		// {
+		// 	// BroadcastRegistrationResult(true, TEXT("User registered successfully"));
+		// }
 	}
 	else
 	{
@@ -371,7 +378,7 @@ void UAuthSubsystem::OnRegistrationResponse(FHttpRequestPtr Request, FHttpRespon
 		}
 
 		LogSecurityEvent(TEXT("registration_failed"), FString::Printf(TEXT("Code: %d, Message: %s"), ResponseCode, *ErrorMessage));
-		BroadcastRegistrationResult(false, ErrorMessage);
+		// BroadcastRegistrationResult(false, ErrorMessage);
 	}
 }
 
@@ -381,7 +388,7 @@ void UAuthSubsystem::OnAuthenticationResponse(FHttpRequestPtr Request, FHttpResp
 	{
 		UE_LOG(LogTemp, Error, TEXT("AuthSubsystem: Authentication request failed - Network error"));
 		LogSecurityEvent(TEXT("authentication_network_error"), TEXT("HTTP request failed"));
-		BroadcastAuthenticationResult(false, TEXT(""), TEXT(""), RequestingController);
+		// BroadcastAuthenticationResult(false, TEXT(""), TEXT(""), RequestingController);
 		return;
 	}
 
@@ -407,15 +414,15 @@ void UAuthSubsystem::OnAuthenticationResponse(FHttpRequestPtr Request, FHttpResp
 				CacheTokenForUser(AuthResponse.UserId, AuthResponse.Token);
 
 				// Load game data for authenticated user
-				LoadGameDataForUser(AuthResponse.UserId, RequestingController);
+				RequestConnectingServer(true, AuthResponse.UserId, RequestingController);
 				
-				BroadcastAuthenticationResult(true, AuthResponse.Token, AuthResponse.UserId, RequestingController);
+				// BroadcastAuthenticationResult(true, AuthResponse.Token, AuthResponse.UserId, RequestingController);
 			}
 			else
 			{
 				UE_LOG(LogTemp, Error, TEXT("AuthSubsystem: Failed to parse authentication response"));
 				LogSecurityEvent(TEXT("authentication_parse_error"), TEXT("Failed to parse successful response"));
-				BroadcastAuthenticationResult(false, TEXT(""), TEXT(""), RequestingController);
+				// BroadcastAuthenticationResult(false, TEXT(""), TEXT(""), RequestingController);
 			}
 			break;
 		}
@@ -428,7 +435,7 @@ void UAuthSubsystem::OnAuthenticationResponse(FHttpRequestPtr Request, FHttpResp
 			
 			LogSecurityEvent(TEXT("authentication_bad_request"), 
 				FString::Printf(TEXT("Code: %d, Message: %s"), ResponseCode, *ErrorMessage));
-			BroadcastAuthenticationResult(false, TEXT(""), TEXT(""), RequestingController);
+			// BroadcastAuthenticationResult(false, TEXT(""), TEXT(""), RequestingController);
 			break;
 		}
 		
@@ -465,7 +472,7 @@ void UAuthSubsystem::OnAuthenticationResponse(FHttpRequestPtr Request, FHttpResp
 			
 			LogSecurityEvent(TEXT("authentication_invalid_credentials"), 
 				FString::Printf(TEXT("Code: %d, Message: %s"), ResponseCode, *ErrorMessage));
-			BroadcastAuthenticationResult(false, TEXT(""), TEXT(""), RequestingController);
+			// BroadcastAuthenticationResult(false, TEXT(""), TEXT(""), RequestingController);
 			break;
 		}
 		
@@ -495,7 +502,7 @@ void UAuthSubsystem::OnAuthenticationResponse(FHttpRequestPtr Request, FHttpResp
 			
 			LogSecurityEvent(TEXT("authentication_account_locked_or_disabled"), 
 				FString::Printf(TEXT("Code: %d, Message: %s"), ResponseCode, *ErrorMessage));
-			BroadcastAuthenticationResult(false, TEXT(""), TEXT(""), RequestingController);
+			// BroadcastAuthenticationResult(false, TEXT(""), TEXT(""), RequestingController);
 			break;
 		}
 		
@@ -507,7 +514,7 @@ void UAuthSubsystem::OnAuthenticationResponse(FHttpRequestPtr Request, FHttpResp
 			
 			LogSecurityEvent(TEXT("authentication_rate_limited"), 
 				FString::Printf(TEXT("Code: %d, Message: %s"), ResponseCode, *ErrorMessage));
-			BroadcastAuthenticationResult(false, TEXT(""), TEXT(""), RequestingController);
+			// BroadcastAuthenticationResult(false, TEXT(""), TEXT(""), RequestingController);
 			break;
 		}
 		
@@ -519,7 +526,7 @@ void UAuthSubsystem::OnAuthenticationResponse(FHttpRequestPtr Request, FHttpResp
 			
 			LogSecurityEvent(TEXT("authentication_server_error"), 
 				FString::Printf(TEXT("Code: %d, Message: %s"), ResponseCode, *ErrorMessage));
-			BroadcastAuthenticationResult(false, TEXT(""), TEXT(""), RequestingController);
+			// BroadcastAuthenticationResult(false, TEXT(""), TEXT(""), RequestingController);
 			break;
 		}
 		
@@ -531,7 +538,7 @@ void UAuthSubsystem::OnAuthenticationResponse(FHttpRequestPtr Request, FHttpResp
 			
 			LogSecurityEvent(TEXT("authentication_unexpected_response"), 
 				FString::Printf(TEXT("Code: %d, Message: %s"), ResponseCode, *ErrorMessage));
-			BroadcastAuthenticationResult(false, TEXT(""), TEXT(""), RequestingController);
+			// BroadcastAuthenticationResult(false, TEXT(""), TEXT(""), RequestingController);
 			break;
 		}
 	}
@@ -590,35 +597,35 @@ bool UAuthSubsystem::ValidateServerAuthority() const
 	}
 	return false;
 }
-
-void UAuthSubsystem::BroadcastAuthenticationResult(bool bSuccess, const FString& Token, const FString& UserId, APlayerController* TargetController)
-{
-	OnServerAuthenticationComplete.Broadcast(bSuccess, Token, UserId);
-	
-	// Additional logging
-	if (bSuccess)
-	{
-		UE_LOG(LogTemp, Log, TEXT("AuthSubsystem: Broadcasting successful authentication for user %s"), *UserId);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("AuthSubsystem: Broadcasting failed authentication"));
-	}
-}
-
-void UAuthSubsystem::BroadcastRegistrationResult(bool bSuccess, const FString& Message)
-{
-	OnServerRegistrationComplete.Broadcast(bSuccess, Message);
-	
-	if (bSuccess)
-	{
-		UE_LOG(LogTemp, Log, TEXT("AuthSubsystem: Broadcasting successful registration"));
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("AuthSubsystem: Broadcasting failed registration - %s"), *Message);
-	}
-}
+//
+// void UAuthSubsystem::BroadcastAuthenticationResult(bool bSuccess, const FString& Token, const FString& UserId, APlayerController* TargetController)
+// {
+// 	OnServerAuthenticationComplete.Broadcast(bSuccess, Token, UserId);
+// 	
+// 	// Additional logging
+// 	if (bSuccess)
+// 	{
+// 		UE_LOG(LogTemp, Log, TEXT("AuthSubsystem: Broadcasting successful authentication for user %s"), *UserId);
+// 	}
+// 	else
+// 	{
+// 		UE_LOG(LogTemp, Warning, TEXT("AuthSubsystem: Broadcasting failed authentication"));
+// 	}
+// }
+//
+// void UAuthSubsystem::BroadcastRegistrationResult(bool bSuccess, const FString& Message)
+// {
+// 	OnServerRegistrationComplete.Broadcast(bSuccess, Message);
+// 	
+// 	if (bSuccess)
+// 	{
+// 		UE_LOG(LogTemp, Log, TEXT("AuthSubsystem: Broadcasting successful registration"));
+// 	}
+// 	else
+// 	{
+// 		UE_LOG(LogTemp, Warning, TEXT("AuthSubsystem: Broadcasting failed registration - %s"), *Message);
+// 	}
+// }
 
 void UAuthSubsystem::LogSecurityEvent(const FString& Event, const FString& Details) const
 {
@@ -713,6 +720,7 @@ bool UAuthSubsystem::ParseAuthResponseJson(const FString& ResponseBody, FAuthRes
 		return false;
 	}
 
+	
 	// Success case - extract JWT token
 	FString Token;
 	if (!JsonObject->TryGetStringField(TEXT("token"), Token) || Token.IsEmpty())
@@ -734,6 +742,7 @@ bool UAuthSubsystem::ParseAuthResponseJson(const FString& ResponseBody, FAuthRes
 			OutResponse.bIsSuccess = true;
 			OutResponse.Token = Token;
 			OutResponse.UserId = UserId;
+			// OutResponse.Email = Email;
 			OutResponse.ErrorCode = 0;
 			OutResponse.ErrorMessage = TEXT("");
 			
@@ -746,52 +755,52 @@ bool UAuthSubsystem::ParseAuthResponseJson(const FString& ResponseBody, FAuthRes
 	UE_LOG(LogTemp, Error, TEXT("AuthSubsystem::ParseAuthResponseJson: Failed to extract user information from successful response"));
 	return false;
 }
+//
+// void UAuthSubsystem::LoadGameDataForUser(const FString& UserId, APlayerController* PlayerController)
+// {
+// 	if (!PlayerController)
+// 	{
+// 		UE_LOG(LogTemp, Warning, TEXT("AuthSubsystem: Cannot load game data - invalid PlayerController"));
+// 		return;
+// 	}
+//
+// 	UE_LOG(LogTemp, Log, TEXT("AuthSubsystem: Authentication completed for user %s, delegating to GameMode for data loading"), *UserId);
+//
+// 	// Note: Game data loading is now handled by GameMode and GAS system
+// 	// AuthSubsystem only handles authentication, not game state initialization
+// 	// This follows separation of concerns principle
+// 	
+// 	// Simply proceed to game world travel after successful authentication
+// 	OnGameDataLoaded(true, UserId, PlayerController);
+// }
 
-void UAuthSubsystem::LoadGameDataForUser(const FString& UserId, APlayerController* PlayerController)
+void UAuthSubsystem::RequestConnectingServer(bool bSuccess, const FString& UserId, APlayerController* PlayerController)
 {
 	if (!PlayerController)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("AuthSubsystem: Cannot load game data - invalid PlayerController"));
-		return;
-	}
-
-	UE_LOG(LogTemp, Log, TEXT("AuthSubsystem: Authentication completed for user %s, delegating to GameMode for data loading"), *UserId);
-
-	// Note: Game data loading is now handled by GameMode and GAS system
-	// AuthSubsystem only handles authentication, not game state initialization
-	// This follows separation of concerns principle
-	
-	// Simply proceed to game world travel after successful authentication
-	OnGameDataLoaded(true, UserId, PlayerController);
-}
-
-void UAuthSubsystem::OnGameDataLoaded(bool bSuccess, const FString& UserId, APlayerController* PlayerController)
-{
-	if (!PlayerController)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("AuthSubsystem::OnGameDataLoaded: PlayerController is null"));
+		UE_LOG(LogTemp, Warning, TEXT("AuthSubsystem::ConnectServer: PlayerController is null"));
 		return;
 	}
 
 	if (bSuccess)
 	{
-		UE_LOG(LogTemp, Log, TEXT("AuthSubsystem: Game data loaded successfully for user %s"), *UserId);
+		// UE_LOG(LogTemp, Log, TEXT("AuthSubsystem: Game data loaded successfully for user %s"), *UserId);
 		
 		// Find the cached token for this user
 		FString AuthToken = GetCachedTokenForUser(UserId);
-		
-		if (AuthToken.IsEmpty())
-		{
-			UE_LOG(LogTemp, Error, TEXT("AuthSubsystem: No cached token found for user %s"), *UserId);
-			
-			// Fallback to basic game world travel without token
-			FString GameWorldURL = TEXT("/Game/Map/ThirdPersonMap?listen");
-			if (IAuthRPCInterface* AuthRPC = Cast<IAuthRPCInterface>(PlayerController))
-			{
-				AuthRPC->Request_Client_TravelToGameWorld(GameWorldURL);
-			}
-			return;
-		}
+		//
+		// if (AuthToken.IsEmpty())
+		// {
+		// 	UE_LOG(LogTemp, Error, TEXT("AuthSubsystem: No cached token found for user %s"), *UserId);
+		// 	
+		// 	// Fallback to basic game world travel without token
+		// 	FString GameWorldURL = TEXT("/Game/Map/ThirdPersonMap?listen");
+		// 	if (IAuthRPCInterface* AuthRPC = Cast<IAuthRPCInterface>(PlayerController))
+		// 	{
+		// 		AuthRPC->Request_Client_TravelToGameWorld(GameWorldURL);
+		// 	}
+		// 	return;
+		// }
 		
 		// Use AuthRPCInterface to initiate token-based server connection
 		if (IAuthRPCInterface* AuthRPC = Cast<IAuthRPCInterface>(PlayerController))
@@ -807,7 +816,7 @@ void UAuthSubsystem::OnGameDataLoaded(bool bSuccess, const FString& UserId, APla
 			UE_LOG(LogTemp, Error, TEXT("AuthSubsystem: PlayerController does not implement IAuthRPCInterface - cannot perform token-based connection"));
 			
 			// This should not happen if the controller properly implements the interface
-			UE_LOG(LogTemp, Error, TEXT("AuthSubsystem: Check that your PlayerController implements IAuthRPCInterface"));
+			// UE_LOG(LogTemp, Error, TEXT("AuthSubsystem: Check that your PlayerController implements IAuthRPCInterface"));
 		}
 	}
 	else

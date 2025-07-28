@@ -1,4 +1,5 @@
-ï»¿#include "Shared/AI/GAS/AttackProjectile.h"
+// @Needmodifi
+#include "Shared/AI/GAS/AttackProjectile.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"
 #include "Abilities/GameplayAbility.h"
@@ -63,7 +64,7 @@ void AAttackProjectile::Tick(float DeltaSeconds) {
     
     EndLocation = TargetCharacter->GetActorLocation();
     FVector HorizontalPos = FMath::Lerp(StartLocation, EndLocation, t);
-    // í¬ë¬¼ì„  ì˜¤í”„ì…‹: zOffset = 4h * t * (1 - t)
+    // Æ÷¹°¼± ¿ÀÇÁ¼Â: zOffset = 4h * t * (1 - t)
     float zOffset = 4.f * ArcHeight * t * (1.f - t);
     FVector NewPos = HorizontalPos + FVector(0.f, 0.f, zOffset);
 
@@ -74,7 +75,7 @@ void AAttackProjectile::Tick(float DeltaSeconds) {
     }
 }
 
-//íˆ¬ì²™ ìœ„ì¹˜ì— VFX ìƒì„±.
+//ÅõÃ´ À§Ä¡¿¡ VFX »ý¼º.
 void AAttackProjectile::OnMeshBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
                                            UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
                                            bool bFromSweep, const FHitResult& SweepResult) {
@@ -87,9 +88,9 @@ void AAttackProjectile::OnMeshBeginOverlap(UPrimitiveComponent* OverlappedCompon
             if (auto ASC = Character->GetAbilitySystemComponent()) {
                 FGameplayEffectContextHandle Context = ASC->MakeEffectContext();
                 FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(Projectile_GE, 1.f, Context);
-                //GC ì ìš©ì„ ìœ„í•œ ìž„ì‹œ ì²˜ë¦¬. ì¶”í›„ Duration ê¸°ë°˜ìœ¼ë¡œ ì²˜ë¦¬
+                //GC Àû¿ëÀ» À§ÇÑ ÀÓ½Ã Ã³¸®. ÃßÈÄ Duration ±â¹ÝÀ¸·Î Ã³¸®
                 if (SpecHandle.IsValid()) {
-                    //Characterì˜ after GE ì ìš©ë¨. ì—¬ê¸°ì„œ ë¦¬ì•¡ì…˜ ì ìš©
+                    //CharacterÀÇ after GE Àû¿ëµÊ. ¿©±â¼­ ¸®¾×¼Ç Àû¿ë
                     ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
                 }
             }

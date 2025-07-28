@@ -1,3 +1,4 @@
+// @Needmodifi
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
@@ -20,17 +21,17 @@ struct FEquipmentSlotState
 	int32 SlotIndex = 0;
 
 	UPROPERTY()
-	FString SlotType; // "Weapon", "Armor", "Accessory" 등
+	FString SlotType; // "Weapon", "Armor", "Accessory" ??
 
 	UPROPERTY()
 	bool bIsEquipped = false;
 
 	UPROPERTY()
-	TArray<int32> EnhancementLevel; // 강화 레벨 등
+	TArray<int32> EnhancementLevel; // 강화 ?�벨 ??
 };
 
 /**
- * 장비 아이템들을 관리하는 컴포넌트입니다.
+ * ?�비 ?�이?�들??관리하??컴포?�트?�니??
  */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEquipmentStateChanged, const TArray<FEquipmentSlotState>&, UpdatedEquipment);
 
@@ -42,7 +43,7 @@ class EQUIPMENTMODULE_API UEquipmentComponent : public UActorComponent
 public:	
 	UEquipmentComponent();
 
-	// 장비 상태가 변경될 때 호출되는 이벤트
+	// ?�비 ?�태가 변경될 ???�출?�는 ?�벤??
 	UPROPERTY(BlueprintAssignable, Category = "Equipment|Events")
 	FOnEquipmentStateChanged OnEquipmentStateChanged;
 
@@ -54,7 +55,7 @@ protected:
 	int32 MaxEquipmentSlots = 10;
 
 public:
-	// 장비 관리
+	// ?�비 관�?
 	bool EquipItem(const FEquipmentSlotState& EquipmentState);
 	bool UnequipItem(int32 SlotIndex);
 	bool UpdateEquipmentEnhancement(int32 SlotIndex, const TArray<int32>& NewEnhancementLevel);

@@ -1,4 +1,5 @@
-﻿#pragma once
+// @Needmodifi
+#pragma once
 
 UENUM(BlueprintType)
 enum class EObservedAttribute : uint8 {

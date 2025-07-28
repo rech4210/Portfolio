@@ -1,4 +1,5 @@
-ï»¿#pragma once
+// @Needmodifi
+#pragma once
 
 #include "CoreMinimal.h"
 #include "Shared/AI/EnemySystemCore/EObservedAttribute.h"
@@ -49,6 +50,6 @@ private:
 		AttributeHandlers.Add(Attribute,  Handler);
 	}
 
-	// const í•¨ìˆ˜ ë‚´ ìˆ˜ì • í—ˆìš©ìš©ë„ (ë¶ˆë³€ì„±ì— ì˜í–¥ ì—†ëŠ” ìºì‹œ/ë¸ë¦¬ê²Œì´íŠ¸ ë“± ì²˜ë¦¬ìš©)
+	// const ÇÔ¼ö ³» ¼öÁ¤ Çã¿ë¿ëµµ (ºÒº¯¼º¿¡ ¿µÇâ ¾ø´Â Ä³½Ã/µ¨¸®°ÔÀÌÆ® µî Ã³¸®¿ë)
 	mutable TMap<EObservedAttribute, TFunction<void(T&, float)>> AttributeHandlers;
 };

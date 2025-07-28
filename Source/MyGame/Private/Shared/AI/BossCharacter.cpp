@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "MyGame/Public/Shared/AI/BossCharacter.h"
@@ -47,7 +47,7 @@ void ABossCharacter::PossessedBy(AController* NewController) {
 	AttributeObserverComponent->BindBossDataDelegate();
 }
 
-//이부분 발동 안함.
+//?��?�?발동 ?�함.
 void ABossCharacter::OnRep_PlayerState() {
 	Super::OnRep_PlayerState();
 	InitASC();
@@ -63,12 +63,12 @@ void ABossCharacter::BeginPlay(){
 
 
 /** 
- * 1. GAS Attribute 변경 발생 
- * 2. ObserverComponent에서 델리게이트로 감지 
- * 3. OnAttributeChanged → UpdateDataFromBoss 호출 
+ * 1. GAS Attribute 변�?발생 
+ * 2. ObserverComponent?�서 ?�리게이?�로 감�? 
+ * 3. OnAttributeChanged ??UpdateDataFromBoss ?�출 
  * 4. CachedBossData 갱신 
- * 5. 서버 → 클라이언트 RPC: Client_ReceiveBossData 
- * 6. 클라이언트에 데이터 동기화 
+ * 5. ?�버 ???�라?�언??RPC: Client_ReceiveBossData 
+ * 6. ?�라?�언?�에 ?�이???�기??
  */
 
 void ABossCharacter::UpdateDataFromBoss(FBossDataStruct& Data) {
@@ -85,7 +85,7 @@ void ABossCharacter::OnRep_BossData() {
 	// Client Base Replication
 	// ForceNetUpdate()
 	if (AGGwaPlayerController* PC = Cast<AGGwaPlayerController>(UGameplayStatics::GetPlayerController(this, 0))) {
-		PC->InitializeClientComponent();
+		// PC->InitializeClientComponent();
 		PC->ProcessBossData(CachedBossData);
 	}
 }
@@ -94,7 +94,7 @@ const FEnemyWidgetData& ABossCharacter::GetWidgetData() {
 	return WidgetData;
 }
 
-//Possesd와 Character의 Init 시점을 잘 고려할것.
+//Possesd?� Character??Init ?�점????고려?�것.
 void ABossCharacter::InitASC() {
 	if (!E_ASC)
 	{
@@ -102,7 +102,7 @@ void ABossCharacter::InitASC() {
 	}
 	if (E_ASC)
 	{
-		//보스도 owner를 controller로 지정해야하나?
+		//보스??owner�?controller�?지?�해?�하??
 		E_ASC->InitAbilityActorInfo(this, this);
 	}
 }

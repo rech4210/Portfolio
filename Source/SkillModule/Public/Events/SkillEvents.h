@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -7,7 +7,7 @@
 #include "SkillEvents.generated.h"
 
 /**
- * 스킬이 성공적으로 사용되었을 때 발생하는 도메인 이벤트입니다.
+ * ?�킬???�공?�으�??�용?�었????발생?�는 ?�메???�벤?�입?�다.
  */
 USTRUCT(BlueprintType)
 struct SKILLMODULE_API FSkillUsedEvent
@@ -26,7 +26,7 @@ struct SKILLMODULE_API FSkillUsedEvent
 };
 
 /**
- * 스킬의 쿨다운이 종료되었을 때 발생하는 도메인 이벤트입니다.
+ * ?�킬??쿨다?�이 종료?�었????발생?�는 ?�메???�벤?�입?�다.
  */
 USTRUCT(BlueprintType)
 struct SKILLMODULE_API FCooldownExpiredEvent

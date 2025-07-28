@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -8,8 +8,8 @@
 #include "SkillDtoMapper.generated.h"
 
 /**
- * SQL ↔ DTO 매핑 구현체
- * 데이터베이스와 DTO 구조체 간의 변환을 구현
+ * SQL ??DTO 매핑 구현�?
+ * ?�이?�베?�스?� DTO 구조�?간의 변?�을 구현
  */
 UCLASS(BlueprintType)
 class SKILLMODULE_API USkillDtoMapper : public UObject, public ISkillDtoMapperInterface

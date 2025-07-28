@@ -26,22 +26,17 @@ void UClientAuthComponent::BeginPlay()
 void UClientAuthComponent::InitializeAuth()
 {
 	OwnerController = Cast<AGGwaPlayerController>(GetOwner());
-	if (!OwnerController){
+	if (!OwnerController  || !OwnerController->IsLocalPlayerController()){
 		UE_LOG(LogTemp, Error, TEXT("ClientAuthComponent: Owner is not AGGwaPlayerController"));
 		return;
 	}
-	
-	if (!OwnerController || !OwnerController->IsLocalPlayerController()){
-		return;
-	}
+	//
+	// if (!OwnerController || !OwnerController->IsLocalPlayerController()){
+	// 	return;
+	// }
 
 	AuthService = NewObject<UAuthService>(this, TEXT("AuthService"));
-	if (AuthService)
-	{
-		UE_LOG(LogTemp, Log, TEXT("ClientAuthComponent: AuthService created successfully"));
-	}
-	else
-	{
+	if (!AuthService){
 		UE_LOG(LogTemp, Error, TEXT("ClientAuthComponent: Failed to create AuthService!"));
 	}
 }
@@ -53,25 +48,16 @@ void UClientAuthComponent::RequestRegistration(const FString& Username, const FS
 	if (!AuthService)
 	{
 		UE_LOG(LogTemp, Error, TEXT("ClientAuthComponent: AuthService not available"));
-		BP_OnRegistrationResult(false, TEXT("Authentication service not available"));
-		return;
-	}
-
-	// Validate component state before binding delegate
-	if (!IsValid(this) || IsBeingDestroyed())
-	{
-		UE_LOG(LogTemp, Error, TEXT("ClientAuthComponent: Component is invalid or being destroyed"));
-		BP_OnRegistrationResult(false, TEXT("Component is invalid"));
 		return;
 	}
 
 	// Create delegate for registration result with validation
-	FRegistrationDelegate RegistrationDelegate;
+	// FRegistrationDelegate RegistrationDelegate;
 
-	UE_LOG(LogTemp, Log, TEXT("ClientAuthComponent: Successfully bound registration delegate"));
+	// UE_LOG(LogTemp, Log, TEXT("ClientAuthComponent: Successfully bound registration delegate"));
 
 	// Request registration through AuthService
-	AuthService->RequestRegistration(Username, Password, OwnerController, RegistrationDelegate);
+	AuthService->RequestRegistration(Username, Password, OwnerController);
 }
 
 void UClientAuthComponent::RequestLogin(const FString& Username, const FString& Password)
@@ -85,21 +71,21 @@ void UClientAuthComponent::RequestLogin(const FString& Username, const FString& 
 		return;
 	}
 
-	// Validate component state before binding delegate
-	if (!IsValid(this) || IsBeingDestroyed())
-	{
-		UE_LOG(LogTemp, Error, TEXT("ClientAuthComponent: Component is invalid or being destroyed"));
-		BP_OnLoginResult(false, TEXT(""), TEXT(""));
-		return;
-	}
+	// // Validate component state before binding delegate
+	// if (!IsValid(this) || IsBeingDestroyed())
+	// {
+	// 	UE_LOG(LogTemp, Error, TEXT("ClientAuthComponent: Component is invalid or being destroyed"));
+	// 	BP_OnLoginResult(false, TEXT(""), TEXT(""));
+	// 	return;
+	// }
 
 	// Create delegate for login result with validation
-	FLoginDelegate LoginDelegate;
+	// FLoginDelegate LoginDelegate;
 
 	UE_LOG(LogTemp, Log, TEXT("ClientAuthComponent: Successfully bound login delegate"));
 
 	// Request login through AuthService
-	AuthService->RequestLogin(Username, Password, OwnerController, LoginDelegate);
+	AuthService->RequestLogin(Username, Password, OwnerController);
 }
 
 void UClientAuthComponent::OnServerRegistrationResult(bool bSuccess, const FString& Message)
@@ -108,10 +94,10 @@ void UClientAuthComponent::OnServerRegistrationResult(bool bSuccess, const FStri
 		bSuccess ? TEXT("true") : TEXT("false"), *Message);
 
 	// Notify AuthService about the result
-	if (AuthService)
-	{
-		AuthService->OnServerRegistrationResult(bSuccess, Message);
-	}
+	// if (AuthService)
+	// {
+	// 	AuthService->OnServerRegistrationResult(bSuccess, Message);
+	// }
 	
 	// Forward to Blueprint for UI updates
 	BP_OnRegistrationResult(bSuccess, Message);
@@ -129,10 +115,10 @@ void UClientAuthComponent::OnServerLoginResult(bool bSuccess, const FString& Tok
 		bSuccess ? TEXT("true") : TEXT("false"), *UserId);
 
 	// Notify AuthService about the result
-	if (AuthService)
-	{
-		AuthService->OnServerLoginResult(bSuccess, Token, UserId);
-	}
+	// if (AuthService)
+	// {
+	// 	AuthService->OnServerLoginResult(bSuccess, Token, UserId);
+	// }
 
 	// Forward to Blueprint for UI updates
 	BP_OnLoginResult(bSuccess, Token, UserId);

@@ -1,28 +1,29 @@
-ï»¿#include "Data/SkillTargetBase.h"
+// @Needmodifi
+#include "Data/SkillTargetBase.h"
 #include "CoreMinimal.h"
 #include "AbilitySystemInterface.h"
 
 void USkillTargetBase::DebugSkillShape(const UWorld* World, const FVector& StartLocation, const FVector& EndLocation,
 									   const FSkillShapeConfig& Config) const {
 #if WITH_EDITOR
-	// ğŸ”· Box Trace ì‹œê°í™”
+	// ?? Box Trace ½Ã°¢È­
 	DrawDebugBox(
 		World,
-		(StartLocation + EndLocation) * 0.5f, // ë°•ìŠ¤ ì¤‘ì‹¬
+		(StartLocation + EndLocation) * 0.5f, // ¹Ú½º Áß½É
 		Config.BoxHalfExtent,
 		FQuat::Identity,
 		FColor::Blue,
 		false,
-		2.0f,  // ì§€ì† ì‹œê°„ (ì´ˆ)
+		2.0f,  // Áö¼Ó ½Ã°£ (ÃÊ)
 		0,
-		2.0f   // ì„  ë‘ê»˜
+		2.0f   // ¼± µÎ²²
 	);
 
 	DrawDebugSphere(
 		World,
 		EndLocation,
 		Config.SphereRadius,
-		12,            // ì„¸ê·¸ë¨¼íŠ¸ ìˆ˜
+		12,            // ¼¼±×¸ÕÆ® ¼ö
 		FColor::Green,
 		false,
 		2.0f,
@@ -44,7 +45,7 @@ void USkillTargetBase::DebugSkillShape(const UWorld* World, const FVector& Start
 }
 
 bool USkillTargetBase::HasASC(AActor* Actor) const {
-	//ì²´í¬ íŒë‹¨ì—ì„œ ì ì„ ì •ì˜í•´ì•¼í•œë‹¤. í˜„ì¬ëŠ” character ëª¨ë‘ ìƒì†ë°›ëŠ”ë‹¤ë©´, ë³´ìŠ¤ì™€ í”Œë ˆì´ì–´ ëª¨ë‘ íƒ€ê²© ëŒ€ìƒì´ ëœë‹¤.
+	//Ã¼Å© ÆÇ´Ü¿¡¼­ ÀûÀ» Á¤ÀÇÇØ¾ßÇÑ´Ù. ÇöÀç´Â character ¸ğµÎ »ó¼Ó¹Ş´Â´Ù¸é, º¸½º¿Í ÇÃ·¹ÀÌ¾î ¸ğµÎ Å¸°İ ´ë»óÀÌ µÈ´Ù.
 	if (Actor->Implements<UAbilitySystemInterface>()) {
 		return true;
 	}

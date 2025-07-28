@@ -1,4 +1,4 @@
-ï»¿// Fill out your copyright notice in the Description page of Project Settings.
+// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "UI/ToolTip/BuffToolTip.h"
@@ -17,7 +17,7 @@ void UBuffToolTip::SetToolTipData(UPrimaryDataAsset* Data) {
 			ToolTipTitle->SetText(BuffData->DisplayName);
 		}
 		if (ToolTipDescription) {
-			ToolTipDescription->SetText(BuffData->Description); // TODO: ì‹¤ì œ ì„¤ëª…ìœ¼ë¡œ ë³€ê²½
+			ToolTipDescription->SetText(BuffData->Description); // TODO: ½ÇÁ¦ ¼³¸íÀ¸·Î º¯°æ
 		}
 		if (ToolTipIcon) {
 			ToolTipIcon->SetBrushFromTexture(BuffData->Image);

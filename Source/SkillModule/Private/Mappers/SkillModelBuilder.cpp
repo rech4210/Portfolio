@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Mappers/SkillModelBuilder.h"
 #include "Entities/SkillSlot.h"
@@ -25,13 +25,13 @@ FSkillDomainModel USkillModelBuilder::BuildDomainModel(const FSkillSlotDatabaseD
 	}
 
 	// 1. Core Properties from Database DTO
-	DomainModel.UserId = FCString::Atoi(*DatabaseDTO.UserId); // FString을 int32로 변환
+	DomainModel.UserId = FCString::Atoi(*DatabaseDTO.UserId); // FString??int32�?변??
 	DomainModel.SlotKey = DatabaseDTO.SlotKey;
 	DomainModel.SlotIndex = DatabaseDTO.SlotIndex;
 	DomainModel.SkillId = DatabaseDTO.SkillId;
 	DomainModel.SkillLevel = DatabaseDTO.SkillLevel;
 	DomainModel.LastUsedTime = DatabaseDTO.LastUsedTime;
-	DomainModel.bIsActive = true; // DatabaseDTO에 bIsActive 필드가 없으므로 기본값 사용
+	DomainModel.bIsActive = true; // DatabaseDTO??bIsActive ?�드가 ?�으므�?기본�??�용
 
 	// 2. Business Logic Properties - RemainingCooldown 계산
 	DomainModel.RemainingCooldown = CalculateRemainingCooldown(DatabaseDTO.LastUsedTime, SkillAsset->CoolTime);
@@ -39,7 +39,7 @@ FSkillDomainModel USkillModelBuilder::BuildDomainModel(const FSkillSlotDatabaseD
 	// 3. Business State Validation
 	DomainModel.bCanUse = CanUseSkill(DomainModel.LastUsedTime, SkillAsset->CoolTime, 100, static_cast<int32>(SkillAsset->CostAmount));
 
-	// 4. SkillDataAsset 참조 저장
+	// 4. SkillDataAsset 참조 ?�??
 	DomainModel.SkillDataAsset = SkillAsset;
 
 	return DomainModel;
@@ -55,17 +55,17 @@ USkillSlot* USkillModelBuilder::BuildSkillSlotEntity(const FSkillDomainModel& Do
 		return nullptr;
 	}
 
-	// Domain Model → Entity 변환 (USkillSlot의 public 필드 직접 설정)
+	// Domain Model ??Entity 변??(USkillSlot??public ?�드 직접 ?�정)
 	SkillSlot->SlotIndex = DomainModel.SlotIndex;
 	SkillSlot->SkillId = DomainModel.SkillId;
 	SkillSlot->SkillData = DomainModel.SkillDataAsset;
 	SkillSlot->LastUsedTime = DomainModel.LastUsedTime;
 	SkillSlot->SlotKey = DomainModel.SlotKey;
 
-	// Initialize 메서드 호출
+	// Initialize 메서???�출
 	SkillSlot->Initialize(DomainModel.SlotIndex, DomainModel.SlotKey, DomainModel.SkillDataAsset);
 	
-	// SetSkillData 메서드 호출 (SkillId 설정)
+	// SetSkillData 메서???�출 (SkillId ?�정)
 	if (DomainModel.SkillDataAsset)
 	{
 		SkillSlot->SetSkillData(DomainModel.SkillDataAsset, DomainModel.SkillId);
@@ -94,7 +94,7 @@ float USkillModelBuilder::CalculateRemainingCooldown(const FDateTime& LastUsedTi
 
 bool USkillModelBuilder::CanUseSkill(const FDateTime& LastUsedTime, float BaseCooldown, int32 CurrentMana, int32 RequiredMana)
 {
-	// 1. Cooldown Check - 실제 remaining cooldown 계산
+	// 1. Cooldown Check - ?�제 remaining cooldown 계산
 	float RemainingCooldown = CalculateRemainingCooldown(LastUsedTime, BaseCooldown);
 	if (RemainingCooldown > 0.0f)
 	{
@@ -125,7 +125,7 @@ float USkillModelBuilder::CalculateScaledValue(float BaseValue, int32 Level)
 }
 
 // ========================================================================
-// EXTRACTION METHODS (Entity → DTO)
+// EXTRACTION METHODS (Entity ??DTO)
 // ========================================================================
 
 FSkillSlotDatabaseDTO USkillModelBuilder::ExtractSlotDTO(const USkillSlot* SkillSlot)
@@ -138,10 +138,10 @@ FSkillSlotDatabaseDTO USkillModelBuilder::ExtractSlotDTO(const USkillSlot* Skill
 		return DTO;
 	}
 
-	// USkillSlot의 실제 public 필드 사용
+	// USkillSlot???�제 public ?�드 ?�용
 	DTO.SlotIndex = SkillSlot->SlotIndex;
-	DTO.SkillId = SkillSlot->SkillId; // SkillID → SkillId
-	DTO.SkillLevel = 1; // SkillLevel 필드가 없으므로 기본값
+	DTO.SkillId = SkillSlot->SkillId; // SkillID ??SkillId
+	DTO.SkillLevel = 1; // SkillLevel ?�드가 ?�으므�?기본�?
 	DTO.LastUsedTime = SkillSlot->LastUsedTime;
 	DTO.SlotKey = SkillSlot->SlotKey;
 
@@ -158,13 +158,13 @@ FSkillDomainModel USkillModelBuilder::ExtractDomainModel(const USkillSlot* Skill
 		return DomainModel;
 	}
 
-	// USkillSlot의 실제 public 필드 사용
+	// USkillSlot???�제 public ?�드 ?�용
 	DomainModel.SlotIndex = SkillSlot->SlotIndex;
-	DomainModel.SkillId = SkillSlot->SkillId; // SkillID → SkillId
-	DomainModel.SkillLevel = 1; // 기본값
+	DomainModel.SkillId = SkillSlot->SkillId; // SkillID ??SkillId
+	DomainModel.SkillLevel = 1; // 기본�?
 	DomainModel.LastUsedTime = SkillSlot->LastUsedTime;
 	DomainModel.SlotKey = SkillSlot->SlotKey;
-	DomainModel.bIsActive = !SkillSlot->IsEmpty(); // IsActive 메서드가 없으므로 IsEmpty()의 반대값 사용
+	DomainModel.bIsActive = !SkillSlot->IsEmpty(); // IsActive 메서?��? ?�으므�?IsEmpty()??반�?�??�용
 	DomainModel.SkillDataAsset = SkillSlot->SkillData;
 	
 	// Cooldown 계산
@@ -188,11 +188,11 @@ TArray<FSkillDomainModel> USkillModelBuilder::BuildDomainModels(const TArray<FSk
 	
 	for (const FSkillSlotDatabaseDTO& DTO : DatabaseDTOs)
 	{
-		// Find matching SkillDataAsset (필드명 수정)
+		// Find matching SkillDataAsset (?�드�??�정)
 		USkillDataAsset* MatchingAsset = nullptr;
 		for (USkillDataAsset* Asset : SkillAssets)
 		{
-			if (Asset && Asset->SkillID == DTO.SkillId) // SkillID → SkillId
+			if (Asset && Asset->SkillID == DTO.SkillId) // SkillID ??SkillId
 			{
 				MatchingAsset = Asset;
 				break;
@@ -206,7 +206,7 @@ TArray<FSkillDomainModel> USkillModelBuilder::BuildDomainModels(const TArray<FSk
 		}
 		else
 		{
-			UE_LOG(LogTemp, Warning, TEXT("SkillModelBuilder: No matching SkillDataAsset found for SkillId %d"), DTO.SkillId); // SkillID → SkillId
+			UE_LOG(LogTemp, Warning, TEXT("SkillModelBuilder: No matching SkillDataAsset found for SkillId %d"), DTO.SkillId); // SkillID ??SkillId
 		}
 	}
 
@@ -241,7 +241,7 @@ bool USkillModelBuilder::ValidateDomainModel(const FSkillDomainModel& DomainMode
 		return false;
 	}
 
-	if (DomainModel.SkillId <= 0) // SkillID → SkillId
+	if (DomainModel.SkillId <= 0) // SkillID ??SkillId
 	{
 		OutErrorMessage = TEXT("Invalid SkillId: must be > 0");
 		return false;
@@ -264,13 +264,13 @@ bool USkillModelBuilder::ValidateSkillSlotEntity(const USkillSlot* SkillSlot, FS
 		return false;
 	}
 
-	if (SkillSlot->SlotIndex < 0) // GetSlotIndex() → SlotIndex
+	if (SkillSlot->SlotIndex < 0) // GetSlotIndex() ??SlotIndex
 	{
 		OutErrorMessage = TEXT("Invalid SlotIndex in SkillSlot");
 		return false;
 	}
 
-	if (SkillSlot->SkillId <= 0) // GetSkillID() → SkillId
+	if (SkillSlot->SkillId <= 0) // GetSkillID() ??SkillId
 	{
 		OutErrorMessage = TEXT("Invalid SkillId in SkillSlot");
 		return false;

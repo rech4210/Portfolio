@@ -1,3 +1,4 @@
+// @Needmodifi
 #include "Shared/GAS/Skill/GA_BossAreaAttack.h"
 #include "GameplayEffect.h"
 #include "SkillModule/Public/Data/SkillDataAsset.h"
@@ -16,10 +17,10 @@
 #include "Enum/EPlayerState.h"
 
 UGA_BossAreaAttack::UGA_BossAreaAttack(){
-    // 기본 속성 설정
+    // 기본 ?�성 ?�정
     AttackRadius = 500.0f;
     DamageAmount = 100.0f;
-    DelayBeforeAttack = 3.0f; // n초 뒤 공격
+    DelayBeforeAttack = 3.0f; // n�???공격
 }
 
 void UGA_BossAreaAttack::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData){
@@ -46,8 +47,8 @@ void UGA_BossAreaAttack::ActivateAbility(const FGameplayAbilitySpecHandle Handle
         return;
     }
 
-    // Static 등 공유되는 helper는 선언과 정의에 링커 의존성이 있다는 점을 명심할것.
-    // 서버 모듈에서 런타임에 스킬 데이터 로드
+    // Static ??공유?�는 helper???�언�??�의??링커 ?�존?�이 ?�다???�을 명심?�것.
+    // ?�버 모듈?�서 ?��??�에 ?�킬 ?�이??로드
     if (!SkillDataAsset) {
         FPrimaryAssetId ID;
         if (ULocalDataBaseLoader::CheckPrimaryAssetId(115, ID)) {
@@ -114,7 +115,7 @@ void UGA_BossAreaAttack::PerformAreaAttack(){
     SkillContext.SkillData = SkillDataAsset;
     SkillContext.DetectedActors = TargetDetector->DetectTargets(SkillContext);
 
-    // 각 액터에 KnockBackEffect 적용
+    // �??�터??KnockBackEffect ?�용
     if (SkillDataAsset->GEClass)
     {
         for (AActor* TargetActor : SkillContext.DetectedActors)
@@ -127,8 +128,8 @@ void UGA_BossAreaAttack::PerformAreaAttack(){
                     
                     if (auto ASC = GetTargetASC(TargetActor)) {
                         if (ASC->HasMatchingGameplayTag(UEnumTagMatchHelper::GetTagFromEnum(EPlayerState::Guard))) {
-                            //플레이어가 방어 상태일 경우, 작용하지 않음.
-                            // 살짝 밀리는 리액션
+                            //?�레?�어가 방어 ?�태??경우, ?�용?��? ?�음.
+                            // ?�짝 밀리는 리액??
                             return;
                         }
                         

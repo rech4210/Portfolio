@@ -1,4 +1,4 @@
-ï»¿// Fill out your copyright notice in the Description page of Project Settings.
+// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -27,7 +27,7 @@ public:
 
 	void CheckPlayer(const FString& PlayerId, FOnPlayerCheck Callback)
 	{
-		// HTTP ìš”ì²­ ì¤€ë¹„ (HTTPS + APIKey)
+		// HTTP ¿äÃ» ÁØºñ (HTTPS + APIKey)
 		TSharedRef<IHttpRequest> Req = FHttpModule::Get().CreateRequest();
 		// Req->SetURL(GetDefault<URewardServiceConfig>()->PlayerCheckEndpoint + TEXT("?id=") + PlayerId);
 		Req->SetVerb(TEXT("GET"));

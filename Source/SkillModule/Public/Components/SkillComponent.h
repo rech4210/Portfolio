@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -24,8 +24,8 @@ DECLARE_MULTICAST_DELEGATE(FOnSkillsChanged);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnSkillStateChanged, const TArray<USkillSlot*>&);
 // DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSkillStateChanged, const TArray<USkillSlot*>&, SkillSlots);
 /**
- * 캐릭터의 스킬 슬롯들을 관리하는 Aggregate Root 역할을 하는 컴포넌트입니다.
- * DDD 원칙에 따라 불변 조건을 보장하고 도메인 이벤트를 발행합니다.
+ * 캐릭?�의 ?�킬 ?�롯?�을 관리하??Aggregate Root ??��???�는 컴포?�트?�니??
+ * DDD ?�칙???�라 불�? 조건??보장?�고 ?�메???�벤?��? 발행?�니??
  */
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
@@ -39,7 +39,7 @@ public:
 
 	int32 GetMaxSlotCount() const { return MaxSkillSlots; }
 
-	// 스킬 상태가 변경될 때 호출되는 이벤트 (등록, 제거, 스왑 등)
+	// ?�킬 ?�태가 변경될 ???�출?�는 ?�벤??(?�록, ?�거, ?�왑 ??
 	// UPROPERTY(BlueprintAssignable, Category = "Skill|Events")
 	FOnSkillStateChanged OnSkillStateChanged;
 
@@ -241,7 +241,7 @@ public:
 	UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: ExtractDTOsFromSkillSlots() instead")
 	FSkillDomain ExtractDomain() const;
 
-	// 이미 복제를 수행중.
+	// ?��? 복제�??�행�?
 	// virtual bool ReplicateSubobjects(class UActorChannel* Channel, class FOutBunch* Bunch, FReplicationFlags* RepFlags) override;
 
 protected:

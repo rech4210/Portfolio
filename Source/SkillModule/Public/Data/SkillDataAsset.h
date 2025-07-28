@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -24,32 +24,32 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Skill")
 	FSkillShapeConfig SkillShapeConfig;
 
-	//EIC키 와 연동을 위한 스킬 인덱스
+	//EIC???� ?�동???�한 ?�킬 ?�덱??
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Skill")
 	ESkillInputSlot SkillSlotIndex;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Skill")
 	int32 SkillID = 999;
 	
-	// 타겟 선택 전략 (예: 단일 타겟, 범위, 셀프 등)
+	// ?��??�택 ?�략 (?? ?�일 ?��? 범위, ?�????
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Targeting")
 	TSubclassOf<USkillTargetBase> TargetStrategyClass;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GA")
 	TSubclassOf<UGameplayAbility> AbilityClass;
 	
-	// 실제로 적용되는 GameplayEffect 클래스
+	// ?�제�??�용?�는 GameplayEffect ?�래??
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Effect")
 	TSubclassOf<UGameplayEffect> GEClass;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Effect")
 	float CoolTime = 0.f;
 
-	// CoolTime GameplayEffect 클래스
+	// CoolTime GameplayEffect ?�래??
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Effect")
 	TSubclassOf<UGameplayEffect> GE_CoolTimeClass;
 
-	// CoolTime GameplayEffect 클래스
+	// CoolTime GameplayEffect ?�래??
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Effect")
 	TSubclassOf<UGameplayEffect> GE_CueClass;
 	
@@ -67,11 +67,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Buff")
 	TArray<UBuffDataAsset*> AppliedBuffs;
 
-	// 시전 애니메이션
+	// ?�전 ?�니메이??
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Visual")
 	UAnimMontage* CastMontage;
 
-	// 시전 효과음
+	// ?�전 ?�과??
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Visual")
 	USoundBase* CastSound;
 

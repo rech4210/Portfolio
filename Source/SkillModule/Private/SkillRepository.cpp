@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "SkillRepository.h"
 #include "Components/SkillComponent.h"
@@ -38,10 +38,11 @@ UE::Tasks::TTask<FSkillRepositoryResult3Layer> USkillRepository::LoadUserSkillSl
 			return FSkillRepositoryResult3Layer::Failure(TEXT("Invalid UserId"));
 		}
 
-		if (SlotKey.IsEmpty())
-		{
-			return FSkillRepositoryResult3Layer::Failure(TEXT("SlotKey cannot be empty"));
-		}
+		// SlotKey가 비어있으면 모든 슬롯을 로드 (DatabaseManager에서 지원하는 기능)
+		// if (SlotKey.IsEmpty())
+		// {
+		// 	return FSkillRepositoryResult3Layer::Failure(TEXT("SlotKey cannot be empty"));
+		// }
 
 		// Execute database operation on worker thread
 		auto LoadTask = DBManager->LoadUserSkillSlots(UserId, SlotKey);
@@ -225,7 +226,7 @@ UE::Tasks::TTask<FSkillRepositoryResult> USkillRepository::DEP_LoadSkillsByPlaye
 		auto LoadTask = DBManager->LoadSkillsForPlayer(UserId);
 		TArray<FSkillSlotDTO> LoadedSkills = LoadTask.GetResult();
 
-		//현재 DTO 데이터를 잘 가져오지 못하는것 같음.
+		//?�재 DTO ?�이?��? ??가?�오지 못하?�것 같음.
 		// Create domain object
 		FSkillDomain SkillData(PlayerId, LoadedSkills);
 		return FSkillRepositoryResult::Success(SkillData);

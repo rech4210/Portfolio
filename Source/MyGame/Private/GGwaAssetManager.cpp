@@ -1,4 +1,4 @@
-ï»¿// Fill out your copyright notice in the Description page of Project Settings.
+// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "GGwaAssetManager.h"
@@ -24,8 +24,8 @@ void UGGwaAssetManager::FinishInitialLoading() {
 	// 	return;
 	// }
 
-	// í”„ë¦¬í˜ì¹˜í•  ìŠ¤í‚¬ IDë“¤
-	// í•´ë‹¹ ë¶€ë¶„ì„ ê´€ë¦¬í•˜ê¸° ì‰½ë„ë¡ Enum ë˜ëŠ” Mapìœ¼ë¡œ ì„¤ì •.
+	// ÇÁ¸®ÆäÄ¡ÇÒ ½ºÅ³ IDµé
+	// ÇØ´ç ºÎºĞÀ» °ü¸®ÇÏ±â ½±µµ·Ï Enum ¶Ç´Â MapÀ¸·Î ¼³Á¤.
 	// TArray<int32> PrefetchSkillIDs = { 100,101,102,103,104,105,106,107 };
 	// for (int32 SkillID : PrefetchSkillIDs)
 	// {

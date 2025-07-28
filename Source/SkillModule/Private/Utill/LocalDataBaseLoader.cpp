@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Utill/LocalDataBaseLoader.h"
 #include "Engine/AssetManager.h"
@@ -28,7 +28,7 @@ void ULocalDataBaseLoader::Initialize()
 
 	for (const FPrimaryAssetId& Id : Ids)
 	{
-		// 아직 로드된 적이 없는 경우에만 로드 요청
+		// ?�직 로드???�이 ?�는 경우?�만 로드 ?�청
 		if (!Manager.GetPrimaryAssetObject(Id))
 		{
 			TSharedPtr<FStreamableHandle> Handle =
@@ -40,7 +40,7 @@ void ULocalDataBaseLoader::Initialize()
 				);
 			if (Handle.IsValid())
 			{
-				// 동기 블록킹
+				// ?�기 블록??
 				Handle->WaitUntilComplete();
 			}
 		}
@@ -48,7 +48,7 @@ void ULocalDataBaseLoader::Initialize()
 		if (USkillDataAsset* Data = Cast<USkillDataAsset>(Manager.GetPrimaryAssetObject(Id)))
 		{
 			SkillIdToAssetId.Add(Data->SkillID, Id);
-			UE_LOG(LogTemp, Log, TEXT("Mapped SkillID %d → %s"), Data->SkillID, *Id.ToString());
+			UE_LOG(LogTemp, Log, TEXT("Mapped SkillID %d ??%s"), Data->SkillID, *Id.ToString());
 		}
 		else
 		{

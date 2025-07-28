@@ -1,3 +1,4 @@
+// @Needmodifi
 #pragma once
 
 #include "CoreMinimal.h"
@@ -20,7 +21,7 @@ class MYGAME_API UGA_Skill3 : public UGA_Base
 public:
 	EAbilityInputID AbilityInputID;
 
-	/** 스킬 데이터 에셋 */
+	/** ?�킬 ?�이???�셋 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Data")
 	TObjectPtr<USkillDataAsset> SkillDataAsset;
 	virtual void ActivateAbility(

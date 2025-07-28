@@ -1,3 +1,4 @@
+
 #include "UI/UIManagerSubsystem.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
@@ -20,7 +21,7 @@ void UUIManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 
 void UUIManagerSubsystem::OnWorldInit(UWorld* NewWorld, const UWorld::InitializationValues IVS) {
-	// 의존관계 역전 (IOC) 패턴을 사용하여 GameState에게 Client UIManagerSubsystem을 제공하도록 요청.
+	// ?�존관�???�� (IOC) ?�턴???�용?�여 GameState?�게 Client UIManagerSubsystem???�공?�도�??�청.
 	if (!NewWorld)
 	{
 		UE_LOG(LogTemp, Error, TEXT("UIManagerSubsystem::Initialize - World is null!"));
@@ -63,7 +64,7 @@ void UUIManagerSubsystem::Deinitialize()
 	Super::Deinitialize();
 }
 
-/* 기존 Subsystem에서 제공되던 함수를 모두 Client 측 Component의 역할로 위임시킬것.*/
+/* 기존 Subsystem?�서 ?�공?�던 ?�수�?모두 Client �?Component????���??�임?�킬�?*/
 
 void UUIManagerSubsystem::OnMapChanged(UWorld* LoadedWorld)
 {

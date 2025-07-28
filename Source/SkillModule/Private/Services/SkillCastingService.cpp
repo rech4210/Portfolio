@@ -1,3 +1,4 @@
+// @Needmodifi
 #include "Services/SkillCastingService.h"
 
 #include "AbilitySystemBlueprintLibrary.h"
@@ -14,13 +15,13 @@
 #include "GameFramework/Character.h"
 
 bool USkillCastingService::TryCastSkill(ACharacter* Caster, int32 SlotIndex){
-	// Client 기준으로 RPC -> 스킬 사용이 되어야함. 애초에 try ability는 predict 지원임 ㅇㅇ
+	// Client 기�??�로 RPC -> ?�킬 ?�용???�어?�함. ?�초??try ability??predict 지?�임 ?�ㅇ
 	// if (!Caster || !Caster->HasAuthority()){
 	// 	UE_LOG(LogTemp, Error, TEXT("SkillCastingService: Caster is null. or not on server authority."));
 	// 	return false;
 	// }
 	
-	// 1. 컴포넌트 가져오기
+	// 1. 컴포?�트 가?�오�?
 	USkillComponent* SkillComp = Caster->GetPlayerState()->FindComponentByClass<USkillComponent>();
 	UAbilitySystemComponent* ASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(Caster);
 	if (!SkillComp || !ASC){
@@ -36,15 +37,15 @@ bool USkillCastingService::TryCastSkill(ACharacter* Caster, int32 SlotIndex){
 	}
 	const FGameplayAbilitySpecHandle& AbilitySpec = ASC->FindAbilitySpecFromClass(Slot->SkillData->AbilityClass)->Handle;
 
-	// 8. Gameplay Ability 실행
+	// 8. Gameplay Ability ?�행
 	if (AbilitySpec.IsValid())
 	{
 		bool bIsActivated = ASC->TryActivateAbility(AbilitySpec);
 		if (bIsActivated) {
-			/*<-------------------- 스킬 사용 판정 이후 ------------------->*/
-			// 도메인 이벤트 발행 -> GA 내부에서 결과에 따른 콜백을 사용합니다.
-			// 상태 변경 (MarkUsed) -> GA에서 상태를 처리하므로 로직을 삭제.
-			// 5. 영속화 (Repository)
+			/*<-------------------- ?�킬 ?�용 ?�정 ?�후 ------------------->*/
+			// ?�메???�벤??발행 -> GA ?��??�서 결과???�른 콜백???�용?�니??
+			// ?�태 변�?(MarkUsed) -> GA?�서 ?�태�?처리?��?�?로직????��.
+			// 5. ?�속??(Repository)
 			if (Caster->GetGameInstance())
 			{
 				USkillSubsystem* SkillSubsystem = Caster->GetGameInstance()->GetSubsystem<USkillSubsystem>();
@@ -58,12 +59,12 @@ bool USkillCastingService::TryCastSkill(ACharacter* Caster, int32 SlotIndex){
 
 						if (PlayerId != -1)
 						{
-							//TODO 현재 스킬상태를 DB에 저장하는것이 필요한지 검증.
+							//TODO ?�재 ?�킬?�태�?DB???�?�하?�것???�요?��? 검�?
 							// if (!StateRepo->SaveSkillState(PlayerId, SkillComp, TODO))
 							// {
 							UE_LOG(LogTemp, Error, TEXT("SkillCastingService: FAILED to save skill state! Rolling back domain state."));
 							// Slot->SetLastUsedTime(FDateTime::MinValue()); 
-							return false; // 트랜잭션 실패
+							return false; // ?�랜??�� ?�패
 							// }
 						}
 					}

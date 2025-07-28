@@ -1,3 +1,4 @@
+// @Needmodifi
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Components/EquipmentComponent.h"
@@ -19,10 +20,10 @@ void UEquipmentComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 
 void UEquipmentComponent::OnRep_EquipmentSlots()
 {
-	// 장비 상태가 변경되었음을 알림
+	// ?�비 ?�태가 변경되?�음???�림
 	OnEquipmentStateChanged.Broadcast(EquipmentSlots);
 	
-	// 클라이언트에서 복제된 데이터를 받았을 때 EquipmentSubsystem에 알림
+	// ?�라?�언?�에??복제???�이?��? 받았????EquipmentSubsystem???�림
 	if (auto* EquipmentSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UEquipmentSubsystem>())
 	{
 		EquipmentSubsystem->Client_OnEquipmentStateUpdated(this);
@@ -48,7 +49,7 @@ bool UEquipmentComponent::EquipItem(const FEquipmentSlotState& EquipmentState)
 		return false;
 	}
 
-	// 이미 해당 슬롯에 장비가 있는지 확인
+	// ?��? ?�당 ?�롯???�비가 ?�는지 ?�인
 	if (GetEquipmentSlot(EquipmentState.SlotIndex))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("EquipmentComponent: Slot %d is already occupied"), EquipmentState.SlotIndex);

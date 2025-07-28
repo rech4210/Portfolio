@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -68,15 +68,15 @@ class SKILLMODULE_API USkillModelBuilderInterface : public UInterface
 };
 
 /**
- * DataAsset → DomainModel 빌딩 인터페이스
- * DataAsset과 비즈니스 로직을 결합하여 완전한 도메인 모델 생성
+ * DataAsset ??DomainModel 빌딩 ?�터?�이??
+ * DataAsset�?비즈?�스 로직??결합?�여 ?�전???�메??모델 ?�성
  */
 class SKILLMODULE_API ISkillModelBuilderInterface
 {
 	GENERATED_BODY()
 
 public:
-	// Domain Model 생성
+	// Domain Model ?�성
 	virtual FSkillDomainModel BuildDomainModel(
 		const FSkillSlotDatabaseDTO& SlotDTO, 
 		USkillDataAsset* SkillDataAsset
@@ -100,7 +100,7 @@ public:
 	virtual int32 CalculateScaledValue(int32 BaseValue, int32 SkillLevel) = 0;
 	virtual float CalculateScaledValue(float BaseValue, int32 SkillLevel) = 0;
 
-	// 역변환 (Entity → DTO)
+	// ?????(Entity ??DTO)
 	virtual FSkillSlotDatabaseDTO ExtractSlotDTO(const USkillSlot* SkillSlot) = 0;
 	virtual FSkillDomainModel ExtractDomainModel(const USkillSlot* SkillSlot) = 0;
 

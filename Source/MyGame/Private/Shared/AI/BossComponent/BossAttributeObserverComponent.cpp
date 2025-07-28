@@ -1,4 +1,4 @@
-ï»¿// Fill out your copyright notice in the Description page of Project Settings.
+// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Shared/AI/BossComponent/BossAttributeObserverComponent.h"
@@ -22,9 +22,9 @@ void UBossAttributeObserverComponent::BeginPlay() {
 }
 
 
-//1. Shared Module ì— ê³µìš© ì¸í„°í˜ì´ìŠ¤ë¥¼ í†µí•´ ì—°ê²°í•œë‹¤.
-//2. í˜„ì¬ ë‹¤ì–‘í•œ ë°ì´í„° ì „ì†¡ì„ ìœ„í•´ struct íƒ€ì…ìœ¼ë¡œ ì „ì†¡í•˜ë‚˜, ì „ì†¡í•  ë°ì´í„°ê°€ ë§ì•„ì§ˆê²½ìš° ë¬¸ì œê°€ ìƒê¸¸ ìˆ˜ ìˆë‹¤.
-//3. í˜„ì¬ ì—¬ëŸ¬ ë°ì´í„°ë¥¼ ê²€ì¦í•˜ê³  ì „ì†¡í•˜ëŠ” ê³¼ì •ì—ì„œ ê³¼ì—°... í•´ë‹¹ ë°ì´í„°ë¥¼ ì²˜ë¦¬í•˜ëŠ” ì»¨íŠ¸ë¡¤ëŸ¬ì˜ ë¡œì§ì„ ì–´ë–»ê²Œ ìˆ˜ì •í• ê²ƒì¸ê°€.
+//1. Shared Module ¿¡ °ø¿ë ÀÎÅÍÆäÀÌ½º¸¦ ÅëÇØ ¿¬°áÇÑ´Ù.
+//2. ÇöÀç ´Ù¾çÇÑ µ¥ÀÌÅÍ Àü¼ÛÀ» À§ÇØ struct Å¸ÀÔÀ¸·Î Àü¼ÛÇÏ³ª, Àü¼ÛÇÒ µ¥ÀÌÅÍ°¡ ¸¹¾ÆÁú°æ¿ì ¹®Á¦°¡ »ı±æ ¼ö ÀÖ´Ù.
+//3. ÇöÀç ¿©·¯ µ¥ÀÌÅÍ¸¦ °ËÁõÇÏ°í Àü¼ÛÇÏ´Â °úÁ¤¿¡¼­ °ú¿¬... ÇØ´ç µ¥ÀÌÅÍ¸¦ Ã³¸®ÇÏ´Â ÄÁÆ®·Ñ·¯ÀÇ ·ÎÁ÷À» ¾î¶»°Ô ¼öÁ¤ÇÒ°ÍÀÎ°¡.
 
 void UBossAttributeObserverComponent::OnAttributeChanged(EObservedAttribute Attribute,
 	const FOnAttributeChangeData& Data) const{
@@ -32,7 +32,7 @@ void UBossAttributeObserverComponent::OnAttributeChanged(EObservedAttribute Attr
 	const FBossDataStruct Old = BC->CachedBossData;
 	AttributeHelper.HandleAttributeChange(Attribute, BC->CachedBossData, Data.NewValue);
 	if (BC->HasAuthority()) {
-		//ì£¼ì˜í•´ì•¼í•  ì . Attributeì˜ ê°’ì´ ìˆ˜ì •ë˜ì§€ ì•Šì•„ë„ callback ì´ í˜¸ì¶œë˜ëŠ” ê²½ìš°ê°€ ì¡´ì¬í–ˆìŒ. Old Value ê¸°ì¤€ìœ¼ë¡œ ì²˜ë¦¬í• ê²ƒ.
+		//ÁÖÀÇÇØ¾ßÇÒ Á¡. AttributeÀÇ °ªÀÌ ¼öÁ¤µÇÁö ¾Ê¾Æµµ callback ÀÌ È£ÃâµÇ´Â °æ¿ì°¡ Á¸ÀçÇßÀ½. Old Value ±âÁØÀ¸·Î Ã³¸®ÇÒ°Í.
 		if (Old == BC->CachedBossData) {
 			return;
 		}
@@ -40,7 +40,7 @@ void UBossAttributeObserverComponent::OnAttributeChanged(EObservedAttribute Attr
 	}
 }
 
-	//GAS Attributeê°€ ë³€ê²½ë  ë•Œ í˜¸ì¶œë˜ëŠ” Delegateì— í•¨ìˆ˜ë¥¼ ë°”ì¸ë”©.
+	//GAS Attribute°¡ º¯°æµÉ ¶§ È£ÃâµÇ´Â Delegate¿¡ ÇÔ¼ö¸¦ ¹ÙÀÎµù.
 void UBossAttributeObserverComponent::BindBossDataDelegate(){
 	if (auto ASC = Cast<ABossCharacter>(GetOwner())->GetAbilitySystemComponent()) {
 		ASC->GetGameplayAttributeValueChangeDelegate(UEnemyAttributeSet::GetHealthAttribute())

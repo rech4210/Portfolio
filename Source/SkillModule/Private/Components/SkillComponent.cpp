@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Components/SkillComponent.h"
 #include "Entities/SkillSlot.h"
@@ -52,7 +52,7 @@ bool USkillComponent::RegisterSkill(int32 SlotIndex, USkillDataAsset* SkillData)
 		return false;
 	}
 
-	// 기존 슬롯 확장 또는 생성
+	// 기존 ?�롯 ?�장 ?�는 ?�성
 	while (SkillSlots.Num() <= SlotIndex)
 	{
 		USkillSlot* NewSlot = NewObject<USkillSlot>(this);
@@ -62,7 +62,7 @@ bool USkillComponent::RegisterSkill(int32 SlotIndex, USkillDataAsset* SkillData)
 		SkillSlots.Add(NewSlot);
 	}
 
-	// 슬롯에 스킬 설정
+	// ?�롯???�킬 ?�정
 	USkillSlot* TargetSlot = SkillSlots[SlotIndex];
 	TargetSlot->SetSkillData(SkillData, SkillData->SkillID);
 
@@ -114,14 +114,14 @@ void USkillComponent::SwapSkills(int32 SlotIndexA, int32 SlotIndexB)
 
 	if (SlotA && SlotB)
 	{
-		// 임시로 SlotA의 데이터 저장
+		// ?�시�?SlotA???�이???�??
 		USkillDataAsset* TempSkillData = SlotA->SkillData;
 		int32 TempSkillId = SlotA->SkillId;
 
-		// SlotB의 데이터를 SlotA로 복사
+		// SlotB???�이?��? SlotA�?복사
 		SlotA->SetSkillData(SlotB->SkillData, SlotB->SkillId);
 		
-		// 임시 데이터를 SlotB로 복사
+		// ?�시 ?�이?��? SlotB�?복사
 		SlotB->SetSkillData(TempSkillData, TempSkillId);
 
 		UE_LOG(LogTemp, Log, TEXT("SkillComponent: Swapped skills between SlotIndex %d and %d"), 
@@ -168,7 +168,7 @@ bool USkillComponent::CanRegisterSkill(int32 SlotIndex, USkillDataAsset* SkillDa
 		return false;
 	}
 
-	// 이미 같은 스킬이 등록되어 있는지 확인
+	// ?��? 같�? ?�킬???�록?�어 ?�는지 ?�인
 	if (HasSkill(SkillData))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("SkillComponent: Skill '%s' is already registered"), 
@@ -214,7 +214,7 @@ bool USkillComponent::CanUpdateCooldown(int32 SlotIndex, const FDateTime& LastUs
 
 bool USkillComponent::CanSaveSkills(const FSkillDomain& SkillData) const
 {
-	// 도메인 데이터 유효성 검증
+	// ?�메???�이???�효??검�?
 	return SkillData.SkillSlots.Num() <= MaxSkillSlots;
 }
 
@@ -251,7 +251,7 @@ int32 USkillComponent::GetAvailableSlotIndex() const
 		}
 	}
 
-	// 새로운 슬롯을 추가할 수 있는 경우
+	// ?�로???�롯??추�??????�는 경우
 	if (SkillSlots.Num() < MaxSkillSlots)
 	{
 		return SkillSlots.Num();
@@ -327,7 +327,7 @@ void USkillComponent::BuildSkillSlotsFromMappers(
 
 	for (const FSkillSlotDatabaseDTO& SlotDTO : SlotDTOs)
 	{
-		// AssetMapper를 통해 해당하는 SkillDataAsset 찾기
+		// AssetMapper�??�해 ?�당?�는 SkillDataAsset 찾기
 		USkillDataAsset* MatchingAsset = nullptr;
 		for (USkillDataAsset* Asset : SkillDataAssets)
 		{
@@ -338,14 +338,14 @@ void USkillComponent::BuildSkillSlotsFromMappers(
 			}
 		}
 
-		// ModelBuilder를 통해 Domain Model을 생성하고 USkillSlot으로 변환
+		// ModelBuilder�??�해 Domain Model???�성?�고 USkillSlot?�로 변??
 		if (MatchingAsset && ModelBuilder.GetInterface())
 		{
 			FSkillDomainModel DomainModel = ModelBuilder.GetInterface()->BuildDomainModel(SlotDTO, MatchingAsset);
 			USkillSlot* NewSlot = ModelBuilder.GetInterface()->BuildSkillSlotEntity(DomainModel);
 			if (NewSlot)
 			{
-				// 슬롯 배열 크기 확장
+				// ?�롯 배열 ?�기 ?�장
 				while (SkillSlots.Num() <= SlotDTO.SlotIndex)
 				{
 					USkillSlot* EmptySlot = NewObject<USkillSlot>(this);
@@ -355,7 +355,7 @@ void USkillComponent::BuildSkillSlotsFromMappers(
 					SkillSlots.Add(EmptySlot);
 				}
 				
-				// 정확한 인덱스에 슬롯 설정
+				// ?�확???�덱?�에 ?�롯 ?�정
 				if (SlotDTO.SlotIndex >= 0 && SlotDTO.SlotIndex < SkillSlots.Num())
 				{
 					SkillSlots[SlotDTO.SlotIndex] = NewSlot;
@@ -388,7 +388,7 @@ TArray<FSkillSlotDatabaseDTO> USkillComponent::ExtractDTOsFromSkillSlots(const F
 		if (Slot && !Slot->IsEmpty() && ModelBuilder.GetInterface())
 		{
 			FSkillSlotDatabaseDTO DTO = ModelBuilder.GetInterface()->ExtractSlotDTO(Slot);
-			DTO.UserId = UserId; // UserId를 그대로 할당
+			DTO.UserId = UserId; // UserId�?그�?�??�당
 			DTOs.Add(DTO);
 		}
 	}
@@ -405,18 +405,18 @@ void USkillComponent::SyncWithDomain(const FSkillDomain& SkillData)
 {
 	UE_LOG(LogTemp, Warning, TEXT("SkillComponent::SyncWithDomain is deprecated. Use 3-Layer Mapping Architecture instead."));
 	
-	// 레거시 호환성을 위한 임시 구현
+	// ?�거???�환?�을 ?�한 ?�시 구현
 	SkillSlots.Empty();
 
 	for (const FSkillSlotDTO& SlotDTO : SkillData.SkillSlots)
 	{
 		USkillSlot* NewSlot = NewObject<USkillSlot>(this);
 		
-		// 기본 초기화
+		// 기본 초기??
 		FString SlotKey = FString::Printf(TEXT("Slot_%d"), SlotDTO.SlotIndex);
 		NewSlot->Initialize(SlotDTO.SlotIndex, SlotKey, nullptr);
 		
-		// 레거시 DTO에서 기본 정보만 설정
+		// ?�거??DTO?�서 기본 ?�보�??�정
 		NewSlot->SlotIndex = SlotDTO.SlotIndex;
 		NewSlot->SkillId = SlotDTO.SkillID;
 		NewSlot->LastUsedTime = SlotDTO.LastUsedTime;
@@ -445,7 +445,7 @@ FSkillDomain USkillComponent::ExtractDomain() const
 			SlotDTO.SkillID = Slot->SkillId;
 			SlotDTO.LastUsedTime = Slot->LastUsedTime;
 			SlotDTO.bIsActive = true;
-			SlotDTO.RemainingCooldown = 0.0f; // 계산된 값이 필요하면 별도 계산 필요
+			SlotDTO.RemainingCooldown = 0.0f; // 계산??값이 ?�요?�면 별도 계산 ?�요
 			
 			DomainData.SkillSlots.Add(SlotDTO);
 		}
@@ -466,7 +466,7 @@ void USkillComponent::OnRep_SkillSlots()
 
 void USkillComponent::NotifySkillStateChanged()
 {
-	// TArray<USkillSlot*> 형태로 변환하여 이벤트 발행
+	// TArray<USkillSlot*> ?�태�?변?�하???�벤??발행
 	TArray<USkillSlot*> SlotArray;
 	for (USkillSlot* Slot : SkillSlots)
 	{

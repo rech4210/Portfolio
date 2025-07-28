@@ -1,3 +1,4 @@
+// @Needmodifi
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "EquipmentRepository.h"
@@ -13,7 +14,7 @@ void UEquipmentRepository::Initialize() {
 
 bool UEquipmentRepository::LoadEquipmentData(const FGuid& PlayerGuid, UEquipmentComponent& EquipmentComponentToPopulate)
 {
-	// 서버 권한이 있을 때만 복제된 프로퍼티를 수정
+	// ?�버 권한???�을 ?�만 복제???�로?�티�??�정
 	if (!EquipmentComponentToPopulate.GetOwner() || !EquipmentComponentToPopulate.GetOwner()->HasAuthority())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("EquipmentRepository: LoadEquipmentData can only be called on server authority"));
@@ -22,19 +23,19 @@ bool UEquipmentRepository::LoadEquipmentData(const FGuid& PlayerGuid, UEquipment
 
 	UE_LOG(LogTemp, Log, TEXT("EquipmentRepository: Loading equipment data for Player %s"), *PlayerGuid.ToString());
 
-	// Mock 장비 데이터 생성 (실제로는 DB에서 로드)
+	// Mock ?�비 ?�이???�성 (?�제로는 DB?�서 로드)
 	TArray<FEquipmentSlotState> MockEquipmentItems;
 	
-	// 무기 슬롯
+	// 무기 ?�롯
 	FEquipmentSlotState Weapon;
 	Weapon.ItemID = 3001;
 	Weapon.SlotIndex = 0;
 	Weapon.SlotType = TEXT("Weapon");
 	Weapon.bIsEquipped = true;
-	Weapon.EnhancementLevel = {5, 2, 1}; // 강화 레벨 정보
+	Weapon.EnhancementLevel = {5, 2, 1}; // 강화 ?�벨 ?�보
 	MockEquipmentItems.Add(Weapon);
 	
-	// 방어구 슬롯
+	// 방어�??�롯
 	FEquipmentSlotState Armor;
 	Armor.ItemID = 3002;
 	Armor.SlotIndex = 1;
@@ -43,7 +44,7 @@ bool UEquipmentRepository::LoadEquipmentData(const FGuid& PlayerGuid, UEquipment
 	Armor.EnhancementLevel = {3, 1};
 	MockEquipmentItems.Add(Armor);
 	
-	// 액세서리 슬롯
+	// ?�세?�리 ?�롯
 	FEquipmentSlotState Accessory;
 	Accessory.ItemID = 3003;
 	Accessory.SlotIndex = 2;
@@ -52,7 +53,7 @@ bool UEquipmentRepository::LoadEquipmentData(const FGuid& PlayerGuid, UEquipment
 	Accessory.EnhancementLevel = {7};
 	MockEquipmentItems.Add(Accessory);
 
-	// 장비 아이템들을 컴포넌트에 추가 (복제 트리거)
+	// ?�비 ?�이?�들??컴포?�트??추�? (복제 ?�리�?
 	for (const auto& Equipment : MockEquipmentItems)
 	{
 		if (!EquipmentComponentToPopulate.EquipItem(Equipment))
@@ -80,8 +81,8 @@ bool UEquipmentRepository::SaveEquipmentData(const FGuid& PlayerGuid, const UEqu
 	UE_LOG(LogTemp, Log, TEXT("EquipmentRepository: Saving equipment data for Player %s with %d items"), 
 		*PlayerGuid.ToString(), EquipmentComponentToSave->GetAllEquipment().Num());
 
-	// 실제 구현에서는 여기서 데이터베이스에 저장
-	// 현재는 Mock 구현
+	// ?�제 구현?�서???�기???�이?�베?�스???�??
+	// ?�재??Mock 구현
 	
 	return true;
 }

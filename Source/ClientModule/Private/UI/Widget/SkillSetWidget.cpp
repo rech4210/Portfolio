@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "UI/Widget/SkillSetWidget.h"
@@ -36,7 +36,7 @@ void USkillSetWidget::InitWidget()
 
 void USkillSetWidget::SetWidgetData(UPrimaryDataAsset* Data) {
 	
-	// 현재 이 부분은 Skill Use와 연관되어 있음. 스킬 초기화는 따로 해주는게 맞다.
+	// ?�재 ??부분�? Skill Use?� ?��??�어 ?�음. ?�킬 초기?�는 ?�로 ?�주?�게 맞다.
 	if (USkillDataAsset* SkillData = Cast<USkillDataAsset>(Data)) {
 		SkillSlots[USkillHelper::GetValueFromKey(SkillData->SkillSlotIndex)-1]->UseSkillSlot(SkillData);
 		// SkillSlots[USkillHelper::GetValueFromKey(SkillData->SkillSlotIndex)]->ApplySkillData(SkillData);

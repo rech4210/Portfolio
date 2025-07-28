@@ -1,8 +1,5 @@
 #include "Shared/Player/GGwaCharacter.h"
 #include "Shared/Player/GGwaPlayerState.h"
-// #include "Shared/GAS/Skill/GA_Skill1.h"
-
-// #include "AbilitySystemComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "EnhancedInputSubsystems.h"
@@ -33,7 +30,7 @@ void AGGwaCharacter::PossessedBy(AController* NewController) {
 	if (ASC && HasAuthority()) {
 		for (int32 i = 0; i < SkillAbilities.Num(); ++i){
 			if (SkillAbilities[i]){
-				//skillrepo 기반으로 초기화 수행해야 함. 스킬 등록 변경시 동적으로 Ability의 등록 내용을 변경시켜줘야한다.
+				//skillrepo 기반?�로 초기???�행?�야 ?? ?�킬 ?�록 변경시 ?�적?�로 Ability???�록 ?�용??변경시켜줘?�한??
 				FGameplayAbilitySpec Spec(SkillAbilities[i], 1, static_cast<int32>(EAbilityInputID::Skill1) + i, this);
 				ASC->GiveAbility(Spec);
 			}
@@ -60,7 +57,7 @@ void AGGwaCharacter::OnRep_PlayerState() {
 	UE_LOG(LogTemp, Log, TEXT("AGGwaCharacter::OnRep_PlayerState - UI initialization handled by server"));
 	
 	Cast<AGGwaPlayerState>(GetPlayerState())->InitPlayerState();
-	Cast<AGGwaPlayerController>(GetController())->InitializeClientComponent();
+	// Cast<AGGwaPlayerController>(GetController())->InitializeClientComponent();
 }
 
 
@@ -68,7 +65,7 @@ void AGGwaCharacter::InitASC() {
 	if (AGGwaPlayerState * State = GetPlayerState<AGGwaPlayerState>(); nullptr != State) {
 		ASC = Cast<UGGwaAbilitySystemComponent>(State->GetAbilitySystemComponent());
 		if (ASC) {
-			// ASC의 연결 정보를 부여, ASC의 owner, Replicated 객체를 지정
+			// ASC???�결 ?�보�?부?? ASC??owner, Replicated 객체�?지??
 			ASC->InitAbilityActorInfo(State, this);
 		}
 	}
@@ -93,23 +90,23 @@ void AGGwaCharacter::BeginPlay() {
 
 
 /**
-	 * 현재 구조:
-	 * - 각 입력 액션(SkillActions[i])은 슬롯 인덱스(i)와 연결됨
-	 * - 슬롯에는 고정된 GA가 할당되어 있으며, 해당 슬롯의 GA를 실행
+	 * ?�재 구조:
+	 * - �??�력 ?�션(SkillActions[i])?� ?�롯 ?�덱??i)?� ?�결??
+	 * - ?�롯?�는 고정??GA가 ?�당?�어 ?�으�? ?�당 ?�롯??GA�??�행
 	 * 
-	 * 개선 아이디어:
-	 * - 입력 키마다 슬롯 인덱스가 아닌 "GA를 소유한 오브젝트"를 직접 연결
-	 * - 키 입력 시, 현재 장착된 무기/장비/오브젝트에서 GA를 추출하여 실행
-	 * - 장비 변경 시, 해당 키에 연결된 오브젝트만 교체하면 자동으로 능력이 바뀌도록 설계 가능
+	 * 개선 ?�이?�어:
+	 * - ?�력 ?�마???�롯 ?�덱?��? ?�닌 "GA�??�유???�브?�트"�?직접 ?�결
+	 * - ???�력 ?? ?�재 ?�착??무기/?�비/?�브?�트?�서 GA�?추출?�여 ?�행
+	 * - ?�비 변�??? ?�당 ?�에 ?�결???�브?�트�?교체?�면 ?�동?�로 ?�력??바뀌도�??�계 가??
 */
 
 
-// TODO: 스킬 Input 동적 바인딩 고려, 스킬 변경시, Repo로 부터의 스킬 수정 -> 플레이어의 상태 동기화 EIC, GiveAbility
+// TODO: ?�킬 Input ?�적 바인??고려, ?�킬 변경시, Repo�?부?�의 ?�킬 ?�정 -> ?�레?�어???�태 ?�기??EIC, GiveAbility
 void AGGwaCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent){
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 	if (UEnhancedInputComponent* EIC = Cast<UEnhancedInputComponent>(PlayerInputComponent)){
 		for (int32 i = 0; i < SkillActions.Num(); ++i){
-			// 동적으로 키를 변경시 무효화 됨. 수정대상
+			// ?�적?�로 ?��? 변경시 무효???? ?�정?�??
 			EIC->BindAction(SkillActions[i], ETriggerEvent::Triggered, this, &AGGwaCharacter::OnLocalSkillInput, i);
 			for (const FGameplayAbilitySpec& Spec : ASC->GetActivatableAbilities()){
 				UE_LOG(LogTemp, Warning, TEXT("Ability: %s"), *GetNameSafe(Spec.Ability));
@@ -120,7 +117,7 @@ void AGGwaCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 }
 
 
-// 플레이어가 스킬 UI에 드래그하여 스킬을 등록 ->  UI의 인덱스 및 키를 가져옴 -> UI<->SkillSlot 양방향 매핑 -> 스킬 사용 (UI RPC -> TrySkill[SkillSlot]) -> 결과 반환
+// ?�레?�어가 ?�킬 UI???�래그하???�킬???�록 ->  UI???�덱??�??��? 가?�옴 -> UI<->SkillSlot ?�방??매핑 -> ?�킬 ?�용 (UI RPC -> TrySkill[SkillSlot]) -> 결과 반환
 void AGGwaCharacter::CustomKeySet(UInputAction* Action, FKey CustomKey) {
 
 	// 0. Check base logic ex) exist...
@@ -141,7 +138,7 @@ void AGGwaCharacter::OnLocalSkillInput(const FInputActionInstance& Instance, int
 	if (!State->GetSkillComponent()) {
 		return;
 	}
-	//SlotIndex 기반으로 변경 - 직접 Index 사용
+	//SlotIndex 기반?�로 변�?- 직접 Index ?�용
 	auto bisSucces  = SkillCastingService->TryCastSkill(this, Index);
 	if (bisSucces) {
 		UE_LOG(LogTemp, Log, TEXT("OnLocalSkillInput: Skill cast successful for index %d"), Index);
@@ -210,8 +207,8 @@ void AGGwaCharacter::Tick(float DeltaSeconds) {
 }
 
 
-// OnLocalSkillInput()	클라이언트	입력 수신 → 서버 호출
-// 클라이언트에서 마우스 위치 기반 RotationEventData 전송
+// OnLocalSkillInput()	?�라?�언???�력 ?�신 ???�버 ?�출
+// ?�라?�언?�에??마우???�치 기반 RotationEventData ?�송
 // void AGGwaCharacter::OnLocalSkillInput(const FInputActionInstance& Instance, int32 Index)
 // {
 // 	if (IsLocallyControlled())
@@ -233,8 +230,8 @@ void AGGwaCharacter::Tick(float DeltaSeconds) {
 // 				// 	}
 // 				// }
 //
-// 				//해당 부분의 RPC
-// 				OnSkillTriggered(EventData, Index);  // 클라 -> 서버 RPC 호출
+// 				//?�당 부분의 RPC
+// 				OnSkillTriggered(EventData, Index);  // ?�라 -> ?�버 RPC ?�출
 // 			}
 // 		}
 // 	}

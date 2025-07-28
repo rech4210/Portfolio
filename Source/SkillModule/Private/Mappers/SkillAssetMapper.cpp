@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Mappers/SkillAssetMapper.h"
 #include "Data/SkillDataAsset.h"
@@ -7,33 +7,33 @@
 
 USkillAssetMapper::USkillAssetMapper()
 {
-	// 기본 경로 설정
+	// 기본 경로 ?�정
 	SkillDataAssetBasePath = TEXT("/Game/Data/Skills/");
 }
 
 USkillDataAsset* USkillAssetMapper::MapDtoToDataAsset(const FSkillMasterDatabaseDTO& DTO)
 {
-	// 기존 캐시된 DataAsset 확인
+	// 기존 캐시??DataAsset ?�인
 	if (USkillDataAsset* CachedAsset = GetCachedDataAsset(DTO.SkillId))
 	{
-		// 캐시된 에셋을 DTO로 업데이트 (VO 무결성 유지하면서 필요한 부분만)
+		// 캐시???�셋??DTO�??�데?�트 (VO 무결???��??�면???�요??부분만)
 		SyncDtoToDataAsset(DTO, CachedAsset);
 		return CachedAsset;
 	}
 
-	// 파일에서 기존 DataAsset 로드 시도
+	// ?�일?�서 기존 DataAsset 로드 ?�도
 	FString AssetPath = GenerateAssetPath(DTO.SkillId);
 	USkillDataAsset* ExistingAsset = LoadDataAssetFromPath(AssetPath);
 	
 	if (ExistingAsset)
 	{
-		// 기존 에셋을 DTO로 업데이트
+		// 기존 ?�셋??DTO�??�데?�트
 		SyncDtoToDataAsset(DTO, ExistingAsset);
 		CacheDataAsset(DTO.SkillId, ExistingAsset);
 		return ExistingAsset;
 	}
 
-	// 새로운 DataAsset 생성 (주의: VO 구조 유지)
+	// ?�로??DataAsset ?�성 (주의: VO 구조 ?��?)
 	USkillDataAsset* NewAsset = NewObject<USkillDataAsset>();
 	if (!NewAsset)
 	{
@@ -41,10 +41,10 @@ USkillDataAsset* USkillAssetMapper::MapDtoToDataAsset(const FSkillMasterDatabase
 		return nullptr;
 	}
 
-	// DTO에서 DataAsset으로 기본 정보 매핑 (VO 필드는 보존)
+	// DTO?�서 DataAsset?�로 기본 ?�보 매핑 (VO ?�드??보존)
 	SyncDtoToDataAsset(DTO, NewAsset);
 
-	// 캐시에 저장
+	// 캐시???�??
 	CacheDataAsset(DTO.SkillId, NewAsset);
 
 	return NewAsset;
@@ -60,19 +60,19 @@ FSkillMasterDatabaseDTO USkillAssetMapper::MapDataAssetToDto(const USkillDataAss
 		return DTO;
 	}
 	
-	// DataAsset에서 DTO로 필요한 필드만 추출
+	// DataAsset?�서 DTO�??�요???�드�?추출
 	return ExtractDtoFromDataAsset(DataAsset);
 }
 
 USkillDataAsset* USkillAssetMapper::LoadOrCreateDataAsset(int32 SkillId)
 {
-	// 캐시에서 먼저 확인
+	// 캐시?�서 먼�? ?�인
 	if (USkillDataAsset* CachedAsset = GetCachedDataAsset(SkillId))
 	{
 		return CachedAsset;
 	}
 
-	// 파일에서 로드 시도
+	// ?�일?�서 로드 ?�도
 	FString AssetPath = GenerateAssetPath(SkillId);
 	USkillDataAsset* LoadedAsset = LoadDataAssetFromPath(AssetPath);
 	
@@ -82,7 +82,7 @@ USkillDataAsset* USkillAssetMapper::LoadOrCreateDataAsset(int32 SkillId)
 		return LoadedAsset;
 	}
 
-	// 새로운 DataAsset 생성 (최소한의 정보만 설정)
+	// ?�로??DataAsset ?�성 (최소?�의 ?�보�??�정)
 	USkillDataAsset* NewAsset = NewObject<USkillDataAsset>();
 	if (NewAsset)
 	{
@@ -228,13 +228,13 @@ void USkillAssetMapper::SyncDtoToDataAsset(const FSkillMasterDatabaseDTO& DTO, U
 		return;
 	}
 
-	// DTO의 기본 정보만 DataAsset에 동기화 (VO 필드들은 보존)
+	// DTO??기본 ?�보�?DataAsset???�기??(VO ?�드?��? 보존)
 	DataAsset->SkillID = DTO.SkillId;
 	DataAsset->CoolTime = DTO.BaseCooltime;
 	DataAsset->CostAmount = DTO.BaseCost;
 	
-	// 주의: USkillDataAsset의 다른 필드들(GEClass, AbilityClass, TargetStrategyClass 등)은
-	// 에디터에서 설정된 원본 값을 유지하고 건드리지 않음
+	// 주의: USkillDataAsset???�른 ?�드??GEClass, AbilityClass, TargetStrategyClass ???�
+	// ?�디?�에???�정???�본 값을 ?��??�고 건드리�? ?�음
 }
 
 FSkillMasterDatabaseDTO USkillAssetMapper::ExtractDtoFromDataAsset(const USkillDataAsset* DataAsset)
@@ -246,17 +246,17 @@ FSkillMasterDatabaseDTO USkillAssetMapper::ExtractDtoFromDataAsset(const USkillD
 		return DTO;
 	}
 	
-	// DataAsset에서 데이터베이스에 저장할 필드만 추출
+	// DataAsset?�서 ?�이?�베?�스???�?�할 ?�드�?추출
 	DTO.SkillId = DataAsset->SkillID;
 	DTO.BaseCooltime = DataAsset->CoolTime;
 	DTO.BaseCost = DataAsset->CostAmount;
-	DTO.bEnabled = true; // 기본값
+	DTO.bEnabled = true; // 기본�?
 	
-	// DisplayName과 Description은 DataAsset에 직접적인 대응 필드가 없으므로
-	// 기본값 또는 다른 소스에서 가져와야 함
+	// DisplayName�?Description?� DataAsset??직접?�인 ?�???�드가 ?�으므�?
+	// 기본�??�는 ?�른 ?�스?�서 가?��?????
 	DTO.DisplayName = FString::Printf(TEXT("Skill_%d"), DataAsset->SkillID);
 	DTO.Description = TEXT("Generated from DataAsset");
-	DTO.MaxLevel = 10; // 기본값 (DataAsset에 MaxLevel 필드가 없음)
+	DTO.MaxLevel = 10; // 기본�?(DataAsset??MaxLevel ?�드가 ?�음)
 	
 	return DTO;
 }
