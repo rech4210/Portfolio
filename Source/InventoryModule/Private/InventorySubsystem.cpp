@@ -1,5 +1,4 @@
-// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
-
+﻿
 #include "InventorySubsystem.h"
 #include "DatabaseModule/Public/DatabaseManager.h"
 #include "InventoryRepository.h"

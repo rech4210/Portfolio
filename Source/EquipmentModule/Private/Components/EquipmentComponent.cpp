@@ -1,6 +1,4 @@
-// @Needmodifi
-// Fill out your copyright notice in the Description page of Project Settings.
-
+﻿
 #include "Components/EquipmentComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "EquipmentSubsystem.h"
@@ -20,10 +18,10 @@ void UEquipmentComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 
 void UEquipmentComponent::OnRep_EquipmentSlots()
 {
-	// ?�비 ?�태가 변경되?�음???�림
+	// ?�비 ?�태가 변경되?�음???�림
 	OnEquipmentStateChanged.Broadcast(EquipmentSlots);
 	
-	// ?�라?�언?�에??복제???�이?��? 받았????EquipmentSubsystem???�림
+	// ?�라?�언?�에??복제???�이?��? 받았????EquipmentSubsystem???�림
 	if (auto* EquipmentSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UEquipmentSubsystem>())
 	{
 		EquipmentSubsystem->Client_OnEquipmentStateUpdated(this);
@@ -49,7 +47,7 @@ bool UEquipmentComponent::EquipItem(const FEquipmentSlotState& EquipmentState)
 		return false;
 	}
 
-	// ?��? ?�당 ?�롯???�비가 ?�는지 ?�인
+	// ?��? ?�당 ?�롯???�비가 ?�는지 ?�인
 	if (GetEquipmentSlot(EquipmentState.SlotIndex))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("EquipmentComponent: Slot %d is already occupied"), EquipmentState.SlotIndex);

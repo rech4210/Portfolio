@@ -1,5 +1,4 @@
-// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
-
+﻿
 
 #include "Shared/GAS/GGwaAttributeSet.h"
 #include "AbilitySystemComponent.h"
@@ -52,7 +51,7 @@ void UGGwaAttributeSet::PostGameplayEffectExecute(const struct FGameplayEffectMo
 }
 
 
-// Called when a replicated property changes, Rep�??�한 매크�??�록.
+// Called when a replicated property changes, Rep�??�한 매크�??�록.
 void UGGwaAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const{
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 

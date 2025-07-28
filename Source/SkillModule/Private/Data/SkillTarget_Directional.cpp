@@ -1,5 +1,4 @@
-// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
-
+﻿
 #include "SkillModule/Public/Data/SkillTarget_Directional.h"
 
 TArray<AActor*> USkillTarget_Directional::DetectTargets(FSkillContext& SkillContext) {

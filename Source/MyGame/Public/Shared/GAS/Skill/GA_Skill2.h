@@ -1,5 +1,4 @@
-// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
-
+ï»¿
 #pragma once
 
 #include "CoreMinimal.h"
@@ -18,7 +17,7 @@ class MYGAME_API UGA_Skill2 : public UGA_Base
 	GENERATED_BODY()
 
 public:
-	/** ½ºÅ³ µ¥ÀÌÅÍ ¿¡¼Â */
+	/** ï¿½ï¿½Å³ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Data")
 	TObjectPtr<USkillDataAsset> SkillDataAsset;
 	virtual void ActivateAbility(

@@ -1,5 +1,4 @@
-// @Needmodifi
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
@@ -52,7 +51,7 @@ public:
 	UPROPERTY()
 	TMap<UBaseDataAsset*, UBaseToolTip*> SlotTooltipCachePair;
 	
-	/*Player Status widget?�서 buff Widget 구조 ?�인?�기, depth 깊음*/
+	/*Player Status widget?�서 buff Widget 구조 ?�인?�기, depth 깊음*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (BindWidget) ,Category= "Widget")
 	TObjectPtr<UPlayerStatusWidget> BP_PlayerStatusWidget;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (BindWidget) ,Category= "Widget")

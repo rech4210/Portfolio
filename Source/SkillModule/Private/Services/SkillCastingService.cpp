@@ -1,5 +1,4 @@
-// @Needmodifi
-#include "Services/SkillCastingService.h"
+ï»¿#include "Services/SkillCastingService.h"
 
 #include "AbilitySystemBlueprintLibrary.h"
 #include "Components/SkillComponent.h"
@@ -15,13 +14,13 @@
 #include "GameFramework/Character.h"
 
 bool USkillCastingService::TryCastSkill(ACharacter* Caster, int32 SlotIndex){
-	// Client ê¸°ì??¼ë¡œ RPC -> ?¤í‚¬ ?¬ìš©???˜ì–´?¼í•¨. ? ì´ˆ??try ability??predict ì§€?ì„ ?‡ã…‡
+	// Client ê¸°ï¿½??ï¿½ë¡œ RPC -> ?ï¿½í‚¬ ?ï¿½ìš©???ï¿½ì–´?ï¿½í•¨. ?ï¿½ì´ˆ??try ability??predict ì§€?ï¿½ì„ ?ï¿½ã…‡
 	// if (!Caster || !Caster->HasAuthority()){
 	// 	UE_LOG(LogTemp, Error, TEXT("SkillCastingService: Caster is null. or not on server authority."));
 	// 	return false;
 	// }
 	
-	// 1. ì»´í¬?ŒíŠ¸ ê°€?¸ì˜¤ê¸?
+	// 1. ì»´í¬?ï¿½íŠ¸ ê°€?ï¿½ì˜¤ï¿½?
 	USkillComponent* SkillComp = Caster->GetPlayerState()->FindComponentByClass<USkillComponent>();
 	UAbilitySystemComponent* ASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(Caster);
 	if (!SkillComp || !ASC){
@@ -37,15 +36,15 @@ bool USkillCastingService::TryCastSkill(ACharacter* Caster, int32 SlotIndex){
 	}
 	const FGameplayAbilitySpecHandle& AbilitySpec = ASC->FindAbilitySpecFromClass(Slot->SkillData->AbilityClass)->Handle;
 
-	// 8. Gameplay Ability ?¤í–‰
+	// 8. Gameplay Ability ?ï¿½í–‰
 	if (AbilitySpec.IsValid())
 	{
 		bool bIsActivated = ASC->TryActivateAbility(AbilitySpec);
 		if (bIsActivated) {
-			/*<-------------------- ?¤í‚¬ ?¬ìš© ?ì • ?´í›„ ------------------->*/
-			// ?„ë©”???´ë²¤??ë°œí–‰ -> GA ?´ë??ì„œ ê²°ê³¼???°ë¥¸ ì½œë°±???¬ìš©?©ë‹ˆ??
-			// ?íƒœ ë³€ê²?(MarkUsed) -> GA?ì„œ ?íƒœë¥?ì²˜ë¦¬?˜ë?ë¡?ë¡œì§???? œ.
-			// 5. ?ì†??(Repository)
+			/*<-------------------- ?ï¿½í‚¬ ?ï¿½ìš© ?ï¿½ì • ?ï¿½í›„ ------------------->*/
+			// ?ï¿½ë©”???ï¿½ë²¤??ë°œí–‰ -> GA ?ï¿½ï¿½??ï¿½ì„œ ê²°ê³¼???ï¿½ë¥¸ ì½œë°±???ï¿½ìš©?ï¿½ë‹ˆ??
+			// ?ï¿½íƒœ ë³€ï¿½?(MarkUsed) -> GA?ï¿½ì„œ ?ï¿½íƒœï¿½?ì²˜ë¦¬?ï¿½ï¿½?ï¿½?ë¡œì§????ï¿½ï¿½.
+			// 5. ?ï¿½ì†??(Repository)
 			if (Caster->GetGameInstance())
 			{
 				USkillSubsystem* SkillSubsystem = Caster->GetGameInstance()->GetSubsystem<USkillSubsystem>();
@@ -59,12 +58,12 @@ bool USkillCastingService::TryCastSkill(ACharacter* Caster, int32 SlotIndex){
 
 						if (PlayerId != -1)
 						{
-							//TODO ?„ì¬ ?¤í‚¬?íƒœë¥?DB???€?¥í•˜?”ê²ƒ???„ìš”?œì? ê²€ì¦?
+							//TODO ?ï¿½ì¬ ?ï¿½í‚¬?ï¿½íƒœï¿½?DB???ï¿½?ï¿½í•˜?ï¿½ê²ƒ???ï¿½ìš”?ï¿½ï¿½? ê²€ï¿½?
 							// if (!StateRepo->SaveSkillState(PlayerId, SkillComp, TODO))
 							// {
 							UE_LOG(LogTemp, Error, TEXT("SkillCastingService: FAILED to save skill state! Rolling back domain state."));
 							// Slot->SetLastUsedTime(FDateTime::MinValue()); 
-							return false; // ?¸ëœ??…˜ ?¤íŒ¨
+							return false; // ?ï¿½ëœ??ï¿½ï¿½ ?ï¿½íŒ¨
 							// }
 						}
 					}

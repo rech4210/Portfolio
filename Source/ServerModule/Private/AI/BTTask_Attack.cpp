@@ -1,5 +1,4 @@
-// @Needmodifi
-#include "AI/BTTask_Attack.h"
+ï»¿#include "AI/BTTask_Attack.h"
 #include "MyGame/Public/Shared/AI/GAS/GA_BossAttack.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Shared/AI/BossCharacter.h"
@@ -46,8 +45,8 @@ EBTNodeResult::Type UBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 		FGameplayEventTagMulticastDelegate::FDelegate::CreateUObject(this, &UBTTask_Attack::OnAbilityFinished)
 	);
 
-	// ÇöÀç boss area °ø°ÝÀÇ °æ¿ì, OnAbilityFinished °¡ Á¦´ë·Î Àû¿ëµÇÁö ¾Ê´Â °æ¿ì°¡ Á¸ÀçÇÔ.
-	// Area attack ÀÌ ½ÇÇàµÇ°í ³­ ÈÄ, task°¡ Á¾·áµÇÁö ¸øÇØ¼­ ¹«ÇÑÁ¤ ´ë±âÁßÀÓ.
+	// ï¿½ï¿½ï¿½ï¿½ boss area ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½, OnAbilityFinished ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ê´ï¿½ ï¿½ï¿½ì°¡ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½.
+	// Area attack ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ç°ï¿½ ï¿½ï¿½ ï¿½ï¿½, taskï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ø¼ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½.
 	FGameplayAbilitySpec* Spec = ASC->FindAbilitySpecFromClass(AttackAbility);
 	if (!Spec)
 	{

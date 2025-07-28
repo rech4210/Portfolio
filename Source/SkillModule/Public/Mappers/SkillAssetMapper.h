@@ -1,5 +1,4 @@
-// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
-
+﻿
 #pragma once
 
 #include "CoreMinimal.h"
@@ -11,9 +10,9 @@
 class USkillDataAsset;
 
 /**
- * DTO ??DataAsset 매핑 구현�?
- * DTO?� UE5 DataAsset 간의 변?�을 구현
- * 주의: USkillDataAsset?� VO?��?�??�본 구조�??��?
+ * DTO ??DataAsset 매핑 구현�?
+ * DTO?� UE5 DataAsset 간의 변?�을 구현
+ * 주의: USkillDataAsset?� VO?��?�??�본 구조�??��?
  */
 UCLASS(BlueprintType)
 class SKILLMODULE_API USkillAssetMapper : public UObject, public ISkillAssetMapperInterface
@@ -41,7 +40,7 @@ protected:
 	UPROPERTY()
 	TMap<int32, USkillDataAsset*> CachedDataAssets;
 
-	// Asset 경로 관�?
+	// Asset 경로 관�?
 	UPROPERTY(EditDefaultsOnly, Category = "Asset Management")
 	FString SkillDataAssetBasePath = TEXT("/Game/Data/Skills/");
 

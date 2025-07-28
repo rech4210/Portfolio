@@ -1,5 +1,4 @@
-// @Needmodifi
-#pragma once
+ï»¿#pragma once
 #include "AbilityInputID.h"
 #include "SkillDataAsset.h"
 #include "InputCoreTypes.h"
@@ -10,27 +9,27 @@ USTRUCT(BlueprintType)
 struct FSkillBindingInfo {
 	GENERATED_BODY()
 
-	// ½½·Ô °íÀ¯ ½Äº°ÀÚ
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Äºï¿½ï¿½ï¿½
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Skill Binding")
 	FGuid SlotId;
 
-	// UI»óÀÇ ½½·Ô ÀÎµ¦½º (0ºÎÅÍ ½ÃÀÛ)
+	// UIï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Îµï¿½ï¿½ï¿½ (0ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Skill Binding")
 	int32 SlotIndex;
 
-	// AbilitySystem¿¡ µî·ÏÇÒ ÀÔ·Â ID
+	// AbilitySystemï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ô·ï¿½ ID
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Skill Binding")
 	EAbilityInputID AbilityInputID;
 
-	// Enhanced Input Action ÀÚ»ê
+	// Enhanced Input Action ï¿½Ú»ï¿½
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Skill Binding")
 	UInputAction* InputAction;
 
-	// ÇöÀç ¹ÙÀÎµùµÈ Å°
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Îµï¿½ï¿½ï¿½ Å°
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Skill Binding")
 	FKey BindedKey;
 
-	// ½½·Ô¿¡ ¹èÁ¤µÈ ½ºÅ³ µ¥ÀÌÅÍ ¿¡¼Â
+	// ï¿½ï¿½ï¿½Ô¿ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Å³ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Skill Binding")
 	USkillDataAsset* SkillData;
 };

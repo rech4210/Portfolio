@@ -1,5 +1,4 @@
-// @Needmodifi
-#include "LoggingModule.h"
+﻿#include "LoggingModule.h"
 #include "Modules/ModuleManager.h"
 
 #define LOCTEXT_NAMESPACE "FLoggingModule"

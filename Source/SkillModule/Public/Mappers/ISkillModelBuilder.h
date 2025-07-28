@@ -1,5 +1,3 @@
-// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -68,15 +66,15 @@ class SKILLMODULE_API USkillModelBuilderInterface : public UInterface
 };
 
 /**
- * DataAsset ??DomainModel 빌딩 ?�터?�이??
- * DataAsset�?비즈?�스 로직??결합?�여 ?�전???�메??모델 ?�성
+ * DataAsset ??DomainModel 빌딩 ?�터?�이??
+ * DataAsset�?비즈?�스 로직??결합?�여 ?�전???�메??모델 ?�성
  */
 class SKILLMODULE_API ISkillModelBuilderInterface
 {
 	GENERATED_BODY()
 
 public:
-	// Domain Model ?�성
+	// Domain Model ?�성
 	virtual FSkillDomainModel BuildDomainModel(
 		const FSkillSlotDatabaseDTO& SlotDTO, 
 		USkillDataAsset* SkillDataAsset

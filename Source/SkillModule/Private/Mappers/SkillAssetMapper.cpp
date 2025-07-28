@@ -1,5 +1,4 @@
-// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
-
+﻿
 #include "Mappers/SkillAssetMapper.h"
 #include "Data/SkillDataAsset.h"
 #include "Engine/Engine.h"
@@ -7,33 +6,33 @@
 
 USkillAssetMapper::USkillAssetMapper()
 {
-	// 기본 경로 ?�정
+	// 기본 경로 ?�정
 	SkillDataAssetBasePath = TEXT("/Game/Data/Skills/");
 }
 
 USkillDataAsset* USkillAssetMapper::MapDtoToDataAsset(const FSkillMasterDatabaseDTO& DTO)
 {
-	// 기존 캐시??DataAsset ?�인
+	// 기존 캐시??DataAsset ?�인
 	if (USkillDataAsset* CachedAsset = GetCachedDataAsset(DTO.SkillId))
 	{
-		// 캐시???�셋??DTO�??�데?�트 (VO 무결???��??�면???�요??부분만)
+		// 캐시???�셋??DTO�??�데?�트 (VO 무결???��??�면???�요??부분만)
 		SyncDtoToDataAsset(DTO, CachedAsset);
 		return CachedAsset;
 	}
 
-	// ?�일?�서 기존 DataAsset 로드 ?�도
+	// ?�일?�서 기존 DataAsset 로드 ?�도
 	FString AssetPath = GenerateAssetPath(DTO.SkillId);
 	USkillDataAsset* ExistingAsset = LoadDataAssetFromPath(AssetPath);
 	
 	if (ExistingAsset)
 	{
-		// 기존 ?�셋??DTO�??�데?�트
+		// 기존 ?�셋??DTO�??�데?�트
 		SyncDtoToDataAsset(DTO, ExistingAsset);
 		CacheDataAsset(DTO.SkillId, ExistingAsset);
 		return ExistingAsset;
 	}
 
-	// ?�로??DataAsset ?�성 (주의: VO 구조 ?��?)
+	// ?�로??DataAsset ?�성 (주의: VO 구조 ?��?)
 	USkillDataAsset* NewAsset = NewObject<USkillDataAsset>();
 	if (!NewAsset)
 	{
@@ -41,10 +40,10 @@ USkillDataAsset* USkillAssetMapper::MapDtoToDataAsset(const FSkillMasterDatabase
 		return nullptr;
 	}
 
-	// DTO?�서 DataAsset?�로 기본 ?�보 매핑 (VO ?�드??보존)
+	// DTO?�서 DataAsset?�로 기본 ?�보 매핑 (VO ?�드??보존)
 	SyncDtoToDataAsset(DTO, NewAsset);
 
-	// 캐시???�??
+	// 캐시???�??
 	CacheDataAsset(DTO.SkillId, NewAsset);
 
 	return NewAsset;
@@ -60,19 +59,19 @@ FSkillMasterDatabaseDTO USkillAssetMapper::MapDataAssetToDto(const USkillDataAss
 		return DTO;
 	}
 	
-	// DataAsset?�서 DTO�??�요???�드�?추출
+	// DataAsset?�서 DTO�??�요???�드�?추출
 	return ExtractDtoFromDataAsset(DataAsset);
 }
 
 USkillDataAsset* USkillAssetMapper::LoadOrCreateDataAsset(int32 SkillId)
 {
-	// 캐시?�서 먼�? ?�인
+	// 캐시?�서 먼�? ?�인
 	if (USkillDataAsset* CachedAsset = GetCachedDataAsset(SkillId))
 	{
 		return CachedAsset;
 	}
 
-	// ?�일?�서 로드 ?�도
+	// ?�일?�서 로드 ?�도
 	FString AssetPath = GenerateAssetPath(SkillId);
 	USkillDataAsset* LoadedAsset = LoadDataAssetFromPath(AssetPath);
 	
@@ -82,7 +81,7 @@ USkillDataAsset* USkillAssetMapper::LoadOrCreateDataAsset(int32 SkillId)
 		return LoadedAsset;
 	}
 
-	// ?�로??DataAsset ?�성 (최소?�의 ?�보�??�정)
+	// ?�로??DataAsset ?�성 (최소?�의 ?�보�??�정)
 	USkillDataAsset* NewAsset = NewObject<USkillDataAsset>();
 	if (NewAsset)
 	{
@@ -228,13 +227,13 @@ void USkillAssetMapper::SyncDtoToDataAsset(const FSkillMasterDatabaseDTO& DTO, U
 		return;
 	}
 
-	// DTO??기본 ?�보�?DataAsset???�기??(VO ?�드?��? 보존)
+	// DTO??기본 ?�보�?DataAsset???�기??(VO ?�드?��? 보존)
 	DataAsset->SkillID = DTO.SkillId;
 	DataAsset->CoolTime = DTO.BaseCooltime;
 	DataAsset->CostAmount = DTO.BaseCost;
 	
-	// 주의: USkillDataAsset???�른 ?�드??GEClass, AbilityClass, TargetStrategyClass ???�
-	// ?�디?�에???�정???�본 값을 ?��??�고 건드리�? ?�음
+	// 주의: USkillDataAsset???�른 ?�드??GEClass, AbilityClass, TargetStrategyClass ???�
+	// ?�디?�에???�정???�본 값을 ?��??�고 건드리�? ?�음
 }
 
 FSkillMasterDatabaseDTO USkillAssetMapper::ExtractDtoFromDataAsset(const USkillDataAsset* DataAsset)
@@ -246,17 +245,17 @@ FSkillMasterDatabaseDTO USkillAssetMapper::ExtractDtoFromDataAsset(const USkillD
 		return DTO;
 	}
 	
-	// DataAsset?�서 ?�이?�베?�스???�?�할 ?�드�?추출
+	// DataAsset?�서 ?�이?�베?�스???�?�할 ?�드�?추출
 	DTO.SkillId = DataAsset->SkillID;
 	DTO.BaseCooltime = DataAsset->CoolTime;
 	DTO.BaseCost = DataAsset->CostAmount;
-	DTO.bEnabled = true; // 기본�?
+	DTO.bEnabled = true; // 기본�?
 	
-	// DisplayName�?Description?� DataAsset??직접?�인 ?�???�드가 ?�으므�?
-	// 기본�??�는 ?�른 ?�스?�서 가?��?????
+	// DisplayName�?Description?� DataAsset??직접?�인 ?�???�드가 ?�으므�?
+	// 기본�??�는 ?�른 ?�스?�서 가?��?????
 	DTO.DisplayName = FString::Printf(TEXT("Skill_%d"), DataAsset->SkillID);
 	DTO.Description = TEXT("Generated from DataAsset");
-	DTO.MaxLevel = 10; // 기본�?(DataAsset??MaxLevel ?�드가 ?�음)
+	DTO.MaxLevel = 10; // 기본�?(DataAsset??MaxLevel ?�드가 ?�음)
 	
 	return DTO;
 }

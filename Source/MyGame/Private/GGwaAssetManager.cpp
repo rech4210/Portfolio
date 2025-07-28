@@ -1,5 +1,4 @@
-// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
-
+ï»¿
 
 #include "GGwaAssetManager.h"
 #include "SkillModule/Public/Utill/LocalDataBaseLoader.h"
@@ -24,8 +23,8 @@ void UGGwaAssetManager::FinishInitialLoading() {
 	// 	return;
 	// }
 
-	// ÇÁ¸®ÆäÄ¡ÇÒ ½ºÅ³ IDµé
-	// ÇØ´ç ºÎºÐÀ» °ü¸®ÇÏ±â ½±µµ·Ï Enum ¶Ç´Â MapÀ¸·Î ¼³Á¤.
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¡ï¿½ï¿½ ï¿½ï¿½Å³ IDï¿½ï¿½
+	// ï¿½Ø´ï¿½ ï¿½Îºï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï±ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Enum ï¿½Ç´ï¿½ Mapï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½.
 	// TArray<int32> PrefetchSkillIDs = { 100,101,102,103,104,105,106,107 };
 	// for (int32 SkillID : PrefetchSkillIDs)
 	// {

@@ -1,5 +1,4 @@
-// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
-
+ï»¿
 
 #include "UI/ToolTip/SkillToolTip.h"
 #include "Components/Image.h"
@@ -15,7 +14,7 @@ void USkillToolTip::SetToolTipData(UPrimaryDataAsset* Data) {
 			ToolTipTitle->SetText(BuffData->DisplayName);
 		}
 		if (ToolTipDescription) {
-			ToolTipDescription->SetText(BuffData->Description); // TODO: ½ÇÁ¦ ¼³¸íÀ¸·Î º¯°æ
+			ToolTipDescription->SetText(BuffData->Description); // TODO: ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 		}
 		if (ToolTipIcon) {
 			ToolTipIcon->SetBrushFromTexture(BuffData->Image);

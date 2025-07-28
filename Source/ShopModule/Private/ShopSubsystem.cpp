@@ -1,6 +1,4 @@
-// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
-
-#include "ShopSubsystem.h"
+﻿#include "ShopSubsystem.h"
 #include "DatabaseManager.h"
 #include "ShopRepository.h"
 #include "ShopDomainService.h"

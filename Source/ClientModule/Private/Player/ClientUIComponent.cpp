@@ -1,4 +1,6 @@
 #include "Player/ClientUIComponent.h"
+
+#include "Data/SkillDataAsset.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
 #include "MyGame/Public/Shared/Player/GGwaPlayerController.h"
@@ -13,6 +15,7 @@
 #include "UI/Enemy/BossStatusWidget.h"
 #include "SkillModule/Public/Components/SkillComponent.h"
 #include "Engine/Engine.h"
+#include "Entities/SkillSlot.h"
 #include "Kismet/GameplayStatics.h"
 #include "UI/UIManagerSubsystem.h"
 
@@ -34,9 +37,18 @@ void UClientUIComponent::BeginPlay()
 	SetupClientInputMode();
 }
 
+void UClientUIComponent::SetOwnerController(AGGwaPlayerController* Controller) {
+	OwnerController = Controller;
+}
+
 // ============================================================================
 // IClientUIInterface IMPLEMENTATION
 // ============================================================================
+
+// SkillComponent를 제공받고 있으나, 복제가 제대로 이루어지지 않는다고 판단됨.
+// 아예 nullptr이 뜰때고 있고, 어쩔때는 skillcomponent는 메모리를 참조하나, 내부 skillslot이 비어있음.
+// 디버깅을 해보니, Client RPC로 SkillComponent를 전송해주는 시점에서 복제가 제대로 수행되지 않는다고 판단.
+// GGwaGameMOde에서 인자로 넘겨주는 시점에는 정상적으로 메모리를 점유중. GameMode -> RPC -> (복제 이슈) Controller -> UI ! 실패 흐름
 
 void UClientUIComponent::InitializeUI(const USkillComponent* SkillComponent)
 {
@@ -45,12 +57,16 @@ void UClientUIComponent::InitializeUI(const USkillComponent* SkillComponent)
 		UE_LOG(LogTemp, Warning, TEXT("ClientUIComponent: is not Local controller"));
 		return;
 	}
-	//
-	// if (OwnerController->HasAuthority())
-	// {
-	// 	UE_LOG(LogTemp, Warning, TEXT("ClientUIComponent: Server controller - UI initialization skipped"));
-	// 	return;
-	// }
+
+	//GetPlayerState -> Nullptr
+	
+	if (auto State = OwnerController->GetPlayerState<AGGwaPlayerState>()) {
+		if (auto Component = State->GetSkillComponent()) {
+			for (auto Element : Component->GetAllSkillSlots()) {
+				UE_LOG(LogTemp, Warning, TEXT("===ClientUIComponent: Skill %s, Id %d ==="), *Element->SkillData->DisplayName.ToString(), Element->SkillId);
+			}
+		}
+	}
 
 	UE_LOG(LogTemp, Warning, TEXT("ClientUIComponent: Client widget initialization"));
 	
@@ -61,30 +77,33 @@ void UClientUIComponent::InitializeUI(const USkillComponent* SkillComponent)
 		
 		if (Widget && BossWidget)
 		{
+			//Widget은 정상 출력.
 			Widget->AddToViewport();
 			BossWidget->AddToViewport();
 			BossWidget->SetVisibility(ESlateVisibility::Hidden);
 			
 			// Setup HUD references
+			// GetHud -> nullptr
+			// Note : ServerGameMode Doesn't have HUD, so we need to check if OwnerController is valid
+			// 해당 HUD도 enum key mapping을 통해서 tsoftptr path string 데이터로 가져와야하나?
 			GGwaHUD = Cast<AGGwaHUD>(OwnerController->GetHUD());
 			if (GGwaHUD)
 			{
 				GGwaHUD->SetBaseWidget(Widget);
 				GGwaHUD->SetBossWidget(BossWidget);
 
-				// Bind to the PlayerController's OnBossDataReceived delegate
 				OwnerController->OnBossDataReceived.AddDynamic(GGwaHUD, &AGGwaHUD::HandleBossDataReceived);
 			}
 			
-			// Initialize widget with player data
+			//GetPlayerState -> Nullptr
 			if (AGGwaPlayerState* PS = OwnerController->GetPlayerState<AGGwaPlayerState>())
 			{
 				auto ASC = PS->GetAbilitySystemComponent();
 				UGGwaAbilitySystemComponent* GGawASC = CastChecked<UGGwaAbilitySystemComponent>(ASC);
 				const UGGwaAttributeSet* GGwaAttributeSet = Cast<UGGwaAttributeSet>(GGawASC->GetAttributeSet(UGGwaAttributeSet::StaticClass()));
 				
-				Widget->UpdateSkillWidgetFromServer(SkillComponent);
 				Widget->InitWidget(GGawASC, GGwaAttributeSet);
+				Widget->UpdateSkillWidgetFromServer(SkillComponent);
 			}
 		}
 	}

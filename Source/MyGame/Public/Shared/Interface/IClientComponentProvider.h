@@ -85,4 +85,5 @@ public:
 	virtual void NotifyStateChanged() = 0;
 	virtual void ReceiveBossData(const FBossDataStruct& BossData) = 0;
 	virtual void ReceiveSkillData(const USkillComponent* SkillComponent) = 0;
+	virtual void SetOwnerController(class AGGwaPlayerController* Controller) = 0;
 };

@@ -1,5 +1,4 @@
-// @Needmodifi
-#include "Shared/GAS/Cue/UGCN_Skill1_DirectionPreview.h"
+﻿#include "Shared/GAS/Cue/UGCN_Skill1_DirectionPreview.h"
 #include "SkillModule/Public/Data/SkillDataAsset.h"
 #include "SkillModule/Public/Utill/LocalDataBaseLoader.h"
 #include "DrawDebugHelpers.h"
@@ -42,11 +41,11 @@ bool AUGCN_Skill1_DirectionPreview::OnActive_Implementation(AActor* MyTarget, co
 
 	SetActorLocation(Location);
 	SetActorRotation(Rotation);
-	// ?�칼 ?�팅
+	// ?�칼 ?�팅
 	if (!DecalComponent) {
 		DecalComponent = CreateDefaultSubobject<UDecalComponent>(TEXT("DecalComponent"));
 		DecalComponent->SetupAttachment(RootComponent);
-		DecalComponent->SetRelativeRotation(FRotator(0.f, 0.f, 0.f)); // 지�??�시??
+		DecalComponent->SetRelativeRotation(FRotator(0.f, 0.f, 0.f)); // 지�??�시??
 	}
 	auto BoxShapeConfig = SkillDataAsset->SkillShapeConfig.BoxHalfExtent;
 	DecalComponent->DecalSize =  FVector(BoxShapeConfig.Z, BoxShapeConfig.Y, BoxShapeConfig.X); 

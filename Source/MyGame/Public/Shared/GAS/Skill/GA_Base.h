@@ -1,5 +1,4 @@
-// @Needmodifi
-#pragma once
+﻿#pragma once
 #include "CoreMinimal.h"
 #include "Abilities/GameplayAbility.h"
 #include "SkillModule/Public/Data/FSkillContext.h"

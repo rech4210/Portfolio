@@ -1,5 +1,4 @@
-// @Needmodifi
-#include "Shared/GAS/Skill/GA_BossAreaAttack.h"
+﻿#include "Shared/GAS/Skill/GA_BossAreaAttack.h"
 #include "GameplayEffect.h"
 #include "SkillModule/Public/Data/SkillDataAsset.h"
 #include "GameFramework/Actor.h"
@@ -17,10 +16,10 @@
 #include "Enum/EPlayerState.h"
 
 UGA_BossAreaAttack::UGA_BossAreaAttack(){
-    // 기본 ?�성 ?�정
+    // 기본 ?�성 ?�정
     AttackRadius = 500.0f;
     DamageAmount = 100.0f;
-    DelayBeforeAttack = 3.0f; // n�???공격
+    DelayBeforeAttack = 3.0f; // n�???공격
 }
 
 void UGA_BossAreaAttack::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData){
@@ -47,8 +46,8 @@ void UGA_BossAreaAttack::ActivateAbility(const FGameplayAbilitySpecHandle Handle
         return;
     }
 
-    // Static ??공유?�는 helper???�언�??�의??링커 ?�존?�이 ?�다???�을 명심?�것.
-    // ?�버 모듈?�서 ?��??�에 ?�킬 ?�이??로드
+    // Static ??공유?�는 helper???�언�??�의??링커 ?�존?�이 ?�다???�을 명심?�것.
+    // ?�버 모듈?�서 ?��??�에 ?�킬 ?�이??로드
     if (!SkillDataAsset) {
         FPrimaryAssetId ID;
         if (ULocalDataBaseLoader::CheckPrimaryAssetId(115, ID)) {
@@ -115,7 +114,7 @@ void UGA_BossAreaAttack::PerformAreaAttack(){
     SkillContext.SkillData = SkillDataAsset;
     SkillContext.DetectedActors = TargetDetector->DetectTargets(SkillContext);
 
-    // �??�터??KnockBackEffect ?�용
+    // �??�터??KnockBackEffect ?�용
     if (SkillDataAsset->GEClass)
     {
         for (AActor* TargetActor : SkillContext.DetectedActors)
@@ -128,8 +127,8 @@ void UGA_BossAreaAttack::PerformAreaAttack(){
                     
                     if (auto ASC = GetTargetASC(TargetActor)) {
                         if (ASC->HasMatchingGameplayTag(UEnumTagMatchHelper::GetTagFromEnum(EPlayerState::Guard))) {
-                            //?�레?�어가 방어 ?�태??경우, ?�용?��? ?�음.
-                            // ?�짝 밀리는 리액??
+                            //?�레?�어가 방어 ?�태??경우, ?�용?��? ?�음.
+                            // ?�짝 밀리는 리액??
                             return;
                         }
                         

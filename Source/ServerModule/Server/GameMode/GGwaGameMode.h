@@ -1,5 +1,4 @@
-// @Needmodifi
-#pragma once
+﻿#pragma once
 
 #include "MyGame/Public/Shared/Mode/BaseGameMode.h"
 #include "MyGame/Public/Shared/Mode/ModeType.h"

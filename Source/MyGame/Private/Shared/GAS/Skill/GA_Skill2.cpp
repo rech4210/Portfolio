@@ -1,5 +1,4 @@
-// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
-
+ï»¿
 
 #include "Shared/GAS/Skill/GA_Skill2.h"
 #include "Abilities/Tasks/AbilityTask_WaitTargetData.h"
@@ -29,20 +28,20 @@ void UGA_Skill2::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const 
 		return;
 	}
 
-	// AvatarActor À¯È¿¼º °Ë»ç
+	// AvatarActor ï¿½ï¿½È¿ï¿½ï¿½ ï¿½Ë»ï¿½
 	AActor* AvatarActor = GetAvatarActorFromActorInfo();
 	if (!IsValid(AvatarActor)){
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}
 
-	// 2) Å¸°ÙÆÃ Task
+	// 2) Å¸ï¿½ï¿½ï¿½ï¿½ Task
 	if (SkillDataAsset->TargetStrategyClass->IsChildOf(USkillTarget_Self::StaticClass())){
 		OnTargetDataReceived(FGameplayAbilityTargetDataHandle());
 	}
 	else
 	{
-		// ¸¶¿ì½º ±â¹Ý À§Ä¡ Å¸°ÙÆÃ
+		// ï¿½ï¿½ï¿½ì½º ï¿½ï¿½ï¿½ ï¿½ï¿½Ä¡ Å¸ï¿½ï¿½ï¿½ï¿½
 		ASkillTargetActor_Mouse* TargetActor = NewObject<ASkillTargetActor_Mouse>(this);
 
 		UAbilityTask_WaitTargetData* TargetTask = UAbilityTask_WaitTargetData::WaitTargetDataUsingActor(
@@ -59,7 +58,7 @@ void UGA_Skill2::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const 
 
 void UGA_Skill2::OnTargetDataCancelled(const FGameplayAbilityTargetDataHandle& Data)
 {
-	// Ãë¼Ò ½Ã¿£ Ability Á¾·á
+	// ï¿½ï¿½ï¿½ ï¿½Ã¿ï¿½ Ability ï¿½ï¿½ï¿½ï¿½
 	// GetActorInfo().AbilitySystemComponent->RemoveGameplayCue(UEnumTagMatchHelper::GetTagFromEnum(ECueType::DirectionPreview));
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, false, true);
 }
@@ -76,7 +75,7 @@ void UGA_Skill2::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Da
 		return;
 	}
 
-	//Cue ½Ã°¢ È¿°ú Àû¿ë
+	//Cue ï¿½Ã°ï¿½ È¿ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	if (Data.Num() > 0 && Data.Get(0)){
 		const FHitResult* Hit = Data.Get(0)->GetHitResult();
 		if (Hit){
@@ -94,7 +93,7 @@ void UGA_Skill2::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Da
 		}
 	}
 
-	// 4) ¸ùÅ¸ÁÖ Task
+	// 4) ï¿½ï¿½Å¸ï¿½ï¿½ Task
 	UGGwaPlayMontageAndWaitForEvent* MontageTask =
 		UGGwaPlayMontageAndWaitForEvent::PlayMontageAndWaitForEvent(
 			this,

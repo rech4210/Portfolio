@@ -169,6 +169,15 @@ void AGGwaGameMode::BeginPlay()
 			UE_LOG(LogTemp, Error, TEXT("GGwaGameMode::BeginPlay - Failed to spawn UI Cache Actor"));
 		}
 	}
+	
+	// ============================================================================
+	// BIND SKILL SUBSYSTEM DELEGATE (ONE-TIME BINDING)
+	// ============================================================================
+	if (auto SkillSubsystem = GetGameInstance()->GetSubsystem<USkillSubsystem>())
+	{
+		SkillSubsystem->OnSkillDataLoadCompleted.AddDynamic(this, &AGGwaGameMode::OnSkillDataLoadCompleted);
+		UE_LOG(LogTemp, Log, TEXT("[SKILL] Skill completion delegate bound in BeginPlay"));
+	}
 }
 
 void AGGwaGameMode::Tick(float DeltaSeconds) {
@@ -231,7 +240,7 @@ void AGGwaGameMode::PostLogin(APlayerController* NewPlayer)
 	}
 	FPlayerIdentityFair* PlayerIdentityFair = PendingPlayers.Find(NewPlayer->PlayerState->GetUniqueId());
 	
-	GGwaPC->Client_InitializeClientComponent();
+	GGwaPC->InitializeClientComponent();
 	GGwaPC->SetCachedUserId(PlayerIdentityFair->UserId);
 	GGwaPC->SetCachedAuthToken(PlayerIdentityFair->Token);
 	FString FinalUserId = *PlayerIdentityFair->UserId;
@@ -292,7 +301,7 @@ void AGGwaGameMode::InitializePlayerDDDSystems(APlayerController* NewPlayer, AGG
 	UE_LOG(LogTemp, Log, TEXT("[SKILL] Initializing skill system..."));
 	if (auto SkillSubsystem = GetGameInstance()->GetSubsystem<USkillSubsystem>())
 	{
-		SkillSubsystem->OnSkillDataLoadCompleted.AddDynamic(this, &AGGwaGameMode::OnSkillDataLoadCompleted);
+		// Note: Delegate binding is already done in BeginPlay() to prevent duplicate bindings
 		SkillSubsystem->RequestLoadPlayerSkills(PlayerState, UserId);
 		UE_LOG(LogTemp, Log, TEXT("[SKILL] ??Skill loading initiated for UserId: %s"), *UserId);
 	}
@@ -348,37 +357,65 @@ void AGGwaGameMode::OnSkillDataLoadCompleted(TScriptInterface<IPlayerIdentityInt
 {
 	UE_LOG(LogTemp, Warning, TEXT("[UI_INIT_DEBUG] OnSkillDataLoadCompleted called"));
 	
-	if (!PlayerIdentity || !SkillComponent)
+	if (!PlayerIdentity)
 	{
-		UE_LOG(LogTemp, Error, TEXT("[UI_INIT_DEBUG] Invalid parameters for UI initialization"));
+		UE_LOG(LogTemp, Error, TEXT("[UI] PlayerIdentity is null"));
 		return;
 	}
 	
+	if (!SkillComponent)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[UI] SkillComponent is null"));
+		return;
+	}
+	
+	// SkillComponent 데이터 상태 확인
+	UE_LOG(LogTemp, Log, TEXT("[UI] SkillComponent validation - Slots count: %d"), SkillComponent->GetAllSkillSlots().Num());
+	for (int32 i = 0; i < SkillComponent->GetAllSkillSlots().Num(); ++i)
+	{
+		USkillSlot* Slot = SkillComponent->GetSkillSlotByIndex(i);
+		if (Slot && !Slot->IsEmpty())
+		{
+			UE_LOG(LogTemp, Log, TEXT("[UI] Slot %d: SkillId=%d, SkillData=%p"), 
+				i, Slot->SkillId, Slot->SkillData);
+		}
+	}
+	
+	UE_LOG(LogTemp, Log, TEXT("[UI] Valid parameters - PlayerIdentity: %p, SkillComponent: %p"), 
+		PlayerIdentity.GetObject(), SkillComponent);
+	
 	if (AGGwaPlayerState* GGwaState = Cast<AGGwaPlayerState>(PlayerIdentity.GetObject())) 
 	{
+		UE_LOG(LogTemp, Warning, TEXT("[UI_INIT_DEBUG] Found controller for player %s"), *GGwaState->GetPlayerName());
+		
 		if (AGGwaPlayerController* GGwaController = Cast<AGGwaPlayerController>(GGwaState->GetPlayerController())) 
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[UI_INIT_DEBUG] Found controller for player %s"), *GGwaState->GetPlayerName());
 			UE_LOG(LogTemp, Warning, TEXT("[UI_INIT_DEBUG] Controller IsLocalController: %s | NetMode: %d"), 
 				GGwaController->IsLocalPlayerController() ? TEXT("YES") : TEXT("NO"), 
 				GetWorld()->GetNetMode());
-			
-			// 클라이언트 컨트롤러에서만 UI 초기화
+				
 			if (GGwaController->IsLocalPlayerController())
 			{
 				UE_LOG(LogTemp, Warning, TEXT("[UI_INIT_DEBUG] Initializing UI for local controller"));
-				GGwaController->Client_InitializeUI(SkillComponent);
+				GGwaController->InitializeUI(SkillComponent);
 			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("[UI_INIT_DEBUG] Skipping UI initialization for non-local controller"));
+			}
+			return;
 		}
 		else
 		{
-			UE_LOG(LogTemp, Error, TEXT("[UI_INIT_DEBUG] PlayerController not found for UI initialization"));
+			UE_LOG(LogTemp, Error, TEXT("[UI] Failed to cast to GGwaPlayerController"));
 		}
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("[UI_INIT_DEBUG] Could not cast PlayerIdentity to AGGwaPlayerState"));
+		UE_LOG(LogTemp, Error, TEXT("[UI] Failed to cast PlayerIdentity to GGwaPlayerState"));
 	}
+	
+	UE_LOG(LogTemp, Warning, TEXT("[UI] PlayerController not found for UI initialization"));
 }
 
 void AGGwaGameMode::Logout(AController* Exiting)

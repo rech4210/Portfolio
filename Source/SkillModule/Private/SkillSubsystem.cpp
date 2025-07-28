@@ -26,14 +26,24 @@ void USkillSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	DomainService = NewObject<USkillDomainService>(this);
 	DomainService->Initialize(SkillRepositoryInterface);
 	
+	// Bind delegate once during initialization
+	DomainService->OnSkillLoadCompleted.AddUObject(this, &USkillSubsystem::OnPlayerSkillsLoaded);
+	
 	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Created new SkillDomainService"));
 	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Initialized - Repository management only"));
 }
 
 void USkillSubsystem::Deinitialize()
 {
+	// Unbind delegate before cleanup
+	if (DomainService)
+	{
+		DomainService->OnSkillLoadCompleted.RemoveAll(this);
+	}
+	
 	DefaultSkillRepository = nullptr;
 	SkillRepositoryInterface = nullptr;
+	DomainService = nullptr;
 	Super::Deinitialize();
 	
 	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Deinitialized"));
@@ -83,10 +93,8 @@ void USkillSubsystem::RequestLoadPlayerSkills(TScriptInterface<IPlayerIdentityIn
 	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting skill load transaction - Player: %s, UserId: %s"), 
 		*PlayerIdentity->GetPlayerGuid().ToString(), *UserId);
 
-	// 3. Bind to domain service load completion callback for UI initialization
-	DomainService->OnSkillLoadCompleted.AddUObject(this, &USkillSubsystem::OnPlayerSkillsLoaded);
-
-	// 4. Domain Service Call (Delegate business logic)
+	// 3. Domain Service Call (Delegate business logic)
+	// Note: Delegate binding is already done in Initialize() to prevent duplicate bindings
 	DomainService->LoadPlayerSkills(PlayerIdentity, UserId);
 }
 
@@ -259,184 +267,6 @@ void USkillSubsystem::RequestSwapSkillSlots(TScriptInterface<IPlayerIdentityInte
 	}
 }
 
-// ============================================================================
-// LEGACY USE CASE ORCHESTRATION - DEPRECATED
-// ============================================================================
-//
-// void USkillSubsystem::RequestRegisterSkill(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, USkillDataAsset* SkillData)
-// {
-// 	// 1. Network & Authority Validation (App Layer responsibility)
-// 	if (!PlayerIdentity)
-// 	{
-// 		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerIdentity for skill registration"));
-// 		return;
-// 	}
-//
-// 	if (GetGameInstance()->GetWorld()->GetNetMode() == NM_Client)
-// 	{
-// 		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Skill registration requests should only be made from server"));
-// 		return;
-// 	}
-//
-// 	if (!DomainService)
-// 	{
-// 		UE_LOG(LogTemp, Error, TEXT("SkillSubsystem: DomainService not initialized"));
-// 		return;
-// 	}
-//
-// 	// 2. Transaction Boundary & Logging (App Layer responsibility)
-// 	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting skill registration transaction - Player: %s, Skill: %d"), 
-// 		*PlayerIdentity->GetPlayerGuid().ToString(), SkillData ? SkillData->SkillID : -1);
-//
-// 	// 3. Domain Service Call (Delegate business logic)
-// 	DomainService->RegisterSkillToPlayer(PlayerIdentity, SkillData);
-// }
-//
-// void USkillSubsystem::RequestUnregisterSkill(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 SlotIndex)
-// {
-// 	// 1. Network & Authority Validation
-// 	if (!PlayerIdentity)
-// 	{
-// 		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerIdentity for skill unregistration"));
-// 		return;
-// 	}
-//
-// 	if (GetGameInstance()->GetWorld()->GetNetMode() == NM_Client)
-// 	{
-// 		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Skill unregistration requests should only be made from server"));
-// 		return;
-// 	}
-//
-// 	if (!DomainService)
-// 	{
-// 		UE_LOG(LogTemp, Error, TEXT("SkillSubsystem: DomainService not initialized"));
-// 		return;
-// 	}
-//
-// 	// 2. Transaction Boundary & Logging
-// 	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting skill unregistration transaction - Player: %s, SlotIndex: %d"), 
-// 		*PlayerIdentity->GetPlayerGuid().ToString(), SlotIndex);
-//
-// 	// 3. Domain Service Call
-// 	DomainService->UnregisterSkillFromPlayer(PlayerIdentity, SlotIndex);
-// }
-//
-// void USkillSubsystem::RequestSwapSkillSlots(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 SlotIndexA, int32 SlotIndexB)
-// {
-// 	// 1. Network & Authority Validation
-// 	if (!PlayerIdentity)
-// 	{
-// 		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerIdentity for skill swap"));
-// 		return;
-// 	}
-//
-// 	if (GetGameInstance()->GetWorld()->GetNetMode() == NM_Client)
-// 	{
-// 		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Skill swap requests should only be made from server"));
-// 		return;
-// 	}
-//
-// 	if (!DomainService)
-// 	{
-// 		UE_LOG(LogTemp, Error, TEXT("SkillSubsystem: DomainService not initialized"));
-// 		return;
-// 	}
-//
-// 	// 2. Transaction Boundary & Logging
-// 	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting skill swap transaction - Player: %s, SlotA: %d, SlotB: %d"), 
-// 		*PlayerIdentity->GetPlayerGuid().ToString(), SlotIndexA, SlotIndexB);
-//
-// 	// 3. Domain Service Call
-// 	DomainService->SwapSkillSlots(PlayerIdentity, SlotIndexA, SlotIndexB);
-// }
-//
-// void USkillSubsystem::RequestLoadPlayerSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity)
-// {
-// 	// 1. Network & Authority Validation
-// 	if (!PlayerIdentity)
-// 	{
-// 		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerIdentity for skill loading"));
-// 		return;
-// 	}
-//
-// 	if (GetGameInstance()->GetWorld()->GetNetMode() == NM_Client)
-// 	{
-// 		UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Client should wait for replicated data, not load from server"));
-// 		return;
-// 	}
-//
-// 	if (!DomainService)
-// 	{
-// 		UE_LOG(LogTemp, Error, TEXT("SkillSubsystem: DomainService not initialized"));
-// 		return;
-// 	}
-//
-// 	// 2. Transaction Boundary & Logging
-// 	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting skill load transaction - Player: %s"), 
-// 		*PlayerIdentity->GetPlayerGuid().ToString());
-//
-// 	// 3. Domain Service Call
-// 	DomainService->LoadSkills(PlayerIdentity);
-// }
-//
-// void USkillSubsystem::RequestSavePlayerSkills(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FSkillDomain& SkillData)
-// {
-// 	// 1. Authority Validation
-// 	if (!PlayerIdentity)
-// 	{
-// 		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerIdentity for skill saving"));
-// 		return;
-// 	}
-//
-// 	if (GetGameInstance()->GetWorld()->GetNetMode() == NM_Client)
-// 	{
-// 		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Skill save requests should only be made from server"));
-// 		return;
-// 	}
-//
-// 	if (!DomainService)
-// 	{
-// 		UE_LOG(LogTemp, Error, TEXT("SkillSubsystem: DomainService not initialized"));
-// 		return;
-// 	}
-//
-// 	// 2. Transaction Boundary & Logging
-// 	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting skill save transaction - Player: %s"), 
-// 		*PlayerIdentity->GetPlayerGuid().ToString());
-//
-// 	// 3. Domain Service Call
-// 	DomainService->SaveSkills(PlayerIdentity, SkillData);
-// }
-//
-// void USkillSubsystem::RequestUpdateSkillCooldown(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, int32 SlotIndex, const FDateTime& LastUsedTime, float RemainingCooldown)
-// {
-// 	// 1. Authority Validation
-// 	if (!PlayerIdentity)
-// 	{
-// 		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Invalid PlayerIdentity for cooldown update"));
-// 		return;
-// 	}
-//
-// 	if (GetGameInstance()->GetWorld()->GetNetMode() == NM_Client)
-// 	{
-// 		UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: Cooldown update requests should only be made from server"));
-// 		return;
-// 	}
-//
-// 	if (!DomainService)
-// 	{
-// 		UE_LOG(LogTemp, Error, TEXT("SkillSubsystem: DomainService not initialized"));
-// 		return;
-// 	}
-//
-// 	// 2. Transaction Boundary & Logging
-// 	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting cooldown update transaction - Player: %s, SlotIndex: %d"), 
-// 		*PlayerIdentity->GetPlayerGuid().ToString(), SlotIndex);
-//
-// 	// 3. Domain Service Call
-// 	DomainService->UpdateSkillCooldown(PlayerIdentity, SlotIndex, LastUsedTime, RemainingCooldown);
-// }
-
 void USkillSubsystem::OnPlayerSkillsLoaded(const FGuid& PlayerGuid)
 {
 	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Skills loaded for player %s, triggering UI initialization"), *PlayerGuid.ToString());
@@ -461,9 +291,12 @@ void USkillSubsystem::OnPlayerSkillsLoaded(const FGuid& PlayerGuid)
 		{
 			if (PlayerIdentity->GetPlayerGuid() == PlayerGuid)
 			{
+				UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Found matching player %s, searching for SkillComponent"), *PlayerGuid.ToString());
+				
 				// Get SkillComponent
 				if (USkillComponent* SkillComponent = PC->PlayerState->FindComponentByClass<USkillComponent>())
 				{
+					UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: SkillComponent found at %p"), SkillComponent);
 					// Broadcast the completion event for UI initialization
 					OnSkillDataLoadCompleted.Broadcast(TScriptInterface<IPlayerIdentityInterface>(PC->PlayerState), SkillComponent);
 					UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: UI initialization event broadcasted for player %s"), *PlayerGuid.ToString());
@@ -472,6 +305,17 @@ void USkillSubsystem::OnPlayerSkillsLoaded(const FGuid& PlayerGuid)
 				else
 				{
 					UE_LOG(LogTemp, Error, TEXT("SkillSubsystem: SkillComponent not found on PlayerState for player %s"), *PlayerGuid.ToString());
+					
+					// Log all components on PlayerState for debugging
+					TArray<UActorComponent*> Components = PC->PlayerState->GetComponents().Array();
+					UE_LOG(LogTemp, Warning, TEXT("SkillSubsystem: PlayerState has %d components:"), Components.Num());
+					for (UActorComponent* Component : Components)
+					{
+						if (Component)
+						{
+							UE_LOG(LogTemp, Warning, TEXT("  - %s"), *Component->GetClass()->GetName());
+						}
+					}
 				}
 				break;
 			}

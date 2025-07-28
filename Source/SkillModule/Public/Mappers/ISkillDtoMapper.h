@@ -1,5 +1,4 @@
-// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
-
+﻿
 #pragma once
 
 #include "CoreMinimal.h"
@@ -14,8 +13,8 @@ class SKILLMODULE_API USkillDtoMapperInterface : public UInterface
 };
 
 /**
- * SQL ??DTO 매핑 ?�터?�이??
- * ?�이?�베?�스?� DTO 구조�?간의 변?�을 ?�당
+ * SQL ??DTO 매핑 ?�터?�이??
+ * ?�이?�베?�스?� DTO 구조�?간의 변?�을 ?�당
  */
 class SKILLMODULE_API ISkillDtoMapperInterface
 {

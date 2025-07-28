@@ -1,5 +1,4 @@
-// @Needmodifi
-#pragma once
+﻿#pragma once
 
 #include "EPlayerState.generated.h"
 

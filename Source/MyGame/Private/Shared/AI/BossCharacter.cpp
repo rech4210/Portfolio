@@ -1,5 +1,4 @@
-// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
-
+﻿
 
 #include "MyGame/Public/Shared/AI/BossCharacter.h"
 #include "AbilitySystemComponent.h"

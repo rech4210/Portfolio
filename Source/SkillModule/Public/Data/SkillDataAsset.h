@@ -1,5 +1,4 @@
-// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
-
+ï»¿
 #pragma once
 
 #include "CoreMinimal.h"
@@ -24,32 +23,32 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Skill")
 	FSkillShapeConfig SkillShapeConfig;
 
-	//EIC???€ ?°ë™???„í•œ ?¤í‚¬ ?¸ë±??
+	//EIC???ï¿½ ?ï¿½ë™???ï¿½í•œ ?ï¿½í‚¬ ?ï¿½ë±??
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Skill")
 	ESkillInputSlot SkillSlotIndex;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Skill")
 	int32 SkillID = 999;
 	
-	// ?€ê²?? íƒ ?„ëµ (?? ?¨ì¼ ?€ê²? ë²”ìœ„, ?€????
+	// ?ï¿½ï¿½??ï¿½íƒ ?ï¿½ëµ (?? ?ï¿½ì¼ ?ï¿½ï¿½? ë²”ìœ„, ?ï¿½????
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Targeting")
 	TSubclassOf<USkillTargetBase> TargetStrategyClass;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GA")
 	TSubclassOf<UGameplayAbility> AbilityClass;
 	
-	// ?¤ì œë¡??ìš©?˜ëŠ” GameplayEffect ?´ë˜??
+	// ?ï¿½ì œï¿½??ï¿½ìš©?ï¿½ëŠ” GameplayEffect ?ï¿½ë˜??
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Effect")
 	TSubclassOf<UGameplayEffect> GEClass;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Effect")
 	float CoolTime = 0.f;
 
-	// CoolTime GameplayEffect ?´ë˜??
+	// CoolTime GameplayEffect ?ï¿½ë˜??
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Effect")
 	TSubclassOf<UGameplayEffect> GE_CoolTimeClass;
 
-	// CoolTime GameplayEffect ?´ë˜??
+	// CoolTime GameplayEffect ?ï¿½ë˜??
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Effect")
 	TSubclassOf<UGameplayEffect> GE_CueClass;
 	
@@ -67,11 +66,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Buff")
 	TArray<UBuffDataAsset*> AppliedBuffs;
 
-	// ?œì „ ? ë‹ˆë©”ì´??
+	// ?ï¿½ì „ ?ï¿½ë‹ˆë©”ì´??
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Visual")
 	UAnimMontage* CastMontage;
 
-	// ?œì „ ?¨ê³¼??
+	// ?ï¿½ì „ ?ï¿½ê³¼??
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Visual")
 	USoundBase* CastSound;
 

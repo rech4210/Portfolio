@@ -1,5 +1,4 @@
-// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
-
+﻿
 #pragma once
 
 #include "CoreMinimal.h"
@@ -82,41 +81,41 @@ public:
 	// ========================================================================
 	// LEGACY REPOSITORY METHODS - DEPRECATED
 	// ========================================================================
-	
-	/**
-	 * DEPRECATED: Load skills by player ID using legacy DDD approach
-	 * Use 3-Layer Mapping Architecture: LoadUserSkillSlots() instead
-	 */
-	UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: LoadUserSkillSlots() instead")
-	virtual UE::Tasks::TTask<FSkillRepositoryResult> DEP_LoadSkillsByPlayerId(const FGuid& PlayerId) override;
-
-	/**
-	 * DEPRECATED: Save skill data using legacy DDD approach
-	 * Use 3-Layer Mapping Architecture: SaveUserSkillSlots() instead
-	 */
-	UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: SaveUserSkillSlots() instead")
-	virtual UE::Tasks::TTask<FSkillRepositoryResult> DEP_SaveSkillData(const FSkillDomain& SkillData) override;
-
-	/**
-	 * DEPRECATED: Register skill using legacy DDD approach
-	 * Use 3-Layer Mapping Architecture: SaveUserSkillSlots() instead
-	 */
-	UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: SaveUserSkillSlots() instead")
-	virtual UE::Tasks::TTask<FSkillRepositoryResult> DEP_RegisterSkillByPlayerId(const FGuid& PlayerId, const FSkillSlotDTO& SkillSlot) override;
-
-	/**
-	 * DEPRECATED: Unregister skill using legacy DDD approach
-	 * Use 3-Layer Mapping Architecture: SaveUserSkillSlots() instead
-	 */
-	UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: SaveUserSkillSlots() instead")
-	virtual UE::Tasks::TTask<FSkillRepositoryResult> DEP_UnregisterSkillByPlayerId(const FGuid& PlayerId, int32 SlotIndex) override;
-
-	/**
-	 * DEPRECATED: Update skill cooldown using legacy DDD approach
-	 * Use 3-Layer Mapping Architecture: SaveUserSkillSlots() instead
-	 */
-	UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: SaveUserSkillSlots() instead")
-	virtual UE::Tasks::TTask<FSkillRepositoryResult> DEP_UpdateSkillCooldown(const FGuid& PlayerId, int32 SlotIndex, const FDateTime& LastUsedTime, float RemainingCooldown) override;
+	//
+	// /**
+	//  * DEPRECATED: Load skills by player ID using legacy DDD approach
+	//  * Use 3-Layer Mapping Architecture: LoadUserSkillSlots() instead
+	//  */
+	// UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: LoadUserSkillSlots() instead")
+	// virtual UE::Tasks::TTask<FSkillRepositoryResult> DEP_LoadSkillsByPlayerId(const FGuid& PlayerId) override;
+	//
+	// /**
+	//  * DEPRECATED: Save skill data using legacy DDD approach
+	//  * Use 3-Layer Mapping Architecture: SaveUserSkillSlots() instead
+	//  */
+	// UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: SaveUserSkillSlots() instead")
+	// virtual UE::Tasks::TTask<FSkillRepositoryResult> DEP_SaveSkillData(const FSkillDomain& SkillData) override;
+	//
+	// /**
+	//  * DEPRECATED: Register skill using legacy DDD approach
+	//  * Use 3-Layer Mapping Architecture: SaveUserSkillSlots() instead
+	//  */
+	// UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: SaveUserSkillSlots() instead")
+	// virtual UE::Tasks::TTask<FSkillRepositoryResult> DEP_RegisterSkillByPlayerId(const FGuid& PlayerId, const FSkillSlotDTO& SkillSlot) override;
+	//
+	// /**
+	//  * DEPRECATED: Unregister skill using legacy DDD approach
+	//  * Use 3-Layer Mapping Architecture: SaveUserSkillSlots() instead
+	//  */
+	// UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: SaveUserSkillSlots() instead")
+	// virtual UE::Tasks::TTask<FSkillRepositoryResult> DEP_UnregisterSkillByPlayerId(const FGuid& PlayerId, int32 SlotIndex) override;
+	//
+	// /**
+	//  * DEPRECATED: Update skill cooldown using legacy DDD approach
+	//  * Use 3-Layer Mapping Architecture: SaveUserSkillSlots() instead
+	//  */
+	// UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: SaveUserSkillSlots() instead")
+	// virtual UE::Tasks::TTask<FSkillRepositoryResult> DEP_UpdateSkillCooldown(const FGuid& PlayerId, int32 SlotIndex, const FDateTime& LastUsedTime, float RemainingCooldown) override;
 
 private:
 	UPROPERTY()

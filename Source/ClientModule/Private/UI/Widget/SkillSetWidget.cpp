@@ -1,5 +1,4 @@
-// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
-
+﻿
 
 #include "UI/Widget/SkillSetWidget.h"
 #include "Blueprint/DragDropOperation.h"
@@ -36,7 +35,7 @@ void USkillSetWidget::InitWidget()
 
 void USkillSetWidget::SetWidgetData(UPrimaryDataAsset* Data) {
 	
-	// ?�재 ??부분�? Skill Use?� ?��??�어 ?�음. ?�킬 초기?�는 ?�로 ?�주?�게 맞다.
+	// ?�재 ??부분�? Skill Use?� ?��??�어 ?�음. ?�킬 초기?�는 ?�로 ?�주?�게 맞다.
 	if (USkillDataAsset* SkillData = Cast<USkillDataAsset>(Data)) {
 		SkillSlots[USkillHelper::GetValueFromKey(SkillData->SkillSlotIndex)-1]->UseSkillSlot(SkillData);
 		// SkillSlots[USkillHelper::GetValueFromKey(SkillData->SkillSlotIndex)]->ApplySkillData(SkillData);

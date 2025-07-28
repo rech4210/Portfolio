@@ -1,5 +1,4 @@
-// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
-
+﻿
 #include "SkillRepository.h"
 #include "Components/SkillComponent.h"
 #include "Entities/SkillSlot.h"
@@ -207,159 +206,159 @@ UE::Tasks::TTask<FSkillRepositoryResult3Layer> USkillRepository::GetSkillUsageSt
 // ============================================================================
 // LEGACY REPOSITORY METHODS - DEPRECATED
 // ============================================================================
-
-UE::Tasks::TTask<FSkillRepositoryResult> USkillRepository::DEP_LoadSkillsByPlayerId(const FGuid& PlayerId)
-{
-	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerId]() -> FSkillRepositoryResult
-	{
-		if (!DBManager)
-		{
-			return FSkillRepositoryResult::Failure(TEXT("DatabaseManager not available"));
-		}
-
-
-
-		// Convert FGuid PlayerId to FString UserId
-		FString UserId = PlayerId.ToString();
-
-		// Execute database operation on worker thread
-		auto LoadTask = DBManager->LoadSkillsForPlayer(UserId);
-		TArray<FSkillSlotDTO> LoadedSkills = LoadTask.GetResult();
-
-		//?�재 DTO ?�이?��? ??가?�오지 못하?�것 같음.
-		// Create domain object
-		FSkillDomain SkillData(PlayerId, LoadedSkills);
-		return FSkillRepositoryResult::Success(SkillData);
-	});
-}
-
-UE::Tasks::TTask<FSkillRepositoryResult> USkillRepository::DEP_SaveSkillData(const FSkillDomain& SkillData)
-{
-	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, SkillData]() -> FSkillRepositoryResult
-	{
-		if (!DBManager)
-		{
-			return FSkillRepositoryResult::Failure(TEXT("DatabaseManager not available"));
-		}
-
-		if (!SkillData.IsValid())
-		{
-			return FSkillRepositoryResult::Failure(TEXT("Invalid skill data"));
-		}
-
-		// Convert FGuid PlayerId to FString UserId
-		FString UserId = SkillData.PlayerId.ToString();
-
-		// Execute database operation on worker thread
-		auto SaveTask = DBManager->SaveSkillsForPlayer(UserId, SkillData.SkillSlots);
-		bool bSuccess = SaveTask.GetResult();
-
-		if (bSuccess)
-		{
-			return FSkillRepositoryResult::Success(SkillData);
-		}
-		else
-		{
-			return FSkillRepositoryResult::Failure(TEXT("Failed to save skills to database"));
-		}
-	});
-}
-
-UE::Tasks::TTask<FSkillRepositoryResult> USkillRepository::DEP_RegisterSkillByPlayerId(const FGuid& PlayerId, const FSkillSlotDTO& SkillSlot)
-{
-	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerId, SkillSlot]() -> FSkillRepositoryResult
-	{
-		if (!DBManager)
-		{
-			return FSkillRepositoryResult::Failure(TEXT("DatabaseManager not available"));
-		}
-
-
-
-		// Convert FGuid PlayerId to FString UserId
-		FString UserId = PlayerId.ToString();
-
-		// Execute database operation on worker thread
-		auto RegisterTask = DBManager->RegisterSkill(UserId, SkillSlot);
-		bool bSuccess = RegisterTask.GetResult();
-
-		if (bSuccess)
-		{
-			// Return updated skill data
-			auto ReloadTask = DEP_LoadSkillsByPlayerId(PlayerId);
-			return ReloadTask.GetResult();
-		}
-		else
-		{
-			return FSkillRepositoryResult::Failure(TEXT("Failed to register skill to database"));
-		}
-	});
-}
-
-UE::Tasks::TTask<FSkillRepositoryResult> USkillRepository::DEP_UnregisterSkillByPlayerId(const FGuid& PlayerId, int32 SlotIndex)
-{
-	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerId, SlotIndex]() -> FSkillRepositoryResult
-	{
-		if (!DBManager)
-		{
-			return FSkillRepositoryResult::Failure(TEXT("DatabaseManager not available"));
-		}
-
-		if (SlotIndex < 0)
-		{
-			return FSkillRepositoryResult::Failure(TEXT("Invalid SlotIndex"));
-		}
-
-		// Convert FGuid PlayerId to FString UserId
-		FString UserId = PlayerId.ToString();
-
-		// Execute database operation on worker thread
-		auto UnregisterTask = DBManager->UnregisterSkill(UserId, SlotIndex);
-		bool bSuccess = UnregisterTask.GetResult();
-
-		if (bSuccess)
-		{
-			// Return updated skill data
-			auto ReloadTask = DEP_LoadSkillsByPlayerId(PlayerId);
-			return ReloadTask.GetResult();
-		}
-		else
-		{
-			return FSkillRepositoryResult::Failure(TEXT("Failed to unregister skill from database"));
-		}
-	});
-}
-
-UE::Tasks::TTask<FSkillRepositoryResult> USkillRepository::DEP_UpdateSkillCooldown(const FGuid& PlayerId, int32 SlotIndex, const FDateTime& LastUsedTime, float RemainingCooldown)
-{
-	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerId, SlotIndex, LastUsedTime, RemainingCooldown]() -> FSkillRepositoryResult
-	{
-		if (!DBManager)
-		{
-			return FSkillRepositoryResult::Failure(TEXT("DatabaseManager not available"));
-		}
-
-		if (SlotIndex < 0)
-		{
-			return FSkillRepositoryResult::Failure(TEXT("Invalid SlotIndex"));
-		}
-
-		// Convert FGuid PlayerId to FString UserId
-		FString UserId = PlayerId.ToString();
-
-		// Execute database operation on worker thread
-		auto UpdateTask = DBManager->UpdateSkillCooldown(UserId, SlotIndex, LastUsedTime, RemainingCooldown);
-		bool bSuccess = UpdateTask.GetResult();
-
-		if (bSuccess)
-		{
-			// Return updated skill data
-			auto ReloadTask = DEP_LoadSkillsByPlayerId(PlayerId);
-			return ReloadTask.GetResult();
-		}
-		else
-		{
-			return FSkillRepositoryResult::Failure(TEXT("Failed to update skill cooldown"));
-		}
-	});
-}
+//
+// UE::Tasks::TTask<FSkillRepositoryResult> USkillRepository::DEP_LoadSkillsByPlayerId(const FGuid& PlayerId)
+// {
+// 	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerId]() -> FSkillRepositoryResult
+// 	{
+// 		if (!DBManager)
+// 		{
+// 			return FSkillRepositoryResult::Failure(TEXT("DatabaseManager not available"));
+// 		}
+//
+//
+//
+// 		// Convert FGuid PlayerId to FString UserId
+// 		FString UserId = PlayerId.ToString();
+//
+// 		// Execute database operation on worker thread
+// 		auto LoadTask = DBManager->LoadSkillsForPlayer(UserId);
+// 		TArray<FSkillSlotDTO> LoadedSkills = LoadTask.GetResult();
+//
+// 		//?�재 DTO ?�이?��? ??가?�오지 못하?�것 같음.
+// 		// Create domain object
+// 		FSkillDomain SkillData(PlayerId, LoadedSkills);
+// 		return FSkillRepositoryResult::Success(SkillData);
+// 	});
+// }
+//
+// UE::Tasks::TTask<FSkillRepositoryResult> USkillRepository::DEP_SaveSkillData(const FSkillDomain& SkillData)
+// {
+// 	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, SkillData]() -> FSkillRepositoryResult
+// 	{
+// 		if (!DBManager)
+// 		{
+// 			return FSkillRepositoryResult::Failure(TEXT("DatabaseManager not available"));
+// 		}
+//
+// 		if (!SkillData.IsValid())
+// 		{
+// 			return FSkillRepositoryResult::Failure(TEXT("Invalid skill data"));
+// 		}
+//
+// 		// Convert FGuid PlayerId to FString UserId
+// 		FString UserId = SkillData.PlayerId.ToString();
+//
+// 		// Execute database operation on worker thread
+// 		auto SaveTask = DBManager->SaveSkillsForPlayer(UserId, SkillData.SkillSlots);
+// 		bool bSuccess = SaveTask.GetResult();
+//
+// 		if (bSuccess)
+// 		{
+// 			return FSkillRepositoryResult::Success(SkillData);
+// 		}
+// 		else
+// 		{
+// 			return FSkillRepositoryResult::Failure(TEXT("Failed to save skills to database"));
+// 		}
+// 	});
+// }
+//
+// UE::Tasks::TTask<FSkillRepositoryResult> USkillRepository::DEP_RegisterSkillByPlayerId(const FGuid& PlayerId, const FSkillSlotDTO& SkillSlot)
+// {
+// 	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerId, SkillSlot]() -> FSkillRepositoryResult
+// 	{
+// 		if (!DBManager)
+// 		{
+// 			return FSkillRepositoryResult::Failure(TEXT("DatabaseManager not available"));
+// 		}
+//
+//
+//
+// 		// Convert FGuid PlayerId to FString UserId
+// 		FString UserId = PlayerId.ToString();
+//
+// 		// Execute database operation on worker thread
+// 		auto RegisterTask = DBManager->RegisterSkill(UserId, SkillSlot);
+// 		bool bSuccess = RegisterTask.GetResult();
+//
+// 		if (bSuccess)
+// 		{
+// 			// Return updated skill data
+// 			auto ReloadTask = DEP_LoadSkillsByPlayerId(PlayerId);
+// 			return ReloadTask.GetResult();
+// 		}
+// 		else
+// 		{
+// 			return FSkillRepositoryResult::Failure(TEXT("Failed to register skill to database"));
+// 		}
+// 	});
+// }
+//
+// UE::Tasks::TTask<FSkillRepositoryResult> USkillRepository::DEP_UnregisterSkillByPlayerId(const FGuid& PlayerId, int32 SlotIndex)
+// {
+// 	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerId, SlotIndex]() -> FSkillRepositoryResult
+// 	{
+// 		if (!DBManager)
+// 		{
+// 			return FSkillRepositoryResult::Failure(TEXT("DatabaseManager not available"));
+// 		}
+//
+// 		if (SlotIndex < 0)
+// 		{
+// 			return FSkillRepositoryResult::Failure(TEXT("Invalid SlotIndex"));
+// 		}
+//
+// 		// Convert FGuid PlayerId to FString UserId
+// 		FString UserId = PlayerId.ToString();
+//
+// 		// Execute database operation on worker thread
+// 		auto UnregisterTask = DBManager->UnregisterSkill(UserId, SlotIndex);
+// 		bool bSuccess = UnregisterTask.GetResult();
+//
+// 		if (bSuccess)
+// 		{
+// 			// Return updated skill data
+// 			auto ReloadTask = DEP_LoadSkillsByPlayerId(PlayerId);
+// 			return ReloadTask.GetResult();
+// 		}
+// 		else
+// 		{
+// 			return FSkillRepositoryResult::Failure(TEXT("Failed to unregister skill from database"));
+// 		}
+// 	});
+// }
+//
+// UE::Tasks::TTask<FSkillRepositoryResult> USkillRepository::DEP_UpdateSkillCooldown(const FGuid& PlayerId, int32 SlotIndex, const FDateTime& LastUsedTime, float RemainingCooldown)
+// {
+// 	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerId, SlotIndex, LastUsedTime, RemainingCooldown]() -> FSkillRepositoryResult
+// 	{
+// 		if (!DBManager)
+// 		{
+// 			return FSkillRepositoryResult::Failure(TEXT("DatabaseManager not available"));
+// 		}
+//
+// 		if (SlotIndex < 0)
+// 		{
+// 			return FSkillRepositoryResult::Failure(TEXT("Invalid SlotIndex"));
+// 		}
+//
+// 		// Convert FGuid PlayerId to FString UserId
+// 		FString UserId = PlayerId.ToString();
+//
+// 		// Execute database operation on worker thread
+// 		auto UpdateTask = DBManager->UpdateSkillCooldown(UserId, SlotIndex, LastUsedTime, RemainingCooldown);
+// 		bool bSuccess = UpdateTask.GetResult();
+//
+// 		if (bSuccess)
+// 		{
+// 			// Return updated skill data
+// 			auto ReloadTask = DEP_LoadSkillsByPlayerId(PlayerId);
+// 			return ReloadTask.GetResult();
+// 		}
+// 		else
+// 		{
+// 			return FSkillRepositoryResult::Failure(TEXT("Failed to update skill cooldown"));
+// 		}
+// 	});
+// }

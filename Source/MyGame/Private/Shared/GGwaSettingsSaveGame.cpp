@@ -1,7 +1,6 @@
-// @Needmodifi
-#include "Shared/GGwaSettingsSaveGame.h"
+ï»¿#include "Shared/GGwaSettingsSaveGame.h"
 
 UGGwaSettingsSaveGame::UGGwaSettingsSaveGame()
 {
-	// ±âº» »ý¼ºÀÚ ±¸Çö
+	// ï¿½âº» ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 }

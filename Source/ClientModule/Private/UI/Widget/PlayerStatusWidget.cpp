@@ -1,5 +1,4 @@
-// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
-
+ï»¿
 
 #include "UI/Widget/PlayerStatusWidget.h"
 #include "Components/HorizontalBox.h"
@@ -32,7 +31,7 @@ void UPlayerStatusWidget::UpdateManaBar(float Current, float Max) const{
 
 void UPlayerStatusWidget::SetWidgetData(UPrimaryDataAsset* Data) {
 	UE_LOG(LogTemp, Warning, TEXT("PlayerStatusWidget SetWidgetData"));
-	//?€?¥í•´?ê³  ?¬ìš© + visible
+	//?ï¿½?ï¿½í•´?ï¿½ê³  ?ï¿½ìš© + visible
 	UBuffDataAsset* BuffData = Cast<UBuffDataAsset>(Data);
 	UBuffSlotWidget* Widget = CreateWidget<UBuffSlotWidget>(this, BuffSlotWidgetClass);
 	Widget->SetWidgetData(BuffData);

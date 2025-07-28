@@ -1,5 +1,3 @@
-// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
-
 #include "Mappers/SkillModelBuilder.h"
 #include "Entities/SkillSlot.h"
 #include "Data/SkillDataAsset.h"
@@ -25,13 +23,13 @@ FSkillDomainModel USkillModelBuilder::BuildDomainModel(const FSkillSlotDatabaseD
 	}
 
 	// 1. Core Properties from Database DTO
-	DomainModel.UserId = FCString::Atoi(*DatabaseDTO.UserId); // FString??int32�?변??
+	DomainModel.UserId = FCString::Atoi(*DatabaseDTO.UserId); // FString??int32�?변??
 	DomainModel.SlotKey = DatabaseDTO.SlotKey;
 	DomainModel.SlotIndex = DatabaseDTO.SlotIndex;
 	DomainModel.SkillId = DatabaseDTO.SkillId;
 	DomainModel.SkillLevel = DatabaseDTO.SkillLevel;
 	DomainModel.LastUsedTime = DatabaseDTO.LastUsedTime;
-	DomainModel.bIsActive = true; // DatabaseDTO??bIsActive ?�드가 ?�으므�?기본�??�용
+	DomainModel.bIsActive = true; // DatabaseDTO??bIsActive ?�드가 ?�으므�?기본�??�용
 
 	// 2. Business Logic Properties - RemainingCooldown 계산
 	DomainModel.RemainingCooldown = CalculateRemainingCooldown(DatabaseDTO.LastUsedTime, SkillAsset->CoolTime);
@@ -39,7 +37,7 @@ FSkillDomainModel USkillModelBuilder::BuildDomainModel(const FSkillSlotDatabaseD
 	// 3. Business State Validation
 	DomainModel.bCanUse = CanUseSkill(DomainModel.LastUsedTime, SkillAsset->CoolTime, 100, static_cast<int32>(SkillAsset->CostAmount));
 
-	// 4. SkillDataAsset 참조 ?�??
+	// 4. SkillDataAsset 참조 ?�??
 	DomainModel.SkillDataAsset = SkillAsset;
 
 	return DomainModel;
@@ -55,17 +53,17 @@ USkillSlot* USkillModelBuilder::BuildSkillSlotEntity(const FSkillDomainModel& Do
 		return nullptr;
 	}
 
-	// Domain Model ??Entity 변??(USkillSlot??public ?�드 직접 ?�정)
+	// Domain Model ??Entity 변??(USkillSlot??public ?�드 직접 ?�정)
 	SkillSlot->SlotIndex = DomainModel.SlotIndex;
 	SkillSlot->SkillId = DomainModel.SkillId;
 	SkillSlot->SkillData = DomainModel.SkillDataAsset;
 	SkillSlot->LastUsedTime = DomainModel.LastUsedTime;
 	SkillSlot->SlotKey = DomainModel.SlotKey;
 
-	// Initialize 메서???�출
+	// Initialize 메서???�출
 	SkillSlot->Initialize(DomainModel.SlotIndex, DomainModel.SlotKey, DomainModel.SkillDataAsset);
 	
-	// SetSkillData 메서???�출 (SkillId ?�정)
+	// SetSkillData 메서???�출 (SkillId ?�정)
 	if (DomainModel.SkillDataAsset)
 	{
 		SkillSlot->SetSkillData(DomainModel.SkillDataAsset, DomainModel.SkillId);
@@ -94,7 +92,7 @@ float USkillModelBuilder::CalculateRemainingCooldown(const FDateTime& LastUsedTi
 
 bool USkillModelBuilder::CanUseSkill(const FDateTime& LastUsedTime, float BaseCooldown, int32 CurrentMana, int32 RequiredMana)
 {
-	// 1. Cooldown Check - ?�제 remaining cooldown 계산
+	// 1. Cooldown Check - ?�제 remaining cooldown 계산
 	float RemainingCooldown = CalculateRemainingCooldown(LastUsedTime, BaseCooldown);
 	if (RemainingCooldown > 0.0f)
 	{
@@ -138,10 +136,10 @@ FSkillSlotDatabaseDTO USkillModelBuilder::ExtractSlotDTO(const USkillSlot* Skill
 		return DTO;
 	}
 
-	// USkillSlot???�제 public ?�드 ?�용
+	// USkillSlot???�제 public ?�드 ?�용
 	DTO.SlotIndex = SkillSlot->SlotIndex;
 	DTO.SkillId = SkillSlot->SkillId; // SkillID ??SkillId
-	DTO.SkillLevel = 1; // SkillLevel ?�드가 ?�으므�?기본�?
+	DTO.SkillLevel = 1; // SkillLevel ?�드가 ?�으므�?기본�?
 	DTO.LastUsedTime = SkillSlot->LastUsedTime;
 	DTO.SlotKey = SkillSlot->SlotKey;
 
@@ -158,13 +156,13 @@ FSkillDomainModel USkillModelBuilder::ExtractDomainModel(const USkillSlot* Skill
 		return DomainModel;
 	}
 
-	// USkillSlot???�제 public ?�드 ?�용
+	// USkillSlot???�제 public ?�드 ?�용
 	DomainModel.SlotIndex = SkillSlot->SlotIndex;
 	DomainModel.SkillId = SkillSlot->SkillId; // SkillID ??SkillId
-	DomainModel.SkillLevel = 1; // 기본�?
+	DomainModel.SkillLevel = 1; // 기본�?
 	DomainModel.LastUsedTime = SkillSlot->LastUsedTime;
 	DomainModel.SlotKey = SkillSlot->SlotKey;
-	DomainModel.bIsActive = !SkillSlot->IsEmpty(); // IsActive 메서?��? ?�으므�?IsEmpty()??반�?�??�용
+	DomainModel.bIsActive = !SkillSlot->IsEmpty(); // IsActive 메서?��? ?�으므�?IsEmpty()??반�?�??�용
 	DomainModel.SkillDataAsset = SkillSlot->SkillData;
 	
 	// Cooldown 계산
@@ -188,7 +186,7 @@ TArray<FSkillDomainModel> USkillModelBuilder::BuildDomainModels(const TArray<FSk
 	
 	for (const FSkillSlotDatabaseDTO& DTO : DatabaseDTOs)
 	{
-		// Find matching SkillDataAsset (?�드�??�정)
+		// Find matching SkillDataAsset (?�드�??�정)
 		USkillDataAsset* MatchingAsset = nullptr;
 		for (USkillDataAsset* Asset : SkillAssets)
 		{

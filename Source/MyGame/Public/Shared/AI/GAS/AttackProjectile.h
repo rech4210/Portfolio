@@ -1,5 +1,4 @@
-// @Needmodifi
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
@@ -28,7 +27,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Movement")
 	float ArcHeight = 300.f;
 
-	// ¸ñÇ¥ ÁöÁ¡±îÁö µµ´ÞÇÏ´Â µ¥ °É¸± ½Ã°£(ÃÊ)
+	// ï¿½ï¿½Ç¥ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½ï¿½ ï¿½É¸ï¿½ ï¿½Ã°ï¿½(ï¿½ï¿½)
 	UPROPERTY(EditAnywhere, Category = "Movement")
 	float TravelTime = 1.5f;
 
@@ -39,7 +38,7 @@ public:
 	UPROPERTY(VisibleAnywhere, Replicated)
 	FVector EndLocation;
 
-	// ÃÊ±âÈ­
+	// ï¿½Ê±ï¿½È­
 	void InitProjectile(const FVector& Start, AActor* Target);
 
 	virtual void BeginPlay() override;
@@ -52,9 +51,9 @@ public:
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 private:
-	//¿ÀºêÁ§Æ® Ç® ¸¸µé±â
-	// ³»ºÎ »óÅÂ
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® Ç® ï¿½ï¿½ï¿½ï¿½ï¿½
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	UPROPERTY(VisibleAnywhere)
 	AGGwaCharacter* TargetCharacter;
-	float CurrentTime;    // °æ°ú ½Ã°£
+	float CurrentTime;    // ï¿½ï¿½ï¿½ ï¿½Ã°ï¿½
 };

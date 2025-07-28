@@ -154,6 +154,14 @@ void AGGwaPlayerController::InitializeUI(const USkillComponent* SkillComponent) 
 	if (!CachedClientManagerInterface) {
 		InitializeClientComponent();
 	}
+
+	if (ClientUIComponent)
+	{
+		if (auto UIInterface = Cast<IClientUIInterface>(ClientUIComponent))
+		{
+			UIInterface->SetOwnerController(this);
+		}
+	}
 	
 	if (CachedClientManagerInterface.GetInterface() && CachedClientManagerInterface.GetObject())
 	{
@@ -181,6 +189,7 @@ void AGGwaPlayerController::InitializeUI(const USkillComponent* SkillComponent) 
 			}
 		}
 	}
+
 #endif
 }
 

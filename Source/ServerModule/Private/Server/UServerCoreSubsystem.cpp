@@ -1,12 +1,11 @@
-// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
-
+ï»¿
 
 #include "Server/UServerCoreSubsystem.h"
 #include "Server/UServerFlowSubsystem.h"
 void UServerCoreSubsystem::InitiateRewardFlow(const FString& PlayerId,
 											  const FRewardRequest& Payload,
 											  FOnFlowComplete Callback){
-	// ½ÇÁ¦ Èå¸§À» ´ã´çÇÏ´Â Subsystem È£Ãâ
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½å¸§ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ Subsystem È£ï¿½ï¿½
 	auto* Flow = GetWorld()->GetSubsystem<UServerFlowSubsystem>();
 	Flow->StartRewardFlow(PlayerId, Payload, Callback);
 }

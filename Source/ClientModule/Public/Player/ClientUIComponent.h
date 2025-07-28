@@ -42,6 +42,8 @@ public:
 	// IClientUIInterface IMPLEMENTATION
 	// ============================================================================
 
+	virtual void SetOwnerController(AGGwaPlayerController* Controller) override;
+
 	virtual void InitializeUI(const USkillComponent* SkillComponent) override;
 
 	virtual void HandleMouseOverDetection() override;
@@ -126,4 +128,6 @@ private:
 	 * Setup input mode for client UI interaction
 	 */
 	void SetupClientInputMode();
+
+public:
 };

@@ -1,5 +1,4 @@
-// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
-
+ï»¿
 
 #include "Shared/AI/BossComponent/BossAttributeObserverComponent.h"
 #include "MyGame/Public/Shared/AI/BossCharacter.h"
@@ -22,9 +21,9 @@ void UBossAttributeObserverComponent::BeginPlay() {
 }
 
 
-//1. Shared Module ¿¡ °ø¿ë ÀÎÅÍÆäÀÌ½º¸¦ ÅëÇØ ¿¬°áÇÑ´Ù.
-//2. ÇöÀç ´Ù¾çÇÑ µ¥ÀÌÅÍ Àü¼ÛÀ» À§ÇØ struct Å¸ÀÔÀ¸·Î Àü¼ÛÇÏ³ª, Àü¼ÛÇÒ µ¥ÀÌÅÍ°¡ ¸¹¾ÆÁú°æ¿ì ¹®Á¦°¡ »ý±æ ¼ö ÀÖ´Ù.
-//3. ÇöÀç ¿©·¯ µ¥ÀÌÅÍ¸¦ °ËÁõÇÏ°í Àü¼ÛÇÏ´Â °úÁ¤¿¡¼­ °ú¿¬... ÇØ´ç µ¥ÀÌÅÍ¸¦ Ã³¸®ÇÏ´Â ÄÁÆ®·Ñ·¯ÀÇ ·ÎÁ÷À» ¾î¶»°Ô ¼öÁ¤ÇÒ°ÍÀÎ°¡.
+//1. Shared Module ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ì½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½.
+//2. ï¿½ï¿½ï¿½ï¿½ ï¿½Ù¾ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ struct Å¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï³ï¿½, ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Í°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Ö´ï¿½.
+//3. ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Í¸ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½... ï¿½Ø´ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Í¸ï¿½ Ã³ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½ï¿½Æ®ï¿½Ñ·ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½î¶»ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ò°ï¿½ï¿½Î°ï¿½.
 
 void UBossAttributeObserverComponent::OnAttributeChanged(EObservedAttribute Attribute,
 	const FOnAttributeChangeData& Data) const{
@@ -32,7 +31,7 @@ void UBossAttributeObserverComponent::OnAttributeChanged(EObservedAttribute Attr
 	const FBossDataStruct Old = BC->CachedBossData;
 	AttributeHelper.HandleAttributeChange(Attribute, BC->CachedBossData, Data.NewValue);
 	if (BC->HasAuthority()) {
-		//ÁÖÀÇÇØ¾ßÇÒ Á¡. AttributeÀÇ °ªÀÌ ¼öÁ¤µÇÁö ¾Ê¾Æµµ callback ÀÌ È£ÃâµÇ´Â °æ¿ì°¡ Á¸ÀçÇßÀ½. Old Value ±âÁØÀ¸·Î Ã³¸®ÇÒ°Í.
+		//ï¿½ï¿½ï¿½ï¿½ï¿½Ø¾ï¿½ï¿½ï¿½ ï¿½ï¿½. Attributeï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ê¾Æµï¿½ callback ï¿½ï¿½ È£ï¿½ï¿½Ç´ï¿½ ï¿½ï¿½ì°¡ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½. Old Value ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½ï¿½Ò°ï¿½.
 		if (Old == BC->CachedBossData) {
 			return;
 		}
@@ -40,7 +39,7 @@ void UBossAttributeObserverComponent::OnAttributeChanged(EObservedAttribute Attr
 	}
 }
 
-	//GAS Attribute°¡ º¯°æµÉ ¶§ È£ÃâµÇ´Â Delegate¿¡ ÇÔ¼ö¸¦ ¹ÙÀÎµù.
+	//GAS Attributeï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ È£ï¿½ï¿½Ç´ï¿½ Delegateï¿½ï¿½ ï¿½Ô¼ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Îµï¿½.
 void UBossAttributeObserverComponent::BindBossDataDelegate(){
 	if (auto ASC = Cast<ABossCharacter>(GetOwner())->GetAbilitySystemComponent()) {
 		ASC->GetGameplayAttributeValueChangeDelegate(UEnemyAttributeSet::GetHealthAttribute())

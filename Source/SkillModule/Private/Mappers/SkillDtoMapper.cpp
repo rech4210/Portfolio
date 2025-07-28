@@ -1,5 +1,3 @@
-// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
-
 #include "Mappers/SkillDtoMapper.h"
 #include "Engine/Engine.h"
 
@@ -7,7 +5,7 @@ FSkillSlotDatabaseDTO USkillDtoMapper::MapSlotFromSqlResult(const TMap<FString, 
 {
 	FSkillSlotDatabaseDTO DTO;
 	
-	// SQL 결과?�서 DTO�?매핑
+	// SQL 결과?�서 DTO�?매핑
 	if (SqlRow.Contains(TEXT("user_id")))
 	{
 		DTO.UserId = SqlRow[TEXT("user_id")];

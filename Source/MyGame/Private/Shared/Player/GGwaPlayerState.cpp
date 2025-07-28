@@ -1,5 +1,3 @@
-// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
-
 #include "Shared/Player/GGwaPlayerState.h"
 
 #include "Data/SkillDataAsset.h"
@@ -24,7 +22,7 @@
 
 
 AGGwaPlayerState::AGGwaPlayerState() {
-	/*?�질?�인 ?�레?�어가 ?�용?�게 ??컴포?�트 게임 로직 체크?� 메모�?변경을 ?�당*/
+	/*?�질?�인 ?�레?�어가 ?�용?�게 ??컴포?�트 게임 로직 체크?� 메모�?변경을 ?�당*/
 	ASC = CreateDefaultSubobject<UGGwaAbilitySystemComponent>("ASC");
 	ASC->SetIsReplicated(true);
 	ASC->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
@@ -34,7 +32,7 @@ AGGwaPlayerState::AGGwaPlayerState() {
 	SkillComponent = CreateDefaultSubobject<USkillComponent>("SkillComponent");
 	ShopComponent = CreateDefaultSubobject<UShopComponent>("ShopComponent");
 	EquipmentComponent = CreateDefaultSubobject<UEquipmentComponent>("EquipmentComponent");
-	/*�????�속?? DB 추상 계층?� SubSystem - Repository (var DBmanager) �?처리??�?*/
+	/*�????�속?? DB 추상 계층?� SubSystem - Repository (var DBmanager) �?처리??�?*/
 }
 
 void AGGwaPlayerState::BeginPlay() {
@@ -119,12 +117,12 @@ void AGGwaPlayerState::OnSkillSlotsUpdated() const{
 
 void AGGwaPlayerState::BroadcastAttributeChange(const FGameplayAttribute& Attribute, float NewValue) const{
 	// OnAttributeChanged.Broadcast(Attribute, NewValue, SkillData);
-	// value ?�정??helper�?
-	// FObservedAttributeHelper<> Player??status enum ?�요
+	// value ?�정??helper�?
+	// FObservedAttributeHelper<> Player??status enum ?�요
 	if (HasAuthority()) {
 		if (Attribute == AttributeSet->GetHealthAttribute()) {
 			if (NewValue <= 0.0f) {
-				// Component???�청?�것.
+				// Component???�청?�것.
 				// SetPlayerDeathState();
 				ASC->AddLooseGameplayTag(UEnumTagMatchHelper::GetTagFromEnum(EPlayerState::Dead));
 			
@@ -134,7 +132,7 @@ void AGGwaPlayerState::BroadcastAttributeChange(const FGameplayAttribute& Attrib
 }
 
 
-//server? client? Deprecated -> tag 개념?�로 ASC???�임?�여 ?�태 처리�?
+//server? client? Deprecated -> tag 개념?�로 ASC???�임?�여 ?�태 처리�?
 // void AGGwaPlayerState::SetPlayerDeathState() const{
 	// StateComponent->OnDeath();
 	// if (Character && Character->GetReactionComponent())

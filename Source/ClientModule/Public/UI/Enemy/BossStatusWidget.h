@@ -1,5 +1,4 @@
-// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
-
+﻿
 #pragma once
 
 #include "CoreMinimal.h"
@@ -43,19 +42,19 @@ public:
 	float RemainingTime = 0.f;
 
 	/**  
-	 * 보스 ?�볼·?�름 ·초기 체력·?�?�머 ?�시 ?�정  
+	 * 보스 ?�볼·?�름 ·초기 체력·?�?�머 ?�시 ?�정  
 	 */
 	void SetWidget(const FEnemyWidgetData& WidgetData, const FBossDataStruct& Data);
 
 	/**  
-	 * ?�버?�서 ?�려준 FBossDataStruct ???�긴 Current/Max HP로만 체력 ?�데?�트  
+	 * ?�버?�서 ?�려준 FBossDataStruct ???�긴 Current/Max HP로만 체력 ?�데?�트  
 	 */
 	void UpdateHealthBar(const FBossDataStruct& Data);
 
 	void UpdateWidget(const FBossDataStruct& Data);
 
 	/**  
-	 * DisplayTime > 0 ??경우?�만 LimitTime UI�??�정  
+	 * DisplayTime > 0 ??경우?�만 LimitTime UI�??�정  
 	 */
 	void SetBossTimer(float DisplayTime);
 	

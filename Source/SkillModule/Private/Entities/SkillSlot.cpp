@@ -1,5 +1,4 @@
-// @Needmodifi
-#include "Entities/SkillSlot.h"
+﻿#include "Entities/SkillSlot.h"
 #include "Data/SkillDataAsset.h"
 #include "Net/UnrealNetwork.h"
 
@@ -26,7 +25,7 @@ void USkillSlot::SetSkillData(USkillDataAsset* InSkillData, int32 InSkillId)
 {
 	SkillData = InSkillData;
 	SkillId = InSkillId;
-	LastUsedTime = FDateTime::MinValue(); // ???�킬 ?�정 ??쿨�???초기??
+	LastUsedTime = FDateTime::MinValue(); // ???�킬 ?�정 ??쿨�???초기??
 }
 
 void USkillSlot::ClearSkill()

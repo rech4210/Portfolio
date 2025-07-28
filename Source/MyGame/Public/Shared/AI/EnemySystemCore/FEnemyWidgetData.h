@@ -1,5 +1,4 @@
-// @Needmodifi
-#pragma once
+﻿#pragma once
 #include "CoreMinimal.h"
 #include "FEnemyWidgetData.generated.h"
 class UTexture2D;

@@ -1,5 +1,4 @@
-// @Needmodifi
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "AbilitySystemComponent.h"
@@ -38,11 +37,11 @@ public:
 	UPROPERTY()
 	FVector HitLocation;
 
-	/** ÄÞº¸ ÀÎµ¦½º (ÄÞº¸ ±â¹Ý ½ºÅ³¿ë) */
+	/** ï¿½Þºï¿½ ï¿½Îµï¿½ï¿½ï¿½ (ï¿½Þºï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½Å³ï¿½ï¿½) */
 	UPROPERTY()
 	int32 ComboIndex = 0;
 
-	/** ½ºÅ³ÀÌ ½ÃÀÛµÈ ½ÃÁ¡ ½Ã°£ (ÈÄÃ³¸® ·ÎÁ÷ µî¿¡ È°¿ë °¡´É) */
+	/** ï¿½ï¿½Å³ï¿½ï¿½ ï¿½ï¿½ï¿½Ûµï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ã°ï¿½ (ï¿½ï¿½Ã³ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½î¿¡ È°ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½) */
 	UPROPERTY()
 	float StartTime = 0.f;
 };

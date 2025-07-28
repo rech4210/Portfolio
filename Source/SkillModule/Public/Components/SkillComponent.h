@@ -1,5 +1,3 @@
-// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -8,6 +6,7 @@
 #include "Mappers/ISkillDtoMapper.h"
 #include "Mappers/ISkillAssetMapper.h"
 #include "Mappers/ISkillModelBuilder.h"
+#include "Mappers/SkillDtoMapper.h"
 #include "SkillComponent.generated.h"
 
 class USkillSlot;
@@ -15,18 +14,12 @@ class USkillDataAsset;
 class UGameplayAbility;
 struct FSkillDomain;
 
-// Domain Events for SkillComponent (Aggregate)
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnSkillRegistered, int32 /* SlotIndex */);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnSkillUnregistered, int32 /* SlotIndex */);
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSkillsSwapped, int32 /* SlotIndexA */, int32 /* SlotIndexB */);
 DECLARE_MULTICAST_DELEGATE(FOnSkillsChanged);
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnSkillStateChanged, const TArray<USkillSlot*>&);
-// DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSkillStateChanged, const TArray<USkillSlot*>&, SkillSlots);
-/**
- * ìºë¦­?°ì˜ ?¤í‚¬ ?¬ë¡¯?¤ì„ ê´€ë¦¬í•˜??Aggregate Root ??• ???˜ëŠ” ì»´í¬?ŒíŠ¸?…ë‹ˆ??
- * DDD ?ì¹™???°ë¼ ë¶ˆë? ì¡°ê±´??ë³´ì¥?˜ê³  ?„ë©”???´ë²¤?¸ë? ë°œí–‰?©ë‹ˆ??
- */
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class SKILLMODULE_API USkillComponent : public UActorComponent
@@ -34,12 +27,11 @@ class SKILLMODULE_API USkillComponent : public UActorComponent
 	GENERATED_BODY()
 public:
 	USkillComponent();
-	
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	int32 GetMaxSlotCount() const { return MaxSkillSlots; }
 
-	// ?¤í‚¬ ?íƒœê°€ ë³€ê²½ë  ???¸ì¶œ?˜ëŠ” ?´ë²¤??(?±ë¡, ?œê±°, ?¤ì™‘ ??
+	// ?ï¿½í‚¬ ?ï¿½íƒœê°€ ë³€ê²½ë  ???ï¿½ì¶œ?ï¿½ëŠ” ?ï¿½ë²¤??(?ï¿½ë¡, ?ï¿½ê±°, ?ï¿½ì™‘ ??
 	// UPROPERTY(BlueprintAssignable, Category = "Skill|Events")
 	FOnSkillStateChanged OnSkillStateChanged;
 
@@ -58,7 +50,7 @@ protected:
 
 	// 3-Layer Mapping Architecture
 	UPROPERTY()
-	TScriptInterface<ISkillDtoMapperInterface> DtoMapper;
+	TScriptInterface<USkillDtoMapper> DtoMapper;
 
 	UPROPERTY()
 	TScriptInterface<ISkillAssetMapperInterface> AssetMapper;
@@ -241,7 +233,7 @@ public:
 	UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: ExtractDTOsFromSkillSlots() instead")
 	FSkillDomain ExtractDomain() const;
 
-	// ?´ë? ë³µì œë¥??˜í–‰ì¤?
+	// ?ï¿½ï¿½? ë³µì œï¿½??ï¿½í–‰ï¿½?
 	// virtual bool ReplicateSubobjects(class UActorChannel* Channel, class FOutBunch* Bunch, FReplicationFlags* RepFlags) override;
 
 protected:

@@ -1,5 +1,3 @@
-// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -11,8 +9,8 @@
 class USkillSlot;
 
 /**
- * DataAsset ??DomainModel 빌딩 구현�?
- * DataAsset�?비즈?�스 로직??결합?�여 ?�전???�메??모델 ?�성
+ * DataAsset ??DomainModel 빌딩 구현�?
+ * DataAsset�?비즈?�스 로직??결합?�여 ?�전???�메??모델 ?�성
  */
 UCLASS(BlueprintType)
 class SKILLMODULE_API USkillModelBuilder : public UObject, public ISkillModelBuilderInterface
@@ -61,7 +59,7 @@ public:
 	virtual bool ValidateSkillSlotEntity(const USkillSlot* SkillSlot, FString& OutErrorMessage) override;
 
 protected:
-	// ?�킬 ?�벨�??��??�링 계수
+	// ?�킬 ?�벨�??��??�링 계수
 	UPROPERTY(EditDefaultsOnly, Category = "Skill Scaling")
 	float SkillLevelScalingFactor = 1.2f;
 

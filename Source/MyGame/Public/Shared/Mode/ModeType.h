@@ -1,5 +1,4 @@
-// @Needmodifi
-#pragma once
+﻿#pragma once
 
 UENUM(BlueprintType)
 enum class EModeType : uint8 {

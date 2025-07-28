@@ -1,5 +1,4 @@
-// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
-
+﻿
 #pragma once
 
 #include "CoreMinimal.h"
@@ -30,5 +29,5 @@ public:
 	UUserWidget* Tooltip;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	FGameplayTag UniqueTag;  // 고유 ?�별??
+	FGameplayTag UniqueTag;  // 고유 ?�별??
 }; 

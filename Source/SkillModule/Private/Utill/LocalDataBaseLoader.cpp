@@ -1,5 +1,4 @@
-// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
-
+﻿
 #include "Utill/LocalDataBaseLoader.h"
 #include "Engine/AssetManager.h"
 #include "Data/SkillDataAsset.h"
@@ -28,7 +27,7 @@ void ULocalDataBaseLoader::Initialize()
 
 	for (const FPrimaryAssetId& Id : Ids)
 	{
-		// ?�직 로드???�이 ?�는 경우?�만 로드 ?�청
+		// ?�직 로드???�이 ?�는 경우?�만 로드 ?�청
 		if (!Manager.GetPrimaryAssetObject(Id))
 		{
 			TSharedPtr<FStreamableHandle> Handle =
@@ -40,7 +39,7 @@ void ULocalDataBaseLoader::Initialize()
 				);
 			if (Handle.IsValid())
 			{
-				// ?�기 블록??
+				// ?�기 블록??
 				Handle->WaitUntilComplete();
 			}
 		}

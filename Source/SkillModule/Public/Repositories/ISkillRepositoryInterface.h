@@ -1,5 +1,4 @@
-// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
-
+﻿
 #pragma once
 
 #include "CoreMinimal.h"
@@ -14,7 +13,7 @@ class USkillComponent;
 class APlayerState;
 
 /**
- * ?�킬???�의(DataAsset)�?로드?�기 ?�한 리포지?�리 ?�터?�이?�입?�다.
+ * ?�킬???�의(DataAsset)�?로드?�기 ?�한 리포지?�리 ?�터?�이?�입?�다.
  */
 UINTERFACE(MinimalAPI, Blueprintable)
 class USkillConfigRepositoryInterface : public UBaseRepositoryInterface
@@ -103,56 +102,56 @@ public:
 	// ========================================================================
 	// LEGACY REPOSITORY METHODS - DEPRECATED
 	// ========================================================================
-	
-	/**
-	 * DEPRECATED: Load skill domain data by player ID
-	 * Use 3-Layer Mapping Architecture: LoadUserSkillSlots() instead
-	 * @param PlayerId The player ID to load skills for
-	 * @return Task that returns skill domain data
-	 */
-	UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: LoadUserSkillSlots() instead")
-	virtual UE::Tasks::TTask<FSkillRepositoryResult> DEP_LoadSkillsByPlayerId(const FGuid& PlayerId) = 0;
-
-	/**
-	 * DEPRECATED: Save skill domain data
-	 * Use 3-Layer Mapping Architecture: SaveUserSkillSlots() instead
-	 * @param SkillData The skill domain data to save
-	 * @return Task that returns success/failure
-	 */
-	UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: SaveUserSkillSlots() instead")
-	virtual UE::Tasks::TTask<FSkillRepositoryResult> DEP_SaveSkillData(const FSkillDomain& SkillData) = 0;
-
-	/**
-	 * DEPRECATED: Register a skill to player's skill slots
-	 * Use 3-Layer Mapping Architecture: SaveUserSkillSlots() instead
-	 * @param PlayerId Player ID
-	 * @param SkillSlot Skill slot to register
-	 * @return Task that returns updated skill data
-	 */
-	UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: SaveUserSkillSlots() instead")
-	virtual UE::Tasks::TTask<FSkillRepositoryResult> DEP_RegisterSkillByPlayerId(const FGuid& PlayerId, const FSkillSlotDTO& SkillSlot) = 0;
-
-	/**
-	 * DEPRECATED: Unregister a skill from player's skill slots
-	 * Use 3-Layer Mapping Architecture: SaveUserSkillSlots() instead
-	 * @param PlayerId Player ID
-	 * @param SlotIndex Slot index to unregister
-	 * @return Task that returns updated skill data
-	 */
-	UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: SaveUserSkillSlots() instead")
-	virtual UE::Tasks::TTask<FSkillRepositoryResult> DEP_UnregisterSkillByPlayerId(const FGuid& PlayerId, int32 SlotIndex) = 0;
-
-	/**
-	 * DEPRECATED: Update skill cooldown state
-	 * Use 3-Layer Mapping Architecture: UpdateSkillSlotCooldown() instead
-	 * @param PlayerId Player ID
-	 * @param SlotIndex Slot index
-	 * @param LastUsedTime When the skill was last used
-	 * @param RemainingCooldown Remaining cooldown time
-	 * @return Task that returns success/failure
-	 */
-	UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: UpdateSkillSlotCooldown() instead")
-	virtual UE::Tasks::TTask<FSkillRepositoryResult> DEP_UpdateSkillCooldown(const FGuid& PlayerId, int32 SlotIndex, const FDateTime& LastUsedTime, float RemainingCooldown) = 0;
+	//
+	// /**
+	//  * DEPRECATED: Load skill domain data by player ID
+	//  * Use 3-Layer Mapping Architecture: LoadUserSkillSlots() instead
+	//  * @param PlayerId The player ID to load skills for
+	//  * @return Task that returns skill domain data
+	//  */
+	// UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: LoadUserSkillSlots() instead")
+	// virtual UE::Tasks::TTask<FSkillRepositoryResult> DEP_LoadSkillsByPlayerId(const FGuid& PlayerId) = 0;
+	//
+	// /**
+	//  * DEPRECATED: Save skill domain data
+	//  * Use 3-Layer Mapping Architecture: SaveUserSkillSlots() instead
+	//  * @param SkillData The skill domain data to save
+	//  * @return Task that returns success/failure
+	//  */
+	// UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: SaveUserSkillSlots() instead")
+	// virtual UE::Tasks::TTask<FSkillRepositoryResult> DEP_SaveSkillData(const FSkillDomain& SkillData) = 0;
+	//
+	// /**
+	//  * DEPRECATED: Register a skill to player's skill slots
+	//  * Use 3-Layer Mapping Architecture: SaveUserSkillSlots() instead
+	//  * @param PlayerId Player ID
+	//  * @param SkillSlot Skill slot to register
+	//  * @return Task that returns updated skill data
+	//  */
+	// UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: SaveUserSkillSlots() instead")
+	// virtual UE::Tasks::TTask<FSkillRepositoryResult> DEP_RegisterSkillByPlayerId(const FGuid& PlayerId, const FSkillSlotDTO& SkillSlot) = 0;
+	//
+	// /**
+	//  * DEPRECATED: Unregister a skill from player's skill slots
+	//  * Use 3-Layer Mapping Architecture: SaveUserSkillSlots() instead
+	//  * @param PlayerId Player ID
+	//  * @param SlotIndex Slot index to unregister
+	//  * @return Task that returns updated skill data
+	//  */
+	// UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: SaveUserSkillSlots() instead")
+	// virtual UE::Tasks::TTask<FSkillRepositoryResult> DEP_UnregisterSkillByPlayerId(const FGuid& PlayerId, int32 SlotIndex) = 0;
+	//
+	// /**
+	//  * DEPRECATED: Update skill cooldown state
+	//  * Use 3-Layer Mapping Architecture: UpdateSkillSlotCooldown() instead
+	//  * @param PlayerId Player ID
+	//  * @param SlotIndex Slot index
+	//  * @param LastUsedTime When the skill was last used
+	//  * @param RemainingCooldown Remaining cooldown time
+	//  * @return Task that returns success/failure
+	//  */
+	// UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: UpdateSkillSlotCooldown() instead")
+	// virtual UE::Tasks::TTask<FSkillRepositoryResult> DEP_UpdateSkillCooldown(const FGuid& PlayerId, int32 SlotIndex, const FDateTime& LastUsedTime, float RemainingCooldown) = 0;
 
 };
 

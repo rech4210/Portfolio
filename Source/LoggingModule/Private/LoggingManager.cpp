@@ -1,5 +1,4 @@
-// @Needmodifi
-#include "LoggingManager.h"
+﻿#include "LoggingManager.h"
 
 void ULoggingManager::Initialize(FSubsystemCollectionBase& Collection)
 {

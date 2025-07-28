@@ -1,5 +1,4 @@
-// @Needmodifi
-#include "Shared/GAS/Skill/GA_Skill6.h"
+﻿#include "Shared/GAS/Skill/GA_Skill6.h"
 #include "Abilities/Tasks/AbilityTask_WaitTargetData.h"
 #include "Shared/GAS/GGwaAbilitySystemComponent.h"
 #include "SkillModule/Public/Data/SkillTargetActor_Mouse.h"

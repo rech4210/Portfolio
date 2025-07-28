@@ -1,5 +1,4 @@
-// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
-
+ï»¿
 #pragma once
 
 #include "CoreMinimal.h"
@@ -27,7 +26,7 @@ public:
 
 	void CheckPlayer(const FString& PlayerId, FOnPlayerCheck Callback)
 	{
-		// HTTP ¿äÃ» ÁØºñ (HTTPS + APIKey)
+		// HTTP ï¿½ï¿½Ã» ï¿½Øºï¿½ (HTTPS + APIKey)
 		TSharedRef<IHttpRequest> Req = FHttpModule::Get().CreateRequest();
 		// Req->SetURL(GetDefault<URewardServiceConfig>()->PlayerCheckEndpoint + TEXT("?id=") + PlayerId);
 		Req->SetVerb(TEXT("GET"));

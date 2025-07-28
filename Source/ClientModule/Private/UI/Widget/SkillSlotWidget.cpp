@@ -1,5 +1,4 @@
-// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
-
+﻿
 
 #include "UI/Widget/SkillSlotWidget.h"
 #include "SkillModule/Public/Data/SkillDataAsset.h"
@@ -31,7 +30,7 @@ void USkillSlotWidget::NativeOnMouseEnter(const FGeometry& InGeometry, const FPo
 	Super::NativeOnMouseEnter(InGeometry, InMouseEvent);
 	if (SkillToolTipWidget->GetVisibility() != ESlateVisibility::Visible) {
 		SkillToolTipWidget->SetVisibility(ESlateVisibility::Visible);
-		SkillToolTipWidget->SetIsEnabled(false); // ?�력 무시 (hover, focus ??
+		SkillToolTipWidget->SetIsEnabled(false); // ?�력 무시 (hover, focus ??
 		FVector2D LocalMousePos;
 		UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetMousePosition(LocalMousePos.X, LocalMousePos.Y);
 		SkillToolTipWidget->SetPositionInViewport(LocalMousePos, true); // DPI 변??고려??
@@ -47,7 +46,7 @@ void USkillSlotWidget::NativeOnMouseLeave(const FPointerEvent& InMouseEvent) {
 	}
 }
 void USkillSlotWidget::UseSkillSlot(USkillDataAsset* Data) {
-	//?�성?�에??기본?�인 ?�킬 ?�이??초기??-> ?�른 ?�이???�어??경우, ?�당 ?�이?�로 초기??
+	//?�성?�에??기본?�인 ?�킬 ?�이??초기??-> ?�른 ?�이???�어??경우, ?�당 ?�이?�로 초기??
 	if (SkillDataAsset != Data) {
 		ApplySkillData(Data);
 	}
@@ -113,20 +112,20 @@ void USkillSlotWidget::TickCoolDown() {
 	float Percent = FMath::Clamp(CurrentCoolTime / CoolTime, 0.f, 1.f);
 	SkillCooldownMaterial->SetScalarParameterValue(FName("Progress"), Percent);
 
-	// 2. 쿨�????�스??갱신
+	// 2. 쿨�????�스??갱신
 	if (CoolTimeText)
 	{
 		float RemainingTime = FMath::Max(0.f, CoolTime - CurrentCoolTime);
 		CoolTimeText->SetText(FText::FromString(FString::Printf(TEXT("%ds"), FMath::CeilToInt(RemainingTime))));
 	}
 
-	// 3. 쿨�???종료 처리
+	// 3. 쿨�???종료 처리
 	if (Percent >= 1.f)
 	{
 		GetWorld()->GetTimerManager().ClearTimer(CooldownTimerHandle);
 		CurrentCoolTime = 0.f;
 
-		// ?��?지, ?�스???�기�???처리
+		// ?��?지, ?�스???�기�???처리
 		if (CooldownImage)
 		{
 			CooldownImage->SetVisibility(ESlateVisibility::Hidden);

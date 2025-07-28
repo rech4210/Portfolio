@@ -1,5 +1,4 @@
-// @Needmodifi`r`n// Fill out your copyright notice in the Description page of Project Settings.
-
+﻿
 #pragma once
 
 #include "CoreMinimal.h"
@@ -18,22 +17,22 @@ class SKILLMODULE_API USkillAssetMapperInterface : public UInterface
 };
 
 /**
- * DTO ??DataAsset 매핑 ?�터?�이??
- * DTO?� UE5 DataAsset 간의 변?�을 ?�당
- * 주의: USkillDataAsset?� VO(Value Object)?��?�??�본 구조�??��??�야 ??
+ * DTO ??DataAsset 매핑 ?�터?�이??
+ * DTO?� UE5 DataAsset 간의 변?�을 ?�당
+ * 주의: USkillDataAsset?� VO(Value Object)?��?�??�본 구조�??��??�야 ??
  */
 class SKILLMODULE_API ISkillAssetMapperInterface
 {
 	GENERATED_BODY()
 
 public:
-	// DTO ??DataAsset 변??(VO 무결???��?)
+	// DTO ??DataAsset 변??(VO 무결???��?)
 	virtual USkillDataAsset* MapDtoToDataAsset(const FSkillMasterDatabaseDTO& DTO) = 0;
 	
-	// DataAsset ??DTO 변??(?�요???�드�?추출)
+	// DataAsset ??DTO 변??(?�요???�드�?추출)
 	virtual FSkillMasterDatabaseDTO MapDataAssetToDto(const USkillDataAsset* DataAsset) = 0;
 
-	// 리소??관�?
+	// 리소??관�?
 	virtual USkillDataAsset* LoadOrCreateDataAsset(int32 SkillId) = 0;
 	virtual void CacheDataAsset(int32 SkillId, USkillDataAsset* DataAsset) = 0;
 	virtual USkillDataAsset* GetCachedDataAsset(int32 SkillId) = 0;
@@ -46,7 +45,7 @@ public:
 	virtual bool ValidateDataAsset(const USkillDataAsset* DataAsset, FString& OutErrorMessage) = 0;
 	virtual bool ValidateDto(const FSkillMasterDatabaseDTO& DTO, FString& OutErrorMessage) = 0;
 
-	// Asset Path 관�?
+	// Asset Path 관�?
 	virtual FString GenerateAssetPath(int32 SkillId) = 0;
 	virtual USkillDataAsset* LoadDataAssetFromPath(const FString& AssetPath) = 0;
 };

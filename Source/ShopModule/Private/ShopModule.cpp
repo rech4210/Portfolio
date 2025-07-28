@@ -1,5 +1,4 @@
-// @Needmodifi
-#include "ShopModule.h"
+﻿#include "ShopModule.h"
 #include "Modules/ModuleManager.h"
 
 #define LOCTEXT_NAMESPACE "FShopModule"

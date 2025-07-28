@@ -1,5 +1,4 @@
-// @Needmodifi
-#include "AI/BTService_CheckBossPhase.h"
+ï»¿#include "AI/BTService_CheckBossPhase.h"
 #include "BossAIController.h"
 
 
@@ -15,7 +14,7 @@ void UBTService_CheckBossPhase::OnBecomeRelevant(UBehaviorTreeComponent& OwnerCo
 void UBTService_CheckBossPhase::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) {
 	Super::TickNode(OwnerComp, NodeMemory, DeltaSeconds);
 	//
-	// //phase º¯°æ Ã³¸®¸¦ ÄÁÆ®·Ñ·¯·Î ÀÌ°ü½ÃÅ³°Í.
+	// //phase ï¿½ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Æ®ï¿½Ñ·ï¿½ï¿½ï¿½ ï¿½Ì°ï¿½ï¿½ï¿½Å³ï¿½ï¿½.
 	// BossAIController->RequestPhaseChange(EBossPhase::Phase1);
 }
 

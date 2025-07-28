@@ -1,5 +1,4 @@
-// @Needmodifi
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
@@ -122,7 +121,7 @@ struct DATABASEMODULE_API FInventoryItemDTO
 	int32 Quantity;
 
 	UPROPERTY()
-	int32 SlotIndex; // ?�벤?�리 ?�롯 ?�치
+	int32 SlotIndex; // ?�벤?�리 ?�롯 ?�치
 
 	UPROPERTY()
 	FString ItemData; // JSON serialized data
@@ -170,16 +169,16 @@ struct DATABASEMODULE_API FCharacterData
 };
 
 // ===============================================================================
-// DTO LAYER - ?�수 ?�이??구조 (SQL ?�키�?반영)
+// DTO LAYER - ?�수 ?�이??구조 (SQL ?�키�?반영)
 // ===============================================================================
 
-// SQL 기반 Skill Slot DTO (user_skill_slots ?�이�?구조)
+// SQL 기반 Skill Slot DTO (user_skill_slots ?�이�?구조)
 USTRUCT(BlueprintType)
 struct DATABASEMODULE_API FSkillSlotDatabaseDTO
 {
 	GENERATED_BODY()
 
-	// Primary Keys (SQL user_skill_slots ?�이�?기�?)
+	// Primary Keys (SQL user_skill_slots ?�이�?기�?)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillDTO")
 	FString UserId;                    // user_skill_slots.user_id (CHAR(36) UUID)
 
@@ -194,9 +193,9 @@ struct DATABASEMODULE_API FSkillSlotDatabaseDTO
 	int32 SlotIndex = -1;              // user_skill_slots.slot_index
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillDTO")
-	int32 SkillLevel = 1;              // user_skills.skill_level (?�규?�된 ?�이블에??
+	int32 SkillLevel = 1;              // user_skills.skill_level (?�규?�된 ?�이블에??
 
-	// Cooldown Data (최적?�된 구조 - last_used_time�??�??
+	// Cooldown Data (최적?�된 구조 - last_used_time�??�??
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillDTO")
 	FDateTime LastUsedTime;            // user_skill_slots.last_used_time
 
@@ -221,7 +220,7 @@ struct DATABASEMODULE_API FSkillSlotDatabaseDTO
 	}
 };
 
-// SQL 기반 Skill Master DTO (skills ?�이�?구조)
+// SQL 기반 Skill Master DTO (skills ?�이�?구조)
 USTRUCT(BlueprintType)
 struct DATABASEMODULE_API FSkillMasterDatabaseDTO
 {
@@ -254,7 +253,7 @@ struct DATABASEMODULE_API FSkillMasterDatabaseDTO
 	}
 };
 
-// 기존 DTO (?�위 ?�환???��?)
+// 기존 DTO (?�위 ?�환???��?)
 USTRUCT(BlueprintType)
 struct DATABASEMODULE_API FSkillSlotDTO
 {
@@ -424,66 +423,66 @@ struct DATABASEMODULE_API FShopRepositoryResult
 	}
 };
 
-// ID 변???�략 ?�퍼 ?�래??- ?�로?��??�용 간단 변??
+// ID 변???�략 ?�퍼 ?�래??- ?�로?��??�용 간단 변??
 UCLASS()
 class DATABASEMODULE_API UPlayerIdHelper : public UObject
 {
 	GENERATED_BODY()
 
 public:
-	// int32 PlayerId�?VARCHAR UserId�?변??(?�로?��??�용 ?�순 변??
+	// int32 PlayerId�?VARCHAR UserId�?변??(?�로?��??�용 ?�순 변??
 	UFUNCTION(BlueprintCallable, Category = "Database|ID")
 	static FString ConvertPlayerIdToUserId(int32 PlayerId);
 	
-	// VARCHAR UserId�?int32 PlayerId�?변??(가?�한 경우)
+	// VARCHAR UserId�?int32 PlayerId�?변??(가?�한 경우)
 	UFUNCTION(BlueprintCallable, Category = "Database|ID")
 	static int32 ConvertUserIdToPlayerId(const FString& UserId);
 	
-	// PlayerId 기반 UserId ?�성 (?�두??+ ?�퀀??조합)
+	// PlayerId 기반 UserId ?�성 (?�두??+ ?�퀀??조합)
 	UFUNCTION(BlueprintCallable, Category = "Database|ID")
 	static FString GenerateUserIdFromPlayerId(int32 PlayerId, const FString& Prefix = TEXT("player"));
 	
-	// ?�효??UserId ?�식?��? 검�?
+	// ?�효??UserId ?�식?��? 검�?
 	UFUNCTION(BlueprintCallable, Category = "Database|ID")
 	static bool IsValidUserId(const FString& UserId);
 };
 
-// JSON ?�틸리티 ?�래??- DatabaseManager?�서 JSON 처리�??�한 ?�퍼
+// JSON ?�틸리티 ?�래??- DatabaseManager?�서 JSON 처리�??�한 ?�퍼
 UCLASS()
 class DATABASEMODULE_API UDatabaseJsonHelper : public UObject
 {
 	GENERATED_BODY()
 
 public:
-	// ?�벤?�리 ?�이???�이?��? JSON?�로 직렬??
+	// ?�벤?�리 ?�이???�이?��? JSON?�로 직렬??
 	UFUNCTION(BlueprintCallable, Category = "Database|JSON")
 	static FString SerializeInventoryItemData(const TMap<FString, FString>& ItemProperties);
 	
-	// JSON?�서 ?�벤?�리 ?�이???�이?��? ??��?�화
+	// JSON?�서 ?�벤?�리 ?�이???�이?��? ??��?�화
 	UFUNCTION(BlueprintCallable, Category = "Database|JSON")
 	static TMap<FString, FString> DeserializeInventoryItemData(const FString& JsonData);
 	
-	// 캐릭???�장 ?�이?��? JSON?�로 직렬??(Position, Health, Mana ??
+	// 캐릭???�장 ?�이?��? JSON?�로 직렬??(Position, Health, Mana ??
 	UFUNCTION(BlueprintCallable, Category = "Database|JSON")
 	static FString SerializeCharacterExtendedData(const FVector& Position, float Health, float Mana, const TMap<FString, FString>& AdditionalData);
 	
-	// JSON?�서 캐릭???�장 ?�이?��? ??��?�화
+	// JSON?�서 캐릭???�장 ?�이?��? ??��?�화
 	UFUNCTION(BlueprintCallable, Category = "Database|JSON")
 	static bool DeserializeCharacterExtendedData(const FString& JsonData, FVector& OutPosition, float& OutHealth, float& OutMana, TMap<FString, FString>& OutAdditionalData);
 	
-	// ?�킬 ?�이?��? JSON?�로 직렬??
+	// ?�킬 ?�이?��? JSON?�로 직렬??
 	UFUNCTION(BlueprintCallable, Category = "Database|JSON")
 	static FString SerializeSkillData(const TMap<FString, FString>& SkillProperties);
 	
-	// JSON?�서 ?�킬 ?�이?��? ??��?�화
+	// JSON?�서 ?�킬 ?�이?��? ??��?�화
 	UFUNCTION(BlueprintCallable, Category = "Database|JSON")
 	static TMap<FString, FString> DeserializeSkillData(const FString& JsonData);
 	
-	// ?�비 강화 ?�이?��? JSON?�로 직렬??
+	// ?�비 강화 ?�이?��? JSON?�로 직렬??
 	UFUNCTION(BlueprintCallable, Category = "Database|JSON")
 	static FString SerializeEquipmentEnhancement(int32 EnhancementLevel, const TArray<FString>& EnhancementEffects);
 	
-	// JSON?�서 ?�비 강화 ?�이?��? ??��?�화
+	// JSON?�서 ?�비 강화 ?�이?��? ??��?�화
 	UFUNCTION(BlueprintCallable, Category = "Database|JSON")
 	static bool DeserializeEquipmentEnhancement(const FString& JsonData, int32& OutEnhancementLevel, TArray<FString>& OutEnhancementEffects);
 };
