@@ -33,7 +33,7 @@ UClass* FClientUIMapping::LoadUIClass(EClientUIKey UIKey)
 	}
 	
 	// 직접 클래스 로딩
-	UClass* LoadedClass = LoadClass<UActorComponent>(nullptr, *ClassPath);
+	UClass* LoadedClass = LoadClass<UObject>(nullptr, *ClassPath);
 	if (!LoadedClass)
 	{
 		return nullptr;
@@ -70,6 +70,8 @@ void FClientUIMapping::InitializeDefaultMappings()
 	// 기본 클라이언트 UI 컴포넌트 매핑 - Blueprint 경로 사용
 	UIClassMappings.Add(EClientUIKey::AuthComponent, TEXT("/ClientPlugin/BP_ClientAuthComponent.BP_ClientAuthComponent_C"));
 	UIClassMappings.Add(EClientUIKey::LoginUI, TEXT("/ClientPlugin/BP_ClientUIComponent.BP_ClientUIComponent_C"));
+	UIClassMappings.Add(EClientUIKey::HUD, TEXT("/ClientPlugin/UI/HUD/BP_GGwaHUD.BP_GGwaHUD_C"));
+
 	
 	bIsInitialized = true;
 	UE_LOG(LogTemp, Log, TEXT("[CLIENT_UI] Initialized %d UI class mappings"), UIClassMappings.Num());

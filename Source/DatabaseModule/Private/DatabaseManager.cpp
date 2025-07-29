@@ -1687,7 +1687,6 @@ UE::Tasks::TTask<TArray<FSkillSlotDatabaseDTO>> UDatabaseManager::LoadUserSkillS
 				Impl->ReturnConnection(Con);
 			};
 			
-			// SQL Query: user_skill_slots과 user_skills을 조인하여 데이터 로드
 			FString Query;
 			if (SlotKey.IsEmpty())
 			{
@@ -1746,7 +1745,6 @@ UE::Tasks::TTask<TArray<FSkillSlotDatabaseDTO>> UDatabaseManager::LoadUserSkillS
 					SlotDTO.LastUsedTime = FDateTime::MinValue();
 				}
 				
-				// created_at, updated_at 처리
 				std::string CreatedAtString = Result->getString("created_at");
 				if (!CreatedAtString.empty())
 				{

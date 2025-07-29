@@ -21,17 +21,7 @@
 #include "UI/Widget/BuffSlotWidget.h"
 
 
-// TMap<EPlayerState, TFunction<void()>> StateHandlers;
-//
-// void InitializeStateHandlers()
-// {
-// 	StateHandlers.Add(EPlayerState::Stunned, [this]() { ShowStunUI(); });
-// 	StateHandlers.Add(EPlayerState::Dead, [this]() { ShowDeathScreen(); });
-// }
 
-
-// buff??경우 ?�생???��?�??�선 구현. ?�중??Pooling ?�용????�� ?�정
-// ?�용�?widget 바인?�을 분리?�것.
 void UGGwaWidget::BindWidgetWithTooltip(UBaseDataAsset* Data) {
 	if (auto* ValueWidget = SlotTooltipCachePair.FindRef(Data); ValueWidget!= nullptr) {
 		if (Cast<UBuffToolTip>(ValueWidget)) {
@@ -76,9 +66,9 @@ void UGGwaWidget::DoWidgetWork() {
 }
 
 
-void UGGwaWidget::UpdateSkillWidgetFromServer(const USkillComponent* Data) {
-	for (USkillSlot* SkillSlot : Data->GetAllSkillSlots()) {
-		BindWidgetWithTooltip(SkillSlot->SkillData.Get());
+void UGGwaWidget::UpdateSkillWidgetFromServer(TArray<USkillDataAsset*> Datas) {
+	for (UBaseDataAsset* Data : Datas) {
+		BindWidgetWithTooltip(Data);
 	}
 }
 

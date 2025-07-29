@@ -6,7 +6,7 @@
 #include "ISkillModelBuilder.generated.h"
 
 // Forward declarations
-class USkillSlot;
+struct FSkillSlotReplicationData;
 class USkillDataAsset;
 
 USTRUCT(BlueprintType)
@@ -80,7 +80,7 @@ public:
 		USkillDataAsset* SkillDataAsset
 	) = 0;
 
-	virtual USkillSlot* BuildSkillSlotEntity(const FSkillDomainModel& DomainModel) = 0;
+	virtual FSkillSlotReplicationData BuildSkillSlotData(const FSkillDomainModel& DomainModel) = 0;
 
 	// Business Logic 계산
 	virtual float CalculateRemainingCooldown(
@@ -98,9 +98,9 @@ public:
 	virtual int32 CalculateScaledValue(int32 BaseValue, int32 SkillLevel) = 0;
 	virtual float CalculateScaledValue(float BaseValue, int32 SkillLevel) = 0;
 
-	// ?????(Entity ??DTO)
-	virtual FSkillSlotDatabaseDTO ExtractSlotDTO(const USkillSlot* SkillSlot) = 0;
-	virtual FSkillDomainModel ExtractDomainModel(const USkillSlot* SkillSlot) = 0;
+	// 추출 (FSkillSlotReplicationData에서 DTO)
+	virtual FSkillSlotDatabaseDTO ExtractSlotDTO(const FSkillSlotReplicationData& SlotData) = 0;
+	virtual FSkillDomainModel ExtractDomainModel(const FSkillSlotReplicationData& SlotData) = 0;
 
 	// 배치 처리
 	virtual TArray<FSkillDomainModel> BuildDomainModels(
@@ -108,11 +108,11 @@ public:
 		const TArray<USkillDataAsset*>& SkillDataAssets
 	) = 0;
 
-	virtual TArray<USkillSlot*> BuildSkillSlotEntities(
+	virtual TArray<FSkillSlotReplicationData> BuildSkillSlotDataArray(
 		const TArray<FSkillDomainModel>& DomainModels
 	) = 0;
 
 	// Validation
 	virtual bool ValidateDomainModel(const FSkillDomainModel& Model, FString& OutErrorMessage) = 0;
-	virtual bool ValidateSkillSlotEntity(const USkillSlot* SkillSlot, FString& OutErrorMessage) = 0;
+	virtual bool ValidateSkillSlotData(const FSkillSlotReplicationData& SlotData, FString& OutErrorMessage) = 0;
 };

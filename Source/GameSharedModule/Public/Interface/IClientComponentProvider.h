@@ -19,13 +19,13 @@ class UClientManagerInterface : public UInterface
 	GENERATED_BODY()
 };
 
-class MYGAME_API IClientManagerInterface
+class GAMESHAREDMODULE_API IClientManagerInterface
 {
 	GENERATED_BODY()
 
 public:
 	virtual void RegistClientComponent(UActorComponent* Component) = 0;
-	virtual void InitializeUI(const USkillComponent* SkillComponent) = 0;
+	virtual void InitializeUI() = 0;
 	// Auth service delegation
 	virtual void ProcessRegistration(const FString& Username, const FString& Password) = 0;
 	virtual void ProcessLogin(const FString& Username, const FString& Password) = 0;
@@ -36,7 +36,9 @@ public:
 	virtual void ProcessMouseOverDetection() = 0;
 	virtual void NotifyStateChanged() = 0;
 	virtual void ProcessBossData(const FBossDataStruct& BossData) = 0;
-	virtual void ProcessSkillData(const USkillComponent* SkillComponent) = 0;
+	
+	// Skill replication delegation
+	virtual void SkillHUDReplication(const struct FSkillSlotReplicationArray& SkillSlotsReplication) = 0;
 };
 
 
@@ -53,7 +55,7 @@ class UClientAuthInterface : public UInterface
 	GENERATED_BODY()
 };
 
-class MYGAME_API IClientAuthInterface
+class GAMESHAREDMODULE_API IClientAuthInterface
 {
 	GENERATED_BODY()
 
@@ -75,15 +77,15 @@ class UClientUIInterface : public UInterface
 	GENERATED_BODY()
 };
 
-class MYGAME_API IClientUIInterface
+class GAMESHAREDMODULE_API IClientUIInterface
 {
 	GENERATED_BODY()
 
 public:
-	virtual void InitializeUI(const USkillComponent* SkillComponent) = 0;
+	virtual void InitializeUI() = 0;
 	virtual void HandleMouseOverDetection() = 0;
 	virtual void NotifyStateChanged() = 0;
 	virtual void ReceiveBossData(const FBossDataStruct& BossData) = 0;
-	virtual void ReceiveSkillData(const USkillComponent* SkillComponent) = 0;
-	virtual void SetOwnerController(class AGGwaPlayerController* Controller) = 0;
+	virtual void ReceiveSkillReplicationData(const struct FSkillSlotReplicationArray& SkillSlotsReplication) = 0;
+	// virtual void SetOwnerController(class AGGwaPlayerController* Controller) = 0;
 };

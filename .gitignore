@@ -47,6 +47,13 @@
 SourceArt/**/*.png
 SourceArt/**/*.tga
 
+Releases/*
+*.ucas
+*.utoc
+*.pak
+
+Content/*
+
 # Binary Files
 Binaries/*
 Plugins/**/Binaries/*

@@ -6,7 +6,7 @@
 #include "Interface/AuthRPCInterface.h"
 #include "Shared/AI/EnemySystemCore/FBossDataStruct.h"
 #include "Shared/Utill/FRewardRequest.h"
-#include "Shared/Interface/IClientComponentProvider.h"
+#include "GameSharedModule/Public/Interface/IClientComponentProvider.h"
 #include "GameSharedModule/Public/Enums/EClientUIKey.h"
 #include "GGwaPlayerController.generated.h"
 
@@ -27,6 +27,7 @@ public:
 	virtual void BeginPlay() override;
 	virtual void PlayerTick(float DeltaTime) override;
 	virtual void AcknowledgePossession(APawn* PossessedPawn) override;
+	virtual void OnRep_PlayerState() override;
 
 	UPROPERTY(BlueprintAssignable, Category = "UI")
 	FOnAbilityDataAssetApplied OnAbilityDataAssetApplied;
@@ -84,20 +85,12 @@ public:
 	TScriptInterface<IClientManagerInterface> GetUIManagerInterface();
 
 	// ============================================================================
-	// CLIENT SERVICE ACCESS - RPC-based approach
-	// ============================================================================
-
-	UFUNCTION(Client, Reliable)
-	void Client_InitializeUI(const USkillComponent* SkillComponent);
-	UFUNCTION(Client, Reliable)
-	void Client_InitializeClientComponent();
-	// ============================================================================
 	// Subsystem Interface Implementation
 	// ============================================================================
 	virtual void RegistClientComponent(UActorComponent* Component) override;
 	
 	UFUNCTION(BlueprintCallable, Category = "Client Service")
-	virtual void InitializeUI(const USkillComponent* SkillComponent) override;
+	virtual void InitializeUI() override;
 
 	UFUNCTION(BlueprintCallable, Category = "Client Service")
 	void InitializeClientComponent();
@@ -121,8 +114,9 @@ public:
     virtual void NotifyStateChanged() override;
 	UFUNCTION(Client, Reliable , BlueprintCallable, Category = "Client Service")
     virtual void ProcessBossData(const FBossDataStruct& BossData) override;
-	UFUNCTION(Client, Reliable , BlueprintCallable, Category = "Client Service")
-    virtual void ProcessSkillData(const USkillComponent* SkillComponent) override;
+
+	UFUNCTION(Category = "Client Service")
+	virtual void SkillHUDReplication(const FSkillSlotReplicationArray& SkillSlotsReplication) override;
 
 	UFUNCTION(BlueprintCallable, Category = "Authentication")
 	void ConnectToGameServerWithToken(const FString& Token, const FString& UserId);

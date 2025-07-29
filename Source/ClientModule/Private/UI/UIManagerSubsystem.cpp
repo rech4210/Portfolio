@@ -18,8 +18,6 @@ void UUIManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	UE_LOG(LogTemp, Log, TEXT("UIManagerSubsystem::Initialize - Starting initialization"));
 	
 }
-
-
 void UUIManagerSubsystem::OnWorldInit(UWorld* NewWorld, const UWorld::InitializationValues IVS) {
 	// ?�존관�???�� (IOC) ?�턴???�용?�여 GameState?�게 Client UIManagerSubsystem???�공?�도�??�청.
 	if (!NewWorld)
@@ -241,11 +239,11 @@ void UUIManagerSubsystem::HandleLoginResult(bool bSuccess, const FString& Token,
 }
 
 // UI service delegation
-void UUIManagerSubsystem::InitializeUI(const USkillComponent* SkillComponent)
+void UUIManagerSubsystem::InitializeUI()
 {
 	if (ClientUIService)
 	{
-		ClientUIService->InitializeUI(SkillComponent);
+		ClientUIService->InitializeUI();
 		UE_LOG(LogTemp, Log, TEXT("UIManagerSubsystem: Delegated InitializeUI"));
 	}
 	else
@@ -293,16 +291,17 @@ void UUIManagerSubsystem::ProcessBossData(const FBossDataStruct& BossData)
 	}
 }
 
-void UUIManagerSubsystem::ProcessSkillData(const USkillComponent* SkillComponent)
+void UUIManagerSubsystem::SkillHUDReplication(const FSkillSlotReplicationArray& SkillSlotsReplication)
 {
 	if (ClientUIService)
 	{
-		ClientUIService->ReceiveSkillData(SkillComponent);
-		UE_LOG(LogTemp, Log, TEXT("UIManagerSubsystem: Processing skill data"));
+		ClientUIService->ReceiveSkillReplicationData(SkillSlotsReplication);
+		UE_LOG(LogTemp, Log, TEXT("UIManagerSubsystem: Processing skill replication data with %d items"), 
+			SkillSlotsReplication.Items.Num());
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("UIManagerSubsystem: No UI service registered for skill data"));
+		UE_LOG(LogTemp, Warning, TEXT("UIManagerSubsystem: No UI service registered for skill replication data"));
 	}
 }
 

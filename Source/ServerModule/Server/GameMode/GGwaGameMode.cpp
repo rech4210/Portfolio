@@ -369,46 +369,13 @@ void AGGwaGameMode::OnSkillDataLoadCompleted(TScriptInterface<IPlayerIdentityInt
 		return;
 	}
 	
-	// SkillComponent 데이터 상태 확인
-	UE_LOG(LogTemp, Log, TEXT("[UI] SkillComponent validation - Slots count: %d"), SkillComponent->GetAllSkillSlots().Num());
-	for (int32 i = 0; i < SkillComponent->GetAllSkillSlots().Num(); ++i)
-	{
-		USkillSlot* Slot = SkillComponent->GetSkillSlotByIndex(i);
-		if (Slot && !Slot->IsEmpty())
-		{
-			UE_LOG(LogTemp, Log, TEXT("[UI] Slot %d: SkillId=%d, SkillData=%p"), 
-				i, Slot->SkillId, Slot->SkillData);
-		}
-	}
-	
 	UE_LOG(LogTemp, Log, TEXT("[UI] Valid parameters - PlayerIdentity: %p, SkillComponent: %p"), 
 		PlayerIdentity.GetObject(), SkillComponent);
 	
 	if (AGGwaPlayerState* GGwaState = Cast<AGGwaPlayerState>(PlayerIdentity.GetObject())) 
 	{
+		GGwaState->SetSkillComponent(SkillComponent);
 		UE_LOG(LogTemp, Warning, TEXT("[UI_INIT_DEBUG] Found controller for player %s"), *GGwaState->GetPlayerName());
-		
-		if (AGGwaPlayerController* GGwaController = Cast<AGGwaPlayerController>(GGwaState->GetPlayerController())) 
-		{
-			UE_LOG(LogTemp, Warning, TEXT("[UI_INIT_DEBUG] Controller IsLocalController: %s | NetMode: %d"), 
-				GGwaController->IsLocalPlayerController() ? TEXT("YES") : TEXT("NO"), 
-				GetWorld()->GetNetMode());
-				
-			if (GGwaController->IsLocalPlayerController())
-			{
-				UE_LOG(LogTemp, Warning, TEXT("[UI_INIT_DEBUG] Initializing UI for local controller"));
-				GGwaController->InitializeUI(SkillComponent);
-			}
-			else
-			{
-				UE_LOG(LogTemp, Warning, TEXT("[UI_INIT_DEBUG] Skipping UI initialization for non-local controller"));
-			}
-			return;
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("[UI] Failed to cast to GGwaPlayerController"));
-		}
 	}
 	else
 	{

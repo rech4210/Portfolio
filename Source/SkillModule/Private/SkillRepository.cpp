@@ -37,17 +37,8 @@ UE::Tasks::TTask<FSkillRepositoryResult3Layer> USkillRepository::LoadUserSkillSl
 			return FSkillRepositoryResult3Layer::Failure(TEXT("Invalid UserId"));
 		}
 
-		// SlotKey가 비어있으면 모든 슬롯을 로드 (DatabaseManager에서 지원하는 기능)
-		// if (SlotKey.IsEmpty())
-		// {
-		// 	return FSkillRepositoryResult3Layer::Failure(TEXT("SlotKey cannot be empty"));
-		// }
-
-		// Execute database operation on worker thread
 		auto LoadTask = DBManager->LoadUserSkillSlots(UserId, SlotKey);
 		TArray<FSkillSlotDatabaseDTO> LoadedSlots = LoadTask.GetResult();
-
-		// Return the DTOs directly
 		return FSkillRepositoryResult3Layer::SuccessWithSlots(LoadedSlots);
 	});
 }

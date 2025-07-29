@@ -14,10 +14,13 @@
 #include "UI/Widget/GGwaWidget.h"
 #include "UI/Enemy/BossStatusWidget.h"
 #include "SkillModule/Public/Components/SkillComponent.h"
+#include "SkillModule/Public/Utill/LocalDataBaseLoader.h"
 #include "Engine/Engine.h"
 #include "Entities/SkillSlot.h"
 #include "Kismet/GameplayStatics.h"
 #include "UI/UIManagerSubsystem.h"
+#include "Utill/USkillHelper.h"
+#include "Utils/ClientUIMapping.h"
 
 UClientUIComponent::UClientUIComponent()
 {
@@ -30,15 +33,24 @@ void UClientUIComponent::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	// Cache owner controller reference
+	// Cache owner controller reference with comprehensive logging
 	OwnerController = Cast<AGGwaPlayerController>(GetOwner());
-	check(OwnerController)
+	if (OwnerController)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[UI_INIT_DEBUG] ClientUIComponent::BeginPlay - Owner set to: %s"), 
+			*OwnerController->GetClass()->GetName());
+		UE_LOG(LogTemp, Warning, TEXT("[UI_INIT_DEBUG] ClientUIComponent::BeginPlay - IsLocalController: %s"), 
+			OwnerController->IsLocalPlayerController() ? TEXT("YES") : TEXT("NO"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("[UI_INIT_DEBUG] ClientUIComponent::BeginPlay - Failed to cast Owner to AGGwaPlayerController"));
+		UE_LOG(LogTemp, Error, TEXT("[UI_INIT_DEBUG] ClientUIComponent::BeginPlay - Owner class: %s"), 
+			GetOwner() ? *GetOwner()->GetClass()->GetName() : TEXT("NULL"));
+		return;
+	}
 	
 	SetupClientInputMode();
-}
-
-void UClientUIComponent::SetOwnerController(AGGwaPlayerController* Controller) {
-	OwnerController = Controller;
 }
 
 // ============================================================================
@@ -50,70 +62,92 @@ void UClientUIComponent::SetOwnerController(AGGwaPlayerController* Controller) {
 // 디버깅을 해보니, Client RPC로 SkillComponent를 전송해주는 시점에서 복제가 제대로 수행되지 않는다고 판단.
 // GGwaGameMOde에서 인자로 넘겨주는 시점에는 정상적으로 메모리를 점유중. GameMode -> RPC -> (복제 이슈) Controller -> UI ! 실패 흐름
 
-void UClientUIComponent::InitializeUI(const USkillComponent* SkillComponent)
+void UClientUIComponent::InitializeUI()
 {
+	UE_LOG(LogTemp, Warning, TEXT("[UI_INIT_DEBUG] ClientUIComponent::InitializeUI - Start"));
+	
 	if (!OwnerController || !OwnerController->IsLocalPlayerController())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("ClientUIComponent: is not Local controller"));
-		return;
+		UE_LOG(LogTemp, Warning, TEXT("[UI_INIT_DEBUG] ClientUIComponent::InitializeUI - Not local controller, exiting"));
+		OwnerController = Cast<AGGwaPlayerController>(GetOwner());
 	}
-
-	//GetPlayerState -> Nullptr
-	
-	if (auto State = OwnerController->GetPlayerState<AGGwaPlayerState>()) {
-		if (auto Component = State->GetSkillComponent()) {
-			for (auto Element : Component->GetAllSkillSlots()) {
-				UE_LOG(LogTemp, Warning, TEXT("===ClientUIComponent: Skill %s, Id %d ==="), *Element->SkillData->DisplayName.ToString(), Element->SkillId);
-			}
-		}
-	}
-
-	UE_LOG(LogTemp, Warning, TEXT("ClientUIComponent: Client widget initialization"));
 	
 	if (WidgetClass && BossStatusWidgetClass)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("[UI_INIT_DEBUG] ClientUIComponent::InitializeUI - Widget classes available"));
+		
 		UGGwaWidget* Widget = CreateWidget<UGGwaWidget>(OwnerController, WidgetClass);
 		UBossStatusWidget* BossWidget = CreateWidget<UBossStatusWidget>(OwnerController, BossStatusWidgetClass);
 		
 		if (Widget && BossWidget)
 		{
-			//Widget은 정상 출력.
+			UE_LOG(LogTemp, Warning, TEXT("[UI_INIT_DEBUG] ClientUIComponent::InitializeUI - Widgets created successfully"));
+			
 			Widget->AddToViewport();
 			BossWidget->AddToViewport();
 			BossWidget->SetVisibility(ESlateVisibility::Hidden);
-			
-			// Setup HUD references
-			// GetHud -> nullptr
-			// Note : ServerGameMode Doesn't have HUD, so we need to check if OwnerController is valid
-			// 해당 HUD도 enum key mapping을 통해서 tsoftptr path string 데이터로 가져와야하나?
+
+			UClass* HUDClass = FClientUIMapping::LoadUIClass(EClientUIKey::HUD);
+			OwnerController->ClientSetHUD(HUDClass);
 			GGwaHUD = Cast<AGGwaHUD>(OwnerController->GetHUD());
+			
+			if (!GGwaHUD)
+			{
+				UE_LOG(LogTemp, Error, TEXT("[UI_INIT_DEBUG] ClientUIComponent::InitializeUI - Failed to load HUD class"));
+				return;
+			}
+			
 			if (GGwaHUD)
 			{
 				GGwaHUD->SetBaseWidget(Widget);
 				GGwaHUD->SetBossWidget(BossWidget);
-
 				OwnerController->OnBossDataReceived.AddDynamic(GGwaHUD, &AGGwaHUD::HandleBossDataReceived);
+				UE_LOG(LogTemp, Warning, TEXT("[UI_INIT_DEBUG] ClientUIComponent::InitializeUI - HUD setup completed"));
 			}
-			
-			//GetPlayerState -> Nullptr
-			if (AGGwaPlayerState* PS = OwnerController->GetPlayerState<AGGwaPlayerState>())
-			{
-				auto ASC = PS->GetAbilitySystemComponent();
-				UGGwaAbilitySystemComponent* GGawASC = CastChecked<UGGwaAbilitySystemComponent>(ASC);
-				const UGGwaAttributeSet* GGwaAttributeSet = Cast<UGGwaAttributeSet>(GGawASC->GetAttributeSet(UGGwaAttributeSet::StaticClass()));
-				
-				Widget->InitWidget(GGawASC, GGwaAttributeSet);
-				Widget->UpdateSkillWidgetFromServer(SkillComponent);
-			}
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("[UI_INIT_DEBUG] ClientUIComponent::InitializeUI - Failed to create widgets"));
 		}
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("ClientUIComponent: Widget classes not set"));
+		UE_LOG(LogTemp, Error, TEXT("[UI_INIT_DEBUG] ClientUIComponent::InitializeUI - Widget classes not set"));
+	}
+
+	if (AGGwaPlayerState* PS = Cast<AGGwaPlayerState>(OwnerController->GetPlayerState<APlayerState>()))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[UI_INIT_DEBUG] ClientUIComponent::InitializeUI - Setting up ASC"));
+				
+		auto ASC = PS->GetAbilitySystemComponent();
+		UGGwaAbilitySystemComponent* GGawASC = CastChecked<UGGwaAbilitySystemComponent>(ASC);
+		const UGGwaAttributeSet* GGwaAttributeSet = Cast<UGGwaAttributeSet>(GGawASC->GetAttributeSet(UGGwaAttributeSet::StaticClass()));
+				
+		if (GGawASC && GGwaAttributeSet)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[UI_INIT_DEBUG] ClientUIComponent::InitializeUI - ASC and AttributeSet found"));
+			GGwaHUD->GetBaseWidget()->InitWidget(GGawASC, GGwaAttributeSet);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("[UI_INIT_DEBUG] ClientUIComponent::InitializeUI - ASC or AttributeSet is null"));
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("[UI_INIT_DEBUG] ClientUIComponent::InitializeUI - PlayerState is null"));
+	}
+
+	bUIReady = true;
+	if (bHasBufferedData)
+	{
+		ReceiveSkillReplicationData(BufferedSlotReplicationData);
+		bHasBufferedData = false;
+		BufferedSlotReplicationData.Items.Reset();
 	}
 	
-	// Call Blueprint event for additional initialization
-	BP_InitClientWidget(SkillComponent);
+	BP_InitClientWidget();
+	UE_LOG(LogTemp, Warning, TEXT("[UI_INIT_DEBUG] ClientUIComponent::InitializeUI - Complete"));
 }
 
 void UClientUIComponent::HandleMouseOverDetection()
@@ -124,7 +158,6 @@ void UClientUIComponent::HandleMouseOverDetection()
 	}
 
 	FHitResult Hit;
-	// Visibility 채널�?마우??�?Actor ?�별
 	if (OwnerController->GetHitResultUnderCursorByChannel(
 			UEngineTypes::ConvertToTraceType(ECC_Visibility),
 			true, Hit))
@@ -137,7 +170,6 @@ void UClientUIComponent::HandleMouseOverDetection()
 			{
 				LastHoveredEnemy = Enemy;
 
-				// ASC?�?AttributeSet 가?�오�?
 				UEnemyAbilitySystemComponent* ASC = Cast<UEnemyAbilitySystemComponent>(Enemy->GetAbilitySystemComponent());
 				const UEnemyAttributeSet* AttrSet = ASC ? ASC->GetSet<UEnemyAttributeSet>() : nullptr;
 				if (!ASC || !AttrSet) return;
@@ -147,7 +179,6 @@ void UClientUIComponent::HandleMouseOverDetection()
 				BossData.MaxHealth = AttrSet->GetMaxHealth();
 				BossData.Damage = AttrSet->GetDamage();
 
-				// FEnemyWidgetData 구성
 				FEnemyWidgetData WidgetData = Enemy->GetWidgetData();
 				GGwaHUD->GetBossWidget()->SetWidget(WidgetData, BossData);
 			}
@@ -155,14 +186,12 @@ void UClientUIComponent::HandleMouseOverDetection()
 		}
 	}
 
-	// 커서가 ???�외 ?�역???�을 ?? ?�리??
 	if (LastHoveredEnemy.IsValid())
 	{
 		LastHoveredEnemy = nullptr;
 		GGwaHUD->GetBossWidget()->SetVisibility(ESlateVisibility::Hidden);
 	}
 	
-	// Call Blueprint event for additional handling
 	BP_HandleMouseOverDetection();
 }
 
@@ -178,34 +207,84 @@ void UClientUIComponent::NotifyStateChanged()
 		GGwaHUD->GetBaseWidget()->OnPlayerStateChanged.Broadcast();
 	}
 	
-	// Call Blueprint event for additional handling
 	BP_NotifyClientStateChanged();
 }
 
 void UClientUIComponent::ReceiveBossData(const FBossDataStruct& BossData)
 {
-	// This can be used for direct boss data updates from server
-	// Currently forwarded through PlayerController's OnBossDataReceived delegate
 	UE_LOG(LogTemp, Log, TEXT("ClientUIComponent: Received boss data from server"));
 	
-	// Call Blueprint event for additional handling
 	BP_ReceiveBossDataFromServer(BossData);
 }
 
-void UClientUIComponent::ReceiveSkillData(const USkillComponent* SkillComponent)
+void UClientUIComponent::ReceiveSkillReplicationData(const FSkillSlotReplicationArray& SkillSlotsReplication)
 {
 	if (!OwnerController || !OwnerController->IsLocalPlayerController() || !GGwaHUD)
 	{
-		return;
+		UE_LOG(LogTemp, Warning, TEXT("ClientUIComponent::ReceiveSkillReplicationData - Invalid controller or HUD"));
+		if (!bUIReady)
+		{
+			BufferedSlotReplicationData = SkillSlotsReplication;
+			bHasBufferedData = true;
+			return;
+		}
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("ClientUIComponent::ReceiveSkillReplicationData - Processing %d skill slots"), 
+		SkillSlotsReplication.Items.Num());
+
+	// LocalDataBaseLoader 초기화 확인
+	if (!ULocalDataBaseLoader::IsInitialized())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("ClientUIComponent::ReceiveSkillReplicationData - LocalDataBaseLoader not initialized, initializing now"));
+		ULocalDataBaseLoader::Initialize();
+	}
+
+	// 복제 데이터에서 SkillDataAsset들을 복원
+	TArray<USkillDataAsset*> ReconstructedSkillAssets;
+	TMap<int32, FSkillSlotReplicationData> SlotIndexToReplicationData;
+	
+	for (const FSkillSlotReplicationItem& Item : SkillSlotsReplication.Items)
+	{
+		const FSkillSlotReplicationData& SlotData = Item.SlotData;
+		SlotIndexToReplicationData.Add(SlotData.SlotIndex, SlotData);
+
+		// SkillID가 유효한 경우에만 SkillDataAsset 로드
+		if (SlotData.SkillId > 0)
+		{
+			FPrimaryAssetId AssetId;
+			if (ULocalDataBaseLoader::CheckPrimaryAssetId(SlotData.SkillId, AssetId))
+			{
+				USkillDataAsset* SkillAsset = ULocalDataBaseLoader::GetDataFromAssetId<USkillDataAsset>(AssetId, true);
+				if (SkillAsset)
+				{
+					SkillAsset->SkillSlotIndex = SlotData.SlotIndex;
+					SkillAsset->SkillSlotKey = SlotData.SlotKey;
+					ReconstructedSkillAssets.Add(SkillAsset);
+					UE_LOG(LogTemp, Log, TEXT("ClientUIComponent::ReceiveSkillReplicationData - Reconstructed SkillAsset: %s (ID: %d) for Slot[%d]"), 
+						*SkillAsset->DisplayName.ToString(), SlotData.SkillId, SlotData.SlotIndex);
+				}
+				else
+				{
+					UE_LOG(LogTemp, Warning, TEXT("ClientUIComponent::ReceiveSkillReplicationData - Failed to load SkillAsset for ID: %d"), SlotData.SkillId);
+				}
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("ClientUIComponent::ReceiveSkillReplicationData - No AssetId found for SkillID: %d"), SlotData.SkillId);
+			}
+		}
 	}
 
 	if (GGwaHUD->GetBaseWidget())
 	{
-		GGwaHUD->GetBaseWidget()->UpdateSkillWidgetFromServer(SkillComponent);
+		GGwaHUD->GetBaseWidget()->UpdateSkillWidgetFromServer(ReconstructedSkillAssets);
+		UE_LOG(LogTemp, Log, TEXT("ClientUIComponent::ReceiveSkillReplicationData - Updated widget with reconstructed skill data"));
 	}
-	
-	// Call Blueprint event for additional handling
-	BP_ReceiveSkillDataFromServer(SkillComponent);
+
+	// BP_ReceiveSkillDataFromServer(ReconstructedSkillAssets);
+	// // Blueprint 이벤트 호출
+	// BP_ReceiveSkillReplicationData(SkillSlotsReplication);
 }
 
 // ============================================================================
@@ -219,16 +298,23 @@ AGGwaPlayerController* UClientUIComponent::GetGGwaPlayerController() const
 
 void UClientUIComponent::SetupClientInputMode()
 {
+	UE_LOG(LogTemp, Warning, TEXT("[UI_INIT_DEBUG] ClientUIComponent::SetupClientInputMode - Start"));
+	
 	if (!OwnerController || !OwnerController->IsLocalPlayerController())
 	{
+		UE_LOG(LogTemp, Warning, TEXT("[UI_INIT_DEBUG] ClientUIComponent::SetupClientInputMode - Not local controller, skipping"));
 		return;
 	}
 
-	OwnerController->bShowMouseCursor = true;
+	UE_LOG(LogTemp, Warning, TEXT("[UI_INIT_DEBUG] ClientUIComponent::SetupClientInputMode - Setting up input mode"));
+	
 	OwnerController->bEnableMouseOverEvents = true;
 	
 	FInputModeGameAndUI inputMode;
 	inputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 	inputMode.SetHideCursorDuringCapture(false);
 	OwnerController->SetInputMode(inputMode);
+	
+	UE_LOG(LogTemp, Warning, TEXT("[UI_INIT_DEBUG] ClientUIComponent::SetupClientInputMode - Input mode configured"));
 }
+

@@ -24,7 +24,8 @@ public class SkillModule : ModuleRules
             {
                 "EnhancedInput",
                 "InputCore",
-                "Json"
+                "Json",
+                "NetCore"
             }
         );
     }

@@ -16,8 +16,15 @@ void AGGwaPlayerController::BeginPlay() {
 	Super::BeginPlay();
 	UE_LOG(LogTemp, Warning, TEXT("=== GGwaPlayerController::BeginPlay DEBUG === \n Controller Address: %p | IsServer: %d | IsLocalPlayerController: %d"), 
 		this, HasAuthority(), IsLocalPlayerController());
+
+
 #if !UE_SERVER
 	InitializeClientComponent();
+	bShowMouseCursor = true;
+
+	FInputModeGameAndUI InputMode;
+	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	SetInputMode(InputMode);
 #endif
 }
 
@@ -32,6 +39,14 @@ void AGGwaPlayerController::AcknowledgePossession(class APawn* PossessedPawn) {
 		}
 	}
 }
+
+void AGGwaPlayerController::OnRep_PlayerState() {
+	Super::OnRep_PlayerState();
+	if (GetPlayerState<AGGwaPlayerState>()) {
+		InitializeUI();
+	}
+}
+
 
 void AGGwaPlayerController::Server_InitiateReward_Implementation(const FString& PlayerId, const FRewardRequest& Payload) {
 	IServerLogicBridge* Bridge = Cast<IServerLogicBridge>(GetWorld()->GetSubsystem<UWorldSubsystem>());
@@ -132,15 +147,6 @@ TScriptInterface<IClientManagerInterface> AGGwaPlayerController::GetUIManagerInt
 	return CachedClientManagerInterface;
 }
 
-void AGGwaPlayerController::Client_InitializeUI_Implementation(const USkillComponent* SkillComponent) {
-	InitializeUI(SkillComponent);
-}
-
-
-void AGGwaPlayerController::Client_InitializeClientComponent_Implementation() {
-	InitializeClientComponent();
-}
-
 void AGGwaPlayerController::RegistClientComponent(UActorComponent* Component) {
 	if (CachedClientManagerInterface.GetInterface())
 	{
@@ -148,48 +154,28 @@ void AGGwaPlayerController::RegistClientComponent(UActorComponent* Component) {
 	}
 }
 
-void AGGwaPlayerController::InitializeUI(const USkillComponent* SkillComponent) {
+void AGGwaPlayerController::InitializeUI() {
 	if (!IsLocalPlayerController()) return;
 #if !UE_SERVER
+	UE_LOG(LogTemp, Warning, TEXT("[UI_INIT_DEBUG] InitializeUI called on client"));
+	
 	if (!CachedClientManagerInterface) {
 		InitializeClientComponent();
 	}
-
-	if (ClientUIComponent)
-	{
-		if (auto UIInterface = Cast<IClientUIInterface>(ClientUIComponent))
-		{
-			UIInterface->SetOwnerController(this);
-		}
-	}
 	
-	if (CachedClientManagerInterface.GetInterface() && CachedClientManagerInterface.GetObject())
+	if (ClientAuthComponent)
 	{
-		CachedClientManagerInterface->InitializeUI(SkillComponent);
-		UE_LOG(LogTemp, Log, TEXT("GGwaPlayerController::InitializeUI - Delegated to ClientManager"));
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("GGwaPlayerController::InitializeUI - ClientManagerInterface not available"));
-		UE_LOG(LogTemp, Warning, TEXT("  - Interface: %s, Object: %s"), 
-			CachedClientManagerInterface.GetInterface() ? TEXT("Valid") : TEXT("Null"),
-			CachedClientManagerInterface.GetObject() ? TEXT("Valid") : TEXT("Null"));
-			
-		if (ClientAuthComponent)
+		if (auto AuthInterface = Cast<IClientAuthInterface>(ClientAuthComponent))
 		{
-			if (auto AuthInterface = Cast<IClientAuthInterface>(ClientAuthComponent))
+			TScriptInterface<IClientManagerInterface> SubSystem = AuthInterface->GetClientSubSystem();
+			if (SubSystem.GetInterface())
 			{
-				TScriptInterface<IClientManagerInterface> SubSystem = AuthInterface->GetClientSubSystem();
-				if (SubSystem.GetInterface())
-				{
-					CachedClientManagerInterface = SubSystem;
-					UE_LOG(LogTemp, Warning, TEXT("GGwaPlayerController::InitializeUI - Re-acquired ClientManagerInterface, retrying..."));
-					CachedClientManagerInterface->InitializeUI(SkillComponent);
-				}
+				CachedClientManagerInterface = SubSystem;
+				UE_LOG(LogTemp, Warning, TEXT("GGwaPlayerController::InitializeUI - Re-acquired ClientManagerInterface, retrying..."));
+				CachedClientManagerInterface->InitializeUI();
 			}
 		}
 	}
-
 #endif
 }
 
@@ -206,20 +192,8 @@ void AGGwaPlayerController::InitializeClientComponent() {
 			UE_LOG(LogTemp, Error, TEXT("- Client Only Controller::BeginPlay - World is null!"));
 			return;
 		}
-
-		if (CachedClientManagerInterface.GetInterface() && ClientAuthComponent && ClientUIComponent )
-		{
-			if (CachedClientManagerInterface.GetObject() && IsValid(CachedClientManagerInterface.GetObject()))
-			{
-				UE_LOG(LogTemp, Warning, TEXT("GGwaPlayerController::BeginPlay - Cached interface still valid, skipping re-initialization"));
-				return;
-			}
-		}
 		
-		// 새로운 간소화된 컴포넌트 생성 방식
 		CreateDefaultClientComponents();
-		
-		UE_LOG(LogTemp, Warning, TEXT("GGwaPlayerController::BeginPlay - Component initialization completed"));
 	}
 #endif
 }
@@ -368,30 +342,20 @@ void AGGwaPlayerController::NotifyStateChanged() {
 
 void AGGwaPlayerController::ProcessBossData_Implementation(const FBossDataStruct& BossData) {
 	if (!IsLocalPlayerController()) return;
-	
-	if (CachedClientManagerInterface.GetInterface())
-	{
-		CachedClientManagerInterface->ProcessBossData(BossData);
-		UE_LOG(LogTemp, Log, TEXT("GGwaPlayerController::ProcessBossData - Delegated boss data"));
+
+	if (!CachedClientManagerInterface) {
+		InitializeClientComponent();
 	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("GGwaPlayerController::ProcessBossData - ClientManagerInterface not available"));
-	}
+	CachedClientManagerInterface->ProcessBossData(BossData);
 }
 
-void AGGwaPlayerController::ProcessSkillData_Implementation(const USkillComponent* SkillComponent) {
+void AGGwaPlayerController::SkillHUDReplication(const FSkillSlotReplicationArray& SkillSlotsReplication) {
 	if (!IsLocalPlayerController()) return;
-	
-	if (CachedClientManagerInterface.GetInterface())
-	{
-		CachedClientManagerInterface->ProcessSkillData(SkillComponent);
-		UE_LOG(LogTemp, Log, TEXT("GGwaPlayerController::ProcessSkillData - Delegated skill data"));
+
+	if (!CachedClientManagerInterface) {
+		InitializeClientComponent();
 	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("GGwaPlayerController::ProcessSkillData - ClientManagerInterface not available"));
-	}
+	CachedClientManagerInterface->SkillHUDReplication(SkillSlotsReplication);
 }
 
 void AGGwaPlayerController::PlayerTick(float DeltaTime) {
@@ -423,11 +387,6 @@ void AGGwaPlayerController::ConnectToGameServerWithToken(const FString& Token, c
 	bool bIsPIEEnvironment = World && World->WorldType == EWorldType::PIE;
 	ENetMode NetMode = World ? World->GetNetMode() : NM_Standalone;
 	
-	UE_LOG(LogTemp, Warning, TEXT("=== GGwaPlayerController::ConnectToGameServerWithToken DEBUG ==="));
-	UE_LOG(LogTemp, Warning, TEXT("Controller: %p | PIE: %s | NetMode: %d"), 
-		this, bIsPIEEnvironment ? TEXT("Yes") : TEXT("No"), (int32)NetMode);
-	UE_LOG(LogTemp, Warning, TEXT("Token: %s... | UserId: %s"), *Token.Left(20), *UserId);
-
 	const FString ServerIP = TEXT("127.0.0.1");
 	const FString ServerPort = TEXT("7777");
 	const FString ServerURL = FString::Printf(
@@ -441,9 +400,6 @@ void AGGwaPlayerController::ConnectToGameServerWithToken(const FString& Token, c
 	UE_LOG(LogTemp, Log, TEXT("GGwaPlayerController::ConnectToGameServerWithToken - Connecting to: %s"), *ServerURL);
 	UE_LOG(LogTemp, Log, TEXT("GGwaPlayerController::ConnectToGameServerWithToken - Token: %s"), *Token.Left(20)); // Log first 20 chars for security
 
-	// Production: TRAVEL_Absolute for inter-server connections
-	// Note: This will create a new PlayerController instance, losing cached components
-	// Component re-initialization will be handled in BeginPlay()
 	HandleLoginResult(true, Token, UserId);
 	ClientTravel(ServerURL, TRAVEL_Relative);
 }

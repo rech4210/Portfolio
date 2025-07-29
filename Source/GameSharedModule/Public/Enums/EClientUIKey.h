@@ -15,6 +15,7 @@ enum class EClientUIKey : uint8
 	// 인증 관련 UI
 	AuthComponent,
 	LoginUI,
+	HUD,
 	
 	MAX UMETA(Hidden)
 };

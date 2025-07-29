@@ -96,24 +96,87 @@ UInventoryComponent* AGGwaPlayerState::GetInventoryComponent() const {
 	return InventoryComponent.Get();
 }
 
-void AGGwaPlayerState::OnSkillSlotsUpdated() const{
-	auto* Controller = Cast<AGGwaPlayerController>(GetPlayerController());
-	if (!Controller || !SkillComponent)
+// ============================================================================
+// COMPONENT SETTER FUNCTIONS
+// ============================================================================
+
+void AGGwaPlayerState::SetStateComponent(UPlayerStateComponent* NewComponent) {
+	if (NewComponent)
 	{
-		return;
+		StateComponent = NewComponent;
+		UE_LOG(LogTemp, Log, TEXT("AGGwaPlayerState: StateComponent set to %p"), NewComponent);
 	}
-	Controller->ProcessSkillData(SkillComponent);
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("AGGwaPlayerState: Attempted to set null StateComponent"));
+	}
 }
 
-// void AGGwaPlayerState::SetSkillComponent(USkillComponent* NewComponent) {
-//     SkillComponent = NewComponent;
-// 	if (!SkillComponent) {
-// 		return;
-// 	}
-//     for (auto Element : SkillComponent->GetAllSkillSlots()) {
-//     	UE_LOG(LogTemp, Warning, TEXT("===SkillComponent SetSkillComponent: SkillSlot %d, Id %s ==="), Element->SkillData->InputSlot, *Element->SkillData->Description.ToString());
-//     }
-// }
+void AGGwaPlayerState::SetSkillComponent(USkillComponent* NewComponent) {
+	if (NewComponent)
+	{
+		SkillComponent = NewComponent;
+		UE_LOG(LogTemp, Log, TEXT("AGGwaPlayerState: SkillComponent set to %p"), NewComponent);
+		
+		// Log skill slots for debugging
+		TArray<FSkillSlotReplicationData> AllSkillSlots = SkillComponent->GetAllSkillSlotsData();
+		if (AllSkillSlots.Num() > 0)
+		{
+			for (const FSkillSlotReplicationData& SlotData : AllSkillSlots) 
+			{
+				if (!SlotData.IsEmpty() && SlotData.SkillData)
+				{
+					UE_LOG(LogTemp, Log, TEXT("AGGwaPlayerState: SkillSlot %d, Name %s"), 
+						SlotData.SlotIndex, *SlotData.SkillData->DisplayName.ToString());
+				}
+			}
+		}
+		
+		// Notify systems that skills have been updated
+		OnSkillsUpdated.Broadcast();
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("AGGwaPlayerState: Attempted to set null SkillComponent"));
+	}
+}
+
+void AGGwaPlayerState::SetShopComponent(UShopComponent* NewComponent) {
+	if (NewComponent)
+	{
+		ShopComponent = NewComponent;
+		UE_LOG(LogTemp, Log, TEXT("AGGwaPlayerState: ShopComponent set to %p"), NewComponent);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("AGGwaPlayerState: Attempted to set null ShopComponent"));
+	}
+}
+
+void AGGwaPlayerState::SetEquipmentComponent(UEquipmentComponent* NewComponent) {
+	if (NewComponent)
+	{
+		EquipmentComponent = NewComponent;
+		UE_LOG(LogTemp, Log, TEXT("AGGwaPlayerState: EquipmentComponent set to %p"), NewComponent);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("AGGwaPlayerState: Attempted to set null EquipmentComponent"));
+	}
+}
+
+void AGGwaPlayerState::SetInventoryComponent(UInventoryComponent* NewComponent) {
+	if (NewComponent)
+	{
+		InventoryComponent = NewComponent;
+		UE_LOG(LogTemp, Log, TEXT("AGGwaPlayerState: InventoryComponent set to %p"), NewComponent);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("AGGwaPlayerState: Attempted to set null InventoryComponent"));
+	}
+}
+
 
 void AGGwaPlayerState::BroadcastAttributeChange(const FGameplayAttribute& Attribute, float NewValue) const{
 	// OnAttributeChanged.Broadcast(Attribute, NewValue, SkillData);

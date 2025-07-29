@@ -2,16 +2,6 @@
 #include "Data/SkillDataAsset.h"
 #include "Net/UnrealNetwork.h"
 
-void USkillSlot::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-    Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-    DOREPLIFETIME(USkillSlot, SlotIndex);
-    DOREPLIFETIME(USkillSlot, SkillId);
-    DOREPLIFETIME(USkillSlot, SkillData);
-    DOREPLIFETIME(USkillSlot, SlotKey);
-}
-
 void USkillSlot::Initialize(int32 InSlotIndex, const FString& InSlotKey, USkillDataAsset* InSkillData)
 {
 	SlotIndex = InSlotIndex;

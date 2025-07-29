@@ -2,10 +2,12 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "Components/SkillComponent.h"
+#include "Data/SkillDataAsset.h"
 #include "Engine/Engine.h"
 #include "MyGame/Public/Shared/AI/EnemySystemCore/FBossDataStruct.h"
 #include "MyGame/Public/Shared/AI/EnemySystemCore/FEnemyWidgetData.h"
-#include "MyGame/Public/Shared/Interface/IClientComponentProvider.h"
+#include "GameSharedModule/Public/Interface/IClientComponentProvider.h"
 
 // Forward declarations for client UI classes
 class AGGwaHUD;
@@ -38,13 +40,11 @@ protected:
 	virtual void BeginPlay() override;
 
 public:
+	
 	// ============================================================================
 	// IClientUIInterface IMPLEMENTATION
 	// ============================================================================
-
-	virtual void SetOwnerController(AGGwaPlayerController* Controller) override;
-
-	virtual void InitializeUI(const USkillComponent* SkillComponent) override;
+	virtual void InitializeUI() override;
 
 	virtual void HandleMouseOverDetection() override;
 
@@ -52,26 +52,27 @@ public:
 
 	virtual void ReceiveBossData(const FBossDataStruct& BossData) override;
 
-	virtual void ReceiveSkillData(const USkillComponent* SkillComponent) override;
+	virtual void ReceiveSkillReplicationData(const struct FSkillSlotReplicationArray& SkillSlotsReplication) override;
 
 	// ============================================================================
 	// LEGACY BLUEPRINT INTERFACE (for backward compatibility)
 	// ============================================================================
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "Client UI")
-	void BP_InitClientWidget(const USkillComponent* SkillComponent);
+	void BP_InitClientWidget();
 	
 	UFUNCTION(BlueprintImplementableEvent, Category = "Client UI")
 	void BP_HandleMouseOverDetection();
 	
 	UFUNCTION(BlueprintImplementableEvent, Category = "Client UI")
 	void BP_NotifyClientStateChanged();
-
-	UFUNCTION(BlueprintImplementableEvent, Category = "Client UI")
-	void BP_ReceiveSkillDataFromServer(const USkillComponent* SkillComponent);
+	
+	// UFUNCTION(BlueprintImplementableEvent, Category = "Client UI")
+	// void BP_ReceiveSkillDataFromServer(const TArray<USkillDataAsset*> SkillData);
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "Client UI")
 	void BP_ReceiveBossDataFromServer(const FBossDataStruct& BossData);
+
 
 	
 	UFUNCTION(BlueprintCallable, Category = "Client UI")
@@ -129,5 +130,8 @@ private:
 	 */
 	void SetupClientInputMode();
 
-public:
+	bool bUIReady = false;
+	bool bHasBufferedData = false;
+	UPROPERTY()
+	FSkillSlotReplicationArray BufferedSlotReplicationData;
 };

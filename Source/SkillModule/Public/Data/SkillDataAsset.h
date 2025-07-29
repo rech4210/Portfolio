@@ -23,9 +23,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Skill")
 	FSkillShapeConfig SkillShapeConfig;
 
-	//EIC???� ?�동???�한 ?�킬 ?�덱??
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Skill")
-	ESkillInputSlot SkillSlotIndex;
+	FString SkillSlotKey;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill")
+	int SkillSlotIndex = -1;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Skill")
 	int32 SkillID = 999;
@@ -82,9 +84,6 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Skill")
 	TObjectPtr<UBuffDataAsset> BuffData;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Skill")
-	ESkillInputSlot InputSlot;
 
 	virtual FPrimaryAssetId GetPrimaryAssetId() const override {
 		return FPrimaryAssetId("Skill", GetFName());

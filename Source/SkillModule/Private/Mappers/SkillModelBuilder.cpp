@@ -1,4 +1,6 @@
 #include "Mappers/SkillModelBuilder.h"
+
+#include "Components/SkillComponent.h"
 #include "Entities/SkillSlot.h"
 #include "Data/SkillDataAsset.h"
 #include "DatabaseModule/Public/DatabaseManager.h"
@@ -43,33 +45,31 @@ FSkillDomainModel USkillModelBuilder::BuildDomainModel(const FSkillSlotDatabaseD
 	return DomainModel;
 }
 
-USkillSlot* USkillModelBuilder::BuildSkillSlotEntity(const FSkillDomainModel& DomainModel)
+FSkillSlotReplicationData USkillModelBuilder::BuildSkillSlotData(const FSkillDomainModel& DomainModel)
 {
-	USkillSlot* SkillSlot = NewObject<USkillSlot>();
+	FSkillSlotReplicationData SlotData;
 	
-	if (!SkillSlot)
-	{
-		UE_LOG(LogTemp, Error, TEXT("SkillModelBuilder: Failed to create USkillSlot"));
-		return nullptr;
-	}
+	// Domain Model에서 복제 데이터로 변환
+	SlotData.SlotIndex = DomainModel.SlotIndex;
+	SlotData.SkillId = DomainModel.SkillId;
+	SlotData.SlotKey = DomainModel.SlotKey;
+	SlotData.LastUsedTime = DomainModel.LastUsedTime;
 
-	// Domain Model ??Entity 변??(USkillSlot??public ?�드 직접 ?�정)
-	SkillSlot->SlotIndex = DomainModel.SlotIndex;
-	SkillSlot->SkillId = DomainModel.SkillId;
-	SkillSlot->SkillData = DomainModel.SkillDataAsset;
-	SkillSlot->LastUsedTime = DomainModel.LastUsedTime;
-	SkillSlot->SlotKey = DomainModel.SlotKey;
-
-	// Initialize 메서???�출
-	SkillSlot->Initialize(DomainModel.SlotIndex, DomainModel.SlotKey, DomainModel.SkillDataAsset);
-	
-	// SetSkillData 메서???�출 (SkillId ?�정)
+	// SkillDataAsset이 있으면 기본 정보 추가
 	if (DomainModel.SkillDataAsset)
 	{
-		SkillSlot->SetSkillData(DomainModel.SkillDataAsset, DomainModel.SkillId);
+		SlotData.SkillName = DomainModel.SkillDataAsset->DisplayName.ToString();
+		SlotData.SkillDescription = DomainModel.SkillDataAsset->Description.ToString();
+		SlotData.Cooldown = DomainModel.SkillDataAsset->CoolTime;
+	}
+	else
+	{
+		SlotData.SkillName.Empty();
+		SlotData.SkillDescription.Empty();
+		SlotData.Cooldown = 0.0f;
 	}
 
-	return SkillSlot;
+	return SlotData;
 }
 
 // ========================================================================
@@ -126,53 +126,53 @@ float USkillModelBuilder::CalculateScaledValue(float BaseValue, int32 Level)
 // EXTRACTION METHODS (Entity ??DTO)
 // ========================================================================
 
-FSkillSlotDatabaseDTO USkillModelBuilder::ExtractSlotDTO(const USkillSlot* SkillSlot)
+FSkillSlotDatabaseDTO USkillModelBuilder::ExtractSlotDTO(const FSkillSlotReplicationData& SlotData)
 {
 	FSkillSlotDatabaseDTO DTO;
 	
-	if (!SkillSlot)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("SkillModelBuilder: SkillSlot is null"));
-		return DTO;
-	}
-
-	// USkillSlot???�제 public ?�드 ?�용
-	DTO.SlotIndex = SkillSlot->SlotIndex;
-	DTO.SkillId = SkillSlot->SkillId; // SkillID ??SkillId
-	DTO.SkillLevel = 1; // SkillLevel ?�드가 ?�으므�?기본�?
-	DTO.LastUsedTime = SkillSlot->LastUsedTime;
-	DTO.SlotKey = SkillSlot->SlotKey;
+	// FSkillSlotReplicationData에서 DTO로 변환
+	DTO.SlotIndex = SlotData.SlotIndex;
+	DTO.SkillId = SlotData.SkillId;
+	DTO.SkillLevel = 1; // 기본값
+	DTO.LastUsedTime = SlotData.LastUsedTime;
+	DTO.SlotKey = SlotData.SlotKey;
 
 	return DTO;
 }
 
-FSkillDomainModel USkillModelBuilder::ExtractDomainModel(const USkillSlot* SkillSlot)
+FSkillDomainModel USkillModelBuilder::ExtractDomainModel(const FSkillSlotReplicationData& SlotData)
 {
 	FSkillDomainModel DomainModel;
 	
-	if (!SkillSlot)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("SkillModelBuilder: SkillSlot is null"));
-		return DomainModel;
-	}
-
-	// USkillSlot???�제 public ?�드 ?�용
-	DomainModel.SlotIndex = SkillSlot->SlotIndex;
-	DomainModel.SkillId = SkillSlot->SkillId; // SkillID ??SkillId
-	DomainModel.SkillLevel = 1; // 기본�?
-	DomainModel.LastUsedTime = SkillSlot->LastUsedTime;
-	DomainModel.SlotKey = SkillSlot->SlotKey;
-	DomainModel.bIsActive = !SkillSlot->IsEmpty(); // IsActive 메서?��? ?�으므�?IsEmpty()??반�?�??�용
-	DomainModel.SkillDataAsset = SkillSlot->SkillData;
+	// FSkillSlotReplicationData에서 DomainModel로 변환
+	DomainModel.SlotIndex = SlotData.SlotIndex;
+	DomainModel.SkillId = SlotData.SkillId;
+	DomainModel.SkillLevel = 1; // 기본값
+	DomainModel.LastUsedTime = SlotData.LastUsedTime;
+	DomainModel.SlotKey = SlotData.SlotKey;
+	DomainModel.bIsActive = !SlotData.IsEmpty();
 	
-	// Cooldown 계산
-	if (SkillSlot->SkillData)
-	{
-		DomainModel.RemainingCooldown = SkillSlot->GetRemainingCooldown(SkillSlot->SkillData->CoolTime);
-		DomainModel.bCanUse = !SkillSlot->IsOnCooldown(SkillSlot->SkillData->CoolTime);
-	}
+	// Cooldown 계산 (복제 데이터에서 직접 사용)
+	DomainModel.RemainingCooldown = CalculateRemainingCooldown(SlotData.LastUsedTime, SlotData.Cooldown);
+	DomainModel.bCanUse = !IsOnCooldown(SlotData.LastUsedTime, SlotData.Cooldown);
+
+	// SkillDataAsset은 LocalDataBaseLoader를 통해 재구성 필요
+	DomainModel.SkillDataAsset = nullptr; // 복제 데이터에서는 직접 포함하지 않음
 
 	return DomainModel;
+}
+
+// Helper methods for cooldown calculation
+bool USkillModelBuilder::IsOnCooldown(const FDateTime& LastUsedTime, float BaseCooltime) const
+{
+	if (BaseCooltime <= 0.0f || LastUsedTime <= FDateTime::MinValue())
+	{
+		return false;
+	}
+
+	FDateTime Now = FDateTime::Now();
+	double ElapsedSeconds = (Now - LastUsedTime).GetTotalSeconds();
+	return ElapsedSeconds < BaseCooltime;
 }
 
 // ========================================================================
@@ -211,20 +211,17 @@ TArray<FSkillDomainModel> USkillModelBuilder::BuildDomainModels(const TArray<FSk
 	return DomainModels;
 }
 
-TArray<USkillSlot*> USkillModelBuilder::BuildSkillSlotEntities(const TArray<FSkillDomainModel>& DomainModels)
+TArray<FSkillSlotReplicationData> USkillModelBuilder::BuildSkillSlotDataArray(const TArray<FSkillDomainModel>& DomainModels)
 {
-	TArray<USkillSlot*> SkillSlots;
+	TArray<FSkillSlotReplicationData> SkillSlotDataArray;
 	
 	for (const FSkillDomainModel& DomainModel : DomainModels)
 	{
-		USkillSlot* SkillSlot = BuildSkillSlotEntity(DomainModel);
-		if (SkillSlot)
-		{
-			SkillSlots.Add(SkillSlot);
-		}
+		FSkillSlotReplicationData SlotData = BuildSkillSlotData(DomainModel);
+		SkillSlotDataArray.Add(SlotData);
 	}
 
-	return SkillSlots;
+	return SkillSlotDataArray;
 }
 
 // ========================================================================
@@ -254,23 +251,17 @@ bool USkillModelBuilder::ValidateDomainModel(const FSkillDomainModel& DomainMode
 	return true;
 }
 
-bool USkillModelBuilder::ValidateSkillSlotEntity(const USkillSlot* SkillSlot, FString& OutErrorMessage)
+bool USkillModelBuilder::ValidateSkillSlotData(const FSkillSlotReplicationData& SlotData, FString& OutErrorMessage)
 {
-	if (!SkillSlot)
+	if (SlotData.SlotIndex < 0)
 	{
-		OutErrorMessage = TEXT("SkillSlot is null");
+		OutErrorMessage = TEXT("Invalid SlotIndex in SkillSlotReplicationData");
 		return false;
 	}
 
-	if (SkillSlot->SlotIndex < 0) // GetSlotIndex() ??SlotIndex
+	if (SlotData.SkillId <= 0)
 	{
-		OutErrorMessage = TEXT("Invalid SlotIndex in SkillSlot");
-		return false;
-	}
-
-	if (SkillSlot->SkillId <= 0) // GetSkillID() ??SkillId
-	{
-		OutErrorMessage = TEXT("Invalid SkillId in SkillSlot");
+		OutErrorMessage = TEXT("Invalid SkillId in SkillSlotReplicationData");
 		return false;
 	}
 

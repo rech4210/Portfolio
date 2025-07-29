@@ -89,12 +89,9 @@ void USkillSubsystem::RequestLoadPlayerSkills(TScriptInterface<IPlayerIdentityIn
 		return;
 	}
 
-	// 2. Transaction Boundary & Logging (App Layer responsibility)
 	UE_LOG(LogTemp, Log, TEXT("SkillSubsystem: Starting skill load transaction - Player: %s, UserId: %s"), 
 		*PlayerIdentity->GetPlayerGuid().ToString(), *UserId);
 
-	// 3. Domain Service Call (Delegate business logic)
-	// Note: Delegate binding is already done in Initialize() to prevent duplicate bindings
 	DomainService->LoadPlayerSkills(PlayerIdentity, UserId);
 }
 

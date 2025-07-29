@@ -84,7 +84,7 @@ void USkillSlotWidget::ApplySkillData(USkillDataAsset* NewData) {
 	SkillDataAsset = NewData;
 	CoolTime = NewData->CoolTime;
 	SkillImage->SetBrushFromTexture(NewData->Image);
-	SkillKeyText->SetText(FText::FromString(USkillHelper::GetKeyString(NewData->SkillSlotIndex)));
+	SkillKeyText->SetText(FText::FromString(NewData->SkillSlotKey));
 	SkillToolTipWidget = Cast<USkillToolTip>(NewData->Tooltip);
 	CooldownImage->SetVisibility(ESlateVisibility::Hidden);
 	CoolTimeText->SetVisibility(ESlateVisibility::Hidden);

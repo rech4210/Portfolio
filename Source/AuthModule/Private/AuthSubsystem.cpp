@@ -262,7 +262,6 @@ void UAuthSubsystem::SendRegistrationToAuthServer(const FAuthRequestDTO& Request
 	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("AuthSubsystem: Failed to send registration request"));
-		// BroadcastRegistrationResult(false, TEXT("Failed to connect to authentication server"));
 	}
 }
 
@@ -410,32 +409,25 @@ void UAuthSubsystem::OnAuthenticationResponse(FHttpRequestPtr Request, FHttpResp
 				LogSecurityEvent(TEXT("authentication_success"), 
 					FString::Printf(TEXT("UserId: %s"), *AuthResponse.UserId));
 
-				// Cache token for server connection
 				CacheTokenForUser(AuthResponse.UserId, AuthResponse.Token);
-
-				// Load game data for authenticated user
 				RequestConnectingServer(true, AuthResponse.UserId, RequestingController);
 				
-				// BroadcastAuthenticationResult(true, AuthResponse.Token, AuthResponse.UserId, RequestingController);
 			}
 			else
 			{
 				UE_LOG(LogTemp, Error, TEXT("AuthSubsystem: Failed to parse authentication response"));
 				LogSecurityEvent(TEXT("authentication_parse_error"), TEXT("Failed to parse successful response"));
-				// BroadcastAuthenticationResult(false, TEXT(""), TEXT(""), RequestingController);
 			}
 			break;
 		}
 		
 		case 400:
 		{
-			// Bad Request - missing or invalid fields (following app.js validation)
 			FString ErrorMessage = TEXT("Invalid request format");
 			ParseDetailedErrorMessage(ResponseBody, ErrorMessage);
 			
 			LogSecurityEvent(TEXT("authentication_bad_request"), 
 				FString::Printf(TEXT("Code: %d, Message: %s"), ResponseCode, *ErrorMessage));
-			// BroadcastAuthenticationResult(false, TEXT(""), TEXT(""), RequestingController);
 			break;
 		}
 		

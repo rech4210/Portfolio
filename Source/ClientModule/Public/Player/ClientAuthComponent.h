@@ -3,7 +3,7 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "Engine/Engine.h"
-#include "MyGame/Public/Shared/Interface/IClientComponentProvider.h"
+#include "GameSharedModule/Public/Interface/IClientComponentProvider.h"
 
 // Forward declarations
 class UAuthService;

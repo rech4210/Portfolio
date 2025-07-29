@@ -5,9 +5,66 @@
 #include "SkillDomain.h"
 #include "SkillSubsystem.h"
 #include "Engine/Engine.h"
+#include "Interface/IClientComponentProvider.h"
 #include "Mappers/SkillAssetMapper.h"
 #include "Mappers/SkillModelBuilder.h"
 #include "Net/UnrealNetwork.h"
+#include "GameFramework/PlayerState.h"
+#include "GameFramework/PlayerController.h"
+#include "GameSharedModule/Public/Interface/IClientComponentProvider.h"
+
+// ========================================================================
+// REPLICATION STRUCT IMPLEMENTATIONS
+// ========================================================================
+
+void FSkillSlotReplicationArray::PostReplicatedAdd(const TArrayView<int32>& AddedIndices, int32 FinalSize)
+{
+	if (Owner)
+	{
+		UE_LOG(LogTemp, Log, TEXT("SkillComponent: %d skill slots ADDED to replication (FinalSize: %d)"), 
+			AddedIndices.Num(), FinalSize);
+		
+		// 추가된 슬롯들에 대한 상세 정보 로그
+		for (int32 Index : AddedIndices)
+		{
+			if (Items.IsValidIndex(Index))
+			{
+				const FSkillSlotReplicationData& SlotData = Items[Index].SlotData;
+				UE_LOG(LogTemp, Log, TEXT("  - Added Slot[%d]: SkillId=%d, Name='%s'"), 
+					SlotData.SlotIndex, SlotData.SkillId, *SlotData.SkillName);
+			}
+		}
+	}
+}
+
+void FSkillSlotReplicationArray::PostReplicatedChange(const TArrayView<int32>& ChangedIndices, int32 FinalSize)
+{
+	if (Owner)
+	{
+		UE_LOG(LogTemp, Log, TEXT("SkillComponent: %d skill slots CHANGED in replication (FinalSize: %d)"), 
+			ChangedIndices.Num(), FinalSize);
+		
+		// 변경된 슬롯들에 대한 상세 정보 로그
+		for (int32 Index : ChangedIndices)
+		{
+			if (Items.IsValidIndex(Index))
+			{
+				const FSkillSlotReplicationData& SlotData = Items[Index].SlotData;
+				UE_LOG(LogTemp, Log, TEXT("  - Changed Slot[%d]: SkillId=%d, Name='%s'"), 
+					SlotData.SlotIndex, SlotData.SkillId, *SlotData.SkillName);
+			}
+		}
+	}
+}
+
+void FSkillSlotReplicationArray::PostReplicatedRemove(const TArrayView<int32>& RemovedIndices, int32 FinalSize)
+{
+	if (Owner)
+	{
+		UE_LOG(LogTemp, Log, TEXT("SkillComponent: %d skill slots REMOVED from replication (FinalSize: %d)"), 
+			RemovedIndices.Num(), FinalSize);
+	}
+}
 
 USkillComponent::USkillComponent()
 {
@@ -20,13 +77,26 @@ USkillComponent::USkillComponent()
 void USkillComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	DOREPLIFETIME(USkillComponent, SkillSlots);
+	
+	// SkillSlotsReplication FastArray를 복제 대상으로 등록
+	DOREPLIFETIME(USkillComponent, SkillSlotsReplication);
+	
+	UE_LOG(LogTemp, Log, TEXT("SkillComponent: Registered SkillSlotsReplication for replication"));
 }
 
 void USkillComponent::BeginPlay()
 {
 	Super::BeginPlay();
 	InitializeMappers();
+	
+	// FastArray Owner 설정
+	SkillSlotsReplication.SetOwner(this);
+	
+	// 서버에서 초기 슬롯 구조 생성 (빈 슬롯들)
+	if (GetOwner()->HasAuthority())
+	{
+		InitializeEmptySlots();
+	}
 }
 
 void USkillComponent::InitializeMappers()
@@ -54,27 +124,33 @@ bool USkillComponent::RegisterSkill(int32 SlotIndex, USkillDataAsset* SkillData)
 		return false;
 	}
 
-	// 기존 ?�롯 ?�장 ?�는 ?�성
-	while (SkillSlots.Num() <= SlotIndex)
+	// 필요한 만큼 빈 슬롯 생성
+	while (SkillSlotsReplication.Items.Num() <= SlotIndex)
 	{
-		USkillSlot* NewSlot = NewObject<USkillSlot>(this);
-		int32 NewSlotIndex = SkillSlots.Num();
+		FSkillSlotReplicationData NewSlotData;
+		int32 NewSlotIndex = SkillSlotsReplication.Items.Num();
 		FString SlotKey = FString::Printf(TEXT("Slot_%d"), NewSlotIndex);
-		NewSlot->Initialize(NewSlotIndex, SlotKey, nullptr);
-		SkillSlots.Add(NewSlot);
+		NewSlotData.Initialize(NewSlotIndex, SlotKey, nullptr);
+		
+		FSkillSlotReplicationItem NewItem(NewSlotData);
+		SkillSlotsReplication.Items.Add(NewItem);
 	}
 
-	// ?�롯???�킬 ?�정
-	USkillSlot* TargetSlot = SkillSlots[SlotIndex];
-	TargetSlot->SetSkillData(SkillData, SkillData->SkillID);
+	// 해당 슬롯에 스킬 등록
+	FSkillSlotReplicationData* TargetSlot = GetMutableSkillSlotDataByIndex(SlotIndex);
+	if (TargetSlot)
+	{
+		TargetSlot->SetSkillData(SkillData, SkillData->SkillID);
+	}
 
 	UE_LOG(LogTemp, Log, TEXT("SkillComponent: Registered skill '%s' to SlotIndex %d"), 
 		*SkillData->GetName(), SlotIndex);
 
-	// Domain Event 발행
 	OnSkillRegistered.Broadcast(SlotIndex);
 	OnSkillsChanged.Broadcast();
 	NotifySkillStateChanged();
+	
+	MarkSlotForReplication(SlotIndex);
 
 	return true;
 }
@@ -87,16 +163,17 @@ void USkillComponent::UnregisterSkill(int32 SlotIndex)
 		return;
 	}
 
-	USkillSlot* TargetSlot = SkillSlots[SlotIndex];
+	FSkillSlotReplicationData* TargetSlot = GetMutableSkillSlotDataByIndex(SlotIndex);
 	if (TargetSlot)
 	{
 		TargetSlot->ClearSkill();
 		UE_LOG(LogTemp, Log, TEXT("SkillComponent: Unregistered skill from SlotIndex %d"), SlotIndex);
 
-		// Domain Event 발행
 		OnSkillUnregistered.Broadcast(SlotIndex);
 		OnSkillsChanged.Broadcast();
 		NotifySkillStateChanged();
+		
+		MarkSlotForReplication(SlotIndex);
 	}
 }
 
@@ -111,45 +188,31 @@ void USkillComponent::SwapSkills(int32 SlotIndexA, int32 SlotIndexB)
 
 	if (SlotIndexA == SlotIndexB) return;
 
-	USkillSlot* SlotA = SkillSlots[SlotIndexA];
-	USkillSlot* SlotB = SkillSlots[SlotIndexB];
+	FSkillSlotReplicationData* SlotA = GetMutableSkillSlotDataByIndex(SlotIndexA);
+	FSkillSlotReplicationData* SlotB = GetMutableSkillSlotDataByIndex(SlotIndexB);
 
 	if (SlotA && SlotB)
 	{
-		// ?�시�?SlotA???�이???�??
+		// 스킬 데이터 교환
 		USkillDataAsset* TempSkillData = SlotA->SkillData;
 		int32 TempSkillId = SlotA->SkillId;
+		FString TempSkillName = SlotA->SkillName;
+		FString TempSkillDescription = SlotA->SkillDescription;
+		float TempCooldown = SlotA->Cooldown;
 
-		// SlotB???�이?��? SlotA�?복사
 		SlotA->SetSkillData(SlotB->SkillData, SlotB->SkillId);
-		
-		// ?�시 ?�이?��? SlotB�?복사
 		SlotB->SetSkillData(TempSkillData, TempSkillId);
 
 		UE_LOG(LogTemp, Log, TEXT("SkillComponent: Swapped skills between SlotIndex %d and %d"), 
 			SlotIndexA, SlotIndexB);
 
-		// Domain Event 발행
 		OnSkillsSwapped.Broadcast(SlotIndexA, SlotIndexB);
 		OnSkillsChanged.Broadcast();
 		NotifySkillStateChanged();
+		
+		MarkSlotForReplication(SlotIndexA);
+		MarkSlotForReplication(SlotIndexB);
 	}
-}
-
-/*Not Used*/
-void USkillComponent::Server_SetSkillSlots(const TArray<USkillSlot*>& InSkillSlots)
-{
-	SkillSlots.Empty();
-	for (USkillSlot* Slot : InSkillSlots)
-	{
-		if (Slot)
-		{
-			SkillSlots.Add(Slot);
-		}
-	}
-	
-	OnSkillsChanged.Broadcast();
-	NotifySkillStateChanged();
 }
 
 // ========================================================================
@@ -170,7 +233,6 @@ bool USkillComponent::CanRegisterSkill(int32 SlotIndex, USkillDataAsset* SkillDa
 		return false;
 	}
 
-	// ?��? 같�? ?�킬???�록?�어 ?�는지 ?�인
 	if (HasSkill(SkillData))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("SkillComponent: Skill '%s' is already registered"), 
@@ -183,41 +245,24 @@ bool USkillComponent::CanRegisterSkill(int32 SlotIndex, USkillDataAsset* SkillDa
 
 bool USkillComponent::CanUnregisterSkill(int32 SlotIndex) const
 {
-	if (SlotIndex < 0 || SlotIndex >= SkillSlots.Num())
+	if (SlotIndex < 0 || SlotIndex >= MaxSkillSlots)
 	{
 		return false;
 	}
 
-	const USkillSlot* TargetSlot = SkillSlots[SlotIndex];
+	const FSkillSlotReplicationData* TargetSlot = GetSkillSlotDataByIndex(SlotIndex);
 	return TargetSlot && !TargetSlot->IsEmpty();
 }
 
 bool USkillComponent::CanSwapSkills(int32 SlotIndexA, int32 SlotIndexB) const
 {
-	if (SlotIndexA < 0 || SlotIndexA >= SkillSlots.Num() ||
-		SlotIndexB < 0 || SlotIndexB >= SkillSlots.Num())
+	if (SlotIndexA < 0 || SlotIndexA >= MaxSkillSlots ||
+		SlotIndexB < 0 || SlotIndexB >= MaxSkillSlots)
 	{
 		return false;
 	}
 
 	return SlotIndexA != SlotIndexB;
-}
-
-bool USkillComponent::CanUpdateCooldown(int32 SlotIndex, const FDateTime& LastUsedTime, float RemainingCooldown) const
-{
-	if (SlotIndex < 0 || SlotIndex >= SkillSlots.Num())
-	{
-		return false;
-	}
-
-	const USkillSlot* TargetSlot = SkillSlots[SlotIndex];
-	return TargetSlot && !TargetSlot->IsEmpty();
-}
-
-bool USkillComponent::CanSaveSkills(const FSkillDomain& SkillData) const
-{
-	// ?�메???�이???�효??검�?
-	return SkillData.SkillSlots.Num() <= MaxSkillSlots;
 }
 
 bool USkillComponent::HasSkill(USkillDataAsset* SkillData) const
@@ -227,9 +272,9 @@ bool USkillComponent::HasSkill(USkillDataAsset* SkillData) const
 		return false;
 	}
 
-	for (const USkillSlot* Slot : SkillSlots)
+	for (const FSkillSlotReplicationItem& Item : SkillSlotsReplication.Items)
 	{
-		if (Slot && Slot->SkillData == SkillData)
+		if (Item.SlotData.SkillData == SkillData)
 		{
 			return true;
 		}
@@ -238,82 +283,59 @@ bool USkillComponent::HasSkill(USkillDataAsset* SkillData) const
 	return false;
 }
 
-bool USkillComponent::HasAvailableSlot() const
-{
-	return SkillSlots.Num() < MaxSkillSlots || GetAvailableSlotIndex() != -1;
-}
-
-int32 USkillComponent::GetAvailableSlotIndex() const
-{
-	for (int32 i = 0; i < SkillSlots.Num(); ++i)
-	{
-		if (SkillSlots[i] && SkillSlots[i]->IsEmpty())
-		{
-			return i;
-		}
-	}
-
-	// ?�로???�롯??추�??????�는 경우
-	if (SkillSlots.Num() < MaxSkillSlots)
-	{
-		return SkillSlots.Num();
-	}
-
-	return -1;
-}
-
 // ========================================================================
 // QUERY METHODS - READ-ONLY ACCESS
 // ========================================================================
 
-USkillSlot* USkillComponent::GetSkillSlotByIndex(int32 SlotIndex) const
+const FSkillSlotReplicationData* USkillComponent::GetSkillSlotDataByIndex(int32 SlotIndex) const
 {
-	if (SlotIndex >= 0 && SlotIndex < SkillSlots.Num())
+	// 복제 데이터에서 해당 슬롯 찾기
+	for (const FSkillSlotReplicationItem& Item : SkillSlotsReplication.Items)
 	{
-		return SkillSlots[SlotIndex];
+		if (Item.SlotData.SlotIndex == SlotIndex)
+		{
+			return &Item.SlotData;
+		}
 	}
 	return nullptr;
 }
 
-USkillSlot* USkillComponent::GetSkillSlotByKeyAndIndex(const FString& SlotKey, int32 SlotIndex) const
+FSkillSlotReplicationData* USkillComponent::GetMutableSkillSlotDataByIndex(int32 SlotIndex)
 {
-	USkillSlot* Slot = GetSkillSlotByIndex(SlotIndex);
-	if (Slot && Slot->SlotKey == SlotKey)
+	// 복제 데이터에서 해당 슬롯 찾기 (수정 가능)
+	for (FSkillSlotReplicationItem& Item : SkillSlotsReplication.Items)
 	{
-		return Slot;
+		if (Item.SlotData.SlotIndex == SlotIndex)
+		{
+			return &Item.SlotData;
+		}
 	}
 	return nullptr;
 }
 
-// ========================================================================
-// 3-LAYER MAPPING INTEGRATION METHODS (Updated Implementation)
-// ========================================================================
-
-void USkillComponent::LoadSkillSlotsFromDatabase(int32 UserId, const FString& SlotKey)
+const FSkillSlotReplicationData* USkillComponent::GetSkillSlotDataByKeyAndIndex(const FString& SlotKey, int32 SlotIndex) const
 {
-	if (!ValidateMappers())
+	const FSkillSlotReplicationData* SlotData = GetSkillSlotDataByIndex(SlotIndex);
+	if (SlotData && SlotData->SlotKey == SlotKey)
 	{
-		UE_LOG(LogTemp, Error, TEXT("SkillComponent: Mappers not initialized"));
-		return;
+		return SlotData;
 	}
-
-	// TODO: Implement through SkillSubsystem coordination
-	// This should be called by SkillDomainService, not directly
-	UE_LOG(LogTemp, Warning, TEXT("SkillComponent::LoadSkillSlotsFromDatabase should be called through SkillSubsystem"));
+	return nullptr;
 }
 
-void USkillComponent::SaveSkillSlotsToDatabase(int32 UserId)
+TArray<FSkillSlotReplicationData> USkillComponent::GetAllSkillSlotsData() const
 {
-	if (!ValidateMappers())
+	TArray<FSkillSlotReplicationData> Result;
+	for (const FSkillSlotReplicationItem& Item : SkillSlotsReplication.Items)
 	{
-		UE_LOG(LogTemp, Error, TEXT("SkillComponent: Mappers not initialized"));
-		return;
+		Result.Add(Item.SlotData);
 	}
-
-	// TODO: Implement through SkillSubsystem coordination
-	// This should be called by SkillDomainService, not directly
-	UE_LOG(LogTemp, Warning, TEXT("SkillComponent::SaveSkillSlotsToDatabase should be called through SkillSubsystem"));
+	return Result;
 }
+
+// ========================================================================
+// 3-LAYER MAPPING INTEGRATION METHODS
+// ========================================================================
 
 void USkillComponent::BuildSkillSlotsFromMappers(
 	const TArray<FSkillSlotDatabaseDTO>& SlotDTOs,
@@ -325,11 +347,10 @@ void USkillComponent::BuildSkillSlotsFromMappers(
 		return;
 	}
 
-	SkillSlots.Empty();
+	SkillSlotsReplication.Items.Empty();
 
 	for (const FSkillSlotDatabaseDTO& SlotDTO : SlotDTOs)
 	{
-		// AssetMapper�??�해 ?�당?�는 SkillDataAsset 찾기
 		USkillDataAsset* MatchingAsset = nullptr;
 		for (USkillDataAsset* Asset : SkillDataAssets)
 		{
@@ -340,28 +361,27 @@ void USkillComponent::BuildSkillSlotsFromMappers(
 			}
 		}
 
-		// ModelBuilder�??�해 Domain Model???�성?�고 USkillSlot?�로 변??
 		if (MatchingAsset && ModelBuilder.GetInterface())
 		{
 			FSkillDomainModel DomainModel = ModelBuilder.GetInterface()->BuildDomainModel(SlotDTO, MatchingAsset);
-			USkillSlot* NewSlot = ModelBuilder.GetInterface()->BuildSkillSlotEntity(DomainModel);
-			if (NewSlot)
+			FSkillSlotReplicationData NewSlotData = ModelBuilder.GetInterface()->BuildSkillSlotData(DomainModel);
+			
+			// 필요한 만큼 빈 슬롯 생성
+			while (SkillSlotsReplication.Items.Num() <= SlotDTO.SlotIndex)
 			{
-				// ?�롯 배열 ?�기 ?�장
-				while (SkillSlots.Num() <= SlotDTO.SlotIndex)
-				{
-					USkillSlot* EmptySlot = NewObject<USkillSlot>(this);
-					int32 EmptySlotIndex = SkillSlots.Num();
-					FString EmptySlotKey = FString::Printf(TEXT("Slot_%d"), EmptySlotIndex);
-					EmptySlot->Initialize(EmptySlotIndex, EmptySlotKey, nullptr);
-					SkillSlots.Add(EmptySlot);
-				}
+				FSkillSlotReplicationData EmptySlotData;
+				int32 EmptySlotIndex = SkillSlotsReplication.Items.Num();
+				FString EmptySlotKey = FString::Printf(TEXT("Slot_%d"), EmptySlotIndex);
+				EmptySlotData.Initialize(EmptySlotIndex, EmptySlotKey, nullptr);
 				
-				// ?�확???�덱?�에 ?�롯 ?�정
-				if (SlotDTO.SlotIndex >= 0 && SlotDTO.SlotIndex < SkillSlots.Num())
-				{
-					SkillSlots[SlotDTO.SlotIndex] = NewSlot;
-				}
+				FSkillSlotReplicationItem EmptyItem(EmptySlotData);
+				SkillSlotsReplication.Items.Add(EmptyItem);
+			}
+			
+			if (SlotDTO.SlotIndex >= 0 && SlotDTO.SlotIndex < SkillSlotsReplication.Items.Num())
+			{
+				NewSlotData.SkillData = MatchingAsset;
+				SkillSlotsReplication.Items[SlotDTO.SlotIndex].SlotData = NewSlotData;
 			}
 		}
 		else
@@ -372,6 +392,8 @@ void USkillComponent::BuildSkillSlotsFromMappers(
 
 	OnSkillsChanged.Broadcast();
 	NotifySkillStateChanged();
+	
+	SyncAllSlotsToReplication();
 }
 
 TArray<FSkillSlotDatabaseDTO> USkillComponent::ExtractDTOsFromSkillSlots(const FString& UserId) const
@@ -384,13 +406,13 @@ TArray<FSkillSlotDatabaseDTO> USkillComponent::ExtractDTOsFromSkillSlots(const F
 		return DTOs;
 	}
 
-	for (int32 i = 0; i < SkillSlots.Num(); ++i)
+	for (const FSkillSlotReplicationItem& Item : SkillSlotsReplication.Items)
 	{
-		const USkillSlot* Slot = SkillSlots[i];
-		if (Slot && !Slot->IsEmpty() && ModelBuilder.GetInterface())
+		const FSkillSlotReplicationData& SlotData = Item.SlotData;
+		if (!SlotData.IsEmpty() && ModelBuilder.GetInterface())
 		{
-			FSkillSlotDatabaseDTO DTO = ModelBuilder.GetInterface()->ExtractSlotDTO(Slot);
-			DTO.UserId = UserId; // UserId�?그�?�??�당
+			FSkillSlotDatabaseDTO DTO = ModelBuilder.GetInterface()->ExtractSlotDTO(SlotData);
+			DTO.UserId = UserId;
 			DTOs.Add(DTO);
 		}
 	}
@@ -399,81 +421,136 @@ TArray<FSkillSlotDatabaseDTO> USkillComponent::ExtractDTOsFromSkillSlots(const F
 }
 
 // ========================================================================
-// LEGACY DOMAIN INTEGRATION METHODS - DEPRECATED
-// ========================================================================
-
-UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: BuildSkillSlotsFromMappers() instead")
-void USkillComponent::SyncWithDomain(const FSkillDomain& SkillData)
-{
-	UE_LOG(LogTemp, Warning, TEXT("SkillComponent::SyncWithDomain is deprecated. Use 3-Layer Mapping Architecture instead."));
-	
-	// ?�거???�환?�을 ?�한 ?�시 구현
-	SkillSlots.Empty();
-
-	for (const FSkillSlotDTO& SlotDTO : SkillData.SkillSlots)
-	{
-		USkillSlot* NewSlot = NewObject<USkillSlot>(this);
-		
-		// 기본 초기??
-		FString SlotKey = FString::Printf(TEXT("Slot_%d"), SlotDTO.SlotIndex);
-		NewSlot->Initialize(SlotDTO.SlotIndex, SlotKey, nullptr);
-		
-		// ?�거??DTO?�서 기본 ?�보�??�정
-		NewSlot->SlotIndex = SlotDTO.SlotIndex;
-		NewSlot->SkillId = SlotDTO.SkillID;
-		NewSlot->LastUsedTime = SlotDTO.LastUsedTime;
-		
-		SkillSlots.Add(NewSlot);
-	}
-
-	OnSkillsChanged.Broadcast();
-	NotifySkillStateChanged();
-}
-
-UE_DEPRECATED(5.0, "Use 3-Layer Mapping Architecture: ExtractDTOsFromSkillSlots() instead")
-FSkillDomain USkillComponent::ExtractDomain() const
-{
-	UE_LOG(LogTemp, Warning, TEXT("SkillComponent::ExtractDomain is deprecated. Use 3-Layer Mapping Architecture instead."));
-	
-	FSkillDomain DomainData;
-	DomainData.PlayerId = FGuid(); // TODO: Get actual player ID
-
-	for (const USkillSlot* Slot : SkillSlots)
-	{
-		if (Slot && !Slot->IsEmpty())
-		{
-			FSkillSlotDTO SlotDTO;
-			SlotDTO.SlotIndex = Slot->SlotIndex;
-			SlotDTO.SkillID = Slot->SkillId;
-			SlotDTO.LastUsedTime = Slot->LastUsedTime;
-			SlotDTO.bIsActive = true;
-			SlotDTO.RemainingCooldown = 0.0f; // 계산??값이 ?�요?�면 별도 계산 ?�요
-			
-			DomainData.SkillSlots.Add(SlotDTO);
-		}
-	}
-
-	return DomainData;
-}
-
-// ========================================================================
 // REPLICATION AND NOTIFICATION
 // ========================================================================
 
-void USkillComponent::OnRep_SkillSlots()
+// ========================================================================
+// SKILL REPLICATION METHODS
+// ========================================================================
+
+void USkillComponent::OnRep_SkillSlotsReplication()
 {
-	OnSkillsChanged.Broadcast();
+	UE_LOG(LogTemp, Log, TEXT("SkillComponent: UI replication data updated with %d items"), 
+		SkillSlotsReplication.Items.Num());
+	
+	// 클라이언트에서만 UI 업데이트 처리
+	if (GetOwner()->HasAuthority())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SkillComponent: OnRep called on server - this should not happen"));
+		return;
+	}
+
+	// 임시 skill slot local 구성
+	
+
+	// PlayerState → PlayerController → UIManagerSubsystem → ClientUIComponent 체인으로 처리
+	if (APlayerState* OwnerPlayerState = Cast<APlayerState>(GetOwner()))
+	{
+		if (APlayerController* PC = OwnerPlayerState->GetPlayerController())
+		{
+			// IClientManagerInterface를 통한 UI 업데이트 체인 실행
+			if (IClientManagerInterface* ClientManager = Cast<IClientManagerInterface>(PC))
+			{
+				ClientManager->SkillHUDReplication(SkillSlotsReplication);
+				UE_LOG(LogTemp, Log, TEXT("SkillComponent: Successfully triggered UI update chain through PlayerController"));
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("SkillComponent: PlayerController does not implement IClientManagerInterface"));
+			}
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("SkillComponent: Could not get PlayerController from PlayerState"));
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SkillComponent: Owner is not a PlayerState"));
+	}
+	
+	// 기존 상태 변경 알림은 유지 (안전한 로컬 처리)
 	NotifySkillStateChanged();
+}
+
+void USkillComponent::MarkSlotForReplication(int32 SlotIndex)
+{
+	// 서버에서만 복제 시스템 업데이트
+	if (!GetOwner()->HasAuthority()) 
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SkillComponent: MarkSlotForReplication called on client. SlotIndex: %d"), SlotIndex);
+		return;
+	}
+	
+	if (SlotIndex < 0 || SlotIndex >= MaxSkillSlots) 
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SkillComponent: Invalid SlotIndex %d for replication"), SlotIndex);
+		return;
+	}
+	
+	// 해당 슬롯 찾기 및 더티 마킹
+	for (int32 i = 0; i < SkillSlotsReplication.Items.Num(); ++i)
+	{
+		if (SkillSlotsReplication.Items[i].SlotData.SlotIndex == SlotIndex)
+		{
+			SkillSlotsReplication.MarkItemDirty(SkillSlotsReplication.Items[i]);
+			UE_LOG(LogTemp, Log, TEXT("SkillComponent: Marked slot %d for replication (SkillId: %d)"), 
+				SlotIndex, SkillSlotsReplication.Items[i].SlotData.SkillId);
+			return;
+		}
+	}
+	
+	UE_LOG(LogTemp, Warning, TEXT("SkillComponent: Slot %d not found for replication marking"), SlotIndex);
+}
+
+void USkillComponent::SyncAllSlotsToReplication()
+{
+	// 서버에서만 복제 시스템 업데이트
+	if (!GetOwner()->HasAuthority()) 
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SkillComponent: SyncAllSlotsToReplication called on client"));
+		return;
+	}
+	
+	// FSkillSlotReplicationData가 이미 주 데이터 저장소이므로 별도 동기화 불필요
+	// 모든 아이템을 더티로 마킹하여 네트워크 전송 보장
+	for (auto& Item : SkillSlotsReplication.Items)
+	{
+		SkillSlotsReplication.MarkItemDirty(Item);
+	}
+	
+	// 배열 전체가 변경되었음을 표시
+	SkillSlotsReplication.MarkArrayDirty();
+	
+	UE_LOG(LogTemp, Log, TEXT("SkillComponent: Synced %d slots to replication system"), 
+		SkillSlotsReplication.Items.Num());
 }
 
 void USkillComponent::NotifySkillStateChanged()
 {
-	// TArray<USkillSlot*> ?�태�?변?�하???�벤??발행
+	// 임시 빈 배열 - 이벤트 시그니처를 나중에 FSkillSlotReplicationData로 변경해야 함
 	TArray<USkillSlot*> SlotArray;
-	for (USkillSlot* Slot : SkillSlots)
-	{
-		SlotArray.Add(Slot);
-	}
 	
 	OnSkillStateChanged.Broadcast(SlotArray);
+}
+
+void USkillComponent::InitializeEmptySlots()
+{
+	if (!GetOwner()->HasAuthority()) return;
+	
+	// MaxSkillSlots 만큼 빈 슬롯 생성
+	for (int32 i = SkillSlotsReplication.Items.Num(); i < MaxSkillSlots; ++i)
+	{
+		FSkillSlotReplicationData NewSlotData;
+		FString SlotKey = FString::Printf(TEXT("Slot_%d"), i);
+		NewSlotData.Initialize(i, SlotKey, nullptr);
+		
+		FSkillSlotReplicationItem NewItem(NewSlotData);
+		SkillSlotsReplication.Items.Add(NewItem);
+	}
+	
+	// 모든 빈 슬롯을 복제 시스템에 동기화
+	SyncAllSlotsToReplication();
+	
+	UE_LOG(LogTemp, Log, TEXT("SkillComponent: Initialized %d empty skill slots"), MaxSkillSlots);
 }

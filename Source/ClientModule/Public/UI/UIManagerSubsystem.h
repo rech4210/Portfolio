@@ -5,7 +5,7 @@
 #include "Blueprint/UserWidget.h"
 #include "Engine/World.h"
 #include "Interface/UISubsystemInterface.h"
-#include "MyGame/Public/Shared/Interface/IClientComponentProvider.h"
+#include "GameSharedModule/Public/Interface/IClientComponentProvider.h"
 #include "UIManagerSubsystem.generated.h"
 
 class AUIConfigCacheActor;
@@ -60,7 +60,7 @@ public:
 	// ============================================================================
 	virtual void RegistClientComponent(UActorComponent* Component) override;
 	
-	virtual void InitializeUI(const USkillComponent* SkillComponent) override;
+	virtual void InitializeUI() override;
 	virtual void ProcessRegistration(const FString& Username, const FString& Password) override;
 	virtual void ProcessLogin(const FString& Username, const FString& Password) override;
 	virtual void HandleRegistrationResult(bool bSuccess, const FString& Message) override;
@@ -69,7 +69,7 @@ public:
 	virtual void ProcessMouseOverDetection() override;
 	virtual void NotifyStateChanged() override;
 	virtual void ProcessBossData(const FBossDataStruct& BossData) override;
-	virtual void ProcessSkillData(const USkillComponent* SkillComponent) override;
+	virtual void SkillHUDReplication(const struct FSkillSlotReplicationArray& SkillSlotsReplication) override;
 
 protected:
 

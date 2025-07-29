@@ -9,15 +9,16 @@
 #include "GameSharedModule/Public/Enum/ESkillType.h"
 #include "Services/SkillCastingService.h"
 #include "Shared/GAS/GGwaAbilitySystemComponent.h"
-#include "Shared/Player/GGwaPlayerController.h"
 #include "Shared/Player/Component/PlayerReactionComponent.h"
 #include "InputMappingContext.h"
+#include "Net/UnrealNetwork.h"
 #include "SkillModule/Public/Data/AbilityInputID.h"
-#include "Shared/Player/Component/UPlayerStateComponent.h"
 
 AGGwaCharacter::AGGwaCharacter() {
 	ReactionComponent = CreateDefaultSubobject<UPlayerReactionComponent>("ReactionComponent");
-	SkillCastingService = NewObject<USkillCastingService>(this, "SkillCastingService");
+	SkillCastingService = CreateDefaultSubobject<USkillCastingService>("SkillCastingService");
+	bUseControllerRotationYaw = false;
+	GetCharacterMovement()->bOrientRotationToMovement = true;
 }
 
 UAbilitySystemComponent* AGGwaCharacter::GetAbilitySystemComponent() const {
@@ -27,22 +28,22 @@ UAbilitySystemComponent* AGGwaCharacter::GetAbilitySystemComponent() const {
 void AGGwaCharacter::PossessedBy(AController* NewController) {
 	Super::PossessedBy(NewController);
 	InitASC();
+	
 	if (ASC && HasAuthority()) {
+		FGameplayAbilitySpec MoveSpec(MoveAbility, 1, static_cast<int32>(EAbilityInputID::Move), this);
+		ASC->GiveAbility(MoveSpec);
 		for (int32 i = 0; i < SkillAbilities.Num(); ++i){
 			if (SkillAbilities[i]){
-				//skillrepo 기반?�로 초기???�행?�야 ?? ?�킬 ?�록 변경시 ?�적?�로 Ability???�록 ?�용??변경시켜줘?�한??
 				FGameplayAbilitySpec Spec(SkillAbilities[i], 1, static_cast<int32>(EAbilityInputID::Skill1) + i, this);
 				ASC->GiveAbility(Spec);
 			}
 		}
 
-		for (const FGameplayAbilitySpec& Spec : ASC->GetActivatableAbilities()){
-			UE_LOG(LogTemp, Warning, TEXT("Ability: %s | InputID: %d"),
-				*GetNameSafe(Spec.Ability), Spec.InputID);
-		}
+		UE_LOG(LogTemp, Warning, TEXT("=== AGGwaCharacter::PossessedBy DEBUG ==="));
 		ASC->RefreshAbilityActorInfo();
 	}
 	Cast<AGGwaPlayerState>(GetPlayerState())->InitPlayerState();
+
 }
 
 void AGGwaCharacter::OnRep_PlayerState() {
@@ -51,23 +52,23 @@ void AGGwaCharacter::OnRep_PlayerState() {
 	
 	UE_LOG(LogTemp, Warning, TEXT("=== AGGwaCharacter::OnRep_PlayerState DEBUG ==="));
 	UE_LOG(LogTemp, Warning, TEXT("Character: %p | PlayerState: %p"), this, GetPlayerState());
-	
-	// UI initialization moved to GameMode::PreLogin
-	// Server will handle UI initialization through PlayerController interface
-	UE_LOG(LogTemp, Log, TEXT("AGGwaCharacter::OnRep_PlayerState - UI initialization handled by server"));
-	
 	Cast<AGGwaPlayerState>(GetPlayerState())->InitPlayerState();
-	// Cast<AGGwaPlayerController>(GetController())->InitializeClientComponent();
 }
-
 
 void AGGwaCharacter::InitASC() {
 	if (AGGwaPlayerState * State = GetPlayerState<AGGwaPlayerState>(); nullptr != State) {
 		ASC = Cast<UGGwaAbilitySystemComponent>(State->GetAbilitySystemComponent());
 		if (ASC) {
-			// ASC???�결 ?�보�?부?? ASC??owner, Replicated 객체�?지??
 			ASC->InitAbilityActorInfo(State, this);
 		}
+	}
+}
+
+void AGGwaCharacter::PlayerMove() {
+	const FGameplayAbilitySpecHandle& AbilitySpec = ASC->FindAbilitySpecFromClass(MoveAbility)->Handle;
+	if (AbilitySpec.IsValid())
+	{
+		bool bIsActivated = ASC->TryActivateAbility(AbilitySpec,true);
 	}
 }
 
@@ -75,49 +76,46 @@ void AGGwaCharacter::PostInitializeComponents() {
 	Super::PostInitializeComponents();
 }
 
-
+// 1. Server beginplay 시점에 PC가 null이라 아래 로직이 수행되지 않음.
+// 2. Client beginplay 가 호출되지 않음.
 void AGGwaCharacter::BeginPlay() {
 	Super::BeginPlay();
+}
+
+void AGGwaCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent){
+	Super::SetupPlayerInputComponent(PlayerInputComponent);
+
 	if (APlayerController * PC = Cast<APlayerController>(GetController()); nullptr != PC) {
 		UEnhancedInputLocalPlayerSubsystem * Subsystem = PC->GetLocalPlayer()->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>();
 		if (MappingContext) {
 			Subsystem->AddMappingContext(MappingContext, 0);
 		}
 	}
-	bUseControllerRotationYaw = false;
-	GetCharacterMovement()->bOrientRotationToMovement = true;
-}
-
-
-/**
-	 * ?�재 구조:
-	 * - �??�력 ?�션(SkillActions[i])?� ?�롯 ?�덱??i)?� ?�결??
-	 * - ?�롯?�는 고정??GA가 ?�당?�어 ?�으�? ?�당 ?�롯??GA�??�행
-	 * 
-	 * 개선 ?�이?�어:
-	 * - ?�력 ?�마???�롯 ?�덱?��? ?�닌 "GA�??�유???�브?�트"�?직접 ?�결
-	 * - ???�력 ?? ?�재 ?�착??무기/?�비/?�브?�트?�서 GA�?추출?�여 ?�행
-	 * - ?�비 변�??? ?�당 ?�에 ?�결???�브?�트�?교체?�면 ?�동?�로 ?�력??바뀌도�??�계 가??
-*/
-
-
-// TODO: ?�킬 Input ?�적 바인??고려, ?�킬 변경시, Repo�?부?�의 ?�킬 ?�정 -> ?�레?�어???�태 ?�기??EIC, GiveAbility
-void AGGwaCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent){
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
+	
+	UE_LOG(LogTemp, Warning, TEXT("=== SetupPlayerInputComponent DEBUG ==="));
+	UE_LOG(LogTemp, Warning, TEXT("PlayerInputComponent: %p | IsLocallyControlled: %s"), 
+		PlayerInputComponent, IsLocallyControlled() ? TEXT("YES") : TEXT("NO"));
+	
 	if (UEnhancedInputComponent* EIC = Cast<UEnhancedInputComponent>(PlayerInputComponent)){
+		UE_LOG(LogTemp, Warning, TEXT("Enhanced Input Component found"));
+		UE_LOG(LogTemp, Warning, TEXT("SkillActions.Num(): %d | ASC: %p"), SkillActions.Num(), ASC.Get());
+
+		EIC->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AGGwaCharacter::PlayerMove);
 		for (int32 i = 0; i < SkillActions.Num(); ++i){
-			// ?�적?�로 ?��? 변경시 무효???? ?�정?�??
-			EIC->BindAction(SkillActions[i], ETriggerEvent::Triggered, this, &AGGwaCharacter::OnLocalSkillInput, i);
-			for (const FGameplayAbilitySpec& Spec : ASC->GetActivatableAbilities()){
-				UE_LOG(LogTemp, Warning, TEXT("Ability: %s"), *GetNameSafe(Spec.Ability));
-				if (IsLocallyControlled()) UE_LOG(LogTemp, Warning, TEXT("Client %s: Ability: %s"),*GetNameSafe(GetController()),*GetNameSafe(Spec.Ability));
+			if (SkillActions[i]) {
+				// Enhanced Input Action 바인딩
+				EIC->BindAction(SkillActions[i], ETriggerEvent::Triggered, this, &AGGwaCharacter::OnLocalSkillInput, i);
+				UE_LOG(LogTemp, Warning, TEXT("Bound SkillAction[%d]: %s"), i, *SkillActions[i]->GetName());
+			} else {
+				UE_LOG(LogTemp, Error, TEXT("SkillActions[%d] is null!"), i);
 			}
 		}
 	}
+	else {
+		UE_LOG(LogTemp, Error, TEXT("Failed to cast to UEnhancedInputComponent"));
+	}
 }
 
-
-// ?�레?�어가 ?�킬 UI???�래그하???�킬???�록 ->  UI???�덱??�??��? 가?�옴 -> UI<->SkillSlot ?�방??매핑 -> ?�킬 ?�용 (UI RPC -> TrySkill[SkillSlot]) -> 결과 반환
 void AGGwaCharacter::CustomKeySet(UInputAction* Action, FKey CustomKey) {
 
 	// 0. Check base logic ex) exist...
@@ -128,17 +126,26 @@ void AGGwaCharacter::CustomKeySet(UInputAction* Action, FKey CustomKey) {
 	// SkillComponent->
 }
 
-/* Change Custom Skill Input System
- */
-
 void AGGwaCharacter::OnLocalSkillInput(const FInputActionInstance& Instance, int32 Index)
 {
+	UE_LOG(LogTemp, Warning, TEXT("=== OnLocalSkillInput CALLED ==="));
+	UE_LOG(LogTemp, Warning, TEXT("Index: %d | IsLocallyControlled: %s"), 
+		Index, IsLocallyControlled() ? TEXT("YES") : TEXT("NO"));
+	
 	//HOW Get SlotIndex For Find Getskillslot..?,
 	auto State = GetPlayerState<AGGwaPlayerState>();
-	if (!State->GetSkillComponent()) {
+	if (!State) {
+		UE_LOG(LogTemp, Error, TEXT("OnLocalSkillInput: PlayerState is null"));
 		return;
 	}
-	//SlotIndex 기반?�로 변�?- 직접 Index ?�용
+	
+	if (!State->GetSkillComponent()) {
+		UE_LOG(LogTemp, Error, TEXT("OnLocalSkillInput: SkillComponent is null"));
+		return;
+	}
+	
+	UE_LOG(LogTemp, Warning, TEXT("OnLocalSkillInput: Attempting to cast skill at index %d"), Index);
+	
 	auto bisSucces  = SkillCastingService->TryCastSkill(this, Index);
 	if (bisSucces) {
 		UE_LOG(LogTemp, Log, TEXT("OnLocalSkillInput: Skill cast successful for index %d"), Index);
@@ -146,6 +153,10 @@ void AGGwaCharacter::OnLocalSkillInput(const FInputActionInstance& Instance, int
 	else {
 		UE_LOG(LogTemp, Warning, TEXT("OnLocalSkillInput: Skill cast failed for index %d"), Index);
 	}
+}
+
+UPlayerReactionComponent* AGGwaCharacter::GetReactionComponent() const {
+	return ReactionComponent.Get();
 }
 
 
@@ -156,13 +167,9 @@ void AGGwaCharacter::SetMoveData_Implementation(const TArray<FVector>& Path, int
 }
 
 
-UPlayerReactionComponent* AGGwaCharacter::GetReactionComponent() const {
-	return ReactionComponent.Get();
-}
-
 void AGGwaCharacter::Tick(float DeltaSeconds) {
 	Super::Tick(DeltaSeconds);
-	if (false == bIsFollowingPath && !IsLocallyControlled()) return;
+	if (false == bIsFollowingPath) return;
 
 	if (!CurrentPath.IsValidIndex(CurrentPathIndex)) {
 		bIsFollowingPath = false;
@@ -204,6 +211,14 @@ void AGGwaCharacter::Tick(float DeltaSeconds) {
 		AddMovementInput(Direction, 1.0,true);
 		UE_LOG(LogTemp, Log, TEXT("Current Actor Location : %s"), *CurrentLocation.ToString());
 	}
+}
+
+
+void AGGwaCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(AGGwaCharacter, CurrentPath);
+	DOREPLIFETIME(AGGwaCharacter, CurrentPathIndex);
+	DOREPLIFETIME(AGGwaCharacter, bIsFollowingPath);
 }
 
 

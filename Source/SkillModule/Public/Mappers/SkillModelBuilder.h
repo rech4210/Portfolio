@@ -6,7 +6,7 @@
 #include "SkillModelBuilder.generated.h"
 
 // Forward declarations
-class USkillSlot;
+struct FSkillSlotReplicationData;
 
 /**
  * DataAsset ??DomainModel 빌딩 구현�?
@@ -26,7 +26,7 @@ public:
 		USkillDataAsset* SkillDataAsset
 	) override;
 
-	virtual USkillSlot* BuildSkillSlotEntity(const FSkillDomainModel& DomainModel) override;
+	virtual FSkillSlotReplicationData BuildSkillSlotData(const FSkillDomainModel& DomainModel) override;
 
 	virtual float CalculateRemainingCooldown(
 		const FDateTime& LastUsedTime, 
@@ -43,20 +43,20 @@ public:
 	virtual int32 CalculateScaledValue(int32 BaseValue, int32 SkillLevel) override;
 	virtual float CalculateScaledValue(float BaseValue, int32 SkillLevel) override;
 
-	virtual FSkillSlotDatabaseDTO ExtractSlotDTO(const USkillSlot* SkillSlot) override;
-	virtual FSkillDomainModel ExtractDomainModel(const USkillSlot* SkillSlot) override;
+	virtual FSkillSlotDatabaseDTO ExtractSlotDTO(const FSkillSlotReplicationData& SlotData) override;
+	virtual FSkillDomainModel ExtractDomainModel(const FSkillSlotReplicationData& SlotData) override;
 
 	virtual TArray<FSkillDomainModel> BuildDomainModels(
 		const TArray<FSkillSlotDatabaseDTO>& SlotDTOs,
 		const TArray<USkillDataAsset*>& SkillDataAssets
 	) override;
 
-	virtual TArray<USkillSlot*> BuildSkillSlotEntities(
+	virtual TArray<FSkillSlotReplicationData> BuildSkillSlotDataArray(
 		const TArray<FSkillDomainModel>& DomainModels
 	) override;
 
 	virtual bool ValidateDomainModel(const FSkillDomainModel& Model, FString& OutErrorMessage) override;
-	virtual bool ValidateSkillSlotEntity(const USkillSlot* SkillSlot, FString& OutErrorMessage) override;
+	virtual bool ValidateSkillSlotData(const FSkillSlotReplicationData& SlotData, FString& OutErrorMessage) override;
 
 protected:
 	// ?�킬 ?�벨�??��??�링 계수
@@ -73,4 +73,5 @@ protected:
 private:
 	// Helper functions
 	bool IsValidDateTime(const FDateTime& DateTime);
+	bool IsOnCooldown(const FDateTime& LastUsedTime, float BaseCooltime) const;
 };

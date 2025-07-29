@@ -13,5 +13,7 @@ enum class EAbilityInputID : uint8
     Skill5 UMETA(displayname = "Skill5"),
     Skill6 UMETA(displayname = "Skill6"),
     Skill7 UMETA(displayname = "Skill7"),
-    Skill8 UMETA(displayname = "Skill8")
+    Skill8 UMETA(displayname = "Skill8"),
+    Move UMETA(displayname = "Move")
+
 };

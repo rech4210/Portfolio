@@ -32,19 +32,20 @@ void UGA_MoveAbility::OnTargetDataReceived(const FGameplayAbilityTargetDataHandl
 	if (Avatar->IsLocallyControlled()) {
 		GetWorld()->SpawnActor<AActor>(LineTraceRing, Point, HitRotation);
 	}
-
-	if (Path && Path->PathPoints.Num() > 1) {
-		if (Avatar->HasAuthority()) {
-			Avatar->SetMoveData(Path->PathPoints, 1, true);
-		}
-		else if (Avatar->IsLocallyControlled()) {
-			for (int32 i = 0; i < Path->PathPoints.Num() - 1; ++i)
-			{
-				DrawDebugLine(GetWorld(), Path->PathPoints[i], Path->PathPoints[i + 1], FColor::Green, false, 5.0f, 0, 5.0f);
-				DrawDebugSphere(GetWorld(), Path->PathPoints[i], 20.0f, 12, FColor::Red, false, 5.0f);
-			}
-		}
+	if (Avatar->HasAuthority()) {
+		Avatar->SetMoveData(Path->PathPoints, 1, true);
 	}
+
+
+	// if (Path && Path->PathPoints.Num() > 1) {
+	// 	if (Avatar->IsLocallyControlled()) {
+	// 		for (int32 i = 0; i < Path->PathPoints.Num() - 1; ++i)
+	// 		{
+	// 			DrawDebugLine(GetWorld(), Path->PathPoints[i], Path->PathPoints[i + 1], FColor::Green, false, 5.0f, 0, 5.0f);
+	// 			DrawDebugSphere(GetWorld(), Path->PathPoints[i], 20.0f, 12, FColor::Red, false, 5.0f);
+	// 		}
+	// 	}
+	// }
 
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 }
@@ -66,6 +67,7 @@ void UGA_MoveAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 		NewObject<ASkillTargetActor_Mouse>(this)  // <-- Class 전달
 	);
 
+	
 	if (Task)
 	{
 		Task->ValidData.AddDynamic(this, &UGA_MoveAbility::OnTargetDataReceived);

@@ -66,7 +66,7 @@ public:
 	void InitWidget(UGGwaAbilitySystemComponent * AbilitySystemComponent, const UGGwaAttributeSet * AttributeSet);
 	void OnHealthChanged(const FOnAttributeChangeData& Data) const;
 	void OnManaChanged(const FOnAttributeChangeData& Data) const;
-	void UpdateSkillWidgetFromServer(const USkillComponent* Data);
+	void UpdateSkillWidgetFromServer(TArray<USkillDataAsset*> Datas);
 	UFUNCTION()
 	void DoWidgetWork();
 private:

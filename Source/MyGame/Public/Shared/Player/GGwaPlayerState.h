@@ -48,12 +48,24 @@ public:
 	UFUNCTION(BlueprintCallable)
 	UInventoryComponent* GetInventoryComponent() const;
 
-	// Deprecated
-	// UFUNCTION(BlueprintCallable)
-	// void SetSkillComponent(USkillComponent* NewComponent);
-
-	UFUNCTION()
-	void OnSkillSlotsUpdated() const;
+	// ============================================================================
+	// COMPONENT SETTER FUNCTIONS
+	// ============================================================================
+	
+	UFUNCTION(BlueprintCallable)
+	void SetStateComponent(UPlayerStateComponent* NewComponent);
+	
+	UFUNCTION(BlueprintCallable)
+	void SetSkillComponent(USkillComponent* NewComponent);
+	
+	UFUNCTION(BlueprintCallable)
+	void SetShopComponent(UShopComponent* NewComponent);
+	
+	UFUNCTION(BlueprintCallable)
+	void SetEquipmentComponent(UEquipmentComponent* NewComponent);
+	
+	UFUNCTION(BlueprintCallable)
+	void SetInventoryComponent(UInventoryComponent* NewComponent);
 
 	void BroadcastAttributeChange(const FGameplayAttribute& Attribute, float NewValue) const;
 	void InitPlayerState();
