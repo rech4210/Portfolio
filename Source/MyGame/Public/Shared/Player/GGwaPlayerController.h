@@ -35,9 +35,6 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "UI")
 	FOnBossDataReceived OnBossDataReceived;
 
-	// ============================================================================
-	// AUTHENTICATION RPC METHODS
-	// ============================================================================
 	UFUNCTION(Server, Reliable)
 	void Server_InitiateReward(const FString& PlayerId, const FRewardRequest& Payload);
 	
@@ -55,16 +52,8 @@ private:
 	UFUNCTION(Client, Reliable)
 	void Client_TravelToGameWorld(const FString& MapURL);
 	
-	// ============================================================================
-	// AuthSubsystem Event Handlers
-	// ============================================================================
-
 	UPROPERTY(Transient)
 	TScriptInterface<IClientManagerInterface> CachedClientManagerInterface;
-
-	// ============================================================================
-	// 간소화된 클라이언트 컴포넌트 관리 (문자열 기반)
-	// ============================================================================
 	
 	UPROPERTY(Transient)
 	TObjectPtr<UActorComponent> ClientAuthComponent;
@@ -78,15 +67,7 @@ private:
 	UFUNCTION(BlueprintCallable, Category = "Client Component")
 	void CreateDefaultClientComponents();
 public:
-	// ============================================================================
-	// CLIENT SERVICE ACCESS - Interface-based approach
-	// ============================================================================
-
 	TScriptInterface<IClientManagerInterface> GetUIManagerInterface();
-
-	// ============================================================================
-	// Subsystem Interface Implementation
-	// ============================================================================
 	virtual void RegistClientComponent(UActorComponent* Component) override;
 	
 	UFUNCTION(BlueprintCallable, Category = "Client Service")
@@ -121,10 +102,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Authentication")
 	void ConnectToGameServerWithToken(const FString& Token, const FString& UserId);
 
-	// ============================================================================
-	// TOKEN-BASED SERVER CONNECTION
-	// ============================================================================
-
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Authentication")
 	FString GetCachedAuthToken() const { return CachedAuthToken; }
 
@@ -140,16 +117,11 @@ public:
 
 
 private:
-	// ============================================================================
-	// TOKEN MANAGEMENT
-	// ============================================================================
-
 	UPROPERTY(Transient)
 	FString CachedAuthToken;
 
 	UPROPERTY(Transient)
 	FString CachedUserId;
-	
 };
 
 

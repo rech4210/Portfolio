@@ -5,10 +5,6 @@
 #include "Data/AuthDTO.h"
 #include "AuthComponent.generated.h"
 
-/**
- * Auth Component (formerly Domain Aggregate)
- * Contains core business logic for user authentication and account management
- */
 UCLASS(BlueprintType)
 class AUTHMODULE_API UAuthComponent : public UObject
 {
@@ -24,14 +20,12 @@ private:
 public:
 	UAuthComponent();
 
-	// Factory Methods
 	UFUNCTION(BlueprintCallable, Category = "Auth Component")
 	static UAuthComponent* CreateNewUser(const FString& Username, const FString& PasswordHash);
 
 	UFUNCTION(BlueprintCallable, Category = "Auth Component")
 	static UAuthComponent* CreateFromDTO(const FUserAccountDTO& UserDTO);
 
-	// Core Business Logic
 	UFUNCTION(BlueprintCallable, Category = "Auth Component")
 	bool CanLogin() const;
 
@@ -59,7 +53,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Auth Component")
 	void AddAuditLog(const FString& Action, const FString& Detail);
 
-	// Getters
 	UFUNCTION(BlueprintPure, Category = "Auth Component")
 	const FUserAccountDTO& GetUserData() const { return UserData; }
 
@@ -72,7 +65,6 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Auth Component")
 	const TArray<FUserAuditLogDTO>& GetAuditLogs() const { return AuditLogs; }
 
-	// Validation
 	UFUNCTION(BlueprintPure, Category = "Auth Component")
 	bool IsValid() const;
 

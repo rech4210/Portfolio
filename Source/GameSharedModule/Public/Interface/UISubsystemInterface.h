@@ -5,19 +5,14 @@
 #include "UObject/Interface.h"
 #include "UISubsystemInterface.generated.h"
 class AUIConfigCacheActor;
-// This class does not need to be modified.
 UINTERFACE()
 class UUISubsystemInterface : public UInterface {
 	GENERATED_BODY()
 };
 
-/**
- * 
- */
 class GAMESHAREDMODULE_API IUISubsystemInterface {
 	GENERATED_BODY()
 
-	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
 	virtual void SetCacheActor(AUIConfigCacheActor * Actor) = 0;
 };

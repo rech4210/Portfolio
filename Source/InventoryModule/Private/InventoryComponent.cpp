@@ -1,10 +1,6 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
-
 #include "InventoryComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Engine/ActorChannel.h"
-#include "InventorySubsystem.h"
-#include "GameFramework/PlayerState.h"
 #include "DatabaseModule/Public/DatabaseManager.h"
 #include "Engine/AssetManager.h"
 #include "GameSharedModule/Public/Data/ItemDataAsset.h"
@@ -18,7 +14,6 @@ UInventoryComponent::UInventoryComponent()
 void UInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	// Only replicate the inventory to the owning client
 	DOREPLIFETIME_CONDITION(UInventoryComponent, Items, COND_OwnerOnly);
 }
 
@@ -31,12 +26,9 @@ void UInventoryComponent::Server_SetInventoryItems(const TArray<UFInventoryItem*
 		{
 			if (Item)
 			{
-				// The component now takes ownership of the item objects.
 				Items.Add(Item);
 			}
 		}
-		// For the server, we can directly call the OnRep function or the delegate.
-		// This ensures server-side logic that depends on the inventory state is also executed.
 		OnRep_Items();
 	}
 }
@@ -57,8 +49,6 @@ bool UInventoryComponent::ReplicateSubobjects(class UActorChannel* Channel, clas
 
 void UInventoryComponent::OnRep_Items()
 {
-	// This is called on the client when the 'Items' array is replicated.
-	// We notify the subsystem to handle any client-side logic.
 	OnInventoryUpdated.Broadcast();
 }
 
@@ -71,8 +61,7 @@ bool UInventoryComponent::HasItem(const FName& ItemID) const
 
 bool UInventoryComponent::HasEnoughSpace(int32 RequiredSpace) const
 {
-	// You might want to implement a more sophisticated space check based on your game's requirements
-	const int32 MaxInventorySize = 50; // This should probably be configurable
+	const int32 MaxInventorySize = 50;
 	return (Items.Num() + RequiredSpace) <= MaxInventorySize;
 }
 
@@ -87,7 +76,6 @@ bool UInventoryComponent::AddItem(UFInventoryItem* Item)
 	{
 		Items.Add(Item);
 		
-		// Domain Event: Broadcast item added
 		OnInventoryItemAdded.Broadcast(Item);
 		OnInventoryChanged.Broadcast();
 		
@@ -113,7 +101,6 @@ bool UInventoryComponent::RemoveItem(const FName& ItemID)
 			
 			Items.RemoveAt(Index);
 			
-			// Domain Event: Broadcast item removed
 			OnInventoryItemRemoved.Broadcast(ItemID, RemovedQuantity);
 			OnInventoryChanged.Broadcast();
 			
@@ -127,21 +114,18 @@ bool UInventoryComponent::RemoveItem(const FName& ItemID)
 
 bool UInventoryComponent::CanAddItem(const FInventoryItemDTO& Item) const
 {
-	// Domain Rule: Validate item quantity
 	if (Item.Quantity <= 0)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Invalid quantity for item %s: %d"), *Item.ItemID.ToString(), Item.Quantity);
 		return false;
 	}
 
-	// Domain Rule: Check if inventory has enough space
 	if (!HasEnoughSpace(1))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Inventory is full, cannot add item %s"), *Item.ItemID.ToString());
 		return false;
 	}
 
-	// Domain Rule: Check item validity (could be extended)
 	if (Item.ItemID.IsNone())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Invalid ItemID"));
@@ -153,21 +137,18 @@ bool UInventoryComponent::CanAddItem(const FInventoryItemDTO& Item) const
 
 bool UInventoryComponent::CanRemoveItem(const FName& ItemID, int32 Quantity) const
 {
-	// Domain Rule: Validate removal quantity
 	if (Quantity <= 0)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Invalid removal quantity for item %s: %d"), *ItemID.ToString(), Quantity);
 		return false;
 	}
 
-	// Domain Rule: Check if player has the item
 	if (!HasItem(ItemID))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Player does not have item %s"), *ItemID.ToString());
 		return false;
 	}
 
-	// Domain Rule: Check if enough quantity exists
 	int32 CurrentQuantity = 0;
 	for (const UFInventoryItem* Item : Items)
 	{
@@ -195,14 +176,12 @@ bool UInventoryComponent::AddItemDirect(const FInventoryItemDTO& Item)
 		return false;
 	}
 
-	// Create new inventory item from DTO
 	UFInventoryItem* NewItem = NewObject<UFInventoryItem>(this);
 	if (!NewItem)
 	{
 		return false;
 	}
 
-	// Load ItemData from AssetManager
 	if (UAssetManager* AssetManager = UAssetManager::GetIfInitialized())
 	{
 		FPrimaryAssetId AssetId(TEXT("ItemData"), Item.ItemID);
@@ -219,18 +198,15 @@ bool UInventoryComponent::AddItemDirect(const FInventoryItemDTO& Item)
 
 	NewItem->Quantity = Item.Quantity;
 
-	// Check if we can stack with existing item
 	for (UFInventoryItem* ExistingItem : Items)
 	{
 		if (ExistingItem && ExistingItem->ItemData && 
 			ExistingItem->ItemData->GetItemID() == Item.ItemID &&
 			ExistingItem->ItemData->MaxStackCount > ExistingItem->Quantity)
 		{
-			// Stack with existing item
 			int32 CanAdd = FMath::Min(Item.Quantity, ExistingItem->ItemData->MaxStackCount - ExistingItem->Quantity);
 			ExistingItem->Quantity += CanAdd;
 			
-			// Fire domain event
 			OnInventoryItemAdded.Broadcast(ExistingItem);
 			OnInventoryChanged.Broadcast();
 			OnRep_Items();
@@ -239,10 +215,8 @@ bool UInventoryComponent::AddItemDirect(const FInventoryItemDTO& Item)
 		}
 	}
 
-	// Add as new item
 	Items.Add(NewItem);
 	
-	// Fire domain event
 	OnInventoryItemAdded.Broadcast(NewItem);
 	OnInventoryChanged.Broadcast();
 	OnRep_Items();
@@ -269,10 +243,8 @@ bool UInventoryComponent::RemoveItemDirect(const FName& ItemID, int32 Quantity)
 			Item->Quantity -= ToRemove;
 			RemainingToRemove -= ToRemove;
 			
-			// Fire domain event
 			OnInventoryItemRemoved.Broadcast(ItemID, ToRemove);
 			
-			// Remove item if quantity reaches 0
 			if (Item->Quantity <= 0)
 			{
 				Items.RemoveAt(i);

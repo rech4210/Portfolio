@@ -1,16 +1,11 @@
 ﻿#include "Shared/AI/GAS/AttackProjectile.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"
-#include "Abilities/GameplayAbility.h"
 #include "GameFramework/Actor.h"
 #include "Components/StaticMeshComponent.h"
-#include "Kismet/GameplayStatics.h"
 #include "GameplayEffect.h"
-#include "Animation/AnimTrace.h"
-#include "Concepts/Iterable.h"
 #include "Net/UnrealNetwork.h"
 #include "MyGame/Public/Shared/Player/GGwaCharacter.h"
-#include "MyGame/Public/Shared/Player/GGwaPlayerState.h"
 
 AAttackProjectile::AAttackProjectile() {
     PrimaryActorTick.bCanEverTick = true;
@@ -57,13 +52,11 @@ void AAttackProjectile::Tick(float DeltaSeconds) {
     if (!TargetCharacter) {
         SetActorLocation(EndLocation);
         MeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-        // Destroy();
         return;
     }
     
     EndLocation = TargetCharacter->GetActorLocation();
     FVector HorizontalPos = FMath::Lerp(StartLocation, EndLocation, t);
-    // ������ ������: zOffset = 4h * t * (1 - t)
     float zOffset = 4.f * ArcHeight * t * (1.f - t);
     FVector NewPos = HorizontalPos + FVector(0.f, 0.f, zOffset);
 
@@ -74,11 +67,9 @@ void AAttackProjectile::Tick(float DeltaSeconds) {
     }
 }
 
-//��ô ��ġ�� VFX ����.
 void AAttackProjectile::OnMeshBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
                                            UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
                                            bool bFromSweep, const FHitResult& SweepResult) {
-    // check here for logic clarify
     if (!OtherActor || OtherActor == this || OtherActor == GetInstigator())
         return;
 
@@ -87,9 +78,7 @@ void AAttackProjectile::OnMeshBeginOverlap(UPrimitiveComponent* OverlappedCompon
             if (auto ASC = Character->GetAbilitySystemComponent()) {
                 FGameplayEffectContextHandle Context = ASC->MakeEffectContext();
                 FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(Projectile_GE, 1.f, Context);
-                //GC ������ ���� �ӽ� ó��. ���� Duration ������� ó��
                 if (SpecHandle.IsValid()) {
-                    //Character�� after GE �����. ���⼭ ���׼� ����
                     ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
                 }
             }

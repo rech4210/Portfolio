@@ -46,7 +46,6 @@ void ABossCharacter::PossessedBy(AController* NewController) {
 	AttributeObserverComponent->BindBossDataDelegate();
 }
 
-//?��?�?발동 ?�함.
 void ABossCharacter::OnRep_PlayerState() {
 	Super::OnRep_PlayerState();
 	InitASC();
@@ -60,16 +59,6 @@ void ABossCharacter::BeginPlay(){
 	CachedBossData = FBossDataStruct{1, Attribute->GetHealth(),Attribute->GetMaxHealth(),Attribute->GetDamage()};
 }
 
-
-/** 
- * 1. GAS Attribute 변�?발생 
- * 2. ObserverComponent?�서 ?�리게이?�로 감�? 
- * 3. OnAttributeChanged ??UpdateDataFromBoss ?�출 
- * 4. CachedBossData 갱신 
- * 5. ?�버 ???�라?�언??RPC: Client_ReceiveBossData 
- * 6. ?�라?�언?�에 ?�이???�기??
- */
-
 void ABossCharacter::UpdateDataFromBoss(FBossDataStruct& Data) {
 	if (HasAuthority()) {
 		if (IEnemyDataReceiver* Receiver = Cast<IEnemyDataReceiver>(GetController())) {
@@ -81,10 +70,7 @@ void ABossCharacter::UpdateDataFromBoss(FBossDataStruct& Data) {
 
 
 void ABossCharacter::OnRep_BossData() {
-	// Client Base Replication
-	// ForceNetUpdate()
 	if (AGGwaPlayerController* PC = Cast<AGGwaPlayerController>(UGameplayStatics::GetPlayerController(this, 0))) {
-		// PC->InitializeClientComponent();
 		PC->ProcessBossData(CachedBossData);
 	}
 }
@@ -93,7 +79,6 @@ const FEnemyWidgetData& ABossCharacter::GetWidgetData() {
 	return WidgetData;
 }
 
-//Possesd?� Character??Init ?�점????고려?�것.
 void ABossCharacter::InitASC() {
 	if (!E_ASC)
 	{
@@ -101,13 +86,11 @@ void ABossCharacter::InitASC() {
 	}
 	if (E_ASC)
 	{
-		//보스??owner�?controller�?지?�해?�하??
 		E_ASC->InitAbilityActorInfo(this, this);
 	}
 }
 
 
-// TODO: Be Componentize.
 TArray<AActor*> ABossCharacter::DetectTarget(float Radius) const{
 	TArray<AActor*> DetectedActors;
 
@@ -126,10 +109,9 @@ TArray<AActor*> ABossCharacter::DetectTarget(float Radius) const{
 	);
 
 	TArray<AActor*> LoopSafeCopyArray;
-	// collision
 	if (DetectedActors.Num() > 0) {
 		float TargetDistance = MAX_FLOAT;
-		for (auto DetectedActor : DetectedActors /*-> Collision Target*/) {
+		for (auto DetectedActor : DetectedActors) {
 			if (Cast<AGGwaCharacter>(DetectedActor)) {
 				float Distance = DetectedActor->GetDistanceTo(this);
 				if (Distance < TargetDistance) {
@@ -142,8 +124,6 @@ TArray<AActor*> ABossCharacter::DetectTarget(float Radius) const{
 	Algo::Sort(LoopSafeCopyArray,[this](AActor* A, AActor* B) {
 		return A->GetDistanceTo(this) < B->GetDistanceTo(this);	
 	});
-	
-	// bool bActivated = E_ASC->TryActivateAbilityByClass(Abilities[0], true);
 	
 	return LoopSafeCopyArray;
 }

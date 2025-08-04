@@ -1,10 +1,7 @@
-﻿
-
-#include "Shared/GAS/GGwaAttributeSet.h"
+﻿#include "Shared/GAS/GGwaAttributeSet.h"
 #include "AbilitySystemComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "GameplayEffectExtension.h"
-// #include "Shared/GAS/AbilityTask/GGwaPlayMontageAndWaitForEvent.h"
 
 DEFINE_ONREP_ATTRIBUTE(UGGwaAttributeSet, Health)
 DEFINE_ONREP_ATTRIBUTE(UGGwaAttributeSet, MaxHealth)
@@ -16,7 +13,6 @@ DEFINE_ONREP_ATTRIBUTE(UGGwaAttributeSet, Critical)
 DEFINE_ONREP_ATTRIBUTE(UGGwaAttributeSet, Damage)
 
 
-// Driven data as...
 UGGwaAttributeSet::UGGwaAttributeSet() {
 	InitHealth(100.f);
 	InitMana(70.f);
@@ -51,7 +47,6 @@ void UGGwaAttributeSet::PostGameplayEffectExecute(const struct FGameplayEffectMo
 }
 
 
-// Called when a replicated property changes, Rep�??�한 매크�??�록.
 void UGGwaAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const{
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 

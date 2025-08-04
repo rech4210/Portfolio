@@ -5,6 +5,5 @@
 
 UGE_KnockBack::UGE_KnockBack() {
 	DurationPolicy = EGameplayEffectDurationType::Instant;
-	//execution BP 구현
 }
 

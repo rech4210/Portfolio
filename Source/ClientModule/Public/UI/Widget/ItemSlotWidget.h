@@ -6,9 +6,6 @@
 #include "ItemSlotWidget.generated.h"
 
 class UItemDataAsset;
-/**
- * 
- */
 UCLASS()
 class CLIENTMODULE_API UItemSlotWidget : public UUserWidget
 {

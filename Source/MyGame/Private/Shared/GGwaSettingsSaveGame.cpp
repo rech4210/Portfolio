@@ -2,5 +2,4 @@
 
 UGGwaSettingsSaveGame::UGGwaSettingsSaveGame()
 {
-	// �⺻ ������ ����
 }

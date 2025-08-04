@@ -1,15 +1,10 @@
-﻿
-
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "BehaviorTree/BTService.h"
 #include "BTService_CheckBossPhase.generated.h"
 
 class ABossAIController;
-/**
- * 
- */
 UCLASS()
 class SERVERMODULE_API UBTService_CheckBossPhase : public UBTService {
 	GENERATED_BODY()

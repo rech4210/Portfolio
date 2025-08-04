@@ -1,11 +1,7 @@
-﻿
-
-#pragma once
-
+﻿#pragma once
 #include "CoreMinimal.h"
 #include "Abilities/GameplayAbilityTypes.h"
 #include "BehaviorTree/BTTaskNode.h"
-#include "Shared/AI/BossCharacter.h"
 #include "BTTask_Attack.generated.h"
 
 class UGA_BossAttack;

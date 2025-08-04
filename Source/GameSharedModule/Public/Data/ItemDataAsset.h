@@ -13,9 +13,6 @@ enum class EItemType : uint8
 	Misc
 };
 
-/**
- * 
- */
 class UGameplayEffect;
 UCLASS()
 class GAMESHAREDMODULE_API UItemDataAsset : public UBaseDataAsset
@@ -47,10 +44,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Buff")
 	TArray<FPrimaryAssetId> AppliedBuffs;
 
-	/**
-	 * Get the item ID as FName for database operations
-	 * @return Item ID as FName
-	 */
 	UFUNCTION(BlueprintCallable, Category = "Item")
 	FName GetItemID() const
 	{

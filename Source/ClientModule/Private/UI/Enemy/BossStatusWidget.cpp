@@ -1,6 +1,4 @@
-﻿
-
-#include "UI/Enemy/BossStatusWidget.h"
+﻿#include "UI/Enemy/BossStatusWidget.h"
 #include "Components/ProgressBar.h"
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
@@ -10,7 +8,6 @@
 
 
 void UBossStatusWidget::SetWidget(const FEnemyWidgetData& WidgetData, const FBossDataStruct& Data){
-	// 1) ?�볼 ?�팅
 	if (Symbol_Image && WidgetData.Symbol)
 	{
 		Symbol_Image->SetBrushFromTexture(WidgetData.Symbol);
@@ -21,7 +18,6 @@ void UBossStatusWidget::SetWidget(const FEnemyWidgetData& WidgetData, const FBos
 	}
 	
 
-	// 2) ?�름 ?�팅
 	if (Name_Text)
 	{
 		Name_Text->SetText(FText::FromName(WidgetData.Name));
@@ -29,7 +25,6 @@ void UBossStatusWidget::SetWidget(const FEnemyWidgetData& WidgetData, const FBos
 
 	UpdateWidget(Data);
 
-	// 4) ?�?�머 ?�정 (?�수�?무시)
 	if (WidgetData.LimitTime > 0.f)
 	{
 		SetBossTimer(WidgetData.LimitTime);
@@ -50,17 +45,6 @@ void UBossStatusWidget::UpdateHealthBar(const FBossDataStruct& Data){
 	{
 		HP_Bar->SetPercent(Ratio);
 	}
-
-
-	// if (HP_Text)
-	// {
-	// 	const FText Text = FText::Format(
-	// 		NSLOCTEXT("Boss", "HPFormat", "{0} / {1}"),
-	// 		FText::AsNumber(FMath::RoundToInt(CurrHP)),
-	// 		FText::AsNumber(FMath::RoundToInt(MaxHP))
-	// 	);
-	// 	HP_Text->SetText(Text);
-	// }
 
 	if (HP_Text) {
 		const FText Text = FText::Format(

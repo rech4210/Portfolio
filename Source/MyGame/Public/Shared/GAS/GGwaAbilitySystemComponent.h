@@ -1,5 +1,4 @@
-﻿
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "AbilitySystemComponent.h"
@@ -20,14 +19,11 @@ public:
 	
 	UGGwaAbilitySystemComponent();
 	virtual void BeginPlay() override;
-	// check cost for variable cost with tag or enum
 	bool CheckCost(const FGameplayEffectSpecHandle& CostSpecHandle);
 
 	UPROPERTY()
 	FOnEffectAssetApplied OnEffectAssetApplied;
 
-	
-	
 	void ExecuteGameplayCueLocal(const FGameplayTag& GameplayCueTag, const FGameplayCueParameters& Parameters);
 	
 private:

@@ -17,8 +17,7 @@ TArray<AActor*> USkillTarget_Directional::DetectTargets(FSkillContext& SkillCont
 	const FSkillShapeConfig& Config = SkillContext.SkillData->SkillShapeConfig;
 
 	const FVector StartLocation = SkillContext.SourceActor->GetActorLocation();
-	// const FVector ForwardVector = SkillContext.SourceActor->GetActorForwardVector();
-	const FVector EndLocation = (SkillContext.HitLocation/* * Config.TraceDistance*/);
+	const FVector EndLocation = (SkillContext.HitLocation);
 
 	FCollisionQueryParams Params;
 	Params.AddIgnoredActor(SkillContext.SourceActor);

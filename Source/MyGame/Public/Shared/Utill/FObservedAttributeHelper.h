@@ -49,6 +49,5 @@ private:
 		AttributeHandlers.Add(Attribute,  Handler);
 	}
 
-	// const �Լ� �� ���� ���뵵 (�Һ����� ���� ���� ĳ��/��������Ʈ �� ó����)
 	mutable TMap<EObservedAttribute, TFunction<void(T&, float)>> AttributeHandlers;
 };

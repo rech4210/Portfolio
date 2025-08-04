@@ -4,9 +4,6 @@
 #include "Shared/Mode/BaseGameMode.h"
 #include "LoginGameMode.generated.h"
 
-/**
- * 
- */
 UCLASS()
 class CLIENTMODULE_API ALoginGameMode : public ABaseGameMode {
 	GENERATED_BODY()

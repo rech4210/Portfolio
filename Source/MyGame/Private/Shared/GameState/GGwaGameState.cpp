@@ -3,15 +3,11 @@
 #include "Engine/Engine.h"
 #include "Engine/World.h"
 
-// #if !UE_SERVER
-// #include "ClientModule/Public/UI/UIManagerSubsystem.h"
-// #endif
 
 AGGwaGameState::AGGwaGameState()
 {
 	PrimaryActorTick.bCanEverTick = false;
 	
-	// Enable replication
 	bReplicates = true;
 	bAlwaysRelevant = true;
 }
@@ -20,7 +16,6 @@ void AGGwaGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	// Replicate CacheActor to all clients
 	DOREPLIFETIME(AGGwaGameState, CacheActor);
 }
 
@@ -53,7 +48,6 @@ void AGGwaGameState::Multicast_InitCacheActor_Implementation(AUIConfigCacheActor
 		NewActor ? *NewActor->GetName() : TEXT("NULL"));
 
 #if !UE_SERVER
-	// Notify UIManagerSubsystem about the cache actor
 	if (UGameInstance* GameInstance = GetGameInstance())
 	{
 		if (UISubsystemInterface)

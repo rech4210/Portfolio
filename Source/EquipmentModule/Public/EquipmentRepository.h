@@ -9,9 +9,6 @@
 class UDatabaseManager;
 class UEquipmentComponent;
 
-/**
- * 
- */
 UCLASS()
 class EQUIPMENTMODULE_API UEquipmentRepository : public UObject, public IEquipmentRepositoryInterface {
 	GENERATED_BODY()

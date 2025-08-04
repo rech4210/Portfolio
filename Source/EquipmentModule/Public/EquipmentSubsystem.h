@@ -10,9 +10,6 @@
 class UEquipmentRepository;
 class UEquipmentComponent;
 
-/**
- * 
- */
 UCLASS()
 class EQUIPMENTMODULE_API UEquipmentSubsystem : public UGameInstanceSubsystem
 {
@@ -23,11 +20,7 @@ public:
 	virtual void Deinitialize() override;
 
 	TScriptInterface<IEquipmentRepositoryInterface> GetEquipmentRepository() const;
-
-	/** Entry point for loading equipment data. Can be called from PlayerState's BeginPlay. */
 	void RequestLoadEquipmentData(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity);
-
-	/** Called by the EquipmentComponent on clients when equipment data is replicated. */
 	void Client_OnEquipmentStateUpdated(UEquipmentComponent* EquipmentComponent);
 
 private:

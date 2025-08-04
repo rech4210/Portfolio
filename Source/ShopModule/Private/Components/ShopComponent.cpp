@@ -2,7 +2,6 @@
 #include "Components/ShopComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "ShopSubsystem.h"
-#include "ShopDomain.h"
 #include "Engine/World.h"
 #include "Async/Async.h"
 
@@ -33,11 +32,6 @@ void UShopComponent::BeginPlay()
 void UShopComponent::OnRep_ShopItems()
 {
 	OnShopStateChanged.Broadcast(ShopItems);
-	
-	// if (auto* ShopSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UShopSubsystem>())
-	// {
-	// 	ShopSubsystem->Client_OnShopStateUpdated(this);
-	// }
 }
 
 void UShopComponent::OnRep_ShopID()
@@ -61,7 +55,6 @@ bool UShopComponent::PurchaseItemWithValidation(int32 ItemID, int32 Quantity, fl
 		return false;
 	}
 
-	// Validate purchase rules
 	if (!ValidatePurchaseRules(ItemID, Quantity, PlayerCurrency))
 	{
 		PublishDomainEvent([this, ItemID, Quantity]()
@@ -71,7 +64,6 @@ bool UShopComponent::PurchaseItemWithValidation(int32 ItemID, int32 Quantity, fl
 		return false;
 	}
 
-	// Find and update item
 	FShopItemState* Item = GetShopItemPtr(ItemID);
 	if (!Item)
 	{
@@ -79,13 +71,11 @@ bool UShopComponent::PurchaseItemWithValidation(int32 ItemID, int32 Quantity, fl
 		return false;
 	}
 
-	// Process purchase
 	Item->Stock = FMath::Max(0, Item->Stock - Quantity);
 	Item->bIsAvailable = Item->Stock > 0;
 
 	NotifyStateChanged();
 
-	// Publish domain events
 	PublishDomainEvent([this, ItemID, Quantity]()
 	{
 		OnItemPurchaseAttempted.Broadcast(ItemID, Quantity, true);
@@ -218,7 +208,6 @@ void UShopComponent::SyncWithDomain(const FShopDomain& ShopData)
 	bIsShopOpen = ShopData.bIsOpen;
 	GlobalPriceModifier = ShopData.GlobalPriceModifier;
 
-	// Convert domain items to component state
 	ShopItems.Empty();
 	for (const auto& DomainItem : ShopData.ShopItems)
 	{
@@ -241,7 +230,6 @@ FShopDomain UShopComponent::ExtractDomain() const
 	DomainData.bIsOpen = bIsShopOpen;
 	DomainData.GlobalPriceModifier = GlobalPriceModifier;
 
-	// Convert component items to domain objects
 	DomainData.ShopItems.Empty();
 	for (const auto& ComponentItem : ShopItems)
 	{
@@ -273,8 +261,6 @@ void UShopComponent::NotifyStateChanged()
 {
 	if (ValidateServerAuthority())
 	{
-		// Force replication update
-		// ForceNetUpdate();
 	}
 }
 

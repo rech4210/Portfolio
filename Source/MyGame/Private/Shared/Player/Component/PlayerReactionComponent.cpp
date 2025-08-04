@@ -1,5 +1,4 @@
-﻿// UPlayerReactionComponent.cpp
-#include "Shared/Player/Component/PlayerReactionComponent.h"
+﻿#include "Shared/Player/Component/PlayerReactionComponent.h"
 #include "Shared/GAS/GGwaAbilitySystemComponent.h"
 #include "GameFramework/Character.h"
 #include "Kismet/GameplayStatics.h"
@@ -32,9 +31,8 @@ void UPlayerReactionComponent::BeginPlay() {
 	}
 }
 
-void UPlayerReactionComponent::HandleGameplayCue(const FGameplayTag EventTag/*change Cue Enum*/ , EGameplayCueEvent::Type CueType, const FGameplayCueParameters& Params) { 
+void UPlayerReactionComponent::HandleGameplayCue(const FGameplayTag EventTag , EGameplayCueEvent::Type CueType, const FGameplayCueParameters& Params) { 
 	if (EventTag == UEnumTagMatchHelper::GetTagFromEnum<EPlayerState>(EPlayerState::Knockback)) {
-		// 실제 연산은 GE Execution이 수행하며, 이후 로직은 클라이언트 시각용
 	}
 	if (EventTag == UEnumTagMatchHelper::GetTagFromEnum<ECueType>(ECueType::AreaAttackWarning)) {
 		UGameplayStatics::SpawnEmitterAtLocation(
@@ -50,13 +48,9 @@ void UPlayerReactionComponent::Init(UGGwaAbilitySystemComponent* ASC) {
 }
 
 void UPlayerReactionComponent::ExecuteKnockback(const FGameplayTag& StateTag) {
-	// 서버 권한에서만 물리 이동
 	if (GetOwner()->HasAuthority()) {
 		return;
 	}
-	// 클라 시각/청각 효과
-	// PlayCameraShake();
-
 	
 	UGameplayStatics::SpawnEmitterAtLocation(
 		this, /* 파티클 어셋 참조 */ nullptr,
@@ -84,13 +78,10 @@ void UPlayerReactionComponent::ExecuteDeadReaction(const FGameplayTag& StateTag)
 	if (GetOwner()->HasAuthority()) {
 		OwnerCharacter->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		OwnerCharacter->GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None);
-
 		// TODO: Notify GameMode
 	}
 	else {
-		// Client-side effects
 		// TODO: Play death montage from data
-		// Example: OwnerCharacter->PlayAnimMontage(DeathMontage);
 		OwnerCharacter->GetMesh()->SetSimulatePhysics(true);
 	}
 }

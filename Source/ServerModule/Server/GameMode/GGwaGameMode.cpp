@@ -17,20 +17,11 @@
 #include "MyGame/Public/Shared/Cache/UIConfigCacheActor.h"
 #include "Utill/LocalDataBaseLoader.h"
 
-// TODO: The concrete implementation class headers would be here.
-
 constexpr static float GAME_MODE_FREQUENCY = 3.0f;
 AGGwaGameMode::AGGwaGameMode()
 {
 	AuthVerificationService = NewObject<UAuthVerificationService>(this, TEXT("AuthVerificationService"));
-
 	GameStateClass = AGGwaGameState::StaticClass();
-
-	// TODO: EquipmentRepository??구체?�인 구현 ?�래?�로 초기?�해???�니??
-	// EquipmentRepository = NewObject<UEquipmentRepositoryImpl>(this, TEXT("EquipmentRepository")); 
-	
-	// TODO: DatabaseManager??별도??초기??방식(?? ?��????�는 ?�비??로�??�터)???�용?????�습?�다.
-	// DatabaseManager = ...;
 }
 
 void AGGwaGameMode::PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage)
@@ -76,7 +67,6 @@ void AGGwaGameMode::PreLogin(const FString& Options, const FString& Address, con
 		UE_LOG(LogTemp, Log, TEXT("[Game Server] No PIE flag found (normal for production)"));
 	}
 	
-	// Parameter validation - updated for UUID format
 	bool bValidToken = !Token.IsEmpty() && Token.Len() >= 10 && Token.Len() <= 512;
 	bool bValidUserId = !ProvidedUserId.IsEmpty() && ProvidedUserId.Len() >= 32 && ProvidedUserId.Len() <= 50;
 	
@@ -101,7 +91,6 @@ void AGGwaGameMode::BeginPlay()
 
 	UE_LOG(LogTemp, Warning, TEXT("=== AGGwaGameMode::BeginPlay ==="));
 
-	// Environment detection
 	UWorld* World = GetWorld();
 	bool bIsPIEEnvironment = World && World->WorldType == EWorldType::PIE;
 	bool bIsDedicatedServer = HasAuthority() && World->GetNetMode() == NM_DedicatedServer;
@@ -112,11 +101,6 @@ void AGGwaGameMode::BeginPlay()
 		bIsDedicatedServer ? TEXT("Yes") : TEXT("No"),
 		*CurrentMapName);
 
-	// ============================================================================
-	// INITIAL MAP TRANSITION LOGIC (DEVELOPMENT MODE ONLY)
-	// ============================================================================
-	
-	// Development mode auto-transition for standalone testing
 	bool bDevelopmentMode = UE_BUILD_DEVELOPMENT || UE_BUILD_DEBUG;
 	bool bIsLoginLevel = CurrentMapName.Contains(TEXT("LoginLevel"));
 	
@@ -125,10 +109,6 @@ void AGGwaGameMode::BeginPlay()
 		bIsDedicatedServer ? TEXT("Yes") : TEXT("No"),
 		bIsLoginLevel ? TEXT("Yes") : TEXT("No"));
 	
-	
-	// ============================================================================
-	// SERVER INITIALIZATION
-	// ============================================================================
 
 	if (HasAuthority())
 	{
@@ -150,10 +130,8 @@ void AGGwaGameMode::BeginPlay()
 		{
 			UE_LOG(LogTemp, Log, TEXT("GGwaGameMode::BeginPlay - UI Cache Actor spawned successfully"));
 
-			// Initialize default mappings
 			CacheActor->InitializeDefaultMappings();
 
-			// Set cache actor in GameState
 			if (AGGwaGameState* GGwaGameState = GetGameState<AGGwaGameState>())
 			{
 				GGwaGameState->SetCacheActor(CacheActor);
@@ -197,10 +175,7 @@ void AGGwaGameMode::InitializeServerManagers()
 	Super::InitializeServerManagers();
 	if (HasAuthority())
 	{
-		// BattleFlowController creation
 		BattleFlowController = NewObject<UBattleFlowController>(this, TEXT("BattleFlowController"));
-		
-		// After initialization, load all shop data.
 		if (TScriptInterface<IShopRepositoryInterface> Repo = GetGameInstance()->GetSubsystem<UShopSubsystem>()->GetShopRepository())
 		{
 			Repo->LoadShopByID(0);
@@ -223,7 +198,6 @@ void AGGwaGameMode::PostLogin(APlayerController* NewPlayer)
 		UE_LOG(LogTemp, Error, TEXT("[FAIL] NewPlayer or PlayerState is not available on PostLogin!"));
 		return;
 	}
-
 
 	// ============================================================================
 	// AUTHENTICATION & USER ID RESOLUTION
@@ -263,13 +237,7 @@ void AGGwaGameMode::PostLogin(APlayerController* NewPlayer)
 	FString CurrentMapName = GetWorld()->GetMapName();
 	UE_LOG(LogTemp, Warning, TEXT("[SERVER] Current Map: %s)"), *CurrentMapName);
 	
-
-	// ============================================================================
-	// STEP 1: Initialize DDD Systems First (Required for UI Data)
-	// ============================================================================
-	
 	InitializePlayerDDDSystems(NewPlayer, GGwaPlayerState, FinalUserId);
-
 	UE_LOG(LogTemp, Warning, TEXT("=== END POST LOGIN ==="));
 }
 
@@ -332,23 +300,13 @@ void AGGwaGameMode::InitializePlayerDDDSystems(APlayerController* NewPlayer, AGG
 	
 	UE_LOG(LogTemp, Log, TEXT("[EQUIPMENT] Equipment system initialization deferred (not implemented)"));
 	// TODO: Implement equipment system initialization when EquipmentSubsystem is available
-	// if (auto EquipmentSubsystem = GetGameInstance()->GetSubsystem<UEquipmentSubsystem>())
-	// {
-	//     EquipmentSubsystem->RequestLoadPlayerEquipment(PlayerState, UserId);
-	//     UE_LOG(LogTemp, Log, TEXT("[EQUIPMENT] ??Equipment loading initiated"));
-	// }
-
+	
 	// ============================================================================
 	// 5. CHARACTER DATA SYSTEM INITIALIZATION (Future Implementation)
 	// ============================================================================
 	
 	UE_LOG(LogTemp, Log, TEXT("[CHARACTER] Character system initialization deferred (not implemented)"));
 	// TODO: Implement character data system initialization when CharacterSubsystem is available
-	// if (auto CharacterSubsystem = GetGameInstance()->GetSubsystem<UCharacterSubsystem>())
-	// {
-	//     CharacterSubsystem->RequestLoadPlayerCharacterData(PlayerState, UserId);
-	//     UE_LOG(LogTemp, Log, TEXT("[CHARACTER] ??Character data loading initiated"));
-	// }
 
 	UE_LOG(LogTemp, Log, TEXT("=== DDD Systems Initialization Completed ==="));
 }
@@ -388,41 +346,6 @@ void AGGwaGameMode::OnSkillDataLoadCompleted(TScriptInterface<IPlayerIdentityInt
 void AGGwaGameMode::Logout(AController* Exiting)
 {
 	Super::Logout(Exiting);
-
-	/*	FObjectPtr(const FObjectPtr& InOther)
-		: Handle(InOther.Handle)
-	{
-	null ?�다. ?�마 로그?�웃?�라?
-		ConditionallyMarkAsReachable(*this);
-	}*/
-	// auto Inventoryrepo = GetGameInstance()->GetSubsystem<UInventorySubsystem>()->GetInventoryRepository();
-	// if (Exiting && Inventoryrepo)
-	// {
-	// 	APlayerController* PC = Cast<APlayerController>(Exiting);
-	//
-	// 	
-	// 	if(PC && PC->PlayerState)
-	// 	{
-	// 		// Use the repository to save the player's inventory.
-	// 		UE_LOG(LogTemp, Log, TEXT("Player logging out. Saving inventory data for %s."), *PC->PlayerState->GetPlayerName());
-	// 		if (auto InventorySubsystem = GetGameInstance()->GetSubsystem<UInventorySubsystem>())
-	// 		{
-	// 			UE_LOG(LogTemp, Warning, TEXT("[START] Save inventory for player %s"), *PC->PlayerState->GetPlayerName());
-	// 			// UInventoryDomainService* DomainService = InventorySubsystem->CreateDomainService();
-	// 			// PC->PlayerState->GetComponentByClass<UInventoryComponent>()->GetItems();
-	// 			// DomainService->SaveInventory(PC->PlayerState, DomainService->LoadInventory(PC->PlayerState).InventoryData);
-	// 			// TODO: ?�??로직???�도??것인지 ?�인???�요?�니?? (?? ?�규 ?��???기본 ?�태 ?�??
-	// 			// SkillStateRepository->SaveSkillState(PC->PlayerState->GetPlayerId(), PlayerState->GetSkillComponent(), TODO);
-	// 			
-	// 			UE_LOG(LogTemp, Warning, TEXT("[SUCCESS] Inventory Saved"));
-	// 		}
-	// 		// Unload Repo, Clear Component.
-	// 	}
-	// }
-	// else
-	// {
-	// 	UE_LOG(LogTemp, Error, TEXT("AGGwaGameMode: InventoryRepository is not available on Logout!"));
-	// }
 }
 
 void AGGwaGameMode::Server_SkillLog(FString Name, const FString& SkillName, FVector SkillLocation) {
@@ -471,17 +394,14 @@ void AGGwaGameMode::ProcessPendingTokenVerifications()
 			
 			if (!Verification.bSuccess)
 			{
-				// Disconnect player due to failed token verification
 				UE_LOG(LogTemp, Warning, TEXT("[Game Server] Disconnecting player due to failed token verification: %s"), 
 					*Verification.ErrorMessage);
 				
-				// Find the player controller and disconnect
 				for (FConstPlayerControllerIterator Iterator = GetWorld()->GetPlayerControllerIterator(); Iterator; ++Iterator)
 				{
 					APlayerController* PC = Iterator->Get();
 					if (PC && PC->PlayerState->GetUniqueId() == UniqueId)
 					{
-						// Use ClientTravel to disconnect player instead of Close()
 						PC->ClientTravel(TEXT(""), ETravelType::TRAVEL_Absolute);
 						break;
 					}
@@ -490,22 +410,19 @@ void AGGwaGameMode::ProcessPendingTokenVerifications()
 		}
 		else
 		{
-			// Check for timeout
 			double CurrentTime = FPlatformTime::Seconds();
-			if (CurrentTime - Verification.StartTime > 10.0f) // 10 second timeout
+			if (CurrentTime - Verification.StartTime > 10.0f)
 			{
 				CompletedVerifications.Add(UniqueId);
 				
 				UE_LOG(LogTemp, Warning, TEXT("[Game Server] Token verification timed out for UniqueId: %s"), 
 					*UniqueId->ToString());
 				
-				// Disconnect player due to timeout
 				for (FConstPlayerControllerIterator Iterator = GetWorld()->GetPlayerControllerIterator(); Iterator; ++Iterator)
 				{
 					APlayerController* PC = Iterator->Get();
 					if (PC && PC->PlayerState->GetUniqueId() == UniqueId)
 					{
-						// Use ClientTravel to disconnect player instead of Close()
 						PC->ClientTravel(TEXT(""), ETravelType::TRAVEL_Absolute);
 						break;
 					}
@@ -514,7 +431,6 @@ void AGGwaGameMode::ProcessPendingTokenVerifications()
 		}
 	}
 	
-	// Remove completed verifications
 	for (const FUniqueNetIdRepl& UniqueId : CompletedVerifications)
 	{
 		PendingTokenVerifications.Remove(UniqueId);

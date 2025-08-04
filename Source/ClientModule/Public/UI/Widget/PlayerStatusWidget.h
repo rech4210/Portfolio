@@ -7,9 +7,6 @@
 #include "UI/SetWidgetDataInterface.h"
 #include "PlayerStatusWidget.generated.h"
 
-/**
- * 
- */
 class UBuffDataAsset;
 class UHorizontalBox;
 class UBuffSlotWidget;

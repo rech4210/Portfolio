@@ -1,9 +1,7 @@
-﻿
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "SkillModule/Public/Data/SkillInputSlot.h"
 #include "SkillSlotWidget.generated.h"
 
 class USkillDataAsset;
@@ -41,11 +39,6 @@ public:
 
 	void UseSkillSlot(USkillDataAsset *Data);
 	void ApplySkillData(USkillDataAsset* NewData);
-	//
-	// virtual void NativeOnDragEnter(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation) override;
-	// virtual void NativeOnDragCancelled(const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation) override;
-	// virtual void NativeOnDragLeave(const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation) override;
-	// virtual bool NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation) override;
 	
 private:
 	UPROPERTY()

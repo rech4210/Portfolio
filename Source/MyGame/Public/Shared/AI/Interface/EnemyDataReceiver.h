@@ -18,7 +18,6 @@ class UEnemyDataReceiver : public UInterface {
 class MYGAME_API IEnemyDataReceiver {
 	GENERATED_BODY()
 
-	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
 	virtual void ReceiveEnemyData(FBossDataStruct& Data) = 0;
 };

@@ -11,7 +11,6 @@ struct FSkillContext
 {
 	GENERATED_BODY()
 
-public:
 	FSkillContext() = default;
 
 	FSkillContext(UAbilitySystemComponent* InSourceASC, AActor* InSourceActor, AActor* InTargetActor, const FVector& InTargetLocation, USkillDataAsset* InSkillData, int32 InComboIndex = 0, float InStartTime = 0.f);
@@ -37,11 +36,9 @@ public:
 	UPROPERTY()
 	FVector HitLocation;
 
-	/** �޺� �ε��� (�޺� ��� ��ų��) */
 	UPROPERTY()
 	int32 ComboIndex = 0;
 
-	/** ��ų�� ���۵� ���� �ð� (��ó�� ���� � Ȱ�� ����) */
 	UPROPERTY()
 	float StartTime = 0.f;
 };

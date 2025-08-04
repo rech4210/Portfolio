@@ -6,9 +6,7 @@
 #include "BuffDataAsset.generated.h"
 
 class UGameplayEffect;
-/**
- * 
- */
+
 UCLASS()
 class GAMESHAREDMODULE_API UBuffDataAsset : public UBaseDataAsset
 {

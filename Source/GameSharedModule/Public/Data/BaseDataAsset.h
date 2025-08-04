@@ -8,9 +8,7 @@
 #include "BaseDataAsset.generated.h"
 
 class UUserWidget;
-/**
- * 
- */
+
 UCLASS(BlueprintType)
 class GAMESHAREDMODULE_API UBaseDataAsset : public UPrimaryDataAsset
 {
@@ -29,5 +27,5 @@ public:
 	UUserWidget* Tooltip;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	FGameplayTag UniqueTag;  // 고유 ?�별??
+	FGameplayTag UniqueTag;
 }; 

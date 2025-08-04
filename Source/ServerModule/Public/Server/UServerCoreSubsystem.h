@@ -6,9 +6,6 @@
 #include "Subsystems/WorldSubsystem.h"
 #include "UServerCoreSubsystem.generated.h"
 
-/**
- * 
- */
 UCLASS()
 class SERVERMODULE_API UServerCoreSubsystem : public UWorldSubsystem, public IServerLogicBridge {
 	GENERATED_BODY()

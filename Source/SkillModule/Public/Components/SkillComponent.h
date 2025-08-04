@@ -4,13 +4,11 @@
 #include "Components/ActorComponent.h"
 #include "Data/SkillDataAsset.h"
 #include "DatabaseModule/Public/DatabaseManager.h"
-#include "Mappers/ISkillDtoMapper.h"
 #include "Mappers/ISkillAssetMapper.h"
 #include "Mappers/ISkillModelBuilder.h"
 #include "Mappers/SkillDtoMapper.h"
 #include "Engine/NetSerialization.h"
 #include "Net/Serialization/FastArraySerializer.h"
-#include "GameSharedModule/Public/Interface/IClientComponentProvider.h"
 #include "SkillComponent.generated.h"
 
 class USkillSlot;
@@ -18,14 +16,6 @@ class USkillDataAsset;
 class UGameplayAbility;
 struct FSkillDomain;
 
-// ============================================================================
-// UI 업데이트용 스킬 슬롯 데이터 구조체
-// ============================================================================
-
-/**
- * 완전한 스킬 슬롯 데이터 구조체 (USkillSlot의 완전한 대체)
- * 네트워크 복제와 로컬 사용 모두 지원
- */
 USTRUCT(BlueprintType)
 struct SKILLMODULE_API FSkillSlotReplicationData
 {
@@ -43,11 +33,9 @@ struct SKILLMODULE_API FSkillSlotReplicationData
 	UPROPERTY(BlueprintReadOnly)
 	FDateTime LastUsedTime;
 
-	// SkillDataAsset 직접 포함 (복제 지원)
 	UPROPERTY(BlueprintReadOnly)
 	USkillDataAsset* SkillData = nullptr;
 
-	// UI에 필요한 기본 스킬 정보 (캐시된 데이터)
 	UPROPERTY(BlueprintReadOnly)
 	FString SkillName;
 
@@ -66,7 +54,6 @@ struct SKILLMODULE_API FSkillSlotReplicationData
 		SkillData = nullptr;
 	}
 
-	// SkillSlot의 기존 기능들을 직접 제공
 	bool IsEmpty() const { return SkillId <= 0 || !SkillData; }
 	
 	bool IsOnCooldown(float BaseCooltime) const
@@ -91,14 +78,12 @@ struct SKILLMODULE_API FSkillSlotReplicationData
 		return FMath::Max(0.0f, BaseCooltime - static_cast<float>(ElapsedSeconds));
 	}
 
-	// 스킬 데이터 설정
 	void SetSkillData(USkillDataAsset* InSkillData, int32 InSkillId)
 	{
 		SkillData = InSkillData;
 		SkillId = InSkillId;
 		LastUsedTime = FDateTime::MinValue();
 		
-		// 캐시된 데이터 업데이트
 		if (InSkillData)
 		{
 			SkillName = InSkillData->DisplayName.ToString();
@@ -113,7 +98,6 @@ struct SKILLMODULE_API FSkillSlotReplicationData
 		}
 	}
 
-	// 스킬 클리어
 	void ClearSkill()
 	{
 		SkillData = nullptr;
@@ -124,7 +108,6 @@ struct SKILLMODULE_API FSkillSlotReplicationData
 		Cooldown = 0.0f;
 	}
 
-	// 초기화
 	void Initialize(int32 InSlotIndex, const FString& InSlotKey, USkillDataAsset* InSkillData = nullptr)
 	{
 		SlotIndex = InSlotIndex;
@@ -140,9 +123,6 @@ struct SKILLMODULE_API FSkillSlotReplicationData
 	}
 };
 
-/**
- * FastArraySerializer 아이템
- */
 USTRUCT()
 struct SKILLMODULE_API FSkillSlotReplicationItem : public FFastArraySerializerItem
 {
@@ -161,9 +141,6 @@ struct SKILLMODULE_API FSkillSlotReplicationItem : public FFastArraySerializerIt
 	}
 };
 
-/**
- * FastArraySerializer를 상속한 스킬 슬롯 배열 컨테이너
- */
 USTRUCT()
 struct SKILLMODULE_API FSkillSlotReplicationArray : public FFastArraySerializer
 {
@@ -198,9 +175,9 @@ struct TStructOpsTypeTraits<FSkillSlotReplicationArray> : public TStructOpsTypeT
 	};
 };
 
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnSkillRegistered, int32 /* SlotIndex */);
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnSkillUnregistered, int32 /* SlotIndex */);
-DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSkillsSwapped, int32 /* SlotIndexA */, int32 /* SlotIndexB */);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnSkillRegistered, int32);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnSkillUnregistered, int32);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnSkillsSwapped, int32, int32);
 DECLARE_MULTICAST_DELEGATE(FOnSkillsChanged);
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnSkillStateChanged, const TArray<USkillSlot*>&);
@@ -215,24 +192,20 @@ public:
 
 	int32 GetMaxSlotCount() const { return MaxSkillSlots; }
 
-	// UPROPERTY(BlueprintAssignable, Category = "Skill|Events")
 	FOnSkillStateChanged OnSkillStateChanged;
 
-	// Domain Events (for DDD compliance)
 	FOnSkillRegistered OnSkillRegistered;
 	FOnSkillUnregistered OnSkillUnregistered;
 	FOnSkillsSwapped OnSkillsSwapped;
 	FOnSkillsChanged OnSkillsChanged;
 
 protected:
-	// 주 데이터 저장소 - FSkillSlotReplicationData 배열 (복제 및 로컬 모두 지원)
 	UPROPERTY(ReplicatedUsing=OnRep_SkillSlotsReplication)
 	FSkillSlotReplicationArray SkillSlotsReplication;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Skill|Component")
 	int32 MaxSkillSlots = 8;
 
-	// 3-Layer Mapping Architecture
 	UPROPERTY()
 	TScriptInterface<USkillDtoMapper> DtoMapper;
 
@@ -243,128 +216,36 @@ protected:
 	TScriptInterface<ISkillModelBuilderInterface> ModelBuilder;
 
 public:
-	// ========================================================================
-	// AGGREGATE ROOT METHODS - BUSINESS LOGIC WITH INVARIANT PROTECTION
-	// ========================================================================
-
-	/**
-	 * Register a skill to specific slot (Domain logic with validation)
-	 * @param SlotIndex Target slot index
-	 * @param SkillData Skill data to register
-	 * @return True if successfully registered
-	 */
 	bool RegisterSkill(int32 SlotIndex, USkillDataAsset* SkillData);
 
-	/**
-	 * Unregister a skill from slot (Domain logic with validation)
-	 * @param SlotIndex Slot index to unregister
-	 */
 	void UnregisterSkill(int32 SlotIndex);
 
-	/**
-	 * Swap skills between two slots (Domain logic with validation)
-	 * @param SlotIndexA First slot index
-	 * @param SlotIndexB Second slot index
-	 */
 	void SwapSkills(int32 SlotIndexA, int32 SlotIndexB);
 
-	// ========================================================================
-	// DOMAIN LOGIC METHODS - BUSINESS RULES VALIDATION
-	// ========================================================================
-
-	/**
-	 * Validate if a skill can be registered (Domain Rule)
-	 * @param SlotIndex Target slot index
-	 * @param SkillData Skill data to validate
-	 * @return True if skill can be registered
-	 */
 	bool CanRegisterSkill(int32 SlotIndex, USkillDataAsset* SkillData) const;
 
-	/**
-	 * Validate if a skill can be unregistered (Domain Rule)
-	 * @param SlotIndex Slot index to validate
-	 * @return True if skill can be unregistered
-	 */
 	bool CanUnregisterSkill(int32 SlotIndex) const;
 
-	/**
-	 * Validate if skills can be swapped (Domain Rule)
-	 * @param SlotIndexA First slot index
-	 * @param SlotIndexB Second slot index
-	 * @return True if skills can be swapped
-	 */
 	bool CanSwapSkills(int32 SlotIndexA, int32 SlotIndexB) const;
 
-	/**
-	 * Check if player has a specific skill
-	 * @param SkillData Skill data to check
-	 * @return True if player has this skill
-	 */
 	bool HasSkill(USkillDataAsset* SkillData) const;
 
-	// ========================================================================
-	// QUERY METHODS - READ-ONLY ACCESS
-	// ========================================================================
-
-	/**
-	 * Get skill slot replication data by index (primary access method)
-	 * @param SlotIndex Slot index to find
-	 * @return Skill slot replication data, nullptr if not found
-	 */
 	const FSkillSlotReplicationData* GetSkillSlotDataByIndex(int32 SlotIndex) const;
 
-	/**
-	 * Get mutable skill slot data by index (for modifications)
-	 * @param SlotIndex Slot index to find
-	 * @return Mutable skill slot replication data, nullptr if not found
-	 */
 	FSkillSlotReplicationData* GetMutableSkillSlotDataByIndex(int32 SlotIndex);
 
-
-	/**
-	 * Get skill slot by slot key and index
-	 * @param SlotKey Slot key to find
-	 * @param SlotIndex Slot index to find
-	 * @return Skill slot data, nullptr if not found
-	 */
 	const FSkillSlotReplicationData* GetSkillSlotDataByKeyAndIndex(const FString& SlotKey, int32 SlotIndex) const;
 
-	/**
-	 * Get all skill slot data (read-only access)
-	 * @return Array of all skill slot data
-	 */
 	TArray<FSkillSlotReplicationData> GetAllSkillSlotsData() const;
 
-
-	/**
-	 * Get replicated skill slots data for UI (read-only access)
-	 * @return FastArray containing replicated skill slot data
-	 */
 	const FSkillSlotReplicationArray& GetReplicatedSkillSlots() const { return SkillSlotsReplication; }
 
-	// ========================================================================
-	// 3-LAYER MAPPING INTEGRATION METHODS
-	// ========================================================================
-
-	/**
-	 * Build skill slots from DTOs and AssetData using mappers
-	 * @param SlotDTOs Skill slot DTOs from database
-	 * @param AssetDataArray Asset data from content
-	 */
 	void BuildSkillSlotsFromMappers(
 		const TArray<FSkillSlotDatabaseDTO>& SlotDTOs,
 		const TArray<USkillDataAsset*>& SkillDataAssets
 	);
 
-	/**
-	 * Extract DTOs from current skill slots using mappers
-	 * @param UserId User ID for the DTOs
-	 * @return Array of skill slot DTOs
-	 */
 	TArray<FSkillSlotDatabaseDTO> ExtractDTOsFromSkillSlots(const FString& UserId) const;
-
-	// ?��? 복제�??�행�?
-	// virtual bool ReplicateSubobjects(class UActorChannel* Channel, class FOutBunch* Bunch, FReplicationFlags* RepFlags) override;
 
 protected:
 	virtual void BeginPlay() override;
@@ -373,40 +254,16 @@ protected:
 	void OnRep_SkillSlotsReplication();
 
 public:
-	// ========================================================================
-	// SKILL REPLICATION METHODS
-	// ========================================================================
-
-	/**
-	 * 스킬 슬롯 변경사항을 복제 시스템에 반영
-	 * @param SlotIndex 변경된 슬롯 인덱스
-	 */
 	void MarkSlotForReplication(int32 SlotIndex);
 
-	/**
-	 * 모든 스킬 슬롯을 복제 시스템에 동기화
-	 */
 	void SyncAllSlotsToReplication();
 
 private:
-	/**
-	 * Internal method to notify skill state changes
-	 */
 	void NotifySkillStateChanged();
 
-	/**
-	 * Initialize mappers (called in BeginPlay)
-	 */
 	void InitializeMappers();
 
-	/**
-	 * Validate mapper dependencies
-	 * @return True if all mappers are valid
-	 */
 	bool ValidateMappers() const;
 
-	/**
-	 * Initialize empty skill slots (server only)
-	 */
 	void InitializeEmptySlots();
 };

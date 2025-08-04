@@ -6,9 +6,6 @@
 #include "UI/SetWidgetDataInterface.h"
 #include "ItemSetWidget.generated.h"
 
-/**
- * 
- */
 UCLASS()
 class CLIENTMODULE_API UItemSetWidget : public UUserWidget, public ISetWidgetDataInterface
 {

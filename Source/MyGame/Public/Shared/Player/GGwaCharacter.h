@@ -4,7 +4,6 @@
 #include "CoreMinimal.h"
 #include "AbilitySystemInterface.h"
 #include "EnhancedInputComponent.h"
-#include "GameplayTagContainer.h"
 #include "GameFramework/Character.h"
 #include "GGwaCharacter.generated.h"
 
@@ -74,7 +73,6 @@ private:
 	TObjectPtr<UPlayerReactionComponent> ReactionComponent;
 	TObjectPtr<USkillCastingService> SkillCastingService;
 	
-	// Timer for delayed UI initialization to avoid race conditions
 	FTimerHandle UIInitializationTimer;
 };
 

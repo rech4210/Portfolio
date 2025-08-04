@@ -1,5 +1,4 @@
 ﻿#include "Utill/UEnumTagMatchHelper.h"
-// Define the static maps that are declared in the header.
 
 TMap<EPlayerState, FGameplayTag> UEnumTagMatchHelper::PlayerStateMap;
 TMap<ECueType, FGameplayTag> UEnumTagMatchHelper::CueMap;
@@ -9,13 +8,11 @@ TMap<EGasDataType, FGameplayTag> UEnumTagMatchHelper::DataMap;
 
 void UEnumTagMatchHelper::InitializeHelper()
 {
-	// Ensure this runs only once.
 	if (PlayerStateMap.Num() > 0)
 	{
 		return;
 	}
 
-	// Player States
 	PlayerStateMap.Add(EPlayerState::Idle, FGameplayTag::RequestGameplayTag(TEXT("State.Player.Idle")));
 	PlayerStateMap.Add(EPlayerState::Combat, FGameplayTag::RequestGameplayTag(TEXT("State.Player.Combat")));
 	PlayerStateMap.Add(EPlayerState::Stunned, FGameplayTag::RequestGameplayTag(TEXT("State.Player.Stunned")));
@@ -24,16 +21,13 @@ void UEnumTagMatchHelper::InitializeHelper()
 	PlayerStateMap.Add(EPlayerState::Hit, FGameplayTag::RequestGameplayTag(TEXT("State.Player.Hit")));
 	PlayerStateMap.Add(EPlayerState::Guard, FGameplayTag::RequestGameplayTag(TEXT("State.Player.Guard")));
 
-	// Cue Types
 	CueMap.Add(ECueType::None, FGameplayTag::RequestGameplayTag(TEXT("Cue.None")));
 	CueMap.Add(ECueType::DirectionPreview, FGameplayTag::RequestGameplayTag(TEXT("Cue.DirectionPreview")));
 	CueMap.Add(ECueType::AreaAttackWarning, FGameplayTag::RequestGameplayTag(TEXT("Cue.AreaAttackWarning")));
 	
-	// GAS Event Types
 	EventMap.Add(EGasEventType::None, FGameplayTag::RequestGameplayTag(TEXT("GasEvent.None")));
 	EventMap.Add(EGasEventType::AbilityFinished, FGameplayTag::RequestGameplayTag(TEXT("GasEvent.AbilityFinished")));
 	
-	// Skill Types
 	SkillMap.Add(ESkillType::None, FGameplayTag::RequestGameplayTag(TEXT("Skill")));
 	SkillMap.Add(ESkillType::Attack, FGameplayTag::RequestGameplayTag(TEXT("Skill.Attack")));
 	SkillMap.Add(ESkillType::Skill1, FGameplayTag::RequestGameplayTag(TEXT("Skill.Skill1")));
@@ -46,7 +40,6 @@ void UEnumTagMatchHelper::InitializeHelper()
 	SkillMap.Add(ESkillType::Skill8, FGameplayTag::RequestGameplayTag(TEXT("Skill.Skill8")));
 	SkillMap.Add(ESkillType::Skill9, FGameplayTag::RequestGameplayTag(TEXT("Skill.Skill9")));
 	
-	// GAS Data Types
 	DataMap.Add(EGasDataType::None, FGameplayTag::RequestGameplayTag(TEXT("Data.None")));
 	DataMap.Add(EGasDataType::Cooldown, FGameplayTag::RequestGameplayTag(TEXT("Data.Cooldown")));
 	DataMap.Add(EGasDataType::CueDuration, FGameplayTag::RequestGameplayTag(TEXT("Data.CueDuration")));

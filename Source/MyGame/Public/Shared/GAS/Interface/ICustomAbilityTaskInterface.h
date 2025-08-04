@@ -6,7 +6,6 @@
 #include "Abilities/Tasks/AbilityTask_WaitTargetData.h"
 #include "ICustomAbilityTaskInterface.generated.h"
 
-// This class does not need to be modified.
 UINTERFACE()
 class UCustomAbilityTaskInterface : public UInterface {
 	GENERATED_BODY()

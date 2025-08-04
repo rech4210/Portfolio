@@ -24,7 +24,6 @@ void FSkillSlotReplicationArray::PostReplicatedAdd(const TArrayView<int32>& Adde
 		UE_LOG(LogTemp, Log, TEXT("SkillComponent: %d skill slots ADDED to replication (FinalSize: %d)"), 
 			AddedIndices.Num(), FinalSize);
 		
-		// 추가된 슬롯들에 대한 상세 정보 로그
 		for (int32 Index : AddedIndices)
 		{
 			if (Items.IsValidIndex(Index))
@@ -44,7 +43,6 @@ void FSkillSlotReplicationArray::PostReplicatedChange(const TArrayView<int32>& C
 		UE_LOG(LogTemp, Log, TEXT("SkillComponent: %d skill slots CHANGED in replication (FinalSize: %d)"), 
 			ChangedIndices.Num(), FinalSize);
 		
-		// 변경된 슬롯들에 대한 상세 정보 로그
 		for (int32 Index : ChangedIndices)
 		{
 			if (Items.IsValidIndex(Index))
@@ -78,7 +76,6 @@ void USkillComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	
-	// SkillSlotsReplication FastArray를 복제 대상으로 등록
 	DOREPLIFETIME(USkillComponent, SkillSlotsReplication);
 	
 	UE_LOG(LogTemp, Log, TEXT("SkillComponent: Registered SkillSlotsReplication for replication"));
@@ -89,10 +86,8 @@ void USkillComponent::BeginPlay()
 	Super::BeginPlay();
 	InitializeMappers();
 	
-	// FastArray Owner 설정
 	SkillSlotsReplication.SetOwner(this);
 	
-	// 서버에서 초기 슬롯 구조 생성 (빈 슬롯들)
 	if (GetOwner()->HasAuthority())
 	{
 		InitializeEmptySlots();
@@ -101,7 +96,6 @@ void USkillComponent::BeginPlay()
 
 void USkillComponent::InitializeMappers()
 {
-	// TODO: Initialize mappers from subsystem or dependency injection
 	DtoMapper = NewObject<USkillDtoMapper>(this, TEXT("SkillDtoMapper"));
 	AssetMapper = NewObject<USkillAssetMapper>(this, TEXT("SkillAssetMapper"));
 	ModelBuilder = NewObject<USkillModelBuilder>(this, TEXT("SkillModelBuilder"));
@@ -124,7 +118,6 @@ bool USkillComponent::RegisterSkill(int32 SlotIndex, USkillDataAsset* SkillData)
 		return false;
 	}
 
-	// 필요한 만큼 빈 슬롯 생성
 	while (SkillSlotsReplication.Items.Num() <= SlotIndex)
 	{
 		FSkillSlotReplicationData NewSlotData;
@@ -135,8 +128,7 @@ bool USkillComponent::RegisterSkill(int32 SlotIndex, USkillDataAsset* SkillData)
 		FSkillSlotReplicationItem NewItem(NewSlotData);
 		SkillSlotsReplication.Items.Add(NewItem);
 	}
-
-	// 해당 슬롯에 스킬 등록
+	
 	FSkillSlotReplicationData* TargetSlot = GetMutableSkillSlotDataByIndex(SlotIndex);
 	if (TargetSlot)
 	{
@@ -193,7 +185,6 @@ void USkillComponent::SwapSkills(int32 SlotIndexA, int32 SlotIndexB)
 
 	if (SlotA && SlotB)
 	{
-		// 스킬 데이터 교환
 		USkillDataAsset* TempSkillData = SlotA->SkillData;
 		int32 TempSkillId = SlotA->SkillId;
 		FString TempSkillName = SlotA->SkillName;
@@ -289,7 +280,6 @@ bool USkillComponent::HasSkill(USkillDataAsset* SkillData) const
 
 const FSkillSlotReplicationData* USkillComponent::GetSkillSlotDataByIndex(int32 SlotIndex) const
 {
-	// 복제 데이터에서 해당 슬롯 찾기
 	for (const FSkillSlotReplicationItem& Item : SkillSlotsReplication.Items)
 	{
 		if (Item.SlotData.SlotIndex == SlotIndex)
@@ -302,7 +292,6 @@ const FSkillSlotReplicationData* USkillComponent::GetSkillSlotDataByIndex(int32 
 
 FSkillSlotReplicationData* USkillComponent::GetMutableSkillSlotDataByIndex(int32 SlotIndex)
 {
-	// 복제 데이터에서 해당 슬롯 찾기 (수정 가능)
 	for (FSkillSlotReplicationItem& Item : SkillSlotsReplication.Items)
 	{
 		if (Item.SlotData.SlotIndex == SlotIndex)
@@ -366,7 +355,6 @@ void USkillComponent::BuildSkillSlotsFromMappers(
 			FSkillDomainModel DomainModel = ModelBuilder.GetInterface()->BuildDomainModel(SlotDTO, MatchingAsset);
 			FSkillSlotReplicationData NewSlotData = ModelBuilder.GetInterface()->BuildSkillSlotData(DomainModel);
 			
-			// 필요한 만큼 빈 슬롯 생성
 			while (SkillSlotsReplication.Items.Num() <= SlotDTO.SlotIndex)
 			{
 				FSkillSlotReplicationData EmptySlotData;
@@ -433,22 +421,16 @@ void USkillComponent::OnRep_SkillSlotsReplication()
 	UE_LOG(LogTemp, Log, TEXT("SkillComponent: UI replication data updated with %d items"), 
 		SkillSlotsReplication.Items.Num());
 	
-	// 클라이언트에서만 UI 업데이트 처리
 	if (GetOwner()->HasAuthority())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("SkillComponent: OnRep called on server - this should not happen"));
 		return;
 	}
 
-	// 임시 skill slot local 구성
-	
-
-	// PlayerState → PlayerController → UIManagerSubsystem → ClientUIComponent 체인으로 처리
 	if (APlayerState* OwnerPlayerState = Cast<APlayerState>(GetOwner()))
 	{
 		if (APlayerController* PC = OwnerPlayerState->GetPlayerController())
 		{
-			// IClientManagerInterface를 통한 UI 업데이트 체인 실행
 			if (IClientManagerInterface* ClientManager = Cast<IClientManagerInterface>(PC))
 			{
 				ClientManager->SkillHUDReplication(SkillSlotsReplication);
@@ -469,13 +451,11 @@ void USkillComponent::OnRep_SkillSlotsReplication()
 		UE_LOG(LogTemp, Warning, TEXT("SkillComponent: Owner is not a PlayerState"));
 	}
 	
-	// 기존 상태 변경 알림은 유지 (안전한 로컬 처리)
 	NotifySkillStateChanged();
 }
 
 void USkillComponent::MarkSlotForReplication(int32 SlotIndex)
 {
-	// 서버에서만 복제 시스템 업데이트
 	if (!GetOwner()->HasAuthority()) 
 	{
 		UE_LOG(LogTemp, Warning, TEXT("SkillComponent: MarkSlotForReplication called on client. SlotIndex: %d"), SlotIndex);
@@ -488,7 +468,6 @@ void USkillComponent::MarkSlotForReplication(int32 SlotIndex)
 		return;
 	}
 	
-	// 해당 슬롯 찾기 및 더티 마킹
 	for (int32 i = 0; i < SkillSlotsReplication.Items.Num(); ++i)
 	{
 		if (SkillSlotsReplication.Items[i].SlotData.SlotIndex == SlotIndex)
@@ -505,21 +484,17 @@ void USkillComponent::MarkSlotForReplication(int32 SlotIndex)
 
 void USkillComponent::SyncAllSlotsToReplication()
 {
-	// 서버에서만 복제 시스템 업데이트
 	if (!GetOwner()->HasAuthority()) 
 	{
 		UE_LOG(LogTemp, Warning, TEXT("SkillComponent: SyncAllSlotsToReplication called on client"));
 		return;
 	}
 	
-	// FSkillSlotReplicationData가 이미 주 데이터 저장소이므로 별도 동기화 불필요
-	// 모든 아이템을 더티로 마킹하여 네트워크 전송 보장
 	for (auto& Item : SkillSlotsReplication.Items)
 	{
 		SkillSlotsReplication.MarkItemDirty(Item);
 	}
 	
-	// 배열 전체가 변경되었음을 표시
 	SkillSlotsReplication.MarkArrayDirty();
 	
 	UE_LOG(LogTemp, Log, TEXT("SkillComponent: Synced %d slots to replication system"), 
@@ -528,9 +503,7 @@ void USkillComponent::SyncAllSlotsToReplication()
 
 void USkillComponent::NotifySkillStateChanged()
 {
-	// 임시 빈 배열 - 이벤트 시그니처를 나중에 FSkillSlotReplicationData로 변경해야 함
 	TArray<USkillSlot*> SlotArray;
-	
 	OnSkillStateChanged.Broadcast(SlotArray);
 }
 
@@ -538,7 +511,6 @@ void USkillComponent::InitializeEmptySlots()
 {
 	if (!GetOwner()->HasAuthority()) return;
 	
-	// MaxSkillSlots 만큼 빈 슬롯 생성
 	for (int32 i = SkillSlotsReplication.Items.Num(); i < MaxSkillSlots; ++i)
 	{
 		FSkillSlotReplicationData NewSlotData;
@@ -549,7 +521,6 @@ void USkillComponent::InitializeEmptySlots()
 		SkillSlotsReplication.Items.Add(NewItem);
 	}
 	
-	// 모든 빈 슬롯을 복제 시스템에 동기화
 	SyncAllSlotsToReplication();
 	
 	UE_LOG(LogTemp, Log, TEXT("SkillComponent: Initialized %d empty skill slots"), MaxSkillSlots);

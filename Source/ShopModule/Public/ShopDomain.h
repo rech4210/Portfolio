@@ -3,17 +3,10 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
-#include "DatabaseModule/Public/DatabaseManager.h" // Import DTO from DatabaseModule
 #include "ShopDomain.generated.h"
 
 class UShopItemData;
 
-// Use FShopItemDTO and FShopDomain from DatabaseModule
-// Use FShopRepositoryResult from DatabaseModule
-
-/**
- * Purchase transaction result (specific to ShopModule business logic)
- */
 USTRUCT(BlueprintType)
 struct SHOPMODULE_API FShopPurchaseResult
 {

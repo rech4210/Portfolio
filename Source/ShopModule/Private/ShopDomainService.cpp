@@ -38,10 +38,8 @@ void UShopDomainService::PurchaseItem(
 		return;
 	}
 
-	// Step 1: Load shop data (Worker Thread)
 	auto LoadTask = Repository->LoadShopByID(ShopID);
 	
-	// Step 2: Process purchase logic with atomic transaction
 	UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerState, ItemID, Quantity, PlayerCurrency, LoadTask]() mutable -> void
 	{
 		FShopRepositoryResult ShopResult = LoadTask.GetResult();
@@ -54,14 +52,12 @@ void UShopDomainService::PurchaseItem(
 
 		FShopDomain ShopData = ShopResult.ShopData;
 
-		// Validate business rules (Worker Thread)
 		if (!ValidatePurchaseRules(ShopData, ItemID, Quantity, PlayerCurrency))
 		{
 			UE_LOG(LogTemp, Warning, TEXT("ShopDomainService: Purchase validation failed"));
 			return;
 		}
 
-		// Find and update item
 		auto* ItemData = ShopData.ShopItems.FindByPredicate([ItemID](const FShopItemDTO& Item) 
 		{ 
 			return Item.ItemID == ItemID; 
@@ -73,17 +69,14 @@ void UShopDomainService::PurchaseItem(
 			return;
 		}
 
-		// Execute purchase business logic - atomic transaction
 		ItemData->Stock -= Quantity;
 		ItemData->bIsAvailable = ItemData->Stock > 0;
 
-		// Save changes with atomic transaction
 		auto SaveTask = Repository->SaveShop(ShopData);
 		bool bSaveSuccess = SaveTask.GetResult();
 
 		if (bSaveSuccess)
 		{
-			// Publish domain event on GameThread
 			AsyncTask(ENamedThreads::GameThread, [this, PlayerState, ItemID, Quantity]()
 			{
 				OnItemPurchased.Broadcast(PlayerState, ItemID, Quantity);
@@ -104,10 +97,8 @@ void UShopDomainService::LoadShop(APlayerState* PlayerState, int32 ShopID)
 		return;
 	}
 
-	// Load shop data (Worker Thread)
 	auto LoadTask = Repository->LoadShopByID(ShopID);
 	
-	// Publish domain event on GameThread
 	UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerState, LoadTask]() mutable -> void
 	{
 		FShopRepositoryResult Result = LoadTask.GetResult();
@@ -134,10 +125,8 @@ void UShopDomainService::SaveShop(const FShopDomain& ShopData)
 		return;
 	}
 
-	// Save shop data with atomic transaction (Worker Thread)
 	auto SaveTask = Repository->SaveShop(ShopData);
 	
-	// Publish domain event on GameThread
 	UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, ShopData, SaveTask]() mutable -> void
 	{
 		bool bSuccess = SaveTask.GetResult();
@@ -164,10 +153,8 @@ void UShopDomainService::AddItemToShop(int32 ShopID, const FShopItemDTO& ItemDTO
 		return;
 	}
 
-	// Step 1: Load shop data (Worker Thread)
 	auto LoadTask = Repository->LoadShopByID(ShopID);
 	
-	// Step 2: Add item logic with atomic transaction
 	UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, ShopID, ItemDTO, LoadTask]() mutable -> void
 	{
 		FShopRepositoryResult ShopResult = LoadTask.GetResult();
@@ -180,23 +167,19 @@ void UShopDomainService::AddItemToShop(int32 ShopID, const FShopItemDTO& ItemDTO
 
 		FShopDomain ShopData = ShopResult.ShopData;
 
-		// Validate business rules
 		if (!ValidateItemAdditionRules(ShopData, ItemDTO))
 		{
 			UE_LOG(LogTemp, Warning, TEXT("ShopDomainService: Item addition validation failed"));
 			return;
 		}
 
-		// Add item to shop
 		ShopData.ShopItems.Add(ItemDTO);
 
-		// Save changes with atomic transaction
 		auto SaveTask = Repository->SaveShop(ShopData);
 		bool bSaveSuccess = SaveTask.GetResult();
 
 		if (bSaveSuccess)
 		{
-			// Publish domain event on GameThread
 			AsyncTask(ENamedThreads::GameThread, [this, ShopID, ItemDTO]()
 			{
 				OnShopItemAdded.Broadcast(ShopID, ItemDTO.ItemID, ItemDTO);
@@ -217,10 +200,7 @@ void UShopDomainService::RemoveItemFromShop(int32 ShopID, int32 ItemID)
 		return;
 	}
 
-	// Step 1: Load shop data (Worker Thread)
 	auto LoadTask = Repository->LoadShopByID(ShopID);
-	
-	// Step 2: Remove item logic with atomic transaction
 	UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, ShopID, ItemID, LoadTask]() mutable -> void
 	{
 		FShopRepositoryResult ShopResult = LoadTask.GetResult();
@@ -233,7 +213,6 @@ void UShopDomainService::RemoveItemFromShop(int32 ShopID, int32 ItemID)
 
 		FShopDomain ShopData = ShopResult.ShopData;
 
-		// Find and remove item
 		int32 RemovedCount = ShopData.ShopItems.RemoveAll([ItemID](const FShopItemDTO& Item) 
 		{ 
 			return Item.ItemID == ItemID; 
@@ -245,13 +224,11 @@ void UShopDomainService::RemoveItemFromShop(int32 ShopID, int32 ItemID)
 			return;
 		}
 
-		// Save changes with atomic transaction
 		auto SaveTask = Repository->SaveShop(ShopData);
 		bool bSaveSuccess = SaveTask.GetResult();
 
 		if (bSaveSuccess)
 		{
-			// Publish domain event on GameThread
 			AsyncTask(ENamedThreads::GameThread, [this, ShopID, ItemID]()
 			{
 				OnShopItemRemoved.Broadcast(ShopID, ItemID);
@@ -278,10 +255,7 @@ void UShopDomainService::UpdateItemStock(int32 ShopID, int32 ItemID, int32 NewSt
 		return;
 	}
 
-	// Step 1: Load shop data (Worker Thread)
 	auto LoadTask = Repository->LoadShopByID(ShopID);
-	
-	// Step 2: Update stock logic with atomic transaction
 	UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, ShopID, ItemID, NewStock, LoadTask]() mutable -> void
 	{
 		FShopRepositoryResult ShopResult = LoadTask.GetResult();
@@ -294,7 +268,6 @@ void UShopDomainService::UpdateItemStock(int32 ShopID, int32 ItemID, int32 NewSt
 
 		FShopDomain ShopData = ShopResult.ShopData;
 
-		// Find and update item stock
 		auto* ItemData = ShopData.ShopItems.FindByPredicate([ItemID](const FShopItemDTO& Item) 
 		{ 
 			return Item.ItemID == ItemID; 
@@ -306,11 +279,9 @@ void UShopDomainService::UpdateItemStock(int32 ShopID, int32 ItemID, int32 NewSt
 			return;
 		}
 
-		// Update stock
 		ItemData->Stock = NewStock;
 		ItemData->bIsAvailable = NewStock > 0;
 
-		// Save changes with atomic transaction
 		auto SaveTask = Repository->SaveShop(ShopData);
 		bool bSaveSuccess = SaveTask.GetResult();
 
@@ -339,10 +310,7 @@ void UShopDomainService::UpdateItemPrice(int32 ShopID, int32 ItemID, float NewPr
 		return;
 	}
 
-	// Step 1: Load shop data (Worker Thread)
 	auto LoadTask = Repository->LoadShopByID(ShopID);
-	
-	// Step 2: Update price logic with atomic transaction
 	UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, ShopID, ItemID, NewPrice, LoadTask]() mutable -> void
 	{
 		FShopRepositoryResult ShopResult = LoadTask.GetResult();
@@ -355,7 +323,6 @@ void UShopDomainService::UpdateItemPrice(int32 ShopID, int32 ItemID, float NewPr
 
 		FShopDomain ShopData = ShopResult.ShopData;
 
-		// Find and update item price
 		auto* ItemData = ShopData.ShopItems.FindByPredicate([ItemID](const FShopItemDTO& Item) 
 		{ 
 			return Item.ItemID == ItemID; 
@@ -367,10 +334,8 @@ void UShopDomainService::UpdateItemPrice(int32 ShopID, int32 ItemID, float NewPr
 			return;
 		}
 
-		// Update price
 		ItemData->Price = NewPrice;
 
-		// Save changes with atomic transaction
 		auto SaveTask = Repository->SaveShop(ShopData);
 		bool bSaveSuccess = SaveTask.GetResult();
 
@@ -393,10 +358,7 @@ void UShopDomainService::RestockShop(int32 ShopID)
 		return;
 	}
 
-	// Step 1: Load shop data (Worker Thread)
 	auto LoadTask = Repository->LoadShopByID(ShopID);
-	
-	// Step 2: Restock logic with atomic transaction
 	UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, ShopID, LoadTask]() mutable -> void
 	{
 		FShopRepositoryResult ShopResult = LoadTask.GetResult();
@@ -409,18 +371,14 @@ void UShopDomainService::RestockShop(int32 ShopID)
 
 		FShopDomain ShopData = ShopResult.ShopData;
 
-		// Business logic: Restock all items to full capacity
 		for (auto& Item : ShopData.ShopItems)
 		{
-			// Restore to default stock level (business rule)
-			Item.Stock = 10; // Could be configurable or based on item type
+			Item.Stock = 10;
 			Item.bIsAvailable = true;
 		}
 
-		// Update shop last restock time
 		ShopData.LastRestockTime = FDateTime::Now();
 
-		// Save changes with atomic transaction
 		auto SaveTask = Repository->SaveShop(ShopData);
 		bool bSaveSuccess = SaveTask.GetResult();
 
@@ -428,7 +386,6 @@ void UShopDomainService::RestockShop(int32 ShopID)
 		{
 			UE_LOG(LogTemp, Log, TEXT("ShopDomainService: Successfully restocked shop %d"), ShopID);
 			
-			// Broadcast domain event on Game Thread
 			AsyncTask(ENamedThreads::GameThread, [this, ShopID]()
 			{
 				OnShopRestocked.Broadcast(ShopID);
@@ -449,10 +406,7 @@ void UShopDomainService::SetShopStatus(int32 ShopID, bool bIsOpen)
 		return;
 	}
 
-	// Step 1: Load shop data (Worker Thread)
 	auto LoadTask = Repository->LoadShopByID(ShopID);
-	
-	// Step 2: Update status logic with atomic transaction
 	UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, ShopID, bIsOpen, LoadTask]() mutable -> void
 	{
 		FShopRepositoryResult ShopResult = LoadTask.GetResult();
@@ -465,10 +419,7 @@ void UShopDomainService::SetShopStatus(int32 ShopID, bool bIsOpen)
 
 		FShopDomain ShopData = ShopResult.ShopData;
 
-		// Update shop status
 		ShopData.bIsOpen = bIsOpen;
-
-		// Save changes with atomic transaction
 		auto SaveTask = Repository->SaveShop(ShopData);
 		bool bSaveSuccess = SaveTask.GetResult();
 
@@ -491,11 +442,8 @@ void UShopDomainService::GetShopInfo(int32 ShopID)
 		UE_LOG(LogTemp, Error, TEXT("ShopDomainService: Invalid repository"));
 		return;
 	}
-
-	// Load shop data (Worker Thread)
 	auto LoadTask = Repository->LoadShopByID(ShopID);
 	
-	// Execute domain event on GameThread
 	UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, LoadTask]() mutable -> void
 	{
 		FShopRepositoryResult Result = LoadTask.GetResult();
@@ -504,7 +452,6 @@ void UShopDomainService::GetShopInfo(int32 ShopID)
 		{
 			UE_LOG(LogTemp, Log, TEXT("ShopDomainService: Successfully loaded shop info"));
 			
-			// Broadcast domain event on Game Thread
 			AsyncTask(ENamedThreads::GameThread, [this, Result]()
 			{
 				OnShopLoaded.Broadcast(nullptr, Result.ShopData);
@@ -523,14 +470,12 @@ void UShopDomainService::GetShopInfo(int32 ShopID)
 
 bool UShopDomainService::ValidatePurchaseRules(const FShopDomain& ShopData, int32 ItemID, int32 Quantity, float PlayerCurrency) const
 {
-	// Business rule: Shop must be open
 	if (!ShopData.bIsOpen)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("ShopDomainService: Shop is closed"));
 		return false;
 	}
 
-	// Find the item
 	const auto* ItemData = ShopData.ShopItems.FindByPredicate([ItemID](const FShopItemDTO& Item) 
 	{ 
 		return Item.ItemID == ItemID; 
@@ -542,21 +487,18 @@ bool UShopDomainService::ValidatePurchaseRules(const FShopDomain& ShopData, int3
 		return false;
 	}
 
-	// Business rule: Item must be available
 	if (!ItemData->bIsAvailable)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("ShopDomainService: Item not available"));
 		return false;
 	}
 
-	// Business rule: Sufficient stock
 	if (ItemData->Stock < Quantity)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("ShopDomainService: Insufficient stock"));
 		return false;
 	}
 
-	// Business rule: Player must have enough currency
 	const float TotalCost = ItemData->Price * Quantity;
 	if (PlayerCurrency < TotalCost)
 	{
@@ -569,28 +511,24 @@ bool UShopDomainService::ValidatePurchaseRules(const FShopDomain& ShopData, int3
 
 bool UShopDomainService::ValidateItemAdditionRules(const FShopDomain& ShopData, const FShopItemDTO& ItemDTO) const
 {
-	// Business rule: Item ID must be valid
 	if (ItemDTO.ItemID <= 0)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("ShopDomainService: Invalid item ID"));
 		return false;
 	}
 
-	// Business rule: Price must be positive
 	if (ItemDTO.Price <= 0.0f)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("ShopDomainService: Invalid item price"));
 		return false;
 	}
 
-	// Business rule: Stock must be non-negative
 	if (ItemDTO.Stock < 0)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("ShopDomainService: Invalid item stock"));
 		return false;
 	}
 
-	// Business rule: Item must not already exist in shop
 	const bool bItemExists = ShopData.ShopItems.ContainsByPredicate([&ItemDTO](const FShopItemDTO& Item) 
 	{ 
 		return Item.ItemID == ItemDTO.ItemID; 
@@ -608,14 +546,12 @@ bool UShopDomainService::ValidateItemAdditionRules(const FShopDomain& ShopData, 
 template<typename Func>
 void UShopDomainService::PublishDomainEvent(Func&& EventFunction)
 {
-	// Ensure we're on the GameThread before publishing events
 	if (IsInGameThread())
 	{
 		EventFunction();
 	}
 	else
 	{
-		// Should not happen since we explicitly use ENamedThreads::GameThread
 		UE_LOG(LogTemp, Error, TEXT("ShopDomainService: Attempting to publish domain event from non-GameThread"));
 	}
 }

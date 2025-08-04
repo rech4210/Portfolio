@@ -19,10 +19,6 @@ void UClientAuthComponent::BeginPlay()
 
 }
 
-// ============================================================================
-// IClientAuthInterface IMPLEMENTATION
-// ============================================================================
-
 void UClientAuthComponent::InitializeAuth()
 {
 	OwnerController = Cast<AGGwaPlayerController>(GetOwner());
@@ -30,10 +26,6 @@ void UClientAuthComponent::InitializeAuth()
 		UE_LOG(LogTemp, Error, TEXT("ClientAuthComponent: Owner is not AGGwaPlayerController"));
 		return;
 	}
-	//
-	// if (!OwnerController || !OwnerController->IsLocalPlayerController()){
-	// 	return;
-	// }
 
 	AuthService = NewObject<UAuthService>(this, TEXT("AuthService"));
 	if (!AuthService){
@@ -51,12 +43,6 @@ void UClientAuthComponent::RequestRegistration(const FString& Username, const FS
 		return;
 	}
 
-	// Create delegate for registration result with validation
-	// FRegistrationDelegate RegistrationDelegate;
-
-	// UE_LOG(LogTemp, Log, TEXT("ClientAuthComponent: Successfully bound registration delegate"));
-
-	// Request registration through AuthService
 	AuthService->RequestRegistration(Username, Password, OwnerController);
 }
 
@@ -71,20 +57,8 @@ void UClientAuthComponent::RequestLogin(const FString& Username, const FString& 
 		return;
 	}
 
-	// // Validate component state before binding delegate
-	// if (!IsValid(this) || IsBeingDestroyed())
-	// {
-	// 	UE_LOG(LogTemp, Error, TEXT("ClientAuthComponent: Component is invalid or being destroyed"));
-	// 	BP_OnLoginResult(false, TEXT(""), TEXT(""));
-	// 	return;
-	// }
-
-	// Create delegate for login result with validation
-	// FLoginDelegate LoginDelegate;
-
 	UE_LOG(LogTemp, Log, TEXT("ClientAuthComponent: Successfully bound login delegate"));
 
-	// Request login through AuthService
 	AuthService->RequestLogin(Username, Password, OwnerController);
 }
 
@@ -92,21 +66,8 @@ void UClientAuthComponent::OnServerRegistrationResult(bool bSuccess, const FStri
 {
 	UE_LOG(LogTemp, Log, TEXT("ClientAuthComponent::OnServerRegistrationResult: Success=%s, Message=%s"), 
 		bSuccess ? TEXT("true") : TEXT("false"), *Message);
-
-	// Notify AuthService about the result
-	// if (AuthService)
-	// {
-	// 	AuthService->OnServerRegistrationResult(bSuccess, Message);
-	// }
 	
-	// Forward to Blueprint for UI updates
 	BP_OnRegistrationResult(bSuccess, Message);
-	
-	// Also forward to PlayerController's Blueprint event for backward compatibility
-	// if (OwnerController)
-	// {
-	// 	OwnerController->OnRegistrationResult_BP(bSuccess, Message);
-	// }
 }
 
 void UClientAuthComponent::OnServerLoginResult(bool bSuccess, const FString& Token, const FString& UserId)
@@ -114,20 +75,7 @@ void UClientAuthComponent::OnServerLoginResult(bool bSuccess, const FString& Tok
 	UE_LOG(LogTemp, Log, TEXT("ClientAuthComponent::OnServerLoginResult: Success=%s, UserId=%s"), 
 		bSuccess ? TEXT("true") : TEXT("false"), *UserId);
 
-	// Notify AuthService about the result
-	// if (AuthService)
-	// {
-	// 	AuthService->OnServerLoginResult(bSuccess, Token, UserId);
-	// }
-
-	// Forward to Blueprint for UI updates
 	BP_OnLoginResult(bSuccess, Token, UserId);
-	
-	// Also forward to PlayerController's Blueprint event for backward compatibility
-	// if (OwnerController)
-	// {
-	// 	OwnerController->OnLoginResult_BP(bSuccess, Token, UserId);
-	// }
 }
 
 TScriptInterface<IClientManagerInterface> UClientAuthComponent::GetClientSubSystem() {
@@ -136,7 +84,3 @@ TScriptInterface<IClientManagerInterface> UClientAuthComponent::GetClientSubSyst
 	}
 	return nullptr;
 }
-
-// ============================================================================
-// PRIVATE HELPER METHODS
-// ============================================================================

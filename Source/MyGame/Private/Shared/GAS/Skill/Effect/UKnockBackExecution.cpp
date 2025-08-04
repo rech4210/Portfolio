@@ -27,7 +27,6 @@ void UKnockBackExecution::Execute_Implementation(const FGameplayEffectCustomExec
 	if (!TargetCharacter)
 		return;
 
-	// �˹� ����� ����
 	FVector KnockbackDir = (TargetActor->GetActorLocation() - SourceActor->GetActorLocation()).GetSafeNormal();
 
 	TargetCharacter->LaunchCharacter(KnockbackDir * KnockbackStrength + FVector(0, KnockbackHeight, KnockbackDistance), true, true);

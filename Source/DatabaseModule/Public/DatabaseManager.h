@@ -5,13 +5,11 @@
 #include "Tasks/Task.h"
 #include "DatabaseManager.generated.h"
 
-// Delegate for async operations
 DECLARE_DELEGATE_OneParam(FCharacterDataLoadDelegate, const TOptional<FCharacterData>& /* CharacterData */);
 DECLARE_DELEGATE_OneParam(FCharacterDataSaveDelegate, bool /* bSuccess */);
 DECLARE_DELEGATE_OneParam(FInventoryDataLoadDelegate, bool /* bSuccess */);
 DECLARE_DELEGATE_OneParam(FInventoryDataSaveDelegate, bool /* bSuccess */);
 
-// Database-related delegates
 DECLARE_DELEGATE_TwoParams(FDatabaseUserLoadDelegate, bool /* bSuccess */, const TOptional<FDatabaseUserData>& /* UserData */);
 DECLARE_DELEGATE_OneParam(FDatabaseUserSaveDelegate, bool /* bSuccess */);
 DECLARE_DELEGATE_OneParam(FDatabaseAuditLogDelegate, bool /* bSuccess */);
@@ -25,8 +23,6 @@ struct FDatabaseManagerImpl;
 
 /**
  * DTO for User Account Data in Database
- * Maps to 'users' table structure
- * Note: Email field is optional for future features (password recovery, etc.)
  */
 USTRUCT(BlueprintType)
 struct DATABASEMODULE_API FDatabaseUserData
@@ -34,31 +30,31 @@ struct DATABASEMODULE_API FDatabaseUserData
 	GENERATED_BODY()
 
 	UPROPERTY()
-	FString UserId; // CHAR(36) PRIMARY KEY - GUID format
+	FString UserId;
 
 	UPROPERTY()
-	FString Username; // VARCHAR(30) UNIQUE
+	FString Username;
 
 	UPROPERTY()
-	FString PasswordHash; // VARCHAR(255)
+	FString PasswordHash;
 
 	UPROPERTY()
-	FDateTime CreatedAt; // DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3)
+	FDateTime CreatedAt;
 
 	UPROPERTY()
-	TOptional<FDateTime> LastLoginAt; // DATETIME(3) NULL
+	TOptional<FDateTime> LastLoginAt;
 
 	UPROPERTY()
-	bool bIsLocked; // TINYINT(1) DEFAULT 0
+	bool bIsLocked;
 
 	UPROPERTY()
-	TOptional<FDateTime> LockExpiresAt; // DATETIME(3) NULL
+	TOptional<FDateTime> LockExpiresAt;
 
 	UPROPERTY()
-	bool bIsDeleted; // TINYINT(1) DEFAULT 0
+	bool bIsDeleted;
 
 	UPROPERTY()
-	TOptional<FDateTime> DeletedAt; // DATETIME(3) NULL
+	TOptional<FDateTime> DeletedAt;
 
 	FDatabaseUserData()
 		: UserId(TEXT(""))
@@ -71,8 +67,7 @@ struct DATABASEMODULE_API FDatabaseUserData
 };
 
 /**
- * DTO for User Audit Log Data in Database
- * Maps to 'user_audit_logs' table structure
+ * DTO for User Audit Log Data
  */
 USTRUCT(BlueprintType)
 struct DATABASEMODULE_API FDatabaseAuditLogData
@@ -80,22 +75,22 @@ struct DATABASEMODULE_API FDatabaseAuditLogData
 	GENERATED_BODY()
 
 	UPROPERTY()
-	int64 LogId; // BIGINT AUTO_INCREMENT
+	int64 LogId;
 
 	UPROPERTY()
-	int32 UserId; // INT - Foreign Key to users.user_id
+	int32 UserId;
 
 	UPROPERTY()
-	FString Action; // VARCHAR(50) - LOGIN_SUCCESS, LOGIN_FAILED, etc.
+	FString Action;
 
 	UPROPERTY()
-	FString Details; // TEXT - JSON details about the action
+	FString Details;
 
 	UPROPERTY()
-	FString IpAddress; // VARCHAR(45) - IPv4/IPv6 address
+	FString IpAddress;
 
 	UPROPERTY()
-	FDateTime CreatedAt; // DATETIME DEFAULT CURRENT_TIMESTAMP
+	FDateTime CreatedAt;
 
 	FDatabaseAuditLogData()
 		: LogId(0)
@@ -103,12 +98,9 @@ struct DATABASEMODULE_API FDatabaseAuditLogData
 	{}
 };
 
-// ============================================================================
-// EXISTING INVENTORY DTOs
-// ============================================================================
-
-
-// DTO for inventory items
+/**
+ * Inventory Item Data Transfer Object
+ */
 USTRUCT(BlueprintType)
 struct DATABASEMODULE_API FInventoryItemDTO
 {
@@ -121,10 +113,10 @@ struct DATABASEMODULE_API FInventoryItemDTO
 	int32 Quantity;
 
 	UPROPERTY()
-	int32 SlotIndex; // ?�벤?�리 ?�롯 ?�치
+	int32 SlotIndex;
 
 	UPROPERTY()
-	FString ItemData; // JSON serialized data
+	FString ItemData;
 
 	FInventoryItemDTO()
 		: Quantity(0), SlotIndex(-1)
@@ -142,21 +134,21 @@ struct DATABASEMODULE_API FCharacterData
 	GENERATED_BODY()
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Data")
-	FString UserId; // VARCHAR(255) in database - supports UUID, external auth IDs
+	FString UserId;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Data")
-	FString CharacterId; // VARCHAR(255) in database - matches schema
+	FString CharacterId;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Data")
-	FString CharacterName; // VARCHAR(100) in database - character display name
+	FString CharacterName;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Data")
 	int32 Level;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Data")
-	int64 Exp; // BIGINT in database - supports large experience values
+	int64 Exp;
 
-	// JSONB data from the database, can be parsed into another USTRUCT if needed
+	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Data")
 	FString JsonData; 
 
@@ -169,37 +161,37 @@ struct DATABASEMODULE_API FCharacterData
 };
 
 // ===============================================================================
-// DTO LAYER - ?�수 ?�이??구조 (SQL ?�키�?반영)
+// DTO LAYER - 
 // ===============================================================================
 
-// SQL 기반 Skill Slot DTO (user_skill_slots ?�이�?구조)
+
 USTRUCT(BlueprintType)
 struct DATABASEMODULE_API FSkillSlotDatabaseDTO
 {
 	GENERATED_BODY()
 
-	// Primary Keys (SQL user_skill_slots ?�이�?기�?)
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillDTO")
-	FString UserId;                    // user_skill_slots.user_id (CHAR(36) UUID)
+	FString UserId;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillDTO")
-	FString SlotKey;                   // user_skill_slots.slot_key (Q, W, E, R ??
+	FString SlotKey;
 
-	// Skill Binding
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillDTO")
-	int32 SkillId = 0;                 // user_skill_slots.skill_id
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillDTO")
-	int32 SlotIndex = -1;              // user_skill_slots.slot_index
+	int32 SkillId = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillDTO")
-	int32 SkillLevel = 1;              // user_skills.skill_level (?�규?�된 ?�이블에??
+	int32 SlotIndex = -1;
 
-	// Cooldown Data (최적?�된 구조 - last_used_time�??�??
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillDTO")
-	FDateTime LastUsedTime;            // user_skill_slots.last_used_time
+	int32 SkillLevel = 1;
 
-	// Metadata
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillDTO")
+	FDateTime LastUsedTime;
+
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillDTO")
 	FDateTime CreatedAt;
 
@@ -220,20 +212,20 @@ struct DATABASEMODULE_API FSkillSlotDatabaseDTO
 	}
 };
 
-// SQL 기반 Skill Master DTO (skills ?�이�?구조)
+
 USTRUCT(BlueprintType)
 struct DATABASEMODULE_API FSkillMasterDatabaseDTO
 {
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillDTO")
-	int32 SkillId;                     // skills.skill_id
+	int32 SkillId;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillDTO")
-	FString DisplayName;               // skills.display_name
+	FString DisplayName;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillDTO")
-	FString Description;               // skills.description
+	FString Description;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillDTO")
 	float BaseCooltime = 0.0f;         // skills.base_cooltime
@@ -253,7 +245,6 @@ struct DATABASEMODULE_API FSkillMasterDatabaseDTO
 	}
 };
 
-// 기존 DTO (?�위 ?�환???��?)
 USTRUCT(BlueprintType)
 struct DATABASEMODULE_API FSkillSlotDTO
 {
@@ -290,7 +281,6 @@ struct DATABASEMODULE_API FSkillSlotDTO
 	}
 };
 
-// Shop DTO structures
 USTRUCT(BlueprintType)
 struct DATABASEMODULE_API FShopItemDTO
 {
@@ -334,7 +324,7 @@ struct DATABASEMODULE_API FShopItemDTO
 		, Category(InCategory), MaxStock(InMaxStock), RestockIntervalHours(24.0f)
 	{}
 
-	// Legacy constructor for backward compatibility
+	UE_DEPRECATED(5.0, "Use new constructor with full parameters")
 	FShopItemDTO(int32 InItemID, int32 InStock, float InPrice, int32 InShopID)
 		: ItemID(InItemID), Price(InPrice), Stock(InStock), bIsAvailable(InStock > 0), MaxStock(InStock)
 	{
@@ -423,66 +413,52 @@ struct DATABASEMODULE_API FShopRepositoryResult
 	}
 };
 
-// ID 변???�략 ?�퍼 ?�래??- ?�로?��??�용 간단 변??
 UCLASS()
 class DATABASEMODULE_API UPlayerIdHelper : public UObject
 {
 	GENERATED_BODY()
 
 public:
-	// int32 PlayerId�?VARCHAR UserId�?변??(?�로?��??�용 ?�순 변??
 	UFUNCTION(BlueprintCallable, Category = "Database|ID")
 	static FString ConvertPlayerIdToUserId(int32 PlayerId);
 	
-	// VARCHAR UserId�?int32 PlayerId�?변??(가?�한 경우)
 	UFUNCTION(BlueprintCallable, Category = "Database|ID")
 	static int32 ConvertUserIdToPlayerId(const FString& UserId);
 	
-	// PlayerId 기반 UserId ?�성 (?�두??+ ?�퀀??조합)
 	UFUNCTION(BlueprintCallable, Category = "Database|ID")
 	static FString GenerateUserIdFromPlayerId(int32 PlayerId, const FString& Prefix = TEXT("player"));
 	
-	// ?�효??UserId ?�식?��? 검�?
 	UFUNCTION(BlueprintCallable, Category = "Database|ID")
 	static bool IsValidUserId(const FString& UserId);
 };
 
-// JSON ?�틸리티 ?�래??- DatabaseManager?�서 JSON 처리�??�한 ?�퍼
 UCLASS()
 class DATABASEMODULE_API UDatabaseJsonHelper : public UObject
 {
 	GENERATED_BODY()
 
 public:
-	// ?�벤?�리 ?�이???�이?��? JSON?�로 직렬??
 	UFUNCTION(BlueprintCallable, Category = "Database|JSON")
 	static FString SerializeInventoryItemData(const TMap<FString, FString>& ItemProperties);
 	
-	// JSON?�서 ?�벤?�리 ?�이???�이?��? ??��?�화
 	UFUNCTION(BlueprintCallable, Category = "Database|JSON")
 	static TMap<FString, FString> DeserializeInventoryItemData(const FString& JsonData);
 	
-	// 캐릭???�장 ?�이?��? JSON?�로 직렬??(Position, Health, Mana ??
 	UFUNCTION(BlueprintCallable, Category = "Database|JSON")
 	static FString SerializeCharacterExtendedData(const FVector& Position, float Health, float Mana, const TMap<FString, FString>& AdditionalData);
 	
-	// JSON?�서 캐릭???�장 ?�이?��? ??��?�화
 	UFUNCTION(BlueprintCallable, Category = "Database|JSON")
 	static bool DeserializeCharacterExtendedData(const FString& JsonData, FVector& OutPosition, float& OutHealth, float& OutMana, TMap<FString, FString>& OutAdditionalData);
 	
-	// ?�킬 ?�이?��? JSON?�로 직렬??
 	UFUNCTION(BlueprintCallable, Category = "Database|JSON")
 	static FString SerializeSkillData(const TMap<FString, FString>& SkillProperties);
 	
-	// JSON?�서 ?�킬 ?�이?��? ??��?�화
 	UFUNCTION(BlueprintCallable, Category = "Database|JSON")
 	static TMap<FString, FString> DeserializeSkillData(const FString& JsonData);
 	
-	// ?�비 강화 ?�이?��? JSON?�로 직렬??
 	UFUNCTION(BlueprintCallable, Category = "Database|JSON")
 	static FString SerializeEquipmentEnhancement(int32 EnhancementLevel, const TArray<FString>& EnhancementEffects);
 	
-	// JSON?�서 ?�비 강화 ?�이?��? ??��?�화
 	UFUNCTION(BlueprintCallable, Category = "Database|JSON")
 	static bool DeserializeEquipmentEnhancement(const FString& JsonData, int32& OutEnhancementLevel, TArray<FString>& OutEnhancementEffects);
 };
@@ -881,7 +857,6 @@ public:
 	);
 
 private:
-	// Pointer to the implementation
 	FDatabaseManagerImpl* Impl;
 	
 	void LogToExternalServer(const FString& Message);

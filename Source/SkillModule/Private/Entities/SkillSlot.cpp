@@ -15,7 +15,7 @@ void USkillSlot::SetSkillData(USkillDataAsset* InSkillData, int32 InSkillId)
 {
 	SkillData = InSkillData;
 	SkillId = InSkillId;
-	LastUsedTime = FDateTime::MinValue(); // ???�킬 ?�정 ??쿨�???초기??
+	LastUsedTime = FDateTime::MinValue();
 }
 
 void USkillSlot::ClearSkill()

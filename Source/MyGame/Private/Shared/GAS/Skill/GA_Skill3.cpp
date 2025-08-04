@@ -1,5 +1,3 @@
-// GA_Skill3.cpp
-
 #include "Shared/GAS/Skill/GA_Skill3.h"
 #include "Abilities/Tasks/AbilityTask_WaitTargetData.h"
 #include "Shared/GAS/GGwaAbilitySystemComponent.h"

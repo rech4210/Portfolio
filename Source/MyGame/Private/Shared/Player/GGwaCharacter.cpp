@@ -51,7 +51,6 @@ void AGGwaCharacter::OnRep_PlayerState() {
 	InitASC();
 	
 	UE_LOG(LogTemp, Warning, TEXT("=== AGGwaCharacter::OnRep_PlayerState DEBUG ==="));
-	UE_LOG(LogTemp, Warning, TEXT("Character: %p | PlayerState: %p"), this, GetPlayerState());
 	Cast<AGGwaPlayerState>(GetPlayerState())->InitPlayerState();
 }
 
@@ -76,8 +75,6 @@ void AGGwaCharacter::PostInitializeComponents() {
 	Super::PostInitializeComponents();
 }
 
-// 1. Server beginplay 시점에 PC가 null이라 아래 로직이 수행되지 않음.
-// 2. Client beginplay 가 호출되지 않음.
 void AGGwaCharacter::BeginPlay() {
 	Super::BeginPlay();
 }
@@ -92,47 +89,25 @@ void AGGwaCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 		}
 	}
 	
-	UE_LOG(LogTemp, Warning, TEXT("=== SetupPlayerInputComponent DEBUG ==="));
-	UE_LOG(LogTemp, Warning, TEXT("PlayerInputComponent: %p | IsLocallyControlled: %s"), 
-		PlayerInputComponent, IsLocallyControlled() ? TEXT("YES") : TEXT("NO"));
-	
 	if (UEnhancedInputComponent* EIC = Cast<UEnhancedInputComponent>(PlayerInputComponent)){
-		UE_LOG(LogTemp, Warning, TEXT("Enhanced Input Component found"));
-		UE_LOG(LogTemp, Warning, TEXT("SkillActions.Num(): %d | ASC: %p"), SkillActions.Num(), ASC.Get());
 
 		EIC->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AGGwaCharacter::PlayerMove);
 		for (int32 i = 0; i < SkillActions.Num(); ++i){
 			if (SkillActions[i]) {
-				// Enhanced Input Action 바인딩
 				EIC->BindAction(SkillActions[i], ETriggerEvent::Triggered, this, &AGGwaCharacter::OnLocalSkillInput, i);
-				UE_LOG(LogTemp, Warning, TEXT("Bound SkillAction[%d]: %s"), i, *SkillActions[i]->GetName());
-			} else {
-				UE_LOG(LogTemp, Error, TEXT("SkillActions[%d] is null!"), i);
 			}
 		}
-	}
-	else {
-		UE_LOG(LogTemp, Error, TEXT("Failed to cast to UEnhancedInputComponent"));
 	}
 }
 
 void AGGwaCharacter::CustomKeySet(UInputAction* Action, FKey CustomKey) {
-
-	// 0. Check base logic ex) exist...
-	// 1. Gey Old Key
 	FKey OldKey = "q";
 	MappingContext->UnmapKey(Action, OldKey);
 	MappingContext->MapKey(Action, CustomKey);
-	// SkillComponent->
 }
 
 void AGGwaCharacter::OnLocalSkillInput(const FInputActionInstance& Instance, int32 Index)
 {
-	UE_LOG(LogTemp, Warning, TEXT("=== OnLocalSkillInput CALLED ==="));
-	UE_LOG(LogTemp, Warning, TEXT("Index: %d | IsLocallyControlled: %s"), 
-		Index, IsLocallyControlled() ? TEXT("YES") : TEXT("NO"));
-	
-	//HOW Get SlotIndex For Find Getskillslot..?,
 	auto State = GetPlayerState<AGGwaPlayerState>();
 	if (!State) {
 		UE_LOG(LogTemp, Error, TEXT("OnLocalSkillInput: PlayerState is null"));
@@ -143,8 +118,6 @@ void AGGwaCharacter::OnLocalSkillInput(const FInputActionInstance& Instance, int
 		UE_LOG(LogTemp, Error, TEXT("OnLocalSkillInput: SkillComponent is null"));
 		return;
 	}
-	
-	UE_LOG(LogTemp, Warning, TEXT("OnLocalSkillInput: Attempting to cast skill at index %d"), Index);
 	
 	auto bisSucces  = SkillCastingService->TryCastSkill(this, Index);
 	if (bisSucces) {
@@ -198,18 +171,8 @@ void AGGwaCharacter::Tick(float DeltaSeconds) {
 		}
 	}
 	else {
-
-		bool bCanMove = GetCharacterMovement()->MovementMode != MOVE_None;
-		UE_LOG(LogTemp, Warning, TEXT("Can Move (MovementMode != MOVE_None): %d"), bCanMove);
-
-		UE_LOG(LogTemp, Warning, TEXT("Movement Mode: %d"), (int32)GetCharacterMovement()->MovementMode);
-		UE_LOG(LogTemp, Warning, TEXT("Velocity: %s"), *GetCharacterMovement()->Velocity.ToString());
-		UE_LOG(LogTemp, Warning, TEXT("IsMovingOnGround: %d"), GetCharacterMovement()->IsMovingOnGround());
-		UE_LOG(LogTemp, Warning, TEXT("Controller: %s"), *GetController()->GetName());
-
 		Direction.Normalize();
 		AddMovementInput(Direction, 1.0,true);
-		UE_LOG(LogTemp, Log, TEXT("Current Actor Location : %s"), *CurrentLocation.ToString());
 	}
 }
 
@@ -220,35 +183,4 @@ void AGGwaCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(AGGwaCharacter, CurrentPathIndex);
 	DOREPLIFETIME(AGGwaCharacter, bIsFollowingPath);
 }
-
-
-// OnLocalSkillInput()	?�라?�언???�력 ?�신 ???�버 ?�출
-// ?�라?�언?�에??마우???�치 기반 RotationEventData ?�송
-// void AGGwaCharacter::OnLocalSkillInput(const FInputActionInstance& Instance, int32 Index)
-// {
-// 	if (IsLocallyControlled())
-// 	{
-// 		AGGwaPlayerController* PC = Cast<AGGwaPlayerController>(GetController());
-// 		if (PC)
-// 		{
-// 			FHitResult Hit;
-// 			if (PC->GetHitResultUnderCursor(ECC_Visibility, false, Hit))
-// 			{
-// 				FGameplayEventData EventData;
-// 				EventData.Instigator = this;
-// 				EventData.EventTag = AbilityTags[Index];
-// 				EventData.TargetData = UAbilitySystemBlueprintLibrary::AbilityTargetDataFromHitResult(Hit);
-// 				
-// 				// if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance()) {
-// 				// 	if (SkillMontages.IsValidIndex(Index) && SkillMontages[Index]) {
-// 				// 		AnimInstance->Montage_Play(SkillMontages[Index], 1.0f, EMontagePlayReturnType::MontageLength, 0.0f);
-// 				// 	}
-// 				// }
-//
-// 				//?�당 부분의 RPC
-// 				OnSkillTriggered(EventData, Index);  // ?�라 -> ?�버 RPC ?�출
-// 			}
-// 		}
-// 	}
-// }
 

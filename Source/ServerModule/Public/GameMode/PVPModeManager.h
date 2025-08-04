@@ -4,9 +4,6 @@
 #include "BattleModeBase.h"
 #include "PVPModeManager.generated.h"
 
-/**
- * 
- */
 UCLASS()
 class SERVERMODULE_API UPVPModeManager : public UBattleModeBase {
 	GENERATED_BODY()

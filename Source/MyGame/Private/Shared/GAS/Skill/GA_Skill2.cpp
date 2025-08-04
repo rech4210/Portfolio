@@ -28,20 +28,17 @@ void UGA_Skill2::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const 
 		return;
 	}
 
-	// AvatarActor ��ȿ�� �˻�
 	AActor* AvatarActor = GetAvatarActorFromActorInfo();
 	if (!IsValid(AvatarActor)){
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}
 
-	// 2) Ÿ���� Task
 	if (SkillDataAsset->TargetStrategyClass->IsChildOf(USkillTarget_Self::StaticClass())){
 		OnTargetDataReceived(FGameplayAbilityTargetDataHandle());
 	}
 	else
 	{
-		// ���콺 ��� ��ġ Ÿ����
 		ASkillTargetActor_Mouse* TargetActor = NewObject<ASkillTargetActor_Mouse>(this);
 
 		UAbilityTask_WaitTargetData* TargetTask = UAbilityTask_WaitTargetData::WaitTargetDataUsingActor(
@@ -58,7 +55,6 @@ void UGA_Skill2::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const 
 
 void UGA_Skill2::OnTargetDataCancelled(const FGameplayAbilityTargetDataHandle& Data)
 {
-	// ��� �ÿ� Ability ����
 	// GetActorInfo().AbilitySystemComponent->RemoveGameplayCue(UEnumTagMatchHelper::GetTagFromEnum(ECueType::DirectionPreview));
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, false, true);
 }
@@ -75,7 +71,6 @@ void UGA_Skill2::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Da
 		return;
 	}
 
-	//Cue �ð� ȿ�� ����
 	if (Data.Num() > 0 && Data.Get(0)){
 		const FHitResult* Hit = Data.Get(0)->GetHitResult();
 		if (Hit){
@@ -93,7 +88,6 @@ void UGA_Skill2::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Da
 		}
 	}
 
-	// 4) ��Ÿ�� Task
 	UGGwaPlayMontageAndWaitForEvent* MontageTask =
 		UGGwaPlayMontageAndWaitForEvent::PlayMontageAndWaitForEvent(
 			this,

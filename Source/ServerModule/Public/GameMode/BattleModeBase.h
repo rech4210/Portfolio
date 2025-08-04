@@ -5,9 +5,6 @@
 #include "UObject/Object.h"
 #include "BattleModeBase.generated.h"
 
-/**
- * 
- */
 UCLASS()
 class SERVERMODULE_API UBattleModeBase : public UObject, public FTickableGameObject{
 	GENERATED_BODY()

@@ -11,19 +11,16 @@
 
 UInventoryDomainService::UInventoryDomainService()
 {
-	// Constructor
 }
 
 void UInventoryDomainService::Initialize(TScriptInterface<IInventoryRepositoryInterface> Repository)
 {
-	// If no repository is provided, get it from the subsystem
 	if (Repository.GetInterface())
 	{
 		InventoryRepository = Repository;
 	}
 	else
 	{
-		// Get repository from GameInstance subsystem
 		if (UWorld* World = GetWorld())
 		{
 			if (UGameInstance* GameInstance = World->GetGameInstance())
@@ -70,10 +67,8 @@ UE::Tasks::TTask<void> UInventoryDomainService::AddItemToInventory(TScriptInterf
 		return UE::Tasks::MakeCompletedTask<void>();
 	}
 
-	// Subscribe to domain events if not already subscribed
 	SubscribeToDomainEvents(InventoryComponent);
 
-	// 1. Domain validation through Aggregate
 	if (!InventoryComponent->CanAddItem(Item))
 	{
 		AsyncTask(ENamedThreads::GameThread, [this, PlayerIdentity]()
@@ -83,7 +78,6 @@ UE::Tasks::TTask<void> UInventoryDomainService::AddItemToInventory(TScriptInterf
 		return UE::Tasks::MakeCompletedTask<void>();
 	}
 
-	// 2. Apply change to aggregate first (optimistic update)
 	bool bOptimisticUpdateSuccess = InventoryComponent->AddItemDirect(Item);
 	if (!bOptimisticUpdateSuccess)
 	{
@@ -94,12 +88,10 @@ UE::Tasks::TTask<void> UInventoryDomainService::AddItemToInventory(TScriptInterf
 		return UE::Tasks::MakeCompletedTask<void>();
 	}
 
-	// 3. Persist to database through repository
 	if (UInventoryRepository* ConcreteRepo = Cast<UInventoryRepository>(InventoryRepository.GetObject()))
 	{
 		const FGuid PlayerGuid = PlayerIdentity->GetPlayerGuid();
 		
-		// Execute add and reload asynchronously
 		AsyncTask(ENamedThreads::AnyBackgroundHiPriTask, [this, ConcreteRepo, PlayerGuid, Item, PlayerIdentity, InventoryComponent]()
 		{
 			UE::Tasks::TTask<FInventoryRepositoryResult> RepoTask = ConcreteRepo->AddItemByPlayerId(PlayerGuid, Item);
@@ -121,7 +113,6 @@ UE::Tasks::TTask<void> UInventoryDomainService::AddItemToInventory(TScriptInterf
 		return UE::Tasks::MakeCompletedTask<void>();
 	}
 
-	// Fallback for interface-only access
 	AsyncTask(ENamedThreads::GameThread, [this, PlayerIdentity]()
 	{
 		OnInventoryOperationFailed.Broadcast(PlayerIdentity, TEXT("Repository does not support async operations"));
@@ -158,10 +149,8 @@ UE::Tasks::TTask<void> UInventoryDomainService::RemoveItemFromInventory(TScriptI
 		return UE::Tasks::MakeCompletedTask<void>();
 	}
 
-	// Subscribe to domain events if not already subscribed
 	SubscribeToDomainEvents(InventoryComponent);
 
-	// 1. Domain validation through Aggregate
 	if (!InventoryComponent->CanRemoveItem(ItemID, Quantity))
 	{
 		AsyncTask(ENamedThreads::GameThread, [this, PlayerIdentity]()
@@ -171,7 +160,6 @@ UE::Tasks::TTask<void> UInventoryDomainService::RemoveItemFromInventory(TScriptI
 		return UE::Tasks::MakeCompletedTask<void>();
 	}
 
-	// 2. Apply change to aggregate first (optimistic update)
 	bool bOptimisticUpdateSuccess = InventoryComponent->RemoveItemDirect(ItemID, Quantity);
 	if (!bOptimisticUpdateSuccess)
 	{
@@ -182,17 +170,14 @@ UE::Tasks::TTask<void> UInventoryDomainService::RemoveItemFromInventory(TScriptI
 		return UE::Tasks::MakeCompletedTask<void>();
 	}
 
-	// 3. Persist to database through repository
 	if (UInventoryRepository* ConcreteRepo = Cast<UInventoryRepository>(InventoryRepository.GetObject()))
 	{
-		// Handle task chain using proper UE::Tasks pattern
 		auto PersistTask = ConcreteRepo->RemoveItemByPlayerId(PlayerIdentity->GetPlayerGuid(), ItemID, Quantity);
 		
 		return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerIdentity, ItemID, Quantity, InventoryComponent, PersistTask]() mutable -> void
 		{
-			FInventoryRepositoryResult& Result = PersistTask.GetResult(); // Wait for completion and get result
+			FInventoryRepositoryResult& Result = PersistTask.GetResult();
 			
-			// Execute UI updates on GameThread using AsyncTask
 			AsyncTask(ENamedThreads::GameThread, [this, PlayerIdentity, ItemID, Quantity, InventoryComponent, Result]()
 			{
 				if (Result.bSuccess)
@@ -201,7 +186,6 @@ UE::Tasks::TTask<void> UInventoryDomainService::RemoveItemFromInventory(TScriptI
 				}
 				else
 				{
-					// Rollback optimistic update (re-add the item)
 					FInventoryItemDTO RollbackItem;
 					RollbackItem.ItemID = ItemID;
 					RollbackItem.Quantity = Quantity;
@@ -209,7 +193,7 @@ UE::Tasks::TTask<void> UInventoryDomainService::RemoveItemFromInventory(TScriptI
 					OnInventoryOperationFailed.Broadcast(PlayerIdentity, TEXT("Failed to persist removal to database"));
 				}
 			});
-		}, PersistTask); // Set prerequisite
+		}, PersistTask);
 	}
 
 	AsyncTask(ENamedThreads::GameThread, [this, PlayerIdentity]()
@@ -259,7 +243,6 @@ UE::Tasks::TTask<void> UInventoryDomainService::LoadInventory(TScriptInterface<I
 		{
 			FInventoryRepositoryResult Result = LoadTask.GetResult(); // Wait for completion and get result
 			
-			// Execute UI updates on GameThread using AsyncTask
 			AsyncTask(ENamedThreads::GameThread, [this, PlayerIdentity, Result]()
 			{
 				if (Result.bSuccess)
@@ -272,19 +255,10 @@ UE::Tasks::TTask<void> UInventoryDomainService::LoadInventory(TScriptInterface<I
 					OnInventoryOperationFailed.Broadcast(PlayerIdentity, TEXT("Failed to load inventory from database"));
 				}
 			});
-		}, LoadTask); // Set prerequisite
+		}, LoadTask);
 	}
-
-	// Fallback for interface-only access
-	// InventoryRepository->LoadInventoryByPlayerId(PlayerState->GetPlayerId());
 	return UE::Tasks::MakeCompletedTask<void>();
 }
-
-/*
- * 1. ?�메???�비???�인???�출?� 반환값을 가지지 ?�도�??�다.
- * 2. ?�속 계층???�업?� WorkerThread�??�어지�??�고, ?�메???�비???��??�서 GameThread�??�출?�여 ?�업??마무리한??
- * 3. Save?� Load 기능???�시 ?�펴보기.
- */
 
 UE::Tasks::TTask<void> UInventoryDomainService::SaveInventory(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity, const FInventoryDomain& InventoryData)
 {
@@ -299,16 +273,14 @@ UE::Tasks::TTask<void> UInventoryDomainService::SaveInventory(TScriptInterface<I
 		return UE::Tasks::MakeCompletedTask<void>();
 	}
 	
-	// Save through repository
 	if (UInventoryRepository* ConcreteRepo = Cast<UInventoryRepository>(InventoryRepository.GetObject()))
 	{
 		auto SaveTask = ConcreteRepo->SaveInventoryData(InventoryData);
 		
 		return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerIdentity, SaveTask]() mutable -> void
 		{
-			auto Result = SaveTask.GetResult(); // Wait for completion and get result
+			auto Result = SaveTask.GetResult();
 			
-			// Execute UI updates on GameThread using AsyncTask
 			AsyncTask(ENamedThreads::GameThread, [this, PlayerIdentity, Result]()
 			{
 				if (Result.bSuccess)
@@ -321,7 +293,7 @@ UE::Tasks::TTask<void> UInventoryDomainService::SaveInventory(TScriptInterface<I
 					OnInventoryOperationFailed.Broadcast(PlayerIdentity, TEXT("Failed to save inventory to database"));
 				}
 			});
-		}, SaveTask); // Set prerequisite
+		}, SaveTask);
 	}
 	return UE::Tasks::MakeCompletedTask<void>();
 }
@@ -333,7 +305,6 @@ void UInventoryDomainService::SubscribeToDomainEvents(UInventoryComponent* Inven
 		return;
 	}
 
-	// Subscribe to domain events from the aggregate
 	InventoryComponent->OnInventoryItemAdded.AddUFunction(this, FName("OnDomainItemAdded"));
 	InventoryComponent->OnInventoryItemRemoved.AddUFunction(this, FName("OnDomainItemRemoved"));
 	InventoryComponent->OnInventoryChanged.AddUFunction(this, FName("OnDomainInventoryChanged"));
@@ -346,35 +317,26 @@ void UInventoryDomainService::UnsubscribeFromDomainEvents(UInventoryComponent* I
 		return;
 	}
 
-	// Unsubscribe from domain events
 	InventoryComponent->OnInventoryItemAdded.RemoveAll(this);
 	InventoryComponent->OnInventoryItemRemoved.RemoveAll(this);
 	InventoryComponent->OnInventoryChanged.RemoveAll(this);
 }
 
 
-/*deprecated*/
-
-
 void UInventoryDomainService::OnDomainItemAdded(UFInventoryItem* AddedItem)
 {
-	// Handle domain event - Application Service layer response
 	if (AddedItem && AddedItem->ItemData)
 	{
 		UE_LOG(LogTemp, Log, TEXT("Domain Event Received: Item Added - %s"), *AddedItem->ItemData->GetItemID().ToString());
-		// Could trigger other application-level side effects here
 	}
 }
 
 void UInventoryDomainService::OnDomainItemRemoved(const FName& ItemID, int32 Quantity)
 {
-	// Handle domain event - Application Service layer response
 	UE_LOG(LogTemp, Log, TEXT("Domain Event Received: Item Removed - %s (Quantity: %d)"), *ItemID.ToString(), Quantity);
-	// Could trigger other application-level side effects here
 }
 
 void UInventoryDomainService::OnDomainInventoryChanged()
 {
-	// Handle domain event - Could trigger auto-save or other application logic
 	UE_LOG(LogTemp, VeryVerbose, TEXT("Domain Event Received: Inventory state changed"));
 }

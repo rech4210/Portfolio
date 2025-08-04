@@ -5,7 +5,6 @@
 #include "Mappers/ISkillAssetMapper.h"
 #include "ISkillModelBuilder.generated.h"
 
-// Forward declarations
 struct FSkillSlotReplicationData;
 class USkillDataAsset;
 
@@ -65,16 +64,11 @@ class SKILLMODULE_API USkillModelBuilderInterface : public UInterface
 	GENERATED_BODY()
 };
 
-/**
- * DataAsset ??DomainModel 빌딩 ?�터?�이??
- * DataAsset�?비즈?�스 로직??결합?�여 ?�전???�메??모델 ?�성
- */
 class SKILLMODULE_API ISkillModelBuilderInterface
 {
 	GENERATED_BODY()
 
 public:
-	// Domain Model ?�성
 	virtual FSkillDomainModel BuildDomainModel(
 		const FSkillSlotDatabaseDTO& SlotDTO, 
 		USkillDataAsset* SkillDataAsset
@@ -82,7 +76,6 @@ public:
 
 	virtual FSkillSlotReplicationData BuildSkillSlotData(const FSkillDomainModel& DomainModel) = 0;
 
-	// Business Logic 계산
 	virtual float CalculateRemainingCooldown(
 		const FDateTime& LastUsedTime, 
 		float BaseCooldown
@@ -98,11 +91,9 @@ public:
 	virtual int32 CalculateScaledValue(int32 BaseValue, int32 SkillLevel) = 0;
 	virtual float CalculateScaledValue(float BaseValue, int32 SkillLevel) = 0;
 
-	// 추출 (FSkillSlotReplicationData에서 DTO)
 	virtual FSkillSlotDatabaseDTO ExtractSlotDTO(const FSkillSlotReplicationData& SlotData) = 0;
 	virtual FSkillDomainModel ExtractDomainModel(const FSkillSlotReplicationData& SlotData) = 0;
 
-	// 배치 처리
 	virtual TArray<FSkillDomainModel> BuildDomainModels(
 		const TArray<FSkillSlotDatabaseDTO>& SlotDTOs,
 		const TArray<USkillDataAsset*>& SkillDataAssets
@@ -112,7 +103,6 @@ public:
 		const TArray<FSkillDomainModel>& DomainModels
 	) = 0;
 
-	// Validation
 	virtual bool ValidateDomainModel(const FSkillDomainModel& Model, FString& OutErrorMessage) = 0;
 	virtual bool ValidateSkillSlotData(const FSkillSlotReplicationData& SlotData, FString& OutErrorMessage) = 0;
 };

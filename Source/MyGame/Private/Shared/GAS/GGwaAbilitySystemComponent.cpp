@@ -1,7 +1,6 @@
 ﻿
 
 #include "Shared/GAS/GGwaAbilitySystemComponent.h"
-// #include "Shared/Data/BaseDataAsset.h"
 #include "GameSharedModule/Public/Data/BuffDataAsset.h"
 #include "GameSharedModule/Public/Data/ItemDataAsset.h"
 #include "SkillModule/Public/Utill/LocalDataBaseLoader.h"
@@ -40,11 +39,6 @@ void UGGwaAbilitySystemComponent::BeginPlay()
             this, &UGGwaAbilitySystemComponent::OnGameplayAppliedCallback
         );
     }
-
-    /**
-     *?�탯 초기 ?�정???�한 GE, CurveTable.
-     */
-    //ApplyGameplayEffectToSelf(StartupEffect, 1.f, ASC->MakeEffectContext());
 }
 
 void UGGwaAbilitySystemComponent::OnGameplayAppliedCallback(
@@ -57,23 +51,19 @@ void UGGwaAbilitySystemComponent::OnGameplayAppliedCallback(
 void UGGwaAbilitySystemComponent::ProcessGameplayEffect(const FGameplayEffectSpec& Spec,bool bIsServer) const{
     AGGwaPlayerController* PC = nullptr;
     AActor* InstigatorActor = Spec.GetContext().GetOriginalInstigator();
-    // Instigator�??�한 ?�전??처리, ?�전?�일경우.
     if (InstigatorActor){
         PC = Cast<AGGwaPlayerController>(InstigatorActor->GetInstigatorController());
     }
     if (!PC){
-        //보스 조건부 ?�요
         AGGwaPlayerState* PS = Cast<AGGwaPlayerState>(GetOwner());
         PC = PS ? Cast<AGGwaPlayerController>(PS->GetPlayerController()) : nullptr;
     }
 
     if (!PC || !Spec.Def) return;
 
-    // SkillID 추출
     int32 SkillID = -1;
     SkillID = Spec.GetSetByCallerMagnitude(UEnumTagMatchHelper::GetTagFromEnum(EGasDataType::SkillID), true, SkillID);
     
-    // ?�당 로직???��?..?�것
     FPrimaryAssetId AssetId;
     ULocalDataBaseLoader::CheckPrimaryAssetId(SkillID, AssetId);
     USkillDataAsset* SkillData = ULocalDataBaseLoader::GetDataFromAssetId<USkillDataAsset>(AssetId, /*bSync=*/true);
@@ -82,8 +72,6 @@ void UGGwaAbilitySystemComponent::ProcessGameplayEffect(const FGameplayEffectSpe
             return;
         }
         for (UBuffDataAsset* Buff : SkillData->AppliedBuffs) {
-            // 버프 ?�용 로직??구현?�것. ?�재 SRP ?�칙??지켜�??��? ?�인.
-            // State ?�용??UI?? ?�펙??처리?�도 ?�요?�것?�라�??�단??  
             OnEffectAssetApplied.Broadcast(Buff);
         }
 
@@ -97,8 +85,6 @@ void UGGwaAbilitySystemComponent::ProcessGameplayEffect(const FGameplayEffectSpe
 }
 
 void UGGwaAbilitySystemComponent::ExecuteGameplayCueLocal(const FGameplayTag& GameplayCueTag, const FGameplayCueParameters& Parameters) {
-    // This should only be called on a client.
-    // We can get the OwnerActor and check if it's locally controlled.
     AActor* OwnActor = GetOwnerActor();
     if(!OwnActor) return;
     

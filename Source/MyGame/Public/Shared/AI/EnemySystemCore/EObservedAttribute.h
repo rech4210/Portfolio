@@ -10,5 +10,4 @@ enum class EObservedAttribute : uint8 {
 	Defense,
 	Critical,
 	Speed,
-	// Add more attributes as needed
 };

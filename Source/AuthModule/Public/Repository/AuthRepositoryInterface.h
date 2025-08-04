@@ -12,10 +12,6 @@ class UAuthRepositoryInterface : public UInterface
 	GENERATED_BODY()
 };
 
-/**
- * Repository Interface for Authentication Data Access
- * Defines contract for data persistence operations
- */
 class AUTHMODULE_API IAuthRepositoryInterface
 {
 	GENERATED_BODY()

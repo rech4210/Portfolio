@@ -15,7 +15,6 @@ public:
 
 	UPROPERTY(VisibleAnywhere)
 	FVector CacheHitLocation;
-	// virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData);
 protected:
 	virtual FSkillContext BuildSkillContext(const FGameplayAbilityActorInfo *ActorInfo);
 	void PreProcessSkillStart(const FGameplayAbilityActorInfo* ActorInfo);

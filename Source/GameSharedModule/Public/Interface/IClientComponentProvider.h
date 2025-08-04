@@ -4,15 +4,9 @@
 #include "UObject/Interface.h"
 #include "IClientComponentProvider.generated.h"
 
-// Forward declarations
 class USkillComponent;
 struct FBossDataStruct;
 
-
-/**
- * Interface for UI Subsystem (Client Module)
- * This interface allows PlayerController to interact with UIManagerSubsystem
- */
 UINTERFACE(MinimalAPI)
 class UClientManagerInterface : public UInterface
 {
@@ -26,29 +20,19 @@ class GAMESHAREDMODULE_API IClientManagerInterface
 public:
 	virtual void RegistClientComponent(UActorComponent* Component) = 0;
 	virtual void InitializeUI() = 0;
-	// Auth service delegation
 	virtual void ProcessRegistration(const FString& Username, const FString& Password) = 0;
 	virtual void ProcessLogin(const FString& Username, const FString& Password) = 0;
 	virtual void HandleRegistrationResult(bool bSuccess, const FString& Message) = 0;
 	virtual void HandleLoginResult(bool bSuccess, const FString& Token, const FString& UserId) = 0;
 	
-	// UI service delegation
 	virtual void ProcessMouseOverDetection() = 0;
 	virtual void NotifyStateChanged() = 0;
 	virtual void ProcessBossData(const FBossDataStruct& BossData) = 0;
 	
-	// Skill replication delegation
 	virtual void SkillHUDReplication(const struct FSkillSlotReplicationArray& SkillSlotsReplication) = 0;
 };
 
 
-// ============================================================================
-// INDIVIDUAL CLIENT INTERFACE DEFINITIONS
-// ============================================================================
-
-/**
- * Interface for client authentication functionality
- */
 UINTERFACE(MinimalAPI)
 class UClientAuthInterface : public UInterface
 {
@@ -68,9 +52,6 @@ public:
 	virtual void OnServerLoginResult(bool bSuccess, const FString& Token, const FString& UserId) = 0;
 };
 
-/**
- * Interface for client UI functionality
- */
 UINTERFACE(MinimalAPI)
 class UClientUIInterface : public UInterface
 {
@@ -87,5 +68,4 @@ public:
 	virtual void NotifyStateChanged() = 0;
 	virtual void ReceiveBossData(const FBossDataStruct& BossData) = 0;
 	virtual void ReceiveSkillReplicationData(const struct FSkillSlotReplicationArray& SkillSlotsReplication) = 0;
-	// virtual void SetOwnerController(class AGGwaPlayerController* Controller) = 0;
 };

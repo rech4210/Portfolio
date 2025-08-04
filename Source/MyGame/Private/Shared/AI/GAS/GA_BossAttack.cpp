@@ -30,7 +30,6 @@ void UGA_BossAttack::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	}
 	
 	FVector StartLocation = Avatar->GetActorLocation() + ProjectileOffset;
-	// FVector TargetLocation = TargetActor->GetActorLocation();
 	
 	if (HasAuthority(&ActivationInfo)) {
 		FActorSpawnParameters Params;

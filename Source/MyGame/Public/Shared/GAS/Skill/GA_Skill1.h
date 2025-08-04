@@ -1,5 +1,3 @@
-// GA_Skill1.h
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -19,7 +17,6 @@ class MYGAME_API UGA_Skill1 : public UGA_Base
 
 public:
 
-	/** 스킬 데이터 에셋 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Data")
 	TObjectPtr<USkillDataAsset> SkillDataAsset;
 

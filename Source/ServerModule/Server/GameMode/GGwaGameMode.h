@@ -78,7 +78,6 @@ private:
 			: StartTime(0.0), bCompleted(false), bSuccess(false) {}
 	};
 
-	// Map to track pending token verifications during PreLogin
 	TMap<FUniqueNetIdRepl, FPendingTokenVerification> PendingTokenVerifications;
 
 	void ProcessPendingTokenVerifications();

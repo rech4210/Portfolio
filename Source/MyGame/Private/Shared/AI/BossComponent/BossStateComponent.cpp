@@ -1,22 +1,16 @@
-﻿
-
-
-#include "Shared/AI/BossComponent/BossStateComponent.h"
-
+﻿#include "Shared/AI/BossComponent/BossStateComponent.h"
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 
 static constexpr int MIN_PHASE = 1;
 static constexpr int MAX_PHASE = 3;
 
-// Sets default values for this component's properties
 UBossStateComponent::UBossStateComponent() {
 	PrimaryComponentTick.bCanEverTick = true;
 	CurrentBossState = EBossState::Idle;
 }
 
 
-// Called when the game starts
 void UBossStateComponent::BeginPlay() {
 	Super::BeginPlay();
 	UBlackboardComponent* BB =  Cast<AAIController>(GetOwner())->GetBlackboardComponent();

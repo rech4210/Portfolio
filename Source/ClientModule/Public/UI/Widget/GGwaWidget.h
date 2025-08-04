@@ -31,16 +31,10 @@ class CLIENTMODULE_API UGGwaWidget : public UUserWidget
 public:
 	FOnPlayerStateChanged OnPlayerStateChanged;
 
-	// virtual void NativeConstruct() override;
-	/** Initialize the widget with the AbilitySystemComponent and GGwaAttributeSet */
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category="AbilitySystem")
 	TObjectPtr<UGGwaAbilitySystemComponent> ASC;
 	UPROPERTY(Transient, BlueprintReadWrite, Category="AbilitySystem")
 	const UGGwaAttributeSet* GGwaAttributeSet;
-	// UPROPERTY(EditAnywhere, BlueprintReadWrite,Category= "Widget")
-	// TObjectPtr<UBaseToolTip> BaseToolTipWidget;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite ,Category= "Widget")
 	TSubclassOf<UBuffToolTip> BuffToolTipClass;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite ,Category= "Widget")
@@ -51,7 +45,6 @@ public:
 	UPROPERTY()
 	TMap<UBaseDataAsset*, UBaseToolTip*> SlotTooltipCachePair;
 	
-	/*Player Status widget?�서 buff Widget 구조 ?�인?�기, depth 깊음*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (BindWidget) ,Category= "Widget")
 	TObjectPtr<UPlayerStatusWidget> BP_PlayerStatusWidget;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (BindWidget) ,Category= "Widget")
@@ -59,8 +52,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (BindWidget) ,Category= "Widget")
 	TObjectPtr<UItemSetWidget> BP_ItemBarWidget;
 
-	// UPROPERTY(EditAnywhere, BlueprintReadWrite,Category= "Init Data")
-	// virtual const UUserWidget* SetWidgetData(UPrimaryDataAsset* Data) override;
 	UFUNCTION()
 	void BindWidgetWithTooltip(UBaseDataAsset* Data);
 	void InitWidget(UGGwaAbilitySystemComponent * AbilitySystemComponent, const UGGwaAttributeSet * AttributeSet);
@@ -71,6 +62,4 @@ public:
 	void DoWidgetWork();
 private:
 	TArray<USkillDataAsset*> InitSkillDataAssets;
-	// template<typename TDataAsset, typename TToolTip, typename TWidget>
-	// void UGGwaWidget::BindTooltip(TDataAsset* DataAsset, TSubclassOf<TToolTip> ToolTipClass, UUserWidget* ContainerWidget);
 };

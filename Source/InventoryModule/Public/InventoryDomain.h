@@ -3,13 +3,8 @@
 
 #include "CoreMinimal.h"
 #include "DatabaseManager.h"
-#include "InventoryItemData.h"
 #include "InventoryDomain.generated.h"
 
-/**
- * Pure domain object for inventory data - no engine dependencies
- * Used for Repository layer to maintain separation of concerns
- */
 USTRUCT(BlueprintType)
 struct INVENTORYMODULE_API FInventoryDomain
 {
@@ -23,13 +18,11 @@ public:
 	TArray<FInventoryItemDTO> Items;
 
 	FInventoryDomain() = default;
-	
 	FInventoryDomain(const FGuid& InPlayerId, const TArray<FInventoryItemDTO>& InItems)
 		: PlayerId(InPlayerId), Items(InItems)
 	{
 	}
 
-	// Domain validation methods
 	bool IsValid() const 
 	{ 
 		return PlayerId.IsValid(); 
@@ -53,9 +46,6 @@ public:
 	}
 };
 
-/**
- * Repository result wrapper for async operations
- */
 USTRUCT(BlueprintType)
 struct INVENTORYMODULE_API FInventoryRepositoryResult
 {

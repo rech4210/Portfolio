@@ -1,7 +1,6 @@
 #include "Utils/ClientUIMapping.h"
 #include "Engine/Engine.h"
 
-// Static 멤버 초기화
 TMap<EClientUIKey, FString> FClientUIMapping::UIClassMappings;
 bool FClientUIMapping::bIsInitialized = false;
 
@@ -23,7 +22,6 @@ FString FClientUIMapping::GetClassPath(EClientUIKey UIKey)
 UClass* FClientUIMapping::LoadUIClass(EClientUIKey UIKey)
 {
 #if UE_SERVER
-	// 서버에서는 클라이언트 UI 클래스 로딩 금지
 	return nullptr;
 #else
 	FString ClassPath = GetClassPath(UIKey);
@@ -32,7 +30,6 @@ UClass* FClientUIMapping::LoadUIClass(EClientUIKey UIKey)
 		return nullptr;
 	}
 	
-	// 직접 클래스 로딩
 	UClass* LoadedClass = LoadClass<UObject>(nullptr, *ClassPath);
 	if (!LoadedClass)
 	{
@@ -67,7 +64,6 @@ void FClientUIMapping::InitializeDefaultMappings()
 	
 	UE_LOG(LogTemp, Log, TEXT("[CLIENT_UI] Initializing default UI class mappings"));
 	
-	// 기본 클라이언트 UI 컴포넌트 매핑 - Blueprint 경로 사용
 	UIClassMappings.Add(EClientUIKey::AuthComponent, TEXT("/ClientPlugin/BP_ClientAuthComponent.BP_ClientAuthComponent_C"));
 	UIClassMappings.Add(EClientUIKey::LoginUI, TEXT("/ClientPlugin/BP_ClientUIComponent.BP_ClientUIComponent_C"));
 	UIClassMappings.Add(EClientUIKey::HUD, TEXT("/ClientPlugin/UI/HUD/BP_GGwaHUD.BP_GGwaHUD_C"));

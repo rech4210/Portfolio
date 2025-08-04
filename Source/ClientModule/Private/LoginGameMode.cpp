@@ -4,10 +4,7 @@
 
 constexpr static float GAME_MODE_FREQUENCY = 3.0f;
 ALoginGameMode::ALoginGameMode() {
-	// �� ���� ����� �⺻ �÷��̾� ��Ʈ�ѷ��� LoginPlayerController�� �����մϴ�.
 	PlayerControllerClass = AGGwaPlayerController::StaticClass();
-
-	// �α��� ȭ�鿡���� �÷��̾ ������ ĳ���ͳ� HUD�� �ʿ� �����ϴ�.
 	DefaultPawnClass = nullptr;
 	HUDClass = nullptr;
 }

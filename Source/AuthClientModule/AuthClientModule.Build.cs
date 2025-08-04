@@ -11,7 +11,7 @@ public class AuthClientModule : ModuleRules
 			"CoreUObject", 
 			"Engine", 
 			"InputCore",
-			"GameSharedModule" // Add dependency to GameSharedModule for AuthRPC interface
+			"GameSharedModule"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { "HTTP", "Json", "JsonUtilities" });

@@ -41,11 +41,10 @@ bool AUGCN_Skill1_DirectionPreview::OnActive_Implementation(AActor* MyTarget, co
 
 	SetActorLocation(Location);
 	SetActorRotation(Rotation);
-	// ?�칼 ?�팅
 	if (!DecalComponent) {
 		DecalComponent = CreateDefaultSubobject<UDecalComponent>(TEXT("DecalComponent"));
 		DecalComponent->SetupAttachment(RootComponent);
-		DecalComponent->SetRelativeRotation(FRotator(0.f, 0.f, 0.f)); // 지�??�시??
+		DecalComponent->SetRelativeRotation(FRotator(0.f, 0.f, 0.f));
 	}
 	auto BoxShapeConfig = SkillDataAsset->SkillShapeConfig.BoxHalfExtent;
 	DecalComponent->DecalSize =  FVector(BoxShapeConfig.Z, BoxShapeConfig.Y, BoxShapeConfig.X); 

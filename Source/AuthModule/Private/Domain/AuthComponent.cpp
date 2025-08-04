@@ -4,7 +4,6 @@
 
 UAuthComponent::UAuthComponent()
 {
-	// Initialize with default values
 }
 
 UAuthComponent* UAuthComponent::CreateNewUser(const FString& Username, const FString& PasswordHash)
@@ -21,7 +20,6 @@ UAuthComponent* UAuthComponent::CreateNewUser(const FString& Username, const FSt
 	NewUser->UserData.bIsDeleted = false;
 	NewUser->UserData.DeletedAt = FDateTime::MinValue();
 
-	// Add creation audit log
 	NewUser->AddAuditLog(TEXT("registration"), TEXT("User account created"));
 
 	return NewUser;
@@ -36,13 +34,11 @@ UAuthComponent* UAuthComponent::CreateFromDTO(const FUserAccountDTO& UserDTO)
 
 bool UAuthComponent::CanLogin() const
 {
-	// Cannot login if account is deleted
 	if (IsAccountDeleted())
 	{
 		return false;
 	}
 
-	// Cannot login if account is locked and lock hasn't expired
 	if (IsAccountLocked())
 	{
 		return false;
@@ -58,10 +54,8 @@ bool UAuthComponent::IsAccountLocked() const
 		return false;
 	}
 
-	// Check if lock has expired
 	if (UserData.LockExpiresAt.GetTicks() > 0 && FDateTime::Now() >= UserData.LockExpiresAt)
 	{
-		// Lock has expired, but we don't modify state here (that's repository's job)
 		return false;
 	}
 
@@ -94,7 +88,6 @@ void UAuthComponent::UpdateLastLogin()
 {
 	UserData.LastLoginAt = FDateTime::Now();
 	
-	// If account was locked and lock expired, automatically unlock
 	if (UserData.bIsLocked && UserData.LockExpiresAt.GetTicks() > 0 && 
 		FDateTime::Now() >= UserData.LockExpiresAt)
 	{
@@ -135,13 +128,11 @@ bool UAuthComponent::IsValid() const
 
 bool UAuthComponent::IsValidUsername(const FString& Username)
 {
-	// Username validation rules
 	if (Username.IsEmpty() || Username.Len() < 3 || Username.Len() > 30)
 	{
 		return false;
 	}
 
-	// Check for valid characters (alphanumeric and underscore only)
 	for (const TCHAR& Char : Username)
 	{
 		if (!FChar::IsAlnum(Char) && Char != TEXT('_'))

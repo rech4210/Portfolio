@@ -12,9 +12,6 @@
 #include "UI/ToolTip/SkillToolTip.h"
 #include "Blueprint/WidgetBlueprintLibrary.h"
 
-// USkillSlotWidget::USkillSlotWidget() {
-//
-// }
 
 FReply USkillSlotWidget::NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) {
 	return Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);
@@ -30,10 +27,10 @@ void USkillSlotWidget::NativeOnMouseEnter(const FGeometry& InGeometry, const FPo
 	Super::NativeOnMouseEnter(InGeometry, InMouseEvent);
 	if (SkillToolTipWidget->GetVisibility() != ESlateVisibility::Visible) {
 		SkillToolTipWidget->SetVisibility(ESlateVisibility::Visible);
-		SkillToolTipWidget->SetIsEnabled(false); // ?�력 무시 (hover, focus ??
+		SkillToolTipWidget->SetIsEnabled(false);
 		FVector2D LocalMousePos;
 		UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetMousePosition(LocalMousePos.X, LocalMousePos.Y);
-		SkillToolTipWidget->SetPositionInViewport(LocalMousePos, true); // DPI 변??고려??
+		SkillToolTipWidget->SetPositionInViewport(LocalMousePos, true);
 	}
 	UE_LOG(LogTemp, Warning, TEXT("TooltipWidget on %s"), *SkillToolTipWidget.GetName());
 }
@@ -46,7 +43,6 @@ void USkillSlotWidget::NativeOnMouseLeave(const FPointerEvent& InMouseEvent) {
 	}
 }
 void USkillSlotWidget::UseSkillSlot(USkillDataAsset* Data) {
-	//?�성?�에??기본?�인 ?�킬 ?�이??초기??-> ?�른 ?�이???�어??경우, ?�당 ?�이?�로 초기??
 	if (SkillDataAsset != Data) {
 		ApplySkillData(Data);
 	}
@@ -88,44 +84,25 @@ void USkillSlotWidget::ApplySkillData(USkillDataAsset* NewData) {
 	SkillToolTipWidget = Cast<USkillToolTip>(NewData->Tooltip);
 	CooldownImage->SetVisibility(ESlateVisibility::Hidden);
 	CoolTimeText->SetVisibility(ESlateVisibility::Hidden);
-	// SkillWidgetToolTip =
 }
 
-// void USkillSlotWidget::NativeOnDragEnter(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent,
-// 	UDragDropOperation* InOperation) {
-// 	Super::NativeOnDragEnter(InGeometry, InDragDropEvent, InOperation);
-// 	
-// }
-//
-// void USkillSlotWidget::NativeOnDragCancelled(const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation) {
-// 	Super::NativeOnDragCancelled(InDragDropEvent, InOperation);
-// 	
-// }
-//
-// void USkillSlotWidget::NativeOnDragLeave(const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation) {
-// 	Super::NativeOnDragLeave(InDragDropEvent, InOperation);
-// 	
-// }
 
 void USkillSlotWidget::TickCoolDown() {
 	CurrentCoolTime += 0.05f;
 	float Percent = FMath::Clamp(CurrentCoolTime / CoolTime, 0.f, 1.f);
 	SkillCooldownMaterial->SetScalarParameterValue(FName("Progress"), Percent);
 
-	// 2. 쿨�????�스??갱신
 	if (CoolTimeText)
 	{
 		float RemainingTime = FMath::Max(0.f, CoolTime - CurrentCoolTime);
 		CoolTimeText->SetText(FText::FromString(FString::Printf(TEXT("%ds"), FMath::CeilToInt(RemainingTime))));
 	}
 
-	// 3. 쿨�???종료 처리
 	if (Percent >= 1.f)
 	{
 		GetWorld()->GetTimerManager().ClearTimer(CooldownTimerHandle);
 		CurrentCoolTime = 0.f;
 
-		// ?��?지, ?�스???�기�???처리
 		if (CooldownImage)
 		{
 			CooldownImage->SetVisibility(ESlateVisibility::Hidden);

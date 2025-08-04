@@ -8,9 +8,6 @@
 #include "UI/SetWidgetDataInterface.h"
 #include "BuffSlotWidget.generated.h"
 
-/**
- * 
- */
 UCLASS()
 class CLIENTMODULE_API UBuffSlotWidget : public UUserWidget, public ISetWidgetDataInterface
 {

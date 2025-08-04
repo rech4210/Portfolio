@@ -10,9 +10,6 @@
 
 DECLARE_DELEGATE_TwoParams(FOnPlayerCheck, bool /*bValid*/, FString /*Reason*/);
 
-/**
- * 
- */
 UCLASS()
 class SERVERMODULE_API UPlayerValidationSubsystem : public UWorldSubsystem {
 	GENERATED_BODY()
@@ -20,17 +17,12 @@ public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override
 	{
 		Super::Initialize(Collection);
-		// GetWorld()->GetSubsystem<UServerCoreSubsystem>();
-		// 	->RegisterManager(TEXT("PlayerCheck"), this);
 	}
 
 	void CheckPlayer(const FString& PlayerId, FOnPlayerCheck Callback)
 	{
-		// HTTP ��û �غ� (HTTPS + APIKey)
 		TSharedRef<IHttpRequest> Req = FHttpModule::Get().CreateRequest();
-		// Req->SetURL(GetDefault<URewardServiceConfig>()->PlayerCheckEndpoint + TEXT("?id=") + PlayerId);
 		Req->SetVerb(TEXT("GET"));
-		// Req->SetHeader(TEXT("Authorization"), TEXT("Bearer ") + GetDefault<URewardServiceConfig>()->APIKey);
 		Req->OnProcessRequestComplete()
 			.BindUObject(this, &UPlayerValidationSubsystem::OnResponse, Callback);
 		Req->ProcessRequest();

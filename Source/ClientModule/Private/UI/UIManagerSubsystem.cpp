@@ -19,7 +19,6 @@ void UUIManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	
 }
 void UUIManagerSubsystem::OnWorldInit(UWorld* NewWorld, const UWorld::InitializationValues IVS) {
-	// ?�존관�???�� (IOC) ?�턴???�용?�여 GameState?�게 Client UIManagerSubsystem???�공?�도�??�청.
 	if (!NewWorld)
 	{
 		UE_LOG(LogTemp, Error, TEXT("UIManagerSubsystem::Initialize - World is null!"));
@@ -35,18 +34,6 @@ void UUIManagerSubsystem::OnWorldInit(UWorld* NewWorld, const UWorld::Initializa
 
 	UE_LOG(LogTemp, Log, TEXT("UIManagerSubsystem::Initialize - Found GameState: %s"), 
 		*GameState->GetClass()->GetName());
-
-
-	// auto ClientManagerInterface = Cast<UClientManagerInterface>(this);
-	//
-	// if (!ClientManagerInterface) {
-	// 	UE_LOG(LogTemp, Log, TEXT("UIManagerSubsystem::Initialize - Found GameState: %s"), TEXT("ClientManagerInterface Is null"));
-	// }
-	//
-	// // Register UI interface
-	// GameState->InitializeUISubsystemWithIOC(this);
-	//
-	// GameState->InitializeClientManagerSubsystemWithIOC(ClientManagerInterface);
 	
 	UE_LOG(LogTemp, Log, TEXT("UIManagerSubsystem::Initialize - Registered both interfaces with GameState"));
 }
@@ -62,8 +49,6 @@ void UUIManagerSubsystem::Deinitialize()
 	Super::Deinitialize();
 }
 
-/* 기존 Subsystem?�서 ?�공?�던 ?�수�?모두 Client �?Component????���??�임?�킬�?*/
-
 void UUIManagerSubsystem::OnMapChanged(UWorld* LoadedWorld)
 {
 	if (!LoadedWorld)
@@ -72,22 +57,18 @@ void UUIManagerSubsystem::OnMapChanged(UWorld* LoadedWorld)
 		return;
 	}
 
-	// Get current level name
 	FName CurrentMapName = FName(*UGameplayStatics::GetCurrentLevelName(LoadedWorld));
 
 	UE_LOG(LogTemp, Log, TEXT("UIManagerSubsystem::OnMapChanged: Map changed to %s"), *CurrentMapName.ToString());
 
-	// Remove previous widget if exists
 	RemoveCurrentWidget();
 
-	// Check if we have cache actor with widget mappings
 	if (!CacheActor)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("UIManagerSubsystem::OnMapChanged: No cache actor available"));
 		return;
 	}
 
-	// Find widget class for current map from cache actor
 	TSubclassOf<UUserWidget> WidgetClass = CacheActor->GetWidgetForMap(CurrentMapName);
 	if (!WidgetClass)
 	{
@@ -95,7 +76,6 @@ void UUIManagerSubsystem::OnMapChanged(UWorld* LoadedWorld)
 		return;
 	}
 
-	// Create new widget for current map
 	CurrentWidget = CreateWidget<UUserWidget>(GetGameInstance(), WidgetClass);
 	if (CurrentWidget)
 	{
@@ -117,7 +97,6 @@ void UUIManagerSubsystem::SetCacheActor(AUIConfigCacheActor* NewCacheActor)
 		UE_LOG(LogTemp, Log, TEXT("UIManagerSubsystem::SetCacheActor: Cache actor set with %d mappings"), 
 			CacheActor->GetMapWidgetMap().Num());
 		
-		// Refresh current widget with new cache data
 		RefreshCurrentWidget();
 	}
 	else
@@ -134,7 +113,6 @@ void UUIManagerSubsystem::RequestSetWidgetForMap(FName MapName, TSubclassOf<UUse
 		return;
 	}
 
-	// Delegate to cache actor (which will handle server authority)
 	CacheActor->SetWidgetForMap(MapName, WidgetClass);
 }
 
@@ -155,20 +133,6 @@ void UUIManagerSubsystem::RemoveCurrentWidget()
 		UE_LOG(LogTemp, Log, TEXT("UIManagerSubsystem::RemoveCurrentWidget: Removed current widget"));
 	}
 }
-
-// ============================================================================
-// IClientUIManagerInterface IMPLEMENTATION 
-// ============================================================================
-
-//
-// void UUIManagerSubsystem::RegistClientSubsystem(TScriptInterface<IClientManagerInterface> Subsystem) {
-// 	auto ControllerIterator = GetWorld()->GetPlayerControllerIterator();
-// 	for (auto Controller : ControllerIterator) {
-// 		if (auto PlayerController = Cast<AGGwaPlayerController>(Controller)) {
-// 			PlayerController->RegistClientSubsystem(this);
-// 		}
-// 	}
-// }
 
 void UUIManagerSubsystem::RegistClientComponent(UActorComponent* Component) {
 	if (auto Auth = Cast<UClientAuthComponent>(Component)){
@@ -238,7 +202,6 @@ void UUIManagerSubsystem::HandleLoginResult(bool bSuccess, const FString& Token,
 	}
 }
 
-// UI service delegation
 void UUIManagerSubsystem::InitializeUI()
 {
 	if (ClientUIService)
@@ -257,7 +220,6 @@ void UUIManagerSubsystem::ProcessMouseOverDetection()
 	if (ClientUIService)
 	{
 		ClientUIService->HandleMouseOverDetection();
-		// No log here as this is called frequently
 	}
 	else
 	{

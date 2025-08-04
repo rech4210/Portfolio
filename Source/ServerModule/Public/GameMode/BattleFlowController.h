@@ -5,9 +5,6 @@
 #include "../../../MyGame/Public/Shared/Mode/ModeType.h"
 #include "BattleFlowController.generated.h"
 
-/**
- * 
- */
 UCLASS()
 class SERVERMODULE_API UBattleFlowController : public UObject {
 	GENERATED_BODY()

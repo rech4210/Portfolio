@@ -8,7 +8,6 @@ public class AuthModule : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 		
-		// Exception handling 활성화
 		bEnableExceptions = true;
 		
 		PublicDependencyModuleNames.AddRange(new string[] 

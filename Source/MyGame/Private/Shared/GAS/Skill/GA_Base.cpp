@@ -36,17 +36,9 @@ void UGA_Base::PreProcessSkillStart(const FGameplayAbilityActorInfo* ActorInfo) 
 			// }
 		}
 	}
-	// else {
-	// 	if(TriggeredEventData && TriggeredEventData->TargetData.Num() > 0) {
-	// 		FVector Dir = TriggeredEventData->TargetData.Get(0)->GetHitResult()->ImpactPoint - AvatarActor->GetActorLocation();
-	// 		AvatarActor->SetActorRotation(Dir.Rotation());
-	// 	}
-	// }
 }
 
-// 추후 ?�?��? ?�인지 ?�단?�는 로직???�어가?�함.
 UAbilitySystemComponent* UGA_Base::GetTargetASC(AActor* Actor) const {
-	//캐릭?��? ?�닌 경우?
 	if (AGGwaCharacter* Character = Cast<AGGwaCharacter>(Actor)){
 		if (AGGwaPlayerState* PS = Cast<AGGwaPlayerState>(Character->GetPlayerState())) {
 			return PS->GetAbilitySystemComponent();

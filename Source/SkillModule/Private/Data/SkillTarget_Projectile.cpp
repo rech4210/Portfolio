@@ -40,8 +40,5 @@ TArray<AActor*> USkillTarget_Projectile::DetectTargets(FSkillContext& SkillConte
 		DetectedActors.Add(HitResult.GetActor());
 	}
 
-	// For debugging
-	// DrawDebugLine(World, StartLocation, EndLocation, FColor::Red, false, 2.0f);
-
 	return DetectedActors;
 }

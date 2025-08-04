@@ -31,7 +31,6 @@ void UPlayerStatusWidget::UpdateManaBar(float Current, float Max) const{
 
 void UPlayerStatusWidget::SetWidgetData(UPrimaryDataAsset* Data) {
 	UE_LOG(LogTemp, Warning, TEXT("PlayerStatusWidget SetWidgetData"));
-	//?�?�해?�고 ?�용 + visible
 	UBuffDataAsset* BuffData = Cast<UBuffDataAsset>(Data);
 	UBuffSlotWidget* Widget = CreateWidget<UBuffSlotWidget>(this, BuffSlotWidgetClass);
 	Widget->SetWidgetData(BuffData);

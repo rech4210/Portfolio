@@ -6,27 +6,19 @@
 #include "Repository/AuthRepositoryInterface.h"
 #include "AuthRepository.generated.h"
 
-/**
- * Database Implementation of Auth Repository
- * Handles authentication data persistence using DatabaseManager
- */
 UCLASS()
 class AUTHMODULE_API UAuthRepository : public UObject, public IAuthRepositoryInterface
 {
 	GENERATED_BODY()
-
-private:
 	UPROPERTY()
 	UDatabaseManager* DatabaseManager;
 
 public:
 	UAuthRepository();
 
-	// Initialization
 	UFUNCTION(BlueprintCallable, Category = "Auth Repository")
 	void Initialize();
 
-	// IAuthRepositoryInterface implementation
 	virtual UE::Tasks::TTask<bool> CreateUser(const FUserAccountDTO& UserData) override;
 	virtual UE::Tasks::TTask<TOptional<FUserAccountDTO>> GetUserByUsername(const FString& Username) override;
 	virtual UE::Tasks::TTask<TOptional<FUserAccountDTO>> GetUserById(const FString& UserId) override;
@@ -46,7 +38,6 @@ public:
 	virtual UE::Tasks::TTask<bool> UnlockExpiredUsers() override;
 
 private:
-	// Helper methods for data conversion
 	FUserAccountDTO ConvertDatabaseUserToDTO(const FDatabaseUserData& DatabaseUser) const;
 	FUserAuditLogDTO ConvertAuditLogFromDatabaseResult(const TMap<FString, FString>& DatabaseRow) const;
 	FString ConvertDateTimeToString(const FDateTime& DateTime) const;

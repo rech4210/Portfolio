@@ -6,7 +6,6 @@
 
 void FSkillModule::StartupModule()
 {
-	// ULocalDataBaseLoader::Initialize();
 }
 
 void FSkillModule::ShutdownModule()

@@ -14,9 +14,6 @@ AGGwaPlayerController::AGGwaPlayerController() {
 
 void AGGwaPlayerController::BeginPlay() {
 	Super::BeginPlay();
-	UE_LOG(LogTemp, Warning, TEXT("=== GGwaPlayerController::BeginPlay DEBUG === \n Controller Address: %p | IsServer: %d | IsLocalPlayerController: %d"), 
-		this, HasAuthority(), IsLocalPlayerController());
-
 
 #if !UE_SERVER
 	InitializeClientComponent();
@@ -32,7 +29,6 @@ void AGGwaPlayerController::AcknowledgePossession(class APawn* PossessedPawn) {
 	Super::AcknowledgePossession(PossessedPawn);
 	AGGwaCharacter * MyCharacter = Cast<AGGwaCharacter>(PossessedPawn);
 	if (nullptr != MyCharacter) {
-		UE_LOG(LogTemp,Warning,TEXT("AGGwaPlayerController::AcknowledgePossession : Pawn Possessed"));
 		UGGwaAbilitySystemComponent * ASC = Cast<UGGwaAbilitySystemComponent>( GetPlayerState<AGGwaPlayerState>()->GetAbilitySystemComponent());
 		if (ASC) {
 			ASC->BindAbilityActivationToInputComponent(InputComponent, FGameplayAbilityInputBinds("Confirm", "Cancel", FTopLevelAssetPath(TEXT("/Script/SkillModule"), TEXT("EAbilityInputID"))));
@@ -185,7 +181,6 @@ void AGGwaPlayerController::InitializeClientComponent() {
 #if !UE_SERVER
 	if (IsLocalPlayerController())
 	{
-		// Step 1: Check World validity
 		UWorld* World = GetWorld();
 		if (!World)
 		{
@@ -202,7 +197,6 @@ void AGGwaPlayerController::InitializeClientComponent() {
 void AGGwaPlayerController::CreateDefaultClientComponents()
 {
 #if !UE_SERVER
-	// Auth 컴포넌트 생성
 	ClientAuthComponent = CreateUIComponent(EClientUIKey::AuthComponent);
 	if (ClientAuthComponent)
 	{
@@ -223,7 +217,6 @@ void AGGwaPlayerController::CreateDefaultClientComponents()
 		}
 	}
 	
-	// UI 컴포넌트 생성
 	ClientUIComponent = CreateUIComponent(EClientUIKey::LoginUI);
 	if (ClientUIComponent)
 	{

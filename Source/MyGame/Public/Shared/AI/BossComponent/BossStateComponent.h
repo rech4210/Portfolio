@@ -2,7 +2,6 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "Shared/AI/EnemySystemCore/BossPhaseTypes.h"
 #include "Shared/AI/EnemySystemCore/BossStateFlags.h"
 #include "BossStateComponent.generated.h"
 
@@ -15,10 +14,8 @@ class MYGAME_API UBossStateComponent : public UActorComponent {
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this component's properties
 	UBossStateComponent();
 protected:
-	// Called when the game starts
 	virtual void BeginPlay() override;
 
 public:

@@ -1,30 +1,28 @@
-﻿// 1) Windows ?�???�퍼 & 매크�?충돌 방�?
+﻿// Windows 헤더 & 매크로 충돌 방지
 /* 
- * 문제 ?�인:
- * - Unreal Engine?� ?�처�??�계?�서 'check(...)' 매크로�? ?�의?�고 ?�용??
- * - MySQL Connector/C++???�역 ?�수 'check(const std::string&)' ?�을 ?�의??
- * - ???�의가 ?�름??공유?�며, include ?�서???�라 ?�로 ?�른 방식?�로 ?�석??
+ * 문제 원인:
+ * - Unreal Engine의 전처리 체계에서 'check(...)' 매크로를 정의하고 사용함
+ * - MySQL Connector/C++의 전역 함수 'check(const std::string&)' 들을 정의함
+ * - 둘의 정의가 이름을 공유하며, include 순서에 따라 서로 다른 방식으로 해석됨
  *
- * include ?�서???�른 차이:
- * 1) UE ?�더 먼�? ?�함 ??매크�??�의 ??#undef check ??MySQL ?�더 ?�함
- *    - UE 매크로�? ?��? ?�용???�후?��?�?MySQL ?�수 ?�의�??�깐 가?�져 충돌 ?�음.
- * 2) MySQL ?�더 먼�? ?�함 ???�역 ?�수 ?�의 ??#undef check ??UE ?�더 ?�함
- *    - UE 매크로�? ?�직 ?�의?��? ?��? ?�태?��?�??�역 ?�수가 ?�아 UE 코드??check ?�출�?충돌.
+ * include 순서에 따른 차이:
+ * 1) UE 헤더 먼저 포함 후 매크로 정의 후 #undef check 후 MySQL 헤더 포함
+ *    - UE 매크로를 먼저 사용한 후에도 MySQL 함수 정의를 깨끗이 가져와 충돌 없음.
+ * 2) MySQL 헤더 먼저 포함 후 전역 함수 정의 후 #undef check 후 UE 헤더 포함
+ *    - UE 매크로가 아직 정의되지 않은 상태에서 전역 함수가 있어 UE 코드의 check 호출시 충돌.
  *
- * ?�결�?
- * - MySQL ?�더??매크로�? ?�거???�태?�서�??�함?�고,
- * - Unreal ?�더?��? MySQL ?�더 ?�후 'CoreMinimal.h' ?�에??매크로�? 복원???�에 ?�함?�야 ??
+ * 해결책:
+ * - MySQL 헤더를 매크로를 제거한 상태에서만 포함하고,
+ * - Unreal 헤더들은 MySQL 헤더 이후 'CoreMinimal.h' 안에서 매크로를 복원한 상태에서 포함해야 함
  */
 #include "DatabaseManager.h"
 
-// 3) ?�리??코어 ?�더�?매크�?복원
 #include "CoreMinimal.h"
 #include "Tasks/Task.h"
 #include "HAL/PlatformProcess.h"
 #include "Misc/ScopeExit.h"
 
 #include "Data/DatabaseSettings.h"
-// 4) �??�에 ?�머지 UE4 ?�더??
 #include "Async/Async.h"
 #include "Misc/Optional.h"
 #include "HAL/PlatformProcess.h"
@@ -43,10 +41,10 @@
 
 #include "Windows/HideWindowsPlatformTypes.h"
 
-// ?�PIMPL 구현�??�의??
-// C4150: 불완?�한 ?�식 'FDatabaseManagerImpl'???�???�인?��? ??��?�습?�다.
-// -> PIMPL 구조 ?�용??unique_ptr?�서 ?�멸??delete�??�는?? 컴파???�점??FDatabaseManagerImpl???�의가 불완?�하기에 ?�당 ?�러가 출력??
-// ?�결 : FDatabaseManagerImpl 구조체�? ?�전?�게 ?�의?�거?? UniquePtr�??�용?��? ?�고 raw ?�인?��? ?�용?�여 ?�멸?��? 직접 구현?�니??
+// PIMPL 구현에 대한 참고사항
+// C4150: 불완전한 형식 'FDatabaseManagerImpl'에 대한 포인터에 대해 삭제합니다.
+// -> PIMPL 구조 사용시 unique_ptr에서 소멸시 delete를 하는데, 컴파일 시점에 FDatabaseManagerImpl의 정의가 불완전하기에 해당 에러가 출력됨
+// 해결 : FDatabaseManagerImpl 구조체를 완전하게 정의하거나, UniquePtr을 사용하지 말고 raw 포인터를 사용하여 소멸자를 직접 구현하니다
 struct FDatabaseManagerImpl
 {
 	sql::Driver* Driver = nullptr;
@@ -89,7 +87,7 @@ struct FDatabaseManagerImpl
 				{
 					return Con;
 				}
-				delete Con; // old connection is invalid
+				delete Con;
 			}
 			catch(const sql::SQLException& e)
 			{
@@ -109,7 +107,6 @@ struct FDatabaseManagerImpl
 		}
 	}
 
-	// Helper to return a connection to the pool
 	void ReturnConnection(sql::Connection* Con)
 	{
 		if (!Con) return;
@@ -118,7 +115,6 @@ struct FDatabaseManagerImpl
 		ConnectionPool.Enqueue(Con);
 	}
 
-	// Transaction wrapper with RAII
 	class FTransactionGuard
 	{
 	public:
@@ -181,12 +177,11 @@ struct FDatabaseManagerImpl
 	sql::Connection* BeginTransaction()
 	{
 		sql::Connection* Con = GetConnection();
-		return Con; // FTransactionGuard will handle transaction setup
+		return Con;
 	}
 
 	void CommitTransaction(sql::Connection* Con)
 	{
-		// Deprecated: Use FTransactionGuard instead
 		if (Con)
 		{
 			try
@@ -204,7 +199,6 @@ struct FDatabaseManagerImpl
 
 	void RollbackTransaction(sql::Connection* Con)
 	{
-		// Deprecated: Use FTransactionGuard instead
 		if (Con)
 		{
 			try
@@ -236,13 +230,11 @@ void UDatabaseManager::Initialize(FSubsystemCollectionBase& Collection)
 		return;
 	}
 
-	// [?�버�?로그 추�?] ?�떤 ?�정?�로 ?�속???�도?�는지 ?�인?�니??
 	UE_LOG(LogTemp, Log, TEXT("Attempting DB connection with the following settings:"));
 	UE_LOG(LogTemp, Log, TEXT(" - Host: %s"), *Settings->DBHost);
 	UE_LOG(LogTemp, Log, TEXT(" - Port: %d"), Settings->DBPort);
 	UE_LOG(LogTemp, Log, TEXT(" - User: %s"), *Settings->DBUser);
 	UE_LOG(LogTemp, Log, TEXT(" - Schema: %s"), *Settings->DBSchema);
-	// 경고: 보안???�해 비�?번호???��? 로그�?출력?��? 마세??
 
 	try
 	{
@@ -257,7 +249,6 @@ void UDatabaseManager::Initialize(FSubsystemCollectionBase& Collection)
 
 		for (int32 i = 0; i < Impl->PoolSize; ++i)
 		{
-			//connectionPool??초기?��? ?�루?�졌?��??
 			Impl->ConnectionPool.Enqueue(Impl->Driver->connect(Impl->ConnectionProperties));
 		}
 		UE_LOG(LogTemp, Log, TEXT("Database connection pool initialized with %d connections."), Impl->PoolSize);
@@ -341,7 +332,8 @@ void UDatabaseManager::SaveCharacterInfo(const FCharacterData& CharacterData, FC
 		sql::Connection* Con = Impl->GetConnection();
 
 		if (Con)
-		{		try
+		{
+		try
 		{
 			TUniquePtr<sql::PreparedStatement> Pstmt(Con->prepareStatement(
 				"INSERT INTO characters (user_id, character_id, character_name, level, exp, json_data) "
@@ -412,7 +404,6 @@ UE::Tasks::TTask<bool> UDatabaseManager::WithTransaction(F&& Function, const TCH
 			return false;
 		}
 
-		// RAII connection management with SCOPE_EXIT
 		ON_SCOPE_EXIT
 		{
 			if (Con)
@@ -421,7 +412,6 @@ UE::Tasks::TTask<bool> UDatabaseManager::WithTransaction(F&& Function, const TCH
 			}
 		};
 
-		// RAII transaction management
 		FDatabaseManagerImpl::FTransactionGuard TransactionGuard(Con);
 		if (!TransactionGuard.Connection)
 		{
@@ -441,17 +431,14 @@ UE::Tasks::TTask<bool> UDatabaseManager::WithTransaction(F&& Function, const TCH
 					return false;
 				}
 			}
-			//Try가 ?�공?�면 TransactionGuard??종료?��? ?�출?��? ?�는건�??
 		}
 		catch (const sql::SQLException& e)
 		{
 			UE_LOG(LogTemp, Error, TEXT("Transaction failed with SQL exception: %hs"), e.what());
-			// Destructor will handle rollback
 		}
 		catch (...)
 		{
 			UE_LOG(LogTemp, Error, TEXT("Transaction failed with unknown exception"));
-			// Destructor will handle rollback
 		}
 
 		return bSuccess;
@@ -476,7 +463,6 @@ UE::Tasks::TTask<TArray<FInventoryItemDTO>> UDatabaseManager::LoadInventoryForPl
 			return ResultItems;
 		}
 
-		// RAII connection management with SCOPE_EXIT
 		ON_SCOPE_EXIT
 		{
 			if (Con)
@@ -518,14 +504,12 @@ UE::Tasks::TTask<bool> UDatabaseManager::SaveInventoryForPlayer(const FString& U
 	{
 		try
 		{
-			// Clear existing inventory
 			TUniquePtr<sql::PreparedStatement> DeleteStmt(Con->prepareStatement(
 				"DELETE FROM inventory WHERE user_id = ?"
 			));
 			DeleteStmt->setString(1, TCHAR_TO_UTF8(*UserId));
 			DeleteStmt->executeUpdate();
 
-			// Insert new items with slot index
 			TUniquePtr<sql::PreparedStatement> InsertStmt(Con->prepareStatement(
 				"INSERT INTO inventory (user_id, item_id, quantity, slot_index, item_data) VALUES (?, ?, ?, ?, ?)"
 			));
@@ -556,7 +540,6 @@ UE::Tasks::TTask<bool> UDatabaseManager::AddInventoryItem(const FString& UserId,
 	{
 		try
 		{
-			// Insert or update item with slot management
 			TUniquePtr<sql::PreparedStatement> InsertStmt(Con->prepareStatement(
 				"INSERT INTO inventory (user_id, item_id, quantity, slot_index, item_data) VALUES (?, ?, ?, ?, ?) "
 				"ON DUPLICATE KEY UPDATE quantity = VALUES(quantity), item_data = VALUES(item_data)"
@@ -584,7 +567,6 @@ UE::Tasks::TTask<bool> UDatabaseManager::RemoveInventoryItem(const FString& User
 	{
 		try
 		{
-			// Update quantity, but don't let it go below 0
 			TUniquePtr<sql::PreparedStatement> UpdateStmt(Con->prepareStatement(
 				"UPDATE inventory SET quantity = GREATEST(0, quantity - ?) WHERE user_id = ? AND item_id = ?"
 			));
@@ -594,7 +576,6 @@ UE::Tasks::TTask<bool> UDatabaseManager::RemoveInventoryItem(const FString& User
 			
 			int32 UpdatedRows = UpdateStmt->executeUpdate();
 			
-			// Remove items with 0 quantity
 			TUniquePtr<sql::PreparedStatement> DeleteStmt(Con->prepareStatement(
 				"DELETE FROM inventory WHERE user_id = ? AND item_id = ? AND quantity <= 0"
 			));
@@ -651,11 +632,6 @@ UE::Tasks::TTask<TArray<FSkillSlotDTO>> UDatabaseManager::LoadSkillsForPlayer(co
 
 				FString SlotIdString = UTF8_TO_TCHAR(Res->getString("slot_id").c_str());
 				UE_LOG(LogTemp, Verbose, TEXT("Raw Slot ID: %s"), *SlotIdString);
-				//
-				// if (!FGuid::ParseExact(SlotIdString, EGuidFormats::DigitsWithHyphens, Skill.SlotId))
-				// {
-				// 	UE_LOG(LogTemp, Warning, TEXT("Invalid GUID format: %s"), *SlotIdString);
-				// }
 
 				Skill.SkillID = Res->getInt("skill_id");
 				Skill.SlotIndex = Res->getInt("slot_index");
@@ -669,7 +645,6 @@ UE::Tasks::TTask<TArray<FSkillSlotDTO>> UDatabaseManager::LoadSkillsForPlayer(co
 				Skill.RemainingCooldown = static_cast<float>(Res->getDouble("remaining_cooldown"));
 				Skill.bIsActive = Res->getBoolean("is_active");
 
-				// Skill.SkillData = UTF8_TO_TCHAR(Res->getString("skill_data").c_str());
 				UE_LOG(LogTemp, Verbose, TEXT("Skill loaded: ID=%d, SlotIndex=%d, Active=%s, CD=%.2f"),
 					Skill.SkillID,
 					Skill.SlotIndex,
@@ -697,14 +672,12 @@ UE::Tasks::TTask<bool> UDatabaseManager::SaveSkillsForPlayer(const FString& User
 	{
 		try
 		{
-			// Clear existing skills
 			TUniquePtr<sql::PreparedStatement> DeleteStmt(Con->prepareStatement(
 				"DELETE FROM skills WHERE user_id = ?"
 			));
 			DeleteStmt->setString(1, TCHAR_TO_UTF8(*UserId));
 			DeleteStmt->executeUpdate();
 
-			// Insert new skills
 			TUniquePtr<sql::PreparedStatement> InsertStmt(Con->prepareStatement(
 				"INSERT INTO skills (user_id, slot_id, skill_id, slot_index, last_used_time, remaining_cooldown, is_active, skill_data) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
 			));
@@ -712,7 +685,6 @@ UE::Tasks::TTask<bool> UDatabaseManager::SaveSkillsForPlayer(const FString& User
 			for (const FSkillSlotDTO& Skill : SkillSlots)
 			{
 				InsertStmt->setString(1, TCHAR_TO_UTF8(*UserId));
-				// InsertStmt->setString(2, TCHAR_TO_UTF8(*Skill.SlotId.ToString(EGuidFormats::DigitsWithHyphens)));
 				InsertStmt->setInt(3, Skill.SkillID);
 				InsertStmt->setInt(4, Skill.SlotIndex);
 				InsertStmt->setString(5, TCHAR_TO_UTF8(*Skill.LastUsedTime.ToIso8601()));
@@ -839,7 +811,6 @@ UE::Tasks::TTask<FShopRepositoryResult> UDatabaseManager::LoadShopByID(int32 Sho
 			return Result;
 		}
 
-		// RAII connection management with SCOPE_EXIT
 		ON_SCOPE_EXIT
 		{
 			if (Con)
@@ -850,7 +821,6 @@ UE::Tasks::TTask<FShopRepositoryResult> UDatabaseManager::LoadShopByID(int32 Sho
 
 		try
 		{
-			// Load shop basic info
 			TUniquePtr<sql::PreparedStatement> ShopStmt(Con->prepareStatement(
 				"SELECT shop_id, shop_name, shop_description, is_open, area_id, shop_location_x, shop_location_y, shop_location_z, last_restock_time FROM shops WHERE shop_id = ?"
 			));
@@ -866,18 +836,14 @@ UE::Tasks::TTask<FShopRepositoryResult> UDatabaseManager::LoadShopByID(int32 Sho
 				Result.ShopData.bIsOpen = ShopRes->getBoolean("is_open");
 				Result.ShopData.AreaID = ShopRes->getInt("area_id");
 				
-				// Parse location
 				float X = static_cast<float>(ShopRes->getDouble("shop_location_x"));
 				float Y = static_cast<float>(ShopRes->getDouble("shop_location_y"));
 				float Z = static_cast<float>(ShopRes->getDouble("shop_location_z"));
 				Result.ShopData.ShopLocation = FVector(X, Y, Z);
 				
-				// Parse last restock time
 				std::string TimeStr = ShopRes->getString("last_restock_time");
-				// Convert SQL timestamp to FDateTime if needed
 				Result.ShopData.LastRestockTime = FDateTime::Now();
 
-				// Load shop items
 				TUniquePtr<sql::PreparedStatement> ItemsStmt(Con->prepareStatement(
 					"SELECT item_id, item_name, item_description, price, stock, is_available, category, max_stock FROM shop_items WHERE shop_id = ?"
 				));
@@ -925,7 +891,6 @@ UE::Tasks::TTask<bool> UDatabaseManager::SaveShop(const FShopDomain& ShopData)
 	{
 		try
 		{
-			// Update/Insert shop basic info
 			TUniquePtr<sql::PreparedStatement> ShopStmt(Con->prepareStatement(
 				"INSERT INTO shops (shop_id, shop_name, shop_description, is_open, area_id, shop_location_x, shop_location_y, shop_location_z, last_restock_time, global_price_modifier, shop_owner_name) "
 				"VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
@@ -949,14 +914,12 @@ UE::Tasks::TTask<bool> UDatabaseManager::SaveShop(const FShopDomain& ShopData)
 			
 			ShopStmt->executeUpdate();
 
-			// Clear existing items
 			TUniquePtr<sql::PreparedStatement> DeleteStmt(Con->prepareStatement(
 				"DELETE FROM shop_items WHERE shop_id = ?"
 			));
 			DeleteStmt->setInt(1, ShopData.ShopID);
 			DeleteStmt->executeUpdate();
 
-			// Insert new items
 			TUniquePtr<sql::PreparedStatement> ItemsStmt(Con->prepareStatement(
 				"INSERT INTO shop_items (shop_id, item_id, stock, price, is_available, max_stock, restock_interval_hours) "
 				"VALUES (?, ?, ?, ?, ?, ?, ?)"
@@ -1004,7 +967,6 @@ UE::Tasks::TTask<TArray<FShopRepositoryResult>> UDatabaseManager::LoadShopsByIDs
 			return Results;
 		}
 
-		// RAII connection management
 		ON_SCOPE_EXIT
 		{
 			if (Con)
@@ -1020,7 +982,7 @@ UE::Tasks::TTask<TArray<FShopRepositoryResult>> UDatabaseManager::LoadShopsByIDs
 				auto LoadTask = LoadShopByID(ShopID);
 				FShopRepositoryResult ShopResult = LoadTask.GetResult();
 				
-				Results.Add(ShopResult); // Add all results, even failures
+				Results.Add(ShopResult);
 			}
 		}
 		catch (const sql::SQLException& e)
@@ -1052,7 +1014,6 @@ UE::Tasks::TTask<TArray<FShopRepositoryResult>> UDatabaseManager::LoadShopsForAr
 			return Results;
 		}
 
-		// RAII connection management
 		ON_SCOPE_EXIT
 		{
 			if (Con)
@@ -1076,13 +1037,12 @@ UE::Tasks::TTask<TArray<FShopRepositoryResult>> UDatabaseManager::LoadShopsForAr
 				ShopIDs.Add(Res->getInt("shop_id"));
 			}
 
-			// Load full shop data for each shop ID
 			for (int32 ShopID : ShopIDs)
 			{
 				auto LoadTask = LoadShopByID(ShopID);
 				FShopRepositoryResult ShopResult = LoadTask.GetResult();
 				
-				Results.Add(ShopResult); // Add all results, even failures
+				Results.Add(ShopResult);
 			}
 		}
 		catch (const sql::SQLException& e)
@@ -1101,14 +1061,12 @@ UE::Tasks::TTask<bool> UDatabaseManager::DeleteShop(int32 ShopID)
 	{
 		try
 		{
-			// Delete shop items first (foreign key constraint)
 			TUniquePtr<sql::PreparedStatement> DeleteItemsStmt(Con->prepareStatement(
 				"DELETE FROM shop_items WHERE shop_id = ?"
 			));
 			DeleteItemsStmt->setInt(1, ShopID);
 			DeleteItemsStmt->executeUpdate();
 
-			// Delete shop
 			TUniquePtr<sql::PreparedStatement> DeleteShopStmt(Con->prepareStatement(
 				"DELETE FROM shops WHERE shop_id = ?"
 			));
@@ -1142,7 +1100,6 @@ UE::Tasks::TTask<bool> UDatabaseManager::CheckShopExists(int32 ShopID)
 			return false;
 		}
 
-		// RAII connection management
 		ON_SCOPE_EXIT
 		{
 			if (Con)
@@ -1289,13 +1246,11 @@ UE::Tasks::TTask<bool> UDatabaseManager::UpdateShopItemPrice(int32 ShopID, int32
 
 FString UPlayerIdHelper::ConvertPlayerIdToUserId(int32 PlayerId)
 {
-	// ?�로?��??�용 간단 변?? player_[PlayerId] ?�식
 	return FString::Printf(TEXT("player_%d"), PlayerId);
 }
 
 int32 UPlayerIdHelper::ConvertUserIdToPlayerId(const FString& UserId)
 {
-	// player_[number] ?�식?�서 number 추출
 	if (UserId.IsEmpty())
 	{
 		UE_LOG(LogTemp, Error, TEXT("UPlayerIdHelper::ConvertUserIdToPlayerId: Empty UserId"));
@@ -1305,7 +1260,6 @@ int32 UPlayerIdHelper::ConvertUserIdToPlayerId(const FString& UserId)
 	FString PlayerPrefix = TEXT("player_");
 	if (!UserId.StartsWith(PlayerPrefix))
 	{
-		// ?�자�??�는 경우 직접 변???�도
 		if (UserId.IsNumeric())
 		{
 			return FCString::Atoi(*UserId);
@@ -1338,13 +1292,11 @@ bool UPlayerIdHelper::IsValidUserId(const FString& UserId)
 		return false;
 	}
 	
-	// VARCHAR(255) ?�한 검??
 	if (UserId.Len() > 255)
 	{
 		return false;
 	}
 	
-	// 기본?�인 문자???�효??검??(공백, ?�수문자 ??
 	for (const TCHAR& Char : UserId)
 	{
 		if (FChar::IsWhitespace(Char) || Char == TEXT('\0'))
@@ -1411,18 +1363,15 @@ FString UDatabaseJsonHelper::SerializeCharacterExtendedData(const FVector& Posit
 {
 	TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
 	
-	// Position data
 	TSharedPtr<FJsonObject> PositionObject = MakeShareable(new FJsonObject);
 	PositionObject->SetNumberField(TEXT("X"), Position.X);
 	PositionObject->SetNumberField(TEXT("Y"), Position.Y);
 	PositionObject->SetNumberField(TEXT("Z"), Position.Z);
 	JsonObject->SetObjectField(TEXT("Position"), PositionObject);
 	
-	// Health and Mana
 	JsonObject->SetNumberField(TEXT("Health"), Health);
 	JsonObject->SetNumberField(TEXT("Mana"), Mana);
 	
-	// Additional data
 	if (AdditionalData.Num() > 0)
 	{
 		TSharedPtr<FJsonObject> AdditionalObject = MakeShareable(new FJsonObject);
@@ -1456,7 +1405,6 @@ bool UDatabaseJsonHelper::DeserializeCharacterExtendedData(const FString& JsonDa
 		return false;
 	}
 	
-	// Parse Position
 	const TSharedPtr<FJsonObject>* PositionObject;
 	if (JsonObject->TryGetObjectField(TEXT("Position"), PositionObject))
 	{
@@ -1469,7 +1417,6 @@ bool UDatabaseJsonHelper::DeserializeCharacterExtendedData(const FString& JsonDa
 		}
 	}
 	
-	// Parse Health and Mana
 	double HealthValue, ManaValue;
 	if (JsonObject->TryGetNumberField(TEXT("Health"), HealthValue))
 	{
@@ -1480,7 +1427,6 @@ bool UDatabaseJsonHelper::DeserializeCharacterExtendedData(const FString& JsonDa
 		OutMana = static_cast<float>(ManaValue);
 	}
 	
-	// Parse Additional data
 	const TSharedPtr<FJsonObject>* AdditionalObject;
 	if (JsonObject->TryGetObjectField(TEXT("Additional"), AdditionalObject))
 	{
@@ -1539,12 +1485,12 @@ UE::Tasks::TTask<bool> UDatabaseManager::UpdateUserAccount(const FDatabaseUserDa
 
 FString UDatabaseJsonHelper::SerializeSkillData(const TMap<FString, FString>& SkillProperties)
 {
-	return SerializeInventoryItemData(SkillProperties); // 같�? 구조 ?�사??
+	return SerializeInventoryItemData(SkillProperties);
 }
 
 TMap<FString, FString> UDatabaseJsonHelper::DeserializeSkillData(const FString& JsonData)
 {
-	return DeserializeInventoryItemData(JsonData); // 같�? 구조 ?�사??
+	return DeserializeInventoryItemData(JsonData);
 }
 
 FString UDatabaseJsonHelper::SerializeEquipmentEnhancement(int32 EnhancementLevel, const TArray<FString>& EnhancementEffects)
@@ -1583,14 +1529,12 @@ bool UDatabaseJsonHelper::DeserializeEquipmentEnhancement(const FString& JsonDat
 		return false;
 	}
 	
-	// Parse enhancement level
 	double Level;
 	if (JsonObject->TryGetNumberField(TEXT("Level"), Level))
 	{
 		OutEnhancementLevel = static_cast<int32>(Level);
 	}
 	
-	// Parse effects array
 	const TArray<TSharedPtr<FJsonValue>>* EffectsArray;
 	if (JsonObject->TryGetArrayField(TEXT("Effects"), EffectsArray))
 	{
@@ -1641,7 +1585,6 @@ UE::Tasks::TTask<bool> UDatabaseManager::UpdateSkillCooldown(const FString& User
 	{
 		try
 		{
-			// Convert DateTime to MySQL format
 			FString LastUsedString = LastUsedTime.ToString(TEXT("%Y-%m-%d %H:%M:%S"));
 			
 			TUniquePtr<sql::PreparedStatement> UpdateStmt(Con->prepareStatement(
@@ -1690,7 +1633,6 @@ UE::Tasks::TTask<TArray<FSkillSlotDatabaseDTO>> UDatabaseManager::LoadUserSkillS
 			FString Query;
 			if (SlotKey.IsEmpty())
 			{
-				// Load all slots when SlotKey is empty
 				Query = TEXT(
 					"SELECT uss.user_id, uss.slot_key, uss.skill_id, uss.slot_index, "
 					"uss.last_used_time, uss.created_at, uss.updated_at, "
@@ -1703,7 +1645,6 @@ UE::Tasks::TTask<TArray<FSkillSlotDatabaseDTO>> UDatabaseManager::LoadUserSkillS
 			}
 			else
 			{
-				// Load specific slot key
 				Query = TEXT(
 					"SELECT uss.user_id, uss.slot_key, uss.skill_id, uss.slot_index, "
 					"uss.last_used_time, uss.created_at, uss.updated_at, "
@@ -1716,7 +1657,7 @@ UE::Tasks::TTask<TArray<FSkillSlotDatabaseDTO>> UDatabaseManager::LoadUserSkillS
 			}
 			
 			std::unique_ptr<sql::PreparedStatement> Stmt(Con->prepareStatement(TCHAR_TO_UTF8(*Query)));
-			Stmt->setString(1, TCHAR_TO_UTF8(*UserId)); // UserId�?FString?�로 처리
+			Stmt->setString(1, TCHAR_TO_UTF8(*UserId));
 			if (!SlotKey.IsEmpty())
 			{
 				Stmt->setString(2, TCHAR_TO_UTF8(*SlotKey));
@@ -1727,14 +1668,13 @@ UE::Tasks::TTask<TArray<FSkillSlotDatabaseDTO>> UDatabaseManager::LoadUserSkillS
 			while (Result->next())
 			{
 				FSkillSlotDatabaseDTO SlotDTO;
-				SlotDTO.UserId = UTF8_TO_TCHAR(Result->getString("user_id").c_str()); // FString으로 처리
+				SlotDTO.UserId = UTF8_TO_TCHAR(Result->getString("user_id").c_str());
 				SlotDTO.SlotKey = UTF8_TO_TCHAR(Result->getString("slot_key").c_str());
 				SlotDTO.SkillId = Result->getInt("skill_id");
 				SlotDTO.SlotIndex = Result->getInt("slot_index");
-				// SlotDTO.SkillLevel = Result->getInt("skill_level"); // 이 컬럼은 테이블에 존재하지 않음
-				SlotDTO.SkillLevel = 1; // 기본값으로 설정
+				// SlotDTO.SkillLevel = Result->getInt("skill_level"); 미사용 컬럼
+				SlotDTO.SkillLevel = 1;
 				
-				// last_used_time 처리
 				std::string LastUsedString = Result->getString("last_used_time");
 				if (!LastUsedString.empty() && LastUsedString != "NULL")
 				{
@@ -1796,7 +1736,6 @@ UE::Tasks::TTask<bool> UDatabaseManager::SaveUserSkillSlots(const TArray<FSkillS
 				Impl->ReturnConnection(Con);
 			};
 			
-			// ?�랜??�� ?�작
 			Con->setAutoCommit(false);
 			
 			ON_SCOPE_EXIT
@@ -1808,7 +1747,6 @@ UE::Tasks::TTask<bool> UDatabaseManager::SaveUserSkillSlots(const TArray<FSkillS
 				catch (...) {}
 			};
 			
-			// UPSERT 쿼리 (INSERT ... ON DUPLICATE KEY UPDATE)
 			FString Query = TEXT(
 				"INSERT INTO user_skill_slots "
 				"(user_id, slot_key, skill_id, slot_index, last_used_time) "
@@ -1829,7 +1767,6 @@ UE::Tasks::TTask<bool> UDatabaseManager::SaveUserSkillSlots(const TArray<FSkillS
 				Stmt->setInt(3, SlotDTO.SkillId);
 				Stmt->setInt(4, SlotDTO.SlotIndex);
 				
-				// last_used_time 처리
 				if (SlotDTO.LastUsedTime != FDateTime::MinValue())
 				{
 					FString LastUsedString = SlotDTO.LastUsedTime.ToIso8601();
@@ -1881,7 +1818,6 @@ UE::Tasks::TTask<TArray<FSkillMasterDatabaseDTO>> UDatabaseManager::LoadSkillMas
 			
 			if (SkillIds.IsEmpty())
 			{
-				// 모든 ?�킬 마스???�이??로드
 				Query = TEXT(
 					"SELECT skill_id, display_name, description, base_cooltime, base_cost, max_level, enabled "
 					"FROM skills "
@@ -1892,7 +1828,6 @@ UE::Tasks::TTask<TArray<FSkillMasterDatabaseDTO>> UDatabaseManager::LoadSkillMas
 			}
 			else
 			{
-				// ?�정 ?�킬 ID?�만 로드
 				FString PlaceholderList;
 				for (int32 i = 0; i < SkillIds.Num(); ++i)
 				{
@@ -1966,7 +1901,6 @@ UE::Tasks::TTask<bool> UDatabaseManager::SaveSkillMasterData(const TArray<FSkill
 				Impl->ReturnConnection(Con);
 			};
 			
-			// ?�랜??�� ?�작
 			Con->setAutoCommit(false);
 			
 			ON_SCOPE_EXIT
@@ -1978,7 +1912,6 @@ UE::Tasks::TTask<bool> UDatabaseManager::SaveSkillMasterData(const TArray<FSkill
 				catch (...) {}
 			};
 			
-			// UPSERT 쿼리
 			FString Query = TEXT(
 				"INSERT INTO skills "
 				"(skill_id, display_name, description, base_cooltime, base_cost, max_level, enabled) "
@@ -2111,14 +2044,12 @@ UE::Tasks::TTask<bool> UDatabaseManager::ClearUserSkillSlots(const FString& User
 			
 			if (SlotKey.IsEmpty())
 			{
-				// 모든 ?�롯 ????��
 				Query = TEXT("DELETE FROM user_skill_slots WHERE user_id = ?");
 				Stmt.reset(Con->prepareStatement(TCHAR_TO_UTF8(*Query)));
 				Stmt->setString(1, TCHAR_TO_UTF8(*UserId));
 			}
 			else
 			{
-				// ?�정 ?�롯 ?�만 ??��
 				Query = TEXT("DELETE FROM user_skill_slots WHERE user_id = ? AND slot_key = ?");
 				Stmt.reset(Con->prepareStatement(TCHAR_TO_UTF8(*Query)));
 				Stmt->setString(1, TCHAR_TO_UTF8(*UserId));
@@ -2164,7 +2095,6 @@ UE::Tasks::TTask<TMap<int32, int32>> UDatabaseManager::GetSkillUsageStatistics(
 				Impl->ReturnConnection(Con);
 			};
 			
-			// ?�계 쿼리 (간단??버전 - ?�제로는 별도??usage_logs ?�이블이 ?�요?????�음)
 			FString Query = TEXT(
 				"SELECT skill_id, COUNT(*) as usage_count "
 				"FROM user_skill_slots "
@@ -2207,7 +2137,6 @@ UE::Tasks::TTask<TMap<int32, int32>> UDatabaseManager::GetSkillUsageStatistics(
 			
 			std::unique_ptr<sql::PreparedStatement> Stmt(Con->prepareStatement(TCHAR_TO_UTF8(*Query)));
 			
-			// ?�라미터 바인??
 			for (int32 i = 0; i < ParamValues.Num(); ++i)
 			{
 				Stmt->setString(i + 1, TCHAR_TO_UTF8(*ParamValues[i]));

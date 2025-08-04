@@ -33,7 +33,6 @@ void UClientUIComponent::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	// Cache owner controller reference with comprehensive logging
 	OwnerController = Cast<AGGwaPlayerController>(GetOwner());
 	if (OwnerController)
 	{
@@ -56,11 +55,6 @@ void UClientUIComponent::BeginPlay()
 // ============================================================================
 // IClientUIInterface IMPLEMENTATION
 // ============================================================================
-
-// SkillComponent를 제공받고 있으나, 복제가 제대로 이루어지지 않는다고 판단됨.
-// 아예 nullptr이 뜰때고 있고, 어쩔때는 skillcomponent는 메모리를 참조하나, 내부 skillslot이 비어있음.
-// 디버깅을 해보니, Client RPC로 SkillComponent를 전송해주는 시점에서 복제가 제대로 수행되지 않는다고 판단.
-// GGwaGameMOde에서 인자로 넘겨주는 시점에는 정상적으로 메모리를 점유중. GameMode -> RPC -> (복제 이슈) Controller -> UI ! 실패 흐름
 
 void UClientUIComponent::InitializeUI()
 {
@@ -233,14 +227,12 @@ void UClientUIComponent::ReceiveSkillReplicationData(const FSkillSlotReplication
 	UE_LOG(LogTemp, Log, TEXT("ClientUIComponent::ReceiveSkillReplicationData - Processing %d skill slots"), 
 		SkillSlotsReplication.Items.Num());
 
-	// LocalDataBaseLoader 초기화 확인
 	if (!ULocalDataBaseLoader::IsInitialized())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("ClientUIComponent::ReceiveSkillReplicationData - LocalDataBaseLoader not initialized, initializing now"));
 		ULocalDataBaseLoader::Initialize();
 	}
 
-	// 복제 데이터에서 SkillDataAsset들을 복원
 	TArray<USkillDataAsset*> ReconstructedSkillAssets;
 	TMap<int32, FSkillSlotReplicationData> SlotIndexToReplicationData;
 	
@@ -249,7 +241,6 @@ void UClientUIComponent::ReceiveSkillReplicationData(const FSkillSlotReplication
 		const FSkillSlotReplicationData& SlotData = Item.SlotData;
 		SlotIndexToReplicationData.Add(SlotData.SlotIndex, SlotData);
 
-		// SkillID가 유효한 경우에만 SkillDataAsset 로드
 		if (SlotData.SkillId > 0)
 		{
 			FPrimaryAssetId AssetId;
@@ -281,15 +272,7 @@ void UClientUIComponent::ReceiveSkillReplicationData(const FSkillSlotReplication
 		GGwaHUD->GetBaseWidget()->UpdateSkillWidgetFromServer(ReconstructedSkillAssets);
 		UE_LOG(LogTemp, Log, TEXT("ClientUIComponent::ReceiveSkillReplicationData - Updated widget with reconstructed skill data"));
 	}
-
-	// BP_ReceiveSkillDataFromServer(ReconstructedSkillAssets);
-	// // Blueprint 이벤트 호출
-	// BP_ReceiveSkillReplicationData(SkillSlotsReplication);
 }
-
-// ============================================================================
-// PRIVATE HELPER METHODS
-// ============================================================================
 
 AGGwaPlayerController* UClientUIComponent::GetGGwaPlayerController() const
 {

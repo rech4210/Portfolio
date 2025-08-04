@@ -5,33 +5,26 @@
 #include "Engine/World.h"
 #include "GameSharedModule/Public/Interface/AuthRPCInterface.h"
 #include "GameFramework/PlayerController.h" 
-#include "Json.h"
-#include "JsonUtilities.h"
 #include "HttpModule.h"
 #include "Interfaces/IHttpRequest.h"
 #include "Interfaces/IHttpResponse.h"
 #include "Tasks/Task.h"
 #include "Async/Async.h"
-#include "Interface/AuthRPCInterface.h"
 
 
 void UAuthSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
-	// Ensure DatabaseManager is initialized first
 	Collection.InitializeDependency(UDatabaseManager::StaticClass());
 	Super::Initialize(Collection);
 
-	// Create default repository implementation
 	DefaultAuthRepository = NewObject<UAuthRepository>(this, TEXT("DefaultAuthRepository"));
 	DefaultAuthRepository->Initialize();
 
-	// Set as default if no other repository is injected
 	if (!AuthRepositoryInterface.GetInterface())
 	{
 		AuthRepositoryInterface = DefaultAuthRepository;
 	}
 
-	// Create domain service
 	DomainService = NewObject<UAuthDomainService>(this);
 	DomainService->Initialize(AuthRepositoryInterface);
 
@@ -60,28 +53,23 @@ TScriptInterface<IAuthRepositoryInterface> UAuthSubsystem::GetAuthRepository() c
 
 void UAuthSubsystem::RequestServerRegistration(const FString& Username, const FString& Password, const FString& ClientIP, APlayerController* RequestingController)
 {
-	// 1. Authority Validation (App Layer responsibility)
 	if (!ValidateServerAuthority())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("AuthSubsystem: Registration requests should only be made from server"));
-		// BroadcastRegistrationResult(false, TEXT("Unauthorized request"));
 		return;
 	}
 
 	if (Username.IsEmpty() || Password.IsEmpty())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("AuthSubsystem: Invalid registration parameters"));
-		// BroadcastRegistrationResult(false, TEXT("Username and password are required"));
 		return;
 	}
 
-	// 2. Transaction Boundary & Logging (App Layer responsibility)
 	LogSecurityEvent(TEXT("registration_attempt"), FString::Printf(TEXT("Username: %s, IP: %s"), *Username, *ClientIP));
 
 	// 3. Route to appropriate service based on configuration
 	if (bUseExternalAuthServer)
 	{
-		// Use external Node.js auth server
 		FAuthRequestDTO Request;
 		Request.Username = Username;
 		Request.Password = Password;
@@ -92,11 +80,9 @@ void UAuthSubsystem::RequestServerRegistration(const FString& Username, const FS
 	}
 	else
 	{
-		// Use internal domain service
 		if (!DomainService)
 		{
 			UE_LOG(LogTemp, Error, TEXT("AuthSubsystem: DomainService not initialized"));
-			// BroadcastRegistrationResult(false, TEXT("Authentication service unavailable"));
 			return;
 		}
 
@@ -105,46 +91,35 @@ void UAuthSubsystem::RequestServerRegistration(const FString& Username, const FS
 		Request.Password = Password;
 		Request.ClientIP = ClientIP;
 
-		// Call domain service asynchronously
 		auto RegistrationTask = DomainService->RegisterUser(Request);
-		// Note: In a real implementation, you'd need to handle the async result properly
 		UE_LOG(LogTemp, Log, TEXT("AuthSubsystem: Registration request sent to domain service"));
 	}
 }
 
 void UAuthSubsystem::RequestServerAuthentication(const FString& Username, const FString& Password, const FString& ClientIP, APlayerController* RequestingController)
 {
-	// 1. Authority Validation
 	if (!ValidateServerAuthority())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("AuthSubsystem: Authentication requests should only be made from server"));
-		// BroadcastAuthenticationResult(false, TEXT(""), TEXT(""), RequestingController);
 		return;
 	}
 
 	if (!RequestingController)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("AuthSubsystem: Invalid PlayerController for authentication"));
-		// BroadcastAuthenticationResult(false, TEXT(""), TEXT(""));
 		return;
 	}
 
 	if (Username.IsEmpty() || Password.IsEmpty())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("AuthSubsystem: Invalid authentication parameters"));
-		// BroadcastAuthenticationResult(false, TEXT(""), TEXT(""), RequestingController);
 		return;
 	}
 
-	// 2. Transaction Boundary & Logging
-	LogSecurityEvent(TEXT("authentication_attempt"), 
-		FString::Printf(TEXT("Username: %s, IP: %s, Controller: %s"), 
-			*Username, *ClientIP, *RequestingController->GetName()));
+	LogSecurityEvent(TEXT("authentication_attempt"), FString::Printf(TEXT("Username: %s, IP: %s, Controller: %s"), *Username, *ClientIP, *RequestingController->GetName()));
 
-	// 3. Route to appropriate service
 	if (bUseExternalAuthServer)
 	{
-		// Use external Node.js auth server
 		FAuthRequestDTO Request;
 		Request.Username = Username;
 		Request.Password = Password;
@@ -153,26 +128,6 @@ void UAuthSubsystem::RequestServerAuthentication(const FString& Username, const 
 
 		SendAuthenticationToAuthServer(Request, RequestingController);
 	}
-	// TODO: Only Use Login JWT Server
-	// else
-	// {
-	// 	// Use internal domain service
-	// 	if (!DomainService)
-	// 	{
-	// 		UE_LOG(LogTemp, Error, TEXT("AuthSubsystem: DomainService not initialized"));
-	// 		BroadcastAuthenticationResult(false, TEXT(""), TEXT(""), RequestingController);
-	// 		return;
-	// 	}
-	//
-	// 	FAuthRequestDTO Request;
-	// 	Request.Username = Username;
-	// 	Request.Password = Password;
-	// 	Request.ClientIP = ClientIP;
-	//
-	// 	// Call domain service asynchronously
-	// 	auto AuthTask = DomainService->AuthenticateUser(Request);
-	// 	UE_LOG(LogTemp, Log, TEXT("AuthSubsystem: Authentication request sent to domain service"));
-	// }
 }
 
 // TODO: Verify Never Used
@@ -331,7 +286,6 @@ void UAuthSubsystem::OnRegistrationResponse(FHttpRequestPtr Request, FHttpRespon
 	if (!bWasSuccessful || !Response.IsValid())
 	{
 		UE_LOG(LogTemp, Error, TEXT("AuthSubsystem: Registration request failed"));
-		// BroadcastRegistrationResult(false, TEXT("Failed to connect to authentication server"));
 		return;
 	}
 
@@ -340,10 +294,8 @@ void UAuthSubsystem::OnRegistrationResponse(FHttpRequestPtr Request, FHttpRespon
 
 	UE_LOG(LogTemp, Log, TEXT("AuthSubsystem: Registration response received - Code: %d"), ResponseCode);
 
-	if (ResponseCode == 201) // Created
+	if (ResponseCode == 201)
 	{
-		//TODO: Handle success response 를 추가하기. Iclient~ 인터페이스를 game Shared 모듈로 옮겨야함.
-		// Cast<IClientManagerInterface>(RequestingController)->Handle...
 		TSharedPtr<FJsonObject> JsonObject;
 		TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ResponseBody);
 		
@@ -353,19 +305,13 @@ void UAuthSubsystem::OnRegistrationResponse(FHttpRequestPtr Request, FHttpRespon
 			JsonObject->TryGetStringField(TEXT("message"), Message);
 			
 			LogSecurityEvent(TEXT("registration_success"), Message);
-			// BroadcastRegistrationResult(true, Message);
 		}
 		else {
 			UE_LOG(LogTemp, Error, TEXT("AuthSubsystem: Deserialize failed"));
 		}
-		// else
-		// {
-		// 	// BroadcastRegistrationResult(true, TEXT("User registered successfully"));
-		// }
 	}
 	else
 	{
-		// Parse error response
 		FString ErrorMessage = TEXT("Registration failed");
 		
 		TSharedPtr<FJsonObject> JsonObject;
@@ -375,9 +321,7 @@ void UAuthSubsystem::OnRegistrationResponse(FHttpRequestPtr Request, FHttpRespon
 		{
 			JsonObject->TryGetStringField(TEXT("message"), ErrorMessage);
 		}
-
 		LogSecurityEvent(TEXT("registration_failed"), FString::Printf(TEXT("Code: %d, Message: %s"), ResponseCode, *ErrorMessage));
-		// BroadcastRegistrationResult(false, ErrorMessage);
 	}
 }
 
@@ -387,7 +331,6 @@ void UAuthSubsystem::OnAuthenticationResponse(FHttpRequestPtr Request, FHttpResp
 	{
 		UE_LOG(LogTemp, Error, TEXT("AuthSubsystem: Authentication request failed - Network error"));
 		LogSecurityEvent(TEXT("authentication_network_error"), TEXT("HTTP request failed"));
-		// BroadcastAuthenticationResult(false, TEXT(""), TEXT(""), RequestingController);
 		return;
 	}
 
@@ -397,12 +340,10 @@ void UAuthSubsystem::OnAuthenticationResponse(FHttpRequestPtr Request, FHttpResp
 	UE_LOG(LogTemp, Log, TEXT("AuthSubsystem: Authentication response received - Code: %d"), ResponseCode);
 	UE_LOG(LogTemp, VeryVerbose, TEXT("AuthSubsystem: Response body: %s"), *ResponseBody);
 
-	// Handle specific response codes following JWT server (app.js) patterns
 	switch (ResponseCode)
 	{
 		case 200:
 		{
-			// Success - parse JWT token and user data
 			FAuthResponseDTO AuthResponse;
 			if (ParseAuthResponseJson(ResponseBody, AuthResponse) && AuthResponse.bIsSuccess)
 			{
@@ -426,14 +367,12 @@ void UAuthSubsystem::OnAuthenticationResponse(FHttpRequestPtr Request, FHttpResp
 			FString ErrorMessage = TEXT("Invalid request format");
 			ParseDetailedErrorMessage(ResponseBody, ErrorMessage);
 			
-			LogSecurityEvent(TEXT("authentication_bad_request"), 
-				FString::Printf(TEXT("Code: %d, Message: %s"), ResponseCode, *ErrorMessage));
+			LogSecurityEvent(TEXT("authentication_bad_request"), FString::Printf(TEXT("Code: %d, Message: %s"), ResponseCode, *ErrorMessage));
 			break;
 		}
 		
 		case 401:
 		{
-			// Unauthorized - invalid credentials with failed attempt tracking
 			FString ErrorMessage = TEXT("Invalid username or password");
 			FString DetailedError;
 			
@@ -441,7 +380,6 @@ void UAuthSubsystem::OnAuthenticationResponse(FHttpRequestPtr Request, FHttpResp
 			{
 				ErrorMessage = DetailedError;
 				
-				// Check for remaining attempts information from JWT server
 				TSharedPtr<FJsonObject> JsonObject;
 				TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ResponseBody);
 				
@@ -462,15 +400,12 @@ void UAuthSubsystem::OnAuthenticationResponse(FHttpRequestPtr Request, FHttpResp
 				}
 			}
 			
-			LogSecurityEvent(TEXT("authentication_invalid_credentials"), 
-				FString::Printf(TEXT("Code: %d, Message: %s"), ResponseCode, *ErrorMessage));
-			// BroadcastAuthenticationResult(false, TEXT(""), TEXT(""), RequestingController);
+			LogSecurityEvent(TEXT("authentication_invalid_credentials"), FString::Printf(TEXT("Code: %d, Message: %s"), ResponseCode, *ErrorMessage));
 			break;
 		}
 		
 		case 403:
 		{
-			// Forbidden - account disabled or locked (following app.js account status checks)
 			FString ErrorMessage = TEXT("Account access denied");
 			FString DetailedError;
 			
@@ -492,45 +427,35 @@ void UAuthSubsystem::OnAuthenticationResponse(FHttpRequestPtr Request, FHttpResp
 				}
 			}
 			
-			LogSecurityEvent(TEXT("authentication_account_locked_or_disabled"), 
-				FString::Printf(TEXT("Code: %d, Message: %s"), ResponseCode, *ErrorMessage));
-			// BroadcastAuthenticationResult(false, TEXT(""), TEXT(""), RequestingController);
+			LogSecurityEvent(TEXT("authentication_account_locked_or_disabled"), FString::Printf(TEXT("Code: %d, Message: %s"), ResponseCode, *ErrorMessage));
 			break;
 		}
 		
 		case 429:
 		{
-			// Too Many Requests - rate limiting from JWT server
 			FString ErrorMessage = TEXT("Too many login attempts. Please try again later.");
 			ParseDetailedErrorMessage(ResponseBody, ErrorMessage);
 			
-			LogSecurityEvent(TEXT("authentication_rate_limited"), 
-				FString::Printf(TEXT("Code: %d, Message: %s"), ResponseCode, *ErrorMessage));
-			// BroadcastAuthenticationResult(false, TEXT(""), TEXT(""), RequestingController);
+			LogSecurityEvent(TEXT("authentication_rate_limited"), FString::Printf(TEXT("Code: %d, Message: %s"), ResponseCode, *ErrorMessage));
 			break;
 		}
 		
 		case 500:
 		{
-			// Internal Server Error
 			FString ErrorMessage = TEXT("Authentication server error");
 			ParseDetailedErrorMessage(ResponseBody, ErrorMessage);
 			
-			LogSecurityEvent(TEXT("authentication_server_error"), 
-				FString::Printf(TEXT("Code: %d, Message: %s"), ResponseCode, *ErrorMessage));
-			// BroadcastAuthenticationResult(false, TEXT(""), TEXT(""), RequestingController);
+			LogSecurityEvent(TEXT("authentication_server_error"), FString::Printf(TEXT("Code: %d, Message: %s"), ResponseCode, *ErrorMessage));
 			break;
 		}
 		
 		default:
 		{
-			// Unexpected response code
 			FString ErrorMessage = FString::Printf(TEXT("Unexpected server response: %d"), ResponseCode);
 			ParseDetailedErrorMessage(ResponseBody, ErrorMessage);
 			
 			LogSecurityEvent(TEXT("authentication_unexpected_response"), 
 				FString::Printf(TEXT("Code: %d, Message: %s"), ResponseCode, *ErrorMessage));
-			// BroadcastAuthenticationResult(false, TEXT(""), TEXT(""), RequestingController);
 			break;
 		}
 	}
@@ -589,42 +514,12 @@ bool UAuthSubsystem::ValidateServerAuthority() const
 	}
 	return false;
 }
-//
-// void UAuthSubsystem::BroadcastAuthenticationResult(bool bSuccess, const FString& Token, const FString& UserId, APlayerController* TargetController)
-// {
-// 	OnServerAuthenticationComplete.Broadcast(bSuccess, Token, UserId);
-// 	
-// 	// Additional logging
-// 	if (bSuccess)
-// 	{
-// 		UE_LOG(LogTemp, Log, TEXT("AuthSubsystem: Broadcasting successful authentication for user %s"), *UserId);
-// 	}
-// 	else
-// 	{
-// 		UE_LOG(LogTemp, Warning, TEXT("AuthSubsystem: Broadcasting failed authentication"));
-// 	}
-// }
-//
-// void UAuthSubsystem::BroadcastRegistrationResult(bool bSuccess, const FString& Message)
-// {
-// 	OnServerRegistrationComplete.Broadcast(bSuccess, Message);
-// 	
-// 	if (bSuccess)
-// 	{
-// 		UE_LOG(LogTemp, Log, TEXT("AuthSubsystem: Broadcasting successful registration"));
-// 	}
-// 	else
-// 	{
-// 		UE_LOG(LogTemp, Warning, TEXT("AuthSubsystem: Broadcasting failed registration - %s"), *Message);
-// 	}
-// }
 
 void UAuthSubsystem::LogSecurityEvent(const FString& Event, const FString& Details) const
 {
 	UE_LOG(LogTemp, Warning, TEXT("SECURITY EVENT - %s: %s"), *Event, *Details);
 	
 	// TODO: In production, send to security monitoring system
-	// This could integrate with your existing DatabaseManager for security audit logs
 }
 
 FString UAuthSubsystem::CreateAuthRequestJson(const FAuthRequestDTO& Request) const
@@ -651,7 +546,6 @@ bool UAuthSubsystem::ParseAuthResponseJson(const FString& ResponseBody, FAuthRes
 		return false;
 	}
 
-	// Check if response indicates success (following app.js structure)
 	bool bSuccess = false;
 	if (!JsonObject->TryGetBoolField(TEXT("success"), bSuccess))
 	{
@@ -661,22 +555,19 @@ bool UAuthSubsystem::ParseAuthResponseJson(const FString& ResponseBody, FAuthRes
 
 	if (!bSuccess)
 	{
-		// Handle various failure cases from JWT server
 		FString ErrorMessage;
 		JsonObject->TryGetStringField(TEXT("message"), ErrorMessage);
 		
-		// Check for specific error types from app.js
 		if (ErrorMessage.Contains(TEXT("Account is disabled")))
 		{
-			OutResponse.ErrorCode = 403; // Forbidden
+			OutResponse.ErrorCode = 403;
 			OutResponse.ErrorMessage = TEXT("Account is disabled");
 		}
 		else if (ErrorMessage.Contains(TEXT("Account is locked")))
 		{
-			OutResponse.ErrorCode = 403; // Forbidden  
+			OutResponse.ErrorCode = 403;
 			OutResponse.ErrorMessage = TEXT("Account is locked");
 			
-			// Extract lock expiration if available
 			FString LockExpiresAt;
 			if (JsonObject->TryGetStringField(TEXT("lockExpiresAt"), LockExpiresAt))
 			{
@@ -685,10 +576,9 @@ bool UAuthSubsystem::ParseAuthResponseJson(const FString& ResponseBody, FAuthRes
 		}
 		else if (ErrorMessage.Contains(TEXT("Invalid username or password")))
 		{
-			OutResponse.ErrorCode = 401; // Unauthorized
+			OutResponse.ErrorCode = 401;
 			OutResponse.ErrorMessage = TEXT("Invalid credentials");
 			
-			// Check for remaining attempts info
 			int32 RemainingAttempts;
 			if (JsonObject->TryGetNumberField(TEXT("remainingAttempts"), RemainingAttempts))
 			{
@@ -700,7 +590,7 @@ bool UAuthSubsystem::ParseAuthResponseJson(const FString& ResponseBody, FAuthRes
 		}
 		else
 		{
-			OutResponse.ErrorCode = 400; // Bad Request
+			OutResponse.ErrorCode = 400;
 			OutResponse.ErrorMessage = ErrorMessage.IsEmpty() ? TEXT("Authentication failed") : ErrorMessage;
 		}
 		
@@ -711,9 +601,7 @@ bool UAuthSubsystem::ParseAuthResponseJson(const FString& ResponseBody, FAuthRes
 		UE_LOG(LogTemp, Warning, TEXT("AuthSubsystem::ParseAuthResponseJson: Auth failed - %s"), *OutResponse.ErrorMessage);
 		return false;
 	}
-
 	
-	// Success case - extract JWT token
 	FString Token;
 	if (!JsonObject->TryGetStringField(TEXT("token"), Token) || Token.IsEmpty())
 	{
@@ -721,7 +609,6 @@ bool UAuthSubsystem::ParseAuthResponseJson(const FString& ResponseBody, FAuthRes
 		return false;
 	}
 
-	// Extract user information from the response (following app.js structure)
 	const TSharedPtr<FJsonObject>* UserObject;
 	if (JsonObject->TryGetObjectField(TEXT("user"), UserObject) && UserObject->IsValid())
 	{
@@ -747,24 +634,6 @@ bool UAuthSubsystem::ParseAuthResponseJson(const FString& ResponseBody, FAuthRes
 	UE_LOG(LogTemp, Error, TEXT("AuthSubsystem::ParseAuthResponseJson: Failed to extract user information from successful response"));
 	return false;
 }
-//
-// void UAuthSubsystem::LoadGameDataForUser(const FString& UserId, APlayerController* PlayerController)
-// {
-// 	if (!PlayerController)
-// 	{
-// 		UE_LOG(LogTemp, Warning, TEXT("AuthSubsystem: Cannot load game data - invalid PlayerController"));
-// 		return;
-// 	}
-//
-// 	UE_LOG(LogTemp, Log, TEXT("AuthSubsystem: Authentication completed for user %s, delegating to GameMode for data loading"), *UserId);
-//
-// 	// Note: Game data loading is now handled by GameMode and GAS system
-// 	// AuthSubsystem only handles authentication, not game state initialization
-// 	// This follows separation of concerns principle
-// 	
-// 	// Simply proceed to game world travel after successful authentication
-// 	OnGameDataLoaded(true, UserId, PlayerController);
-// }
 
 void UAuthSubsystem::RequestConnectingServer(bool bSuccess, const FString& UserId, APlayerController* PlayerController)
 {
@@ -776,39 +645,18 @@ void UAuthSubsystem::RequestConnectingServer(bool bSuccess, const FString& UserI
 
 	if (bSuccess)
 	{
-		// UE_LOG(LogTemp, Log, TEXT("AuthSubsystem: Game data loaded successfully for user %s"), *UserId);
-		
-		// Find the cached token for this user
 		FString AuthToken = GetCachedTokenForUser(UserId);
-		//
-		// if (AuthToken.IsEmpty())
-		// {
-		// 	UE_LOG(LogTemp, Error, TEXT("AuthSubsystem: No cached token found for user %s"), *UserId);
-		// 	
-		// 	// Fallback to basic game world travel without token
-		// 	FString GameWorldURL = TEXT("/Game/Map/ThirdPersonMap?listen");
-		// 	if (IAuthRPCInterface* AuthRPC = Cast<IAuthRPCInterface>(PlayerController))
-		// 	{
-		// 		AuthRPC->Request_Client_TravelToGameWorld(GameWorldURL);
-		// 	}
-		// 	return;
-		// }
 		
-		// Use AuthRPCInterface to initiate token-based server connection
 		if (IAuthRPCInterface* AuthRPC = Cast<IAuthRPCInterface>(PlayerController))
 		{
 			UE_LOG(LogTemp, Log, TEXT("AuthSubsystem: Initiating token-based server connection for user %s"), *UserId);
 			UE_LOG(LogTemp, Log, TEXT("AuthSubsystem: Token (first 20 chars): %s"), *AuthToken.Left(20));
 			
-			// Call through AuthRPCInterface (DI pattern)
 			AuthRPC->Request_Client_ConnectToGameServerWithToken(AuthToken, UserId);
 		}
 		else
 		{
 			UE_LOG(LogTemp, Error, TEXT("AuthSubsystem: PlayerController does not implement IAuthRPCInterface - cannot perform token-based connection"));
-			
-			// This should not happen if the controller properly implements the interface
-			// UE_LOG(LogTemp, Error, TEXT("AuthSubsystem: Check that your PlayerController implements IAuthRPCInterface"));
 		}
 	}
 	else

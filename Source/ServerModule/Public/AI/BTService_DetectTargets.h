@@ -5,10 +5,6 @@
 #include "BehaviorTree/BTService.h"
 #include "BTService_DetectTargets.generated.h"
 
-/**
- * 
- */
-
 class ABossCharacter;
 UCLASS()
 class SERVERMODULE_API UBTService_DetectTargets : public UBTService

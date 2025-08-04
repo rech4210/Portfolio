@@ -1,5 +1,3 @@
-// GA_Skill1.cpp
-
 #include "Shared/GAS/Skill/GA_Skill1.h"
 #include "SkillModule/Public/Data/SkillDataAsset.h"
 #include "SkillModule/Public/Data/SkillTargetActor_Mouse.h"
@@ -32,20 +30,17 @@ void UGA_Skill1::ActivateAbility(
         return;
     }
 
-    // AvatarActor 유효성 검사
     AActor* AvatarActor = GetAvatarActorFromActorInfo();
     if (!IsValid(AvatarActor)){
         EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
         return;
     }
 
-    // 2) 타겟팅 Task
     if (SkillDataAsset->TargetStrategyClass->IsChildOf(USkillTarget_Self::StaticClass())){
         OnTargetDataReceived(FGameplayAbilityTargetDataHandle());
     }
     else
     {
-        // 마우스 기반 위치 타겟팅
         ASkillTargetActor_Mouse* TargetActor =
             NewObject<ASkillTargetActor_Mouse>(this);
 
@@ -65,8 +60,6 @@ void UGA_Skill1::ActivateAbility(
 
 void UGA_Skill1::OnTargetDataCancelled(const FGameplayAbilityTargetDataHandle& Data)
 {
-    // 취소 시엔 Ability 종료
-    // GetActorInfo().AbilitySystemComponent->RemoveGameplayCue(UEnumTagMatchHelper::GetTagFromEnum(ECueType::DirectionPreview));
     EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, false, true);
 }
 
@@ -98,7 +91,6 @@ void UGA_Skill1::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Da
             }
         }
     }
-    // 4) 몽타주 Task
     UGGwaPlayMontageAndWaitForEvent* MontageTask =
         UGGwaPlayMontageAndWaitForEvent::PlayMontageAndWaitForEvent(
             this,
@@ -111,7 +103,6 @@ void UGA_Skill1::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Da
         );
 
     MontageTask->OnCompleted.AddDynamic(this, &UGA_Skill1::OnMontageCompleted);
-    //blend out 문제는 아닌것 같다.
     MontageTask->OnBlendOut.AddDynamic(this, &UGA_Skill1::OnMontageCompleted);
     MontageTask->OnInterrupted.AddDynamic(this, &UGA_Skill1::OnMontageInterrupted);
     MontageTask->OnCancelled.AddDynamic(this, &UGA_Skill1::OnMontageInterrupted);
@@ -140,10 +131,6 @@ void UGA_Skill1::OnMontageCompleted(FGameplayTag ,FGameplayEventData){
         Context.AddInstigator(SkillContext.SourceActor, SkillContext.SourceActor);
 
         FGameplayEffectSpecHandle Spec = ASC->MakeOutgoingSpec(SkillDataAsset->GEClass, 1.f, Context);
-        // Spec.Data->SetSetByCallerMagnitude(
-        //     FGameplayTag::RequestGameplayTag(SkillAssetTypeTag),
-        //     SkillContext.SkillData->SkillID
-        // );
         FGameplayEffectContextHandle CoolContext = ASC->MakeEffectContext();
         CoolContext.AddInstigator(SkillContext.SourceActor, SkillContext.SourceActor);
 
@@ -162,7 +149,6 @@ void UGA_Skill1::OnMontageCompleted(FGameplayTag ,FGameplayEventData){
             ASC->ApplyGameplayEffectSpecToSelf(*CoolSpec.Data.Get());
         }
         else{
-            //여기서 콜백으로 인해, 버프가 이중 발생. 그러니 쿨타임에만 적용되도록 수정할것.
             for (AActor* Target : SkillContext.DetectedActors){
                 if (UAbilitySystemComponent* TargetASC = GetTargetASC(Target) ){
                     ASC->ApplyGameplayEffectSpecToTarget(*Spec.Data.Get(), TargetASC);
@@ -171,8 +157,6 @@ void UGA_Skill1::OnMontageCompleted(FGameplayTag ,FGameplayEventData){
             ASC->ApplyGameplayEffectSpecToSelf(*CoolSpec.Data.Get());
         }
     }
-
-    // GetActorInfo().AbilitySystemComponent->RemoveGameplayCue(UEnumTagMatchHelper::GetTagFromEnum(ECueType::DirectionPreview));
 
     EndAbility(
         CurrentSpecHandle,

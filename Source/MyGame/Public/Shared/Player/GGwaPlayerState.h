@@ -2,7 +2,6 @@
 
 #include "CoreMinimal.h"
 #include "AbilitySystemInterface.h"
-#include "GameSharedModule/Public/Enum/EPlayerState.h"
 #include "GameplayEffectTypes.h"
 #include "InventoryComponent.h"
 #include "Components/SkillComponent.h"
@@ -48,10 +47,6 @@ public:
 	UFUNCTION(BlueprintCallable)
 	UInventoryComponent* GetInventoryComponent() const;
 
-	// ============================================================================
-	// COMPONENT SETTER FUNCTIONS
-	// ============================================================================
-	
 	UFUNCTION(BlueprintCallable)
 	void SetStateComponent(UPlayerStateComponent* NewComponent);
 	
@@ -76,12 +71,8 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Skills")
 	FOnSkillsUpdated OnSkillsUpdated;
 
-	
-
 protected:
 	virtual void BeginPlay() override;
-
-	// Domain Service Event Handlers
 	UFUNCTION()
 	void OnSkillLoadCompleted(const FGuid& PlayerGuid);
 
@@ -125,7 +116,6 @@ private:
 	UPROPERTY()
 	TObjectPtr<AGGwaCharacter> Character;
 
-	/* Caching for User identification */
 	UPROPERTY()
 	FGuid UserKey;
 };

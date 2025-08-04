@@ -5,7 +5,6 @@
 #include "UObject/Interface.h"
 #include "PlayerIdentityInterface.generated.h"
 
-// This class does not need to be modified.
 UINTERFACE(MinimalAPI)
 class UPlayerIdentityInterface : public UInterface {
 	GENERATED_BODY()

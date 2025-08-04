@@ -21,14 +21,9 @@ public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
 	
-	// ============================================================================
-	// UI
-	// ============================================================================
-
 	UFUNCTION()
 	void OnMapChanged(UWorld* LoadedWorld);
 
-	// UFUNCTION(BlueprintCallable, Category = "UI Manager")
 	virtual void SetCacheActor(AUIConfigCacheActor* NewCacheActor) override;
 
 	UFUNCTION(BlueprintCallable, Category = "UI Manager")
@@ -44,20 +39,10 @@ public:
 	void RefreshCurrentWidget();
 	void OnWorldInit(UWorld* NewWorld, const UWorld::InitializationValues IVS);
 
-
-	// ============================================================================
-	// ClientComponent IMPLEMENTATION
-	// ============================================================================
-
 	UFUNCTION(BlueprintCallable, Category = "UI Manager")
 	void RemoveCurrentWidget();
-	// void RegisterAuthService(UClientAuthComponent* AuthService);
-	// void RegisterUIService(UClientUIComponent* UIService);
 	bool IsServiceReady() const;
 
-	// ============================================================================
-	// IClientUIManagerInterface IMPLEMENTATION
-	// ============================================================================
 	virtual void RegistClientComponent(UActorComponent* Component) override;
 	
 	virtual void InitializeUI() override;
@@ -78,10 +63,6 @@ protected:
 
 	UPROPERTY(Transient)
 	TObjectPtr<AUIConfigCacheActor> CacheActor;
-
-	// ============================================================================
-	// IOC SERVICE MANAGEMENT
-	// ============================================================================
 
 	UPROPERTY(Transient)
 	TObjectPtr<UClientAuthComponent> ClientAuthService;

@@ -1,12 +1,11 @@
-  #include "AuthVerificationService.h"
-
+#include "AuthVerificationService.h"
 #include "HttpManager.h"
-  #include "JsonUtilities.h"
+#include "HttpModule.h"
+#include "JsonUtilities.h"
+#include "Interfaces/IHttpResponse.h"
 
   bool UAuthVerificationService::VerifyToken(const FString& Token, FString& OutUserId)
   {
-      // For backward compatibility, keep the old blocking approach
-      // but recommend using VerifyTokenAsync for new implementations
       UE_LOG(LogTemp, Warning, TEXT("AuthVerificationService::VerifyToken: Using deprecated blocking verification. Consider using VerifyTokenAsync instead."));
       return VerifyTokenWithServer(Token, OutUserId);
   }
@@ -29,11 +28,9 @@
       UE_LOG(LogTemp, Log, TEXT("AuthVerificationService: Starting async token verification"));
       UE_LOG(LogTemp, VeryVerbose, TEXT("AuthVerificationService: Token: %s"), *Token.Left(20));
 
-      // Create HTTP request to JWT server
       FHttpModule& HttpModule = FHttpModule::Get();
       TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = HttpModule.CreateRequest();
 
-      // Prepare JSON payload
       TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
       JsonObject->SetStringField(TEXT("token"), Token);
 
@@ -41,21 +38,18 @@
       TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&RequestBody);
       FJsonSerializer::Serialize(JsonObject.ToSharedRef(), Writer);
 
-      // Configure request
       HttpRequest->SetURL(AuthServerUrl + TEXT("/verify"));
       HttpRequest->SetVerb(TEXT("POST"));
       HttpRequest->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
       HttpRequest->SetTimeout(RequestTimeoutSeconds);
       HttpRequest->SetContentAsString(RequestBody);
 
-      // Bind async response handler
       HttpRequest->OnProcessRequestComplete().BindUObject(
           this, 
           &UAuthVerificationService::OnTokenVerificationResponse, 
           OnComplete
       );
 
-      // Process request asynchronously
       if (HttpRequest->ProcessRequest())
       {
           UE_LOG(LogTemp, Log, TEXT("AuthVerificationService: Async token verification request sent"));
@@ -82,10 +76,8 @@
       UE_LOG(LogTemp, Log, TEXT("AuthVerificationService: Async token verification response - Code: %d"), ResponseCode);
       UE_LOG(LogTemp, VeryVerbose, TEXT("AuthVerificationService: Response body: %s"), *ResponseBody);
 
-      // Parse response
       if (ResponseCode == 200)
       {
-          // Parse JSON response
           TSharedPtr<FJsonObject> ResponseJson;
           TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ResponseBody);
           
@@ -94,7 +86,6 @@
               bool bSuccess = false;
               if (ResponseJson->TryGetBoolField(TEXT("success"), bSuccess) && bSuccess)
               {
-                  // Extract decoded token information
                   const TSharedPtr<FJsonObject>* DecodedObject;
                   if (ResponseJson->TryGetObjectField(TEXT("decoded"), DecodedObject) && DecodedObject->IsValid())
                   {
@@ -114,7 +105,6 @@
       }
       else
       {
-          // Token verification failed
           UE_LOG(LogTemp, Warning, TEXT("AuthVerificationService: Async token verification failed - Code: %d, Message: %s"), 
               ResponseCode, *ResponseBody);
           OnComplete.ExecuteIfBound(false, FString());
@@ -135,11 +125,9 @@
       UE_LOG(LogTemp, Log, TEXT("AuthVerificationService: Verifying token with JWT server (BLOCKING)"));
       UE_LOG(LogTemp, VeryVerbose, TEXT("AuthVerificationService: Token: %s"), *Token.Left(20));
 
-      // Create HTTP request to JWT server
       FHttpModule& HttpModule = FHttpModule::Get();
       TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = HttpModule.CreateRequest();
 
-      // Prepare JSON payload
       TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
       JsonObject->SetStringField(TEXT("token"), Token);
 
@@ -147,21 +135,16 @@
       TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&RequestBody);
       FJsonSerializer::Serialize(JsonObject.ToSharedRef(), Writer);
 
-      // Configure request
       HttpRequest->SetURL(AuthServerUrl + TEXT("/verify"));
       HttpRequest->SetVerb(TEXT("POST"));
       HttpRequest->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
       HttpRequest->SetTimeout(RequestTimeoutSeconds);
       HttpRequest->SetContentAsString(RequestBody);
-
-      // Process request synchronously (blocking) - PROBLEMATIC APPROACH
       HttpRequest->ProcessRequest();
 
-      // Wait for response (blocking approach for PreLogin) - THIS CAN CAUSE DEADLOCKS
       double StartTime = FPlatformTime::Seconds();
       while ((FPlatformTime::Seconds() - StartTime) < RequestTimeoutSeconds)
       {
-          // Allow HTTP module to tick and process responses
           FHttpModule::Get().GetHttpManager().Tick(0.01f);
           
           if (HttpRequest->GetStatus() == EHttpRequestStatus::Succeeded || 
@@ -170,10 +153,9 @@
               break;
           }
           
-          FPlatformProcess::Sleep(0.01f); // 10ms sleep
+          FPlatformProcess::Sleep(0.01f);
       }
 
-      // Check if request completed
       if (HttpRequest->GetStatus() != EHttpRequestStatus::Succeeded)
       {
           UE_LOG(LogTemp, Error, TEXT("AuthVerificationService: HTTP request failed or timed out - Status: %d"), 
@@ -194,10 +176,8 @@
       UE_LOG(LogTemp, Log, TEXT("AuthVerificationService: Token verification response - Code: %d"), ResponseCode);
       UE_LOG(LogTemp, VeryVerbose, TEXT("AuthVerificationService: Response body: %s"), *ResponseBody);
 
-      // Parse response
       if (ResponseCode == 200)
       {
-          // Parse JSON response
           TSharedPtr<FJsonObject> ResponseJson;
           TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ResponseBody);
           
@@ -206,7 +186,6 @@
               bool bSuccess = false;
               if (ResponseJson->TryGetBoolField(TEXT("success"), bSuccess) && bSuccess)
               {
-                  // Extract decoded token information
                   const TSharedPtr<FJsonObject>* DecodedObject;
                   if (ResponseJson->TryGetObjectField(TEXT("decoded"), DecodedObject) && DecodedObject->IsValid())
                   {
@@ -226,7 +205,6 @@
       }
       else
       {
-          // Token verification failed
           UE_LOG(LogTemp, Warning, TEXT("AuthVerificationService: Token verification failed - Code: %d, Message: %s"), 
               ResponseCode, *ResponseBody);
           return false;

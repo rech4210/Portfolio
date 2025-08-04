@@ -9,7 +9,6 @@
 
 DECLARE_DELEGATE_ThreeParams(FOnFlowComplete, bool /*bOK*/, const FRewardData& /*Data*/, const FString& /*Error*/);
 
-// This class does not need to be modified.
 UINTERFACE()
 class UServerLogicBridge : public UInterface {
 	GENERATED_BODY()

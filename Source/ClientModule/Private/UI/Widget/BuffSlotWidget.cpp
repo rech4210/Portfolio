@@ -10,7 +10,7 @@ void UBuffSlotWidget::NativeConstruct()
 	Super::NativeConstruct();
 	
 	if (RemainTimeBar){
-		RemainTimeBar->SetPercent(1.f); // 버프 ?�간 초기??
+		RemainTimeBar->SetPercent(1.f);
 	}
 	
 	if (RemainTimeText){
@@ -25,7 +25,6 @@ void UBuffSlotWidget::ConsumeDuration(float CooldownTime)
 	TotalCooldownTime = CooldownTime;
 	ElapsedCooldownTime = 0.f;
 
-	// 0.05초마??UpdateDurationDuration ?�출
 	GetWorld()->GetTimerManager().SetTimer(
 		CooldownTimerHandle, this, &UBuffSlotWidget::UpdateDuration, 0.05f, true
 	);
@@ -34,10 +33,10 @@ void UBuffSlotWidget::NativeOnMouseEnter(const FGeometry& InGeometry, const FPoi
 	Super::NativeOnMouseEnter(InGeometry, InMouseEvent);
 	if (BuffToolTipWidget->GetVisibility() != ESlateVisibility::Visible) {
 		BuffToolTipWidget->SetVisibility(ESlateVisibility::Visible);
-		BuffToolTipWidget->SetIsEnabled(false); // ?�력 무시 (hover, focus ??
+		BuffToolTipWidget->SetIsEnabled(false);
 		FVector2D LocalMousePos;
 		UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetMousePosition(LocalMousePos.X, LocalMousePos.Y);
-		BuffToolTipWidget->SetPositionInViewport(LocalMousePos, true); // DPI 변??고려??
+		BuffToolTipWidget->SetPositionInViewport(LocalMousePos, true);
 	}
 	UE_LOG(LogTemp, Warning, TEXT("TooltipWidget on %s"), *BuffToolTipWidget.GetName());
 }
@@ -64,23 +63,20 @@ void UBuffSlotWidget::UpdateDuration()
 	ElapsedCooldownTime += 0.05f;
 	float Ratio = 1.f - (ElapsedCooldownTime / TotalCooldownTime);
 	
-	// ?�로그레??�?갱신
 	if (RemainTimeBar)
 	{
 		RemainTimeBar->SetPercent(Ratio);
 	}
 	
-	// ?�스??갱신 (?�수??1?�리까�? 보여�?
 	if (RemainTimeText)
 	{
 		float RemainSeconds = TotalCooldownTime - ElapsedCooldownTime;
-		RemainSeconds = FMath::Max(0.f, RemainSeconds); // ?�수 방�?
+		RemainSeconds = FMath::Max(0.f, RemainSeconds); 
 	
 		FString TimeString = FString::Printf(TEXT("%.1f"), RemainSeconds);
 		RemainTimeText->SetText(FText::FromString(TimeString));
 	}
 	
-	// 쿨�????�료 처리
 	if (ElapsedCooldownTime >= TotalCooldownTime)
 	{
 		GetWorld()->GetTimerManager().ClearTimer(CooldownTimerHandle);

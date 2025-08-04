@@ -8,34 +8,17 @@
 #include "Enum/EPlayerState.h"
 #include "Enum/ESkillType.h"
 
-/**
- * UEnumTagMatchHelper
- *
- * Unreal Engine�� ��� �ý��ۿ����� ���ø� static ���(StateMap<T>)�� ����� ���,
- * �� ���(��: MyGame, ServerModule)���� ������ �ν��Ͻ��� �����Ǿ� ��Ŀ ����(LNK2001) �� ������ ����ġ�� �߻��� �� �ֽ��ϴ�.
- * ���� enum���� ��������� static TMap�� �����Ͽ� ��� ��⿡�� ������ �޸� ������ �����ϵ��� �����Ͽ����ϴ�.
- *
- * - ���� template static ���: enum �߰� �� ����� ���Ǹ� �߰��ϸ� ������, ��⺰�� �и��Ǿ� ��Ŀ ���� �߻�
- * - ����� static ��� ���: enum���� static ����� �����Ͽ� ��� ��ü���� ����, ��Ŀ ���� �� ������ ����ġ �ذ�
- *
- * 
- */
 class GAMESHAREDMODULE_API UEnumTagMatchHelper
 {
 public:
 	static void InitializeHelper();
 	static void Shutdown();
 
-	/**
-	 * enum Ÿ�Կ� ���� �ش��ϴ� TMap���� FGameplayTag�� ��ȯ�մϴ�.
-	 * (���� ��Ī ����: GetTagFromEnum)
-	 */
-	// �Ʒ� static �ʵ��� Unreal ��� �ý��ۿ����� ��Ŀ ���� �� ������ ����ġ ������ ���� ��������� �����մϴ�.
-	static TMap<EPlayerState, FGameplayTag> PlayerStateMap; ///< PlayerState�� �±� ��
-	static TMap<ECueType, FGameplayTag> CueMap;             ///< CueType�� �±� ��
-	static TMap<EGasEventType, FGameplayTag> EventMap;      ///< GAS EventType�� �±� ��
-	static TMap<ESkillType, FGameplayTag> SkillMap;         ///< SkillType�� �±� ��
-	static TMap<EGasDataType, FGameplayTag> DataMap;        ///< GAS DataType�� �±� ��
+	static TMap<EPlayerState, FGameplayTag> PlayerStateMap;
+	static TMap<ECueType, FGameplayTag> CueMap;
+	static TMap<EGasEventType, FGameplayTag> EventMap;
+	static TMap<ESkillType, FGameplayTag> SkillMap;
+	static TMap<EGasDataType, FGameplayTag> DataMap;
 	
 	template <typename T>
 	static FGameplayTag GetTagFromEnum(const T& InEnum);

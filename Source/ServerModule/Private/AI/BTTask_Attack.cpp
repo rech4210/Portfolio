@@ -44,9 +44,7 @@ EBTNodeResult::Type UBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 		FGameplayTagContainer(FinishEventTag),
 		FGameplayEventTagMulticastDelegate::FDelegate::CreateUObject(this, &UBTTask_Attack::OnAbilityFinished)
 	);
-
-	// ���� boss area ������ ���, OnAbilityFinished �� ����� ������� �ʴ� ��찡 ������.
-	// Area attack �� ����ǰ� �� ��, task�� ������� ���ؼ� ������ �������.
+	
 	FGameplayAbilitySpec* Spec = ASC->FindAbilitySpecFromClass(AttackAbility);
 	if (!Spec)
 	{

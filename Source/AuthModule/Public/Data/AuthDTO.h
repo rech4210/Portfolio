@@ -16,37 +16,37 @@ struct AUTHMODULE_API FUserAccountDTO : public FTableRowBase
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "User")
-	FString UserId; // CHAR(36) - GUID format
+	FString UserId;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "User")
-	FString Username; // VARCHAR(30)
+	FString Username;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "User")
-	FString PasswordHash; // VARCHAR(255) - Note: Should not be exposed in client
+	FString PasswordHash;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "User")
-	FString Email; // For external auth server only - not in game database
+	FString Email;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "User")
-	FDateTime CreatedAt; // DATETIME(3)
+	FDateTime CreatedAt;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "User")
-	FDateTime LastLoginAt; // DATETIME(3) NULL
+	FDateTime LastLoginAt;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "User")
-	bool bIsLocked = false; // TINYINT(1)
+	bool bIsLocked = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "User")
-	FDateTime LockExpiresAt; // DATETIME(3) NULL
+	FDateTime LockExpiresAt;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "User")
-	bool bIsDeleted = false; // TINYINT(1)
+	bool bIsDeleted = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "User")
-	FDateTime DeletedAt; // DATETIME(3) NULL
+	FDateTime DeletedAt;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "User")
-	int32 FailedLoginAttempts = 0; // Track failed login attempts for security
+	int32 FailedLoginAttempts = 0;
 
 	FUserAccountDTO()
 	{
@@ -64,9 +64,6 @@ public:
 	}
 };
 
-/**
- * Data Transfer Object for Authentication Request
- */
 USTRUCT(BlueprintType)
 struct AUTHMODULE_API FAuthRequestDTO
 {
@@ -94,9 +91,6 @@ public:
 	}
 };
 
-/**
- * Data Transfer Object for Authentication Response
- */
 USTRUCT(BlueprintType)
 struct AUTHMODULE_API FAuthResponseDTO
 {
@@ -128,15 +122,11 @@ public:
 	}
 };
 
-/**
- * Data Transfer Object for User Audit Log
- */
 USTRUCT(BlueprintType)
 struct AUTHMODULE_API FUserAuditLogDTO
 {
 	GENERATED_BODY()
 
-public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Audit")
 	int64 LogId = 0;
 

@@ -5,24 +5,23 @@
 void USkillTargetBase::DebugSkillShape(const UWorld* World, const FVector& StartLocation, const FVector& EndLocation,
 									   const FSkillShapeConfig& Config) const {
 #if WITH_EDITOR
-	// ?? Box Trace �ð�ȭ
 	DrawDebugBox(
 		World,
-		(StartLocation + EndLocation) * 0.5f, // �ڽ� �߽�
+		(StartLocation + EndLocation) * 0.5f,
 		Config.BoxHalfExtent,
 		FQuat::Identity,
 		FColor::Blue,
 		false,
-		2.0f,  // ���� �ð� (��)
+		2.0f, 
 		0,
-		2.0f   // �� �β�
+		2.0f 
 	);
 
 	DrawDebugSphere(
 		World,
 		EndLocation,
 		Config.SphereRadius,
-		12,            // ���׸�Ʈ ��
+		12,
 		FColor::Green,
 		false,
 		2.0f,
@@ -44,7 +43,6 @@ void USkillTargetBase::DebugSkillShape(const UWorld* World, const FVector& Start
 }
 
 bool USkillTargetBase::HasASC(AActor* Actor) const {
-	//üũ �Ǵܿ��� ���� �����ؾ��Ѵ�. ����� character ��� ��ӹ޴´ٸ�, ������ �÷��̾� ��� Ÿ�� ����� �ȴ�.
 	if (Actor->Implements<UAbilitySystemInterface>()) {
 		return true;
 	}

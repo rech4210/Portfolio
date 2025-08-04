@@ -79,7 +79,6 @@ void UGGwaWidget::InitWidget(UGGwaAbilitySystemComponent* AbilitySystemComponent
 	ASC = AbilitySystemComponent;
 	GGwaAttributeSet = AttributeSet;
 	
-	// Bind to the new delegate from the ASC for buff/skill/item UI updates
 	ASC->OnEffectAssetApplied.AddDynamic(this, &UGGwaWidget::BindWidgetWithTooltip);
 	
 	BP_PlayerStatusWidget->InitWidget();
@@ -104,18 +103,3 @@ void UGGwaWidget::OnHealthChanged(const FOnAttributeChangeData& Data) const{
 void UGGwaWidget::OnManaChanged(const FOnAttributeChangeData& Data) const{
 	BP_PlayerStatusWidget->UpdateManaBar(Data.NewValue, GGwaAttributeSet->GetMaxMana());
 }
-
-
-// template<typename TDataAsset, typename TToolTip, typename TWidget>
-// void UGGwaWidget::BindTooltip(TDataAsset* DataAsset, TSubclassOf<TToolTip> ToolTipClass, UUserWidget* ContainerWidget)
-// {
-// 	if (!DataAsset || !ToolTipClass || !ContainerWidget) return;
-//
-// 	TToolTip* NewToolTip = CreateWidget<TToolTip>(this, ToolTipClass);
-// 	NewToolTip->SetToolTipData(DataAsset);
-// 	DataAsset->Tooltip = NewToolTip;
-//
-// 	TWidget* SlotWidget = Cast<TWidget>(ISetWidgetDataInterface::SetWidgetData(DataAsset));
-// 	SlotTooltipCachePair.Add(SlotWidget, NewToolTip);
-// }
-//

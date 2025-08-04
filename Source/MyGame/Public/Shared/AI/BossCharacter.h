@@ -21,11 +21,9 @@ class MYGAME_API ABossCharacter : public ACharacter, public IAbilitySystemInterf
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this character's properties
 	ABossCharacter();
 
 protected:
-	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
 public:

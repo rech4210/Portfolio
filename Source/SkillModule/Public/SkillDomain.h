@@ -7,48 +7,7 @@
 #include "SkillDomain.generated.h"
 
 class USkillDataAsset;
-//
-// /**
-//  * DEPRECATED: Legacy DTO structure for backward compatibility only
-//  * Use FSkillSlotDatabaseDTO from DatabaseManager instead
-//  */
-// USTRUCT(BlueprintType)
-// struct SKILLMODULE_API FSkillSlotDTO
-// {
-// 	GENERATED_BODY()
-//
-// 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
-// 	FGuid SlotId;
-//
-// 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
-// 	int32 SkillID = -1;
-//
-// 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
-// 	int32 SlotIndex = -1;
-//
-// 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
-// 	int32 SkillLevel = 1;
-//
-// 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
-// 	FDateTime LastUsedTime;
-//
-// 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
-// 	float RemainingCooldown = 0.0f;
-//
-// 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
-// 	bool bIsActive = true;
-//
-// 	FSkillSlotDTO()
-// 	{
-// 		SlotId = FGuid::NewGuid();
-// 		LastUsedTime = FDateTime::Now();
-// 	}
-// };
 
-/**
- * 3-Layer Mapping Domain object for skill configuration (aggregate root)
- * Uses FSkillSlotDatabaseDTO for proper database integration
- */
 USTRUCT(BlueprintType)
 struct SKILLMODULE_API FSkillDomain3Layer
 {
@@ -123,7 +82,7 @@ struct SKILLMODULE_API FSkillDomain3Layer
 				return i;
 			}
 		}
-		return -1; // No available slots
+		return -1;
 	}
 
 	FSkillMasterDatabaseDTO* GetSkillMasterData(int32 SkillId)
@@ -135,10 +94,6 @@ struct SKILLMODULE_API FSkillDomain3Layer
 	}
 };
 
-/**
- * DEPRECATED: Legacy domain object for backward compatibility
- * Use FSkillDomain3Layer instead
- */
 USTRUCT(BlueprintType)
 struct SKILLMODULE_API FSkillDomain
 {
@@ -213,13 +168,10 @@ struct SKILLMODULE_API FSkillDomain
 				return i;
 			}
 		}
-		return -1; // No available slots
+		return -1;
 	}
 };
 
-/**
- * 3-Layer Mapping Repository result wrapper for async operations
- */
 USTRUCT(BlueprintType)
 struct SKILLMODULE_API FSkillRepositoryResult3Layer
 {
@@ -234,7 +186,6 @@ struct SKILLMODULE_API FSkillRepositoryResult3Layer
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillRepositoryResult")
 	FSkillDomain3Layer SkillData;
 
-	// Helper data for different operations
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillRepositoryResult")
 	TArray<FSkillSlotDatabaseDTO> SkillSlots;
 
@@ -274,10 +225,6 @@ struct SKILLMODULE_API FSkillRepositoryResult3Layer
 	}
 };
 
-/**
- * DEPRECATED: Legacy repository result wrapper for backward compatibility
- * Use FSkillRepositoryResult3Layer instead
- */
 USTRUCT(BlueprintType)
 struct SKILLMODULE_API FSkillRepositoryResult
 {

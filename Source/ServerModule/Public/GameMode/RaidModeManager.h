@@ -4,9 +4,6 @@
 #include "BattleModeBase.h"
 #include "RaidModeManager.generated.h"
 
-/**
- * 
- */
 UCLASS()
 class SERVERMODULE_API URaidModeManager : public UBattleModeBase {
 	GENERATED_BODY()

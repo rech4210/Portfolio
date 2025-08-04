@@ -10,9 +10,6 @@
 class UBossStatusWidget;
 class UBaseDataAsset;
 
-/**
- * 
- */
 UCLASS()
 class CLIENTMODULE_API AGGwaHUD : public AHUD
 {

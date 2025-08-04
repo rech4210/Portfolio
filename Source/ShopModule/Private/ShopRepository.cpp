@@ -1,14 +1,11 @@
 ﻿#include "ShopRepository.h"
 #include "DatabaseModule/Public/DatabaseManager.h"
-#include "Components/ShopComponent.h"
-#include "ShopDomain.h"
 #include "Engine/World.h"
 #include "Tasks/Task.h"
 #include "Async/Async.h"
 
 void UShopRepository::Initialize()
 {
-	// Get DatabaseManager from GameInstance subsystem
 	if (UWorld* World = GetWorld())
 	{
 		if (UGameInstance* GameInstance = World->GetGameInstance())
@@ -33,8 +30,6 @@ UE::Tasks::TTask<FShopRepositoryResult> UShopRepository::LoadShopByID(int32 Shop
 		UE_LOG(LogTemp, Error, TEXT("ShopRepository: DBManager is null"));
 		return UE::Tasks::MakeCompletedTask<FShopRepositoryResult>(FShopRepositoryResult{false, TEXT("DBManager is null"), FShopDomain{}});
 	}
-
-	// Execute database operation using the same pattern as SkillDomainService
 	auto LoadTask = DBManager->LoadShopByID(ShopID);
 	
 	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, ShopID, LoadTask]() mutable -> FShopRepositoryResult
@@ -142,7 +137,6 @@ UE::Tasks::TTask<bool> UShopRepository::DeleteShop(int32 ShopID)
 }
 
 UE::Tasks::TTask<bool> UShopRepository::ShopExists(int32 ShopID) {
-	// 비즈?�스 로직 ?�닌가? check?
 	auto CheckTask = DBManager->CheckShopExists(ShopID);
 	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, ShopID, CheckTask]() mutable -> bool
 	{

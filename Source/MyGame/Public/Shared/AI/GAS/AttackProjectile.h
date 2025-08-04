@@ -27,18 +27,15 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Movement")
 	float ArcHeight = 300.f;
 
-	// ��ǥ �������� �����ϴ� �� �ɸ� �ð�(��)
 	UPROPERTY(EditAnywhere, Category = "Movement")
 	float TravelTime = 1.5f;
 
-	// Replicated start/end positions
 	UPROPERTY(VisibleAnywhere, Replicated)
 	FVector StartLocation;
 
 	UPROPERTY(VisibleAnywhere, Replicated)
 	FVector EndLocation;
 
-	// �ʱ�ȭ
 	void InitProjectile(const FVector& Start, AActor* Target);
 
 	virtual void BeginPlay() override;
@@ -51,9 +48,7 @@ public:
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 private:
-	//������Ʈ Ǯ �����
-	// ���� ����
 	UPROPERTY(VisibleAnywhere)
 	AGGwaCharacter* TargetCharacter;
-	float CurrentTime;    // ��� �ð�
+	float CurrentTime;
 };

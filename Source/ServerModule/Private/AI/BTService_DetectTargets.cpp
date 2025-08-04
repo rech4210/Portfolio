@@ -1,10 +1,7 @@
-﻿
-
-#include "AI/BTService_DetectTargets.h"
+﻿#include "AI/BTService_DetectTargets.h"
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Shared/AI/BossCharacter.h"
-
 
 void UBTService_DetectTargets::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) {
 	Super::TickNode(OwnerComp, NodeMemory, DeltaSeconds);
