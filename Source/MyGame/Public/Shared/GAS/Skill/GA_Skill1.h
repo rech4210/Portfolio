@@ -17,6 +17,7 @@ class MYGAME_API UGA_Skill1 : public UGA_Base
 
 public:
 
+	UGA_Skill1();
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Data")
 	TObjectPtr<USkillDataAsset> SkillDataAsset;
 
@@ -27,17 +28,26 @@ public:
 		const FGameplayEventData* TriggerEventData
 	) override;
 
+protected:
+	UFUNCTION(BlueprintCallable)
+    void OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Data);
+
+    UFUNCTION(BlueprintCallable)
+    void OnTargetDataCancelled(const FGameplayAbilityTargetDataHandle& Data);
+
+    UFUNCTION(BlueprintCallable)
+    void OnMontageCompleted(FGameplayTag EventTag, FGameplayEventData EventData);
+
+    UFUNCTION(BlueprintCallable)
+    void OnMontageInterrupted(FGameplayTag EventTag, FGameplayEventData EventData);
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void K2_MontageExectue();
+
+	virtual TArray<AActor*> GetTargetActorsByStrategy(FSkillContext SkillContext) override;
 private:
-	UFUNCTION()
-	void OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Data);
-
-	UFUNCTION()
-	void OnTargetDataCancelled(const FGameplayAbilityTargetDataHandle& Data);
-
-	UFUNCTION()
-	void OnMontageCompleted(FGameplayTag EventTag, FGameplayEventData EventData);
-
-	UFUNCTION()
-	void OnMontageInterrupted(FGameplayTag EventTag, FGameplayEventData EventData);
 	FVector HitPoint;
+	
+	UPROPERTY()
+	USkillTargetBase* TargetingStrategy;
 };

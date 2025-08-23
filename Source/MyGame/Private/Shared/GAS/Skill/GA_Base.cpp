@@ -58,6 +58,5 @@ FSkillContext UGA_Base::BuildSkillContext(const FGameplayAbilityActorInfo* Actor
 	FSkillContext Context;
 	Context.SourceASC = ActorInfo->AbilitySystemComponent.Get();
 	Context.SourceActor = ActorInfo->AvatarActor.Get();
-	Context.TargetLocation = CacheHitLocation;
 	return Context;
 }

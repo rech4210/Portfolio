@@ -20,6 +20,7 @@ struct FPlayerIdentityFair {
 	GENERATED_BODY()
 	FString UserId;
 	FString Token;
+	bool bIsValid = true;
 };
 
 UCLASS()

@@ -15,13 +15,17 @@
 #include "SkillSubsystem.h"
 #include "MyGame/Public/Shared/GameState/GGwaGameState.h"
 #include "MyGame/Public/Shared/Cache/UIConfigCacheActor.h"
+#include "Shared/Player/GGwaCharacter.h"
 #include "Utill/LocalDataBaseLoader.h"
 
 constexpr static float GAME_MODE_FREQUENCY = 3.0f;
 AGGwaGameMode::AGGwaGameMode()
 {
+	PlayerControllerClass = AGGwaPlayerController::StaticClass();
+	PlayerStateClass = AGGwaPlayerState::StaticClass();
+	DefaultPawnClass = AGGwaCharacter::StaticClass();
+	
 	AuthVerificationService = NewObject<UAuthVerificationService>(this, TEXT("AuthVerificationService"));
-	GameStateClass = AGGwaGameState::StaticClass();
 }
 
 void AGGwaGameMode::PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage)
@@ -77,6 +81,9 @@ void AGGwaGameMode::PreLogin(const FString& Options, const FString& Address, con
 	PlayerIdentityFair.UserId = ProvidedUserId;
 	PlayerIdentityFair.Token = Token;
 	PendingPlayers.Add(UniqueId, PlayerIdentityFair);
+	if (!bValidToken || !bValidUserId) {
+		PlayerIdentityFair.bIsValid = false;
+	}
 	
 	UE_LOG(LogTemp, Warning, TEXT("[Game Server] Provided Token: %s..."), *PlayerIdentityFair.Token.Left(20));
 	UE_LOG(LogTemp, Warning, TEXT("[Game Server] Provided UserId: %s"), *PlayerIdentityFair.UserId);
@@ -190,9 +197,6 @@ void AGGwaGameMode::InitializeServerManagers()
 void AGGwaGameMode::PostLogin(APlayerController* NewPlayer)
 {
 	Super::PostLogin(NewPlayer);
-
-	UE_LOG(LogTemp, Warning, TEXT("=== Player Data Initialization Pipeline Start ==="));
-
 	if (!NewPlayer || !NewPlayer->PlayerState)
 	{
 		UE_LOG(LogTemp, Error, TEXT("[FAIL] NewPlayer or PlayerState is not available on PostLogin!"));
@@ -213,8 +217,13 @@ void AGGwaGameMode::PostLogin(APlayerController* NewPlayer)
 		return;
 	}
 	FPlayerIdentityFair* PlayerIdentityFair = PendingPlayers.Find(NewPlayer->PlayerState->GetUniqueId());
-	
 	GGwaPC->InitializeClientComponent();
+	if (!PlayerIdentityFair) {
+		return;
+	}
+	if (!PlayerIdentityFair->bIsValid) {
+		return;
+	}
 	GGwaPC->SetCachedUserId(PlayerIdentityFair->UserId);
 	GGwaPC->SetCachedAuthToken(PlayerIdentityFair->Token);
 	FString FinalUserId = *PlayerIdentityFair->UserId;

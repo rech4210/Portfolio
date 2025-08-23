@@ -28,18 +28,15 @@ UAbilitySystemComponent* AGGwaCharacter::GetAbilitySystemComponent() const {
 void AGGwaCharacter::PossessedBy(AController* NewController) {
 	Super::PossessedBy(NewController);
 	InitASC();
-	
+	FGameplayAbilitySpec MoveSpec(MoveAbility, 1, static_cast<int32>(EAbilityInputID::Move), this);
+	ASC->GiveAbility(MoveSpec);
 	if (ASC && HasAuthority()) {
-		FGameplayAbilitySpec MoveSpec(MoveAbility, 1, static_cast<int32>(EAbilityInputID::Move), this);
-		ASC->GiveAbility(MoveSpec);
 		for (int32 i = 0; i < SkillAbilities.Num(); ++i){
 			if (SkillAbilities[i]){
 				FGameplayAbilitySpec Spec(SkillAbilities[i], 1, static_cast<int32>(EAbilityInputID::Skill1) + i, this);
 				ASC->GiveAbility(Spec);
 			}
 		}
-
-		UE_LOG(LogTemp, Warning, TEXT("=== AGGwaCharacter::PossessedBy DEBUG ==="));
 		ASC->RefreshAbilityActorInfo();
 	}
 	Cast<AGGwaPlayerState>(GetPlayerState())->InitPlayerState();
@@ -50,7 +47,6 @@ void AGGwaCharacter::OnRep_PlayerState() {
 	Super::OnRep_PlayerState();
 	InitASC();
 	
-	UE_LOG(LogTemp, Warning, TEXT("=== AGGwaCharacter::OnRep_PlayerState DEBUG ==="));
 	Cast<AGGwaPlayerState>(GetPlayerState())->InitPlayerState();
 }
 
@@ -64,10 +60,14 @@ void AGGwaCharacter::InitASC() {
 }
 
 void AGGwaCharacter::PlayerMove() {
-	const FGameplayAbilitySpecHandle& AbilitySpec = ASC->FindAbilitySpecFromClass(MoveAbility)->Handle;
-	if (AbilitySpec.IsValid())
+	if (SkillAbilities.IsEmpty()) {
+		UE_LOG(LogTemp, Warning, TEXT("PlayerMove: No Skill Abilities Assigned"));
+		return;
+	}
+	const FGameplayAbilitySpec* AbilitySpec = ASC->FindAbilitySpecFromClass(MoveAbility);
+	if (AbilitySpec)
 	{
-		bool bIsActivated = ASC->TryActivateAbility(AbilitySpec,true);
+		bool bIsActivated = ASC->TryActivateAbility(AbilitySpec->Handle,true);
 	}
 }
 
@@ -77,34 +77,45 @@ void AGGwaCharacter::PostInitializeComponents() {
 
 void AGGwaCharacter::BeginPlay() {
 	Super::BeginPlay();
-}
-
-void AGGwaCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent){
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
 	if (APlayerController * PC = Cast<APlayerController>(GetController()); nullptr != PC) {
 		UEnhancedInputLocalPlayerSubsystem * Subsystem = PC->GetLocalPlayer()->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>();
 		if (MappingContext) {
 			Subsystem->AddMappingContext(MappingContext, 0);
 		}
 	}
-	
-	if (UEnhancedInputComponent* EIC = Cast<UEnhancedInputComponent>(PlayerInputComponent)){
+	bUseControllerRotationYaw = false;
+	GetCharacterMovement()->bOrientRotationToMovement = true;
+}
+//
+// void AGGwaCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent){
+// 	Super::SetupPlayerInputComponent(PlayerInputComponent);
+// 	
+// 	if (UEnhancedInputComponent* EIC = Cast<UEnhancedInputComponent>(PlayerInputComponent)){
+//
+// 		EIC->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AGGwaCharacter::PlayerMove);
+// 		for (int32 i = 0; i < SkillActions.Num(); ++i){
+// 			if (SkillActions[i]) {
+// 				EIC->BindAction(SkillActions[i], ETriggerEvent::Triggered, this, &AGGwaCharacter::OnLocalSkillInput, i);
+// 			}
+// 		}
+// 	}
+// }
 
+void AGGwaCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent){
+	Super::SetupPlayerInputComponent(PlayerInputComponent);
+	if (UEnhancedInputComponent* EIC = Cast<UEnhancedInputComponent>(PlayerInputComponent)){
 		EIC->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AGGwaCharacter::PlayerMove);
+
 		for (int32 i = 0; i < SkillActions.Num(); ++i){
-			if (SkillActions[i]) {
-				EIC->BindAction(SkillActions[i], ETriggerEvent::Triggered, this, &AGGwaCharacter::OnLocalSkillInput, i);
+			EIC->BindAction(SkillActions[i], ETriggerEvent::Triggered, this, &AGGwaCharacter::OnLocalSkillInput, i);
+			for (const FGameplayAbilitySpec& Spec : ASC->GetActivatableAbilities()){
+				UE_LOG(LogTemp, Warning, TEXT("Ability: %s"), *GetNameSafe(Spec.Ability));
+				if (IsLocallyControlled()) UE_LOG(LogTemp, Warning, TEXT("Client %s: Ability: %s"),*GetNameSafe(GetController()),*GetNameSafe(Spec.Ability));
 			}
 		}
 	}
 }
 
-void AGGwaCharacter::CustomKeySet(UInputAction* Action, FKey CustomKey) {
-	FKey OldKey = "q";
-	MappingContext->UnmapKey(Action, OldKey);
-	MappingContext->MapKey(Action, CustomKey);
-}
 
 void AGGwaCharacter::OnLocalSkillInput(const FInputActionInstance& Instance, int32 Index)
 {
@@ -116,6 +127,17 @@ void AGGwaCharacter::OnLocalSkillInput(const FInputActionInstance& Instance, int
 	
 	if (!State->GetSkillComponent()) {
 		UE_LOG(LogTemp, Error, TEXT("OnLocalSkillInput: SkillComponent is null"));
+		return;
+	}
+
+	if (bIsTest) {
+		auto bSuccess = ASC->TryActivateAbilityByClass(SkillAbilities[0], true);
+		if (bSuccess) {
+			UE_LOG(LogTemp, Log, TEXT("OnLocalSkillInput: Test skill cast successful"));
+		}
+		else {
+			UE_LOG(LogTemp, Warning, TEXT("OnLocalSkillInput: Test skill cast failed"));
+		}
 		return;
 	}
 	
@@ -175,12 +197,3 @@ void AGGwaCharacter::Tick(float DeltaSeconds) {
 		AddMovementInput(Direction, 1.0,true);
 	}
 }
-
-
-void AGGwaCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	DOREPLIFETIME(AGGwaCharacter, CurrentPath);
-	DOREPLIFETIME(AGGwaCharacter, CurrentPathIndex);
-	DOREPLIFETIME(AGGwaCharacter, bIsFollowingPath);
-}
-

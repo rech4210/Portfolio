@@ -20,6 +20,10 @@ bool USkillCastingService::TryCastSkill(ACharacter* Caster, int32 SlotIndex){
 	}
 	const FSkillSlotReplicationData* SlotData = SkillComp->GetSkillSlotDataByIndex(SlotIndex);
 
+	if (!SlotData) {
+		UE_LOG(LogTemp, Warning, TEXT("SkillCastingService: Invalid SlotIndex %d for Caster '%s'."), SlotIndex, *Caster->GetName());
+		return false;
+	}
 	if (SlotData->IsEmpty()) {
 		return false;
 	}
@@ -33,11 +37,11 @@ bool USkillCastingService::TryCastSkill(ACharacter* Caster, int32 SlotIndex){
 		SkillDataAsset = ULocalDataBaseLoader::GetDataFromAssetId<USkillDataAsset>(AssetID);
 	}
 
-	const FGameplayAbilitySpecHandle& AbilitySpec = ASC->FindAbilitySpecFromClass(SkillDataAsset->AbilityClass)->Handle;
+	const FGameplayAbilitySpec* AbilitySpec = ASC->FindAbilitySpecFromClass(SkillDataAsset->AbilityClass);
 
-	if (AbilitySpec.IsValid())
+	if (AbilitySpec)
 	{
-		bool bIsActivated = ASC->TryActivateAbility(AbilitySpec, true);
+		bool bIsActivated = ASC->TryActivateAbility(AbilitySpec->Handle, true);
 		if (bIsActivated) {
 			// Rollback Logic
 		}

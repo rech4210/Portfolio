@@ -7,9 +7,16 @@
 #include "GameSharedModule/Public/Data/EGasDataType.h"
 #include "GameSharedModule/Public/Enum/ECueType.h"
 #include "SkillModule/Public/Data/FSkillContext.h"
-#include "Shared/Player/GGwaCharacter.h"
 #include "GameSharedModule/Public/Utill/UEnumTagMatchHelper.h"
 #include "Shared/GAS/GGwaAbilitySystemComponent.h"
+
+UGA_Skill1::UGA_Skill1()
+{
+    TargetingStrategy = NewObject<USkillTargetBase>(this, SkillDataAsset->TargetStrategyClass);
+    InstancingPolicy    = EGameplayAbilityInstancingPolicy::InstancedPerActor;
+    NetExecutionPolicy  = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
+    NetSecurityPolicy   = EGameplayAbilityNetSecurityPolicy::ClientOrServer;
+}
 
 void UGA_Skill1::ActivateAbility(
     const FGameplayAbilitySpecHandle Handle,
@@ -17,9 +24,7 @@ void UGA_Skill1::ActivateAbility(
     const FGameplayAbilityActivationInfo ActivationInfo,
     const FGameplayEventData*)
 {
-
-    FScopedPredictionWindow ScopedPredictionWindow(ActorInfo->AbilitySystemComponent.Get());
-
+    // FScopedPredictionWindow ScopedPredictionWindow(ActorInfo->AbilitySystemComponent.Get());
     if (!CanActivateAbility(Handle, ActorInfo)) {
         EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
         return;
@@ -55,7 +60,6 @@ void UGA_Skill1::ActivateAbility(
         TargetTask->Cancelled.AddDynamic(this, &UGA_Skill1::OnTargetDataCancelled);
         TargetTask->ReadyForActivation();
     }
-
 }
 
 void UGA_Skill1::OnTargetDataCancelled(const FGameplayAbilityTargetDataHandle& Data)
@@ -91,23 +95,25 @@ void UGA_Skill1::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Da
             }
         }
     }
-    UGGwaPlayMontageAndWaitForEvent* MontageTask =
-        UGGwaPlayMontageAndWaitForEvent::PlayMontageAndWaitForEvent(
-            this,
-            NAME_None,
-            SkillDataAsset->CastMontage,
-            FGameplayTagContainer(),
-            1.0f,
-            NAME_None,
-            false
-        );
-
-    MontageTask->OnCompleted.AddDynamic(this, &UGA_Skill1::OnMontageCompleted);
-    MontageTask->OnBlendOut.AddDynamic(this, &UGA_Skill1::OnMontageCompleted);
-    MontageTask->OnInterrupted.AddDynamic(this, &UGA_Skill1::OnMontageInterrupted);
-    MontageTask->OnCancelled.AddDynamic(this, &UGA_Skill1::OnMontageInterrupted);
-
-    MontageTask->ReadyForActivation();
+    // UGGwaPlayMontageAndWaitForEvent* MontageTask =
+    //     UGGwaPlayMontageAndWaitForEvent::PlayMontageAndWaitForEvent(
+    //         this,
+    //         NAME_None,
+    //         SkillDataAsset->CastMontage,
+    //         FGameplayTagContainer(),
+    //         1.0f,
+    //         NAME_None,
+    //         false
+    //     );
+    //
+    // MontageTask->OnCompleted.AddDynamic(this, &UGA_Skill1::OnMontageCompleted);
+    // MontageTask->OnBlendOut.AddDynamic(this, &UGA_Skill1::OnMontageCompleted);
+    // MontageTask->OnInterrupted.AddDynamic(this, &UGA_Skill1::OnMontageInterrupted);
+    // MontageTask->OnCancelled.AddDynamic(this, &UGA_Skill1::OnMontageInterrupted);
+    //
+    // MontageTask->ReadyForActivation();
+    
+    K2_MontageExectue();
 }
 
 void UGA_Skill1::OnMontageInterrupted(FGameplayTag /*EventTag*/, FGameplayEventData /*EventData*/)
@@ -116,6 +122,9 @@ void UGA_Skill1::OnMontageInterrupted(FGameplayTag /*EventTag*/, FGameplayEventD
     EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
 }
 
+TArray<AActor*> UGA_Skill1::GetTargetActorsByStrategy(FSkillContext SkillContext) {
+    return TargetingStrategy->DetectTargets(SkillContext);
+}
 
 void UGA_Skill1::OnMontageCompleted(FGameplayTag ,FGameplayEventData){
     if (GetAvatarActorFromActorInfo()->HasAuthority())
@@ -123,17 +132,14 @@ void UGA_Skill1::OnMontageCompleted(FGameplayTag ,FGameplayEventData){
         SkillContext = BuildSkillContext(CurrentActorInfo);
         SkillContext.SkillData = SkillDataAsset;
         SkillContext.HitLocation =  HitPoint;
-        SkillContext.DetectedActors = NewObject<USkillTargetBase>(this, SkillDataAsset->TargetStrategyClass)->DetectTargets(SkillContext);
-
         
         auto* ASC = SkillContext.SourceASC.Get();
         FGameplayEffectContextHandle Context = ASC->MakeEffectContext();
         Context.AddInstigator(SkillContext.SourceActor, SkillContext.SourceActor);
-
         FGameplayEffectSpecHandle Spec = ASC->MakeOutgoingSpec(SkillDataAsset->GEClass, 1.f, Context);
+        
         FGameplayEffectContextHandle CoolContext = ASC->MakeEffectContext();
         CoolContext.AddInstigator(SkillContext.SourceActor, SkillContext.SourceActor);
-
         FGameplayEffectSpecHandle CoolSpec = ASC->MakeOutgoingSpec(SkillDataAsset->GE_CoolTimeClass, 1.f, CoolContext);
         CoolSpec.Data->SetSetByCallerMagnitude(
             UEnumTagMatchHelper::GetTagFromEnum(EGasDataType::Cooldown),
@@ -149,7 +155,7 @@ void UGA_Skill1::OnMontageCompleted(FGameplayTag ,FGameplayEventData){
             ASC->ApplyGameplayEffectSpecToSelf(*CoolSpec.Data.Get());
         }
         else{
-            for (AActor* Target : SkillContext.DetectedActors){
+            for (AActor* Target : GetTargetActorsByStrategy(SkillContext)){
                 if (UAbilitySystemComponent* TargetASC = GetTargetASC(Target) ){
                     ASC->ApplyGameplayEffectSpecToTarget(*Spec.Data.Get(), TargetASC);
                 }

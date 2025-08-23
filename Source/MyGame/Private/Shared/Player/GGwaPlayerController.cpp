@@ -14,7 +14,7 @@ AGGwaPlayerController::AGGwaPlayerController() {
 
 void AGGwaPlayerController::BeginPlay() {
 	Super::BeginPlay();
-
+	TryBindASCInput();
 #if !UE_SERVER
 	InitializeClientComponent();
 	bShowMouseCursor = true;
@@ -25,15 +25,27 @@ void AGGwaPlayerController::BeginPlay() {
 #endif
 }
 
+
+void AGGwaPlayerController::TryBindASCInput() {
+	const AGGwaPlayerState* PS = GetPlayerState<AGGwaPlayerState>();
+	if (!IsValid(PS) || bIsBindComplete || !InputComponent) {
+		return;
+	}
+	
+	UGGwaAbilitySystemComponent * ASC = Cast<UGGwaAbilitySystemComponent>( GetPlayerState<AGGwaPlayerState>()->GetAbilitySystemComponent());
+	if (!InputComponent || !ASC) {
+		return;
+	}
+	
+	if (ASC) {
+		ASC->BindAbilityActivationToInputComponent(InputComponent, FGameplayAbilityInputBinds("Confirm", "Cancel", FTopLevelAssetPath(TEXT("/Script/SkillModule"), TEXT("EAbilityInputID"))));
+		bIsBindComplete = true;
+	}
+}
+
 void AGGwaPlayerController::AcknowledgePossession(class APawn* PossessedPawn) {
 	Super::AcknowledgePossession(PossessedPawn);
-	AGGwaCharacter * MyCharacter = Cast<AGGwaCharacter>(PossessedPawn);
-	if (nullptr != MyCharacter) {
-		UGGwaAbilitySystemComponent * ASC = Cast<UGGwaAbilitySystemComponent>( GetPlayerState<AGGwaPlayerState>()->GetAbilitySystemComponent());
-		if (ASC) {
-			ASC->BindAbilityActivationToInputComponent(InputComponent, FGameplayAbilityInputBinds("Confirm", "Cancel", FTopLevelAssetPath(TEXT("/Script/SkillModule"), TEXT("EAbilityInputID"))));
-		}
-	}
+	TryBindASCInput();
 }
 
 void AGGwaPlayerController::OnRep_PlayerState() {
@@ -396,3 +408,4 @@ void AGGwaPlayerController::ConnectToGameServerWithToken(const FString& Token, c
 	HandleLoginResult(true, Token, UserId);
 	ClientTravel(ServerURL, TRAVEL_Relative);
 }
+

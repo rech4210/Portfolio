@@ -27,11 +27,11 @@ public:
 	AGGwaCharacter();
 	UPROPERTY(EditAnywhere)
 	float AcceptanceRadius = 50.0f;
-	UPROPERTY(VisibleAnywhere, Replicated)
+	UPROPERTY(VisibleAnywhere)
 	TArray<FVector> CurrentPath;
-	UPROPERTY(VisibleAnywhere, Replicated)
+	UPROPERTY(VisibleAnywhere)
 	bool bIsFollowingPath = false;
-	UPROPERTY(VisibleAnywhere, Replicated)
+	UPROPERTY(VisibleAnywhere)
 	int32 CurrentPathIndex = 1;
 
 	UPROPERTY(EditDefaultsOnly, Category="Input")
@@ -42,7 +42,7 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Abilities")
 	TArray<TSubclassOf<UGameplayAbility>> SkillAbilities;
-
+	
 	UPROPERTY(EditDefaultsOnly, Category = "Move")
 	TObjectPtr<UInputAction> MoveAction;
 	UPROPERTY(EditDefaultsOnly, Category = "Move")
@@ -56,16 +56,18 @@ public:
 
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
-	void CustomKeySet(UInputAction* Action, FKey CustomKey);
-	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 
 	UPlayerReactionComponent* GetReactionComponent() const;
 	UPROPERTY()
 	TObjectPtr<UGGwaAbilitySystemComponent> ASC;
 
+	UPROPERTY(EditAnywhere)
+	bool bIsTest = false;
+
 protected:
 	void InitASC();
 private:
+	
 	void PlayerMove();
 	virtual void PostInitializeComponents() override;
 	virtual void BeginPlay() override;

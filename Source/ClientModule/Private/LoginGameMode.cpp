@@ -1,5 +1,4 @@
 #include "LoginGameMode.h"
-#include "Player/LoginPlayerController.h"
 #include "Shared/Player/GGwaPlayerController.h"
 
 constexpr static float GAME_MODE_FREQUENCY = 3.0f;

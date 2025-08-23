@@ -122,6 +122,9 @@ private:
 
 	UPROPERTY(Transient)
 	FString CachedUserId;
+
+	void TryBindASCInput();
+	bool bIsBindComplete = false;
 };
 
 

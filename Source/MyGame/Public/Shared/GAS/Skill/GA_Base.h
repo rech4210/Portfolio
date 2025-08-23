@@ -13,10 +13,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Skill")
 	FSkillContext SkillContext;
 
-	UPROPERTY(VisibleAnywhere)
-	FVector CacheHitLocation;
 protected:
 	virtual FSkillContext BuildSkillContext(const FGameplayAbilityActorInfo *ActorInfo);
+	virtual TArray<AActor*> GetTargetActorsByStrategy(FSkillContext SkillContext){return nullptr;}
 	void PreProcessSkillStart(const FGameplayAbilityActorInfo* ActorInfo);
 	UAbilitySystemComponent* GetTargetASC(AActor* Actor) const;
 };

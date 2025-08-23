@@ -26,6 +26,7 @@ AGGwaPlayerState::AGGwaPlayerState() {
 	ASC->SetIsReplicated(true);
 	ASC->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
 	AttributeSet = CreateDefaultSubobject<UGGwaAttributeSet>("AttributeSet");
+	
 	StateComponent = CreateDefaultSubobject<UPlayerStateComponent>("PlayerStateComponent");
 	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>("InventoryComponent");
 	SkillComponent = CreateDefaultSubobject<USkillComponent>("SkillComponent");
