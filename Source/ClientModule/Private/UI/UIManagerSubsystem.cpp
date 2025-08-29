@@ -227,11 +227,11 @@ void UUIManagerSubsystem::ProcessMouseOverDetection()
 	}
 }
 
-void UUIManagerSubsystem::NotifyStateChanged()
+void UUIManagerSubsystem::NotifyClientEvent(FGameplayTag Tag)
 {
 	if (ClientUIService)
 	{
-		ClientUIService->NotifyStateChanged();
+		ClientUIService->NotifyClientEvent(Tag);
 		UE_LOG(LogTemp, Log, TEXT("UIManagerSubsystem: Delegated NotifyStateChanged"));
 	}
 	else

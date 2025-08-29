@@ -2,6 +2,7 @@
 #include "AbilitySystemComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "GameplayEffectExtension.h"
+#include "Utill/UEnumTagMatchHelper.h"
 
 DEFINE_ONREP_ATTRIBUTE(UGGwaAttributeSet, Health)
 DEFINE_ONREP_ATTRIBUTE(UGGwaAttributeSet, MaxHealth)
@@ -40,6 +41,11 @@ void UGGwaAttributeSet::PostGameplayEffectExecute(const struct FGameplayEffectMo
 
 	if (Data.EvaluatedData.Attribute == GetHealthAttribute()) {
 		SetHealth(FMath::Clamp(GetHealth(),0.f,GetMaxHealth()));
+		if (GetHealth() == 0.f && !GetOwningAbilitySystemComponent()->HasMatchingGameplayTag(UEnumTagMatchHelper::GetTagFromEnum(EPlayerState::Dead))) {
+			//player state component에 위임
+			GetOwningAbilitySystemComponent()->TryActivateAbilitiesByTag(FGameplayTagContainer(UEnumTagMatchHelper::GetTagFromEnum(EPlayerState::Dead)), true);
+			GetOwningAbilitySystemComponent()->AddLooseGameplayTag(UEnumTagMatchHelper::GetTagFromEnum(EPlayerState::Dead));
+		}
 	}
 	if (Data.EvaluatedData.Attribute == GetManaAttribute()) {
 		SetMana(FMath::Clamp(GetMana(),0.f,GetMaxMana()));

@@ -27,6 +27,7 @@ void UEnumTagMatchHelper::InitializeHelper()
 	
 	EventMap.Add(EGasEventType::None, FGameplayTag::RequestGameplayTag(TEXT("GasEvent.None")));
 	EventMap.Add(EGasEventType::AbilityFinished, FGameplayTag::RequestGameplayTag(TEXT("GasEvent.AbilityFinished")));
+	EventMap.Add(EGasEventType::Notify, FGameplayTag::RequestGameplayTag(TEXT("GasEvent.Notify")));
 	
 	SkillMap.Add(ESkillType::None, FGameplayTag::RequestGameplayTag(TEXT("Skill")));
 	SkillMap.Add(ESkillType::Attack, FGameplayTag::RequestGameplayTag(TEXT("Skill.Attack")));

@@ -61,36 +61,26 @@ void UGGwaAbilitySystemComponent::ProcessGameplayEffect(const FGameplayEffectSpe
 
     if (!PC || !Spec.Def) return;
 
-    int32 SkillID = -1;
-    SkillID = Spec.GetSetByCallerMagnitude(UEnumTagMatchHelper::GetTagFromEnum(EGasDataType::SkillID), true, SkillID);
-    
-    FPrimaryAssetId AssetId;
-    ULocalDataBaseLoader::CheckPrimaryAssetId(SkillID, AssetId);
-    USkillDataAsset* SkillData = ULocalDataBaseLoader::GetDataFromAssetId<USkillDataAsset>(AssetId, /*bSync=*/true);
-        if (!SkillData){
-            UE_LOG(LogTemp, Warning, TEXT("[ASC] Failed to load SkillData for ID %d"), SkillID);
-            return;
-        }
-        for (UBuffDataAsset* Buff : SkillData->AppliedBuffs) {
-            OnEffectAssetApplied.Broadcast(Buff);
-        }
+    // int32 SkillID = -1;
+    // SkillID = Spec.GetSetByCallerMagnitude(UEnumTagMatchHelper::GetTagFromEnum(EGasDataType::SkillID), true, SkillID);
+    //
+    // FPrimaryAssetId AssetId;
+    // ULocalDataBaseLoader::CheckPrimaryAssetId(SkillID, AssetId);
+    // USkillDataAsset* SkillData = ULocalDataBaseLoader::GetDataFromAssetId<USkillDataAsset>(AssetId, /*bSync=*/true);
+    //     if (!SkillData){
+    //         UE_LOG(LogTemp, Warning, TEXT("[ASC] Failed to load SkillData for ID %d"), SkillID);
+    //         return;
+    //     }
+    //     for (UBuffDataAsset* Buff : SkillData->AppliedBuffs) {
+    //         OnEffectAssetApplied.Broadcast(Buff);
+    //     }
 
     const FGameplayTagContainer& Tags = Spec.Def->GetGrantedTags();
     if (Tags.HasTag(UEnumTagMatchHelper::GetTagFromEnum(EGasDataType::Cooldown))){
         UE_LOG(LogTemp, Warning, TEXT("[ASC] Cooldown Active (%s) [%s]"),
             bIsServer ? TEXT("Server") : TEXT("Client"),
-            *SkillData->DisplayName.ToString()
+            *Spec.Def.GetName()
         );
     }
 }
 
-void UGGwaAbilitySystemComponent::ExecuteGameplayCueLocal(const FGameplayTag& GameplayCueTag, const FGameplayCueParameters& Parameters) {
-    AActor* OwnActor = GetOwnerActor();
-    if(!OwnActor) return;
-    
-    APawn* OwnerPawn = Cast<APawn>(OwnActor);
-    if(OwnerPawn && OwnerPawn->IsLocallyControlled())
-    {
-        UAbilitySystemGlobals::Get().GetGameplayCueManager()->HandleGameplayCue(GetOwnerActor(), GameplayCueTag, EGameplayCueEvent::Executed, Parameters);
-    }
-}

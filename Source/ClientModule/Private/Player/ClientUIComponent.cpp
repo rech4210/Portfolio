@@ -189,16 +189,15 @@ void UClientUIComponent::HandleMouseOverDetection()
 	BP_HandleMouseOverDetection();
 }
 
-void UClientUIComponent::NotifyStateChanged()
+void UClientUIComponent::NotifyClientEvent(FGameplayTag Tag)
 {
-	if (!OwnerController || !OwnerController->IsLocalPlayerController() || !GGwaHUD)
-	{
+	if (!GGwaHUD) {
+		UE_LOG(LogTemp, Warning, TEXT("ClientUIComponent::NotifyClientEvent - HUD not initialized"));
 		return;
 	}
-
 	if (GGwaHUD->GetBaseWidget())
 	{
-		GGwaHUD->GetBaseWidget()->OnPlayerStateChanged.Broadcast();
+		GGwaHUD->GetBaseWidget()->OnGameplayTagEvent.Broadcast(Tag);
 	}
 	
 	BP_NotifyClientStateChanged();
@@ -213,6 +212,8 @@ void UClientUIComponent::ReceiveBossData(const FBossDataStruct& BossData)
 
 void UClientUIComponent::ReceiveSkillReplicationData(const FSkillSlotReplicationArray& SkillSlotsReplication)
 {
+	// OwnerController->GetAbilitySystemComponent()->GenericGameplayEventCallbacks.FindOrAdd(FGameplayTag::RequestGameplayTag("GasEvent.Notify")).AddUObject(this, UGGwaWidget::BindWidgetWithTooltip());
+
 	if (!OwnerController || !OwnerController->IsLocalPlayerController() || !GGwaHUD)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("ClientUIComponent::ReceiveSkillReplicationData - Invalid controller or HUD"));
@@ -291,12 +292,11 @@ void UClientUIComponent::SetupClientInputMode()
 
 	UE_LOG(LogTemp, Warning, TEXT("[UI_INIT_DEBUG] ClientUIComponent::SetupClientInputMode - Setting up input mode"));
 	
-	OwnerController->bEnableMouseOverEvents = true;
 	
-	FInputModeGameAndUI inputMode;
-	inputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-	inputMode.SetHideCursorDuringCapture(false);
-	OwnerController->SetInputMode(inputMode);
+	// FInputModeGameAndUI inputMode;
+	// inputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	// inputMode.SetHideCursorDuringCapture(false);
+	// OwnerController->SetInputMode(inputMode);
 	
 	UE_LOG(LogTemp, Warning, TEXT("[UI_INIT_DEBUG] ClientUIComponent::SetupClientInputMode - Input mode configured"));
 }

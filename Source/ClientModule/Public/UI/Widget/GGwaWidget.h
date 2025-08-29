@@ -22,14 +22,14 @@ class USkillSetWidget;
 class UItemSetWidget;
 class UGGwaAbilitySystemComponent;
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayerStateChanged);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGameplayTagEvent, FGameplayTag, Tag);
 
 UCLASS()
 class CLIENTMODULE_API UGGwaWidget : public UUserWidget
 {
 	GENERATED_BODY()
 public:
-	FOnPlayerStateChanged OnPlayerStateChanged;
+	FOnGameplayTagEvent OnGameplayTagEvent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category="AbilitySystem")
 	TObjectPtr<UGGwaAbilitySystemComponent> ASC;

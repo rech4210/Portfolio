@@ -131,7 +131,7 @@ void AGGwaCharacter::OnLocalSkillInput(const FInputActionInstance& Instance, int
 	}
 
 	if (bIsTest) {
-		auto bSuccess = ASC->TryActivateAbilityByClass(SkillAbilities[0], true);
+		auto bSuccess = ASC->TryActivateAbilityByClass(SkillAbilities[Index], true);
 		if (bSuccess) {
 			UE_LOG(LogTemp, Log, TEXT("OnLocalSkillInput: Test skill cast successful"));
 		}
@@ -165,7 +165,13 @@ void AGGwaCharacter::SetMoveData_Implementation(const TArray<FVector>& Path, int
 void AGGwaCharacter::Tick(float DeltaSeconds) {
 	Super::Tick(DeltaSeconds);
 	if (false == bIsFollowingPath) return;
-
+	if (ASC->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(TEXT("Skill")))) {
+		bIsFollowingPath = false;
+		CurrentPath.Empty();
+		CurrentPathIndex = 0;
+		GetCharacterMovement()->StopMovementImmediately();
+	}
+	
 	if (!CurrentPath.IsValidIndex(CurrentPathIndex)) {
 		bIsFollowingPath = false;
 		CurrentPath.Empty();
@@ -181,11 +187,8 @@ void AGGwaCharacter::Tick(float DeltaSeconds) {
 	FVector Direction = TargetPoint - CurrentLocation;
 	float Distance = Direction.Size();
 	auto Dir = Direction.GetSafeNormal();
-	if (ASC->HasMatchingGameplayTag(UEnumTagMatchHelper::GetTagFromEnum(ESkillType::None))) {
-		bIsFollowingPath = false;
-		CurrentPath.Empty();
-		CurrentPathIndex = 0;
-	}
+	// UEnumTagMatchHelper::GetTagFromEnum(ESkillType::None))
+
 	if (Distance < AcceptanceRadius) {
 		CurrentPathIndex++;
 		if (!CurrentPath.IsValidIndex(CurrentPathIndex)) {

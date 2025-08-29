@@ -6,5 +6,6 @@ UENUM(BlueprintType)
 enum class EGasEventType : uint8
 {
 	None,
-	AbilityFinished
+	AbilityFinished,
+	Notify
 }; 

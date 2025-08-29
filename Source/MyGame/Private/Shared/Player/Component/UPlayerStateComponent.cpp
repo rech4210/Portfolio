@@ -64,10 +64,6 @@ void UPlayerStateComponent::OnRep_CurrentStateTag(){
             PlayerController = Cast<AGGwaPlayerController>(Pawn->GetController());
         }
     }
-    if (PlayerController)
-    {
-        PlayerController->NotifyStateChanged();
-    }
     
     if(FOnSpecificStateChanged* FoundDelegate = StateChangedEvents.Find(CurrentStateTag))
     {

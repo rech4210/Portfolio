@@ -1,17 +1,17 @@
-﻿
-
-#include "Shared/GAS/Skill/GA_Base.h"
-#include "AbilitySystemInterface.h"
+﻿#include "Shared/GAS/Skill/GA_Base.h"
 #include "MyGame/Public/Shared/Player/GGwaCharacter.h"
 #include "MyGame/Public/Shared/GAS/GGwaAbilitySystemComponent.h"
 #include "MyGame/Public/Shared/Player/GGwaPlayerController.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "MyGame/Public/Shared/AI/BossCharacter.h"
-#include "MyGame/Public/Shared/AI/EnemyAbilitySystemComponent.h"
-#include "MyGame/Public/Shared/AI/EnemyAttributeSet.h"
 #include "GameSharedModule/Public/Data/EGasDataType.h"
 #include "MyGame/Public/Shared/Player/GGwaPlayerState.h"
 #include "GameSharedModule/Public/Utill/UEnumTagMatchHelper.h"
+
+UGA_Base::UGA_Base() {
+	ActivationBlockedTags.AddTag(UEnumTagMatchHelper::GetTagFromEnum(EPlayerState::Dead));
+	ActivationBlockedTags.AddTag(UEnumTagMatchHelper::GetTagFromEnum(EPlayerState::Stunned));
+}
 
 const FGameplayTag UGA_Base::SkillAssetTypeTag = UEnumTagMatchHelper::GetTagFromEnum(EGasDataType::SkillID);
 
@@ -59,4 +59,20 @@ FSkillContext UGA_Base::BuildSkillContext(const FGameplayAbilityActorInfo* Actor
 	Context.SourceASC = ActorInfo->AbilitySystemComponent.Get();
 	Context.SourceActor = ActorInfo->AvatarActor.Get();
 	return Context;
+}
+
+
+bool UGA_Base::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags, FGameplayTagContainer* OptionalRelevantTags) const {
+	if (!Super::CanActivateAbility(Handle, ActorInfo, SourceTags, TargetTags, OptionalRelevantTags))
+	{
+		return false;
+	}
+	if (const auto* ASC = GetAbilitySystemComponentFromActorInfo())
+	{
+		if (ASC->HasAnyMatchingGameplayTags(ActivationBlockedTags))
+		{
+			return false;
+		}
+	}
+	return true;
 }

@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
+#include "GameplayTags.h"
 #include "IClientComponentProvider.generated.h"
 
 class USkillComponent;
@@ -26,7 +27,7 @@ public:
 	virtual void HandleLoginResult(bool bSuccess, const FString& Token, const FString& UserId) = 0;
 	
 	virtual void ProcessMouseOverDetection() = 0;
-	virtual void NotifyStateChanged() = 0;
+	virtual void NotifyClientEvent(FGameplayTag Tag) = 0;
 	virtual void ProcessBossData(const FBossDataStruct& BossData) = 0;
 	
 	virtual void SkillHUDReplication(const struct FSkillSlotReplicationArray& SkillSlotsReplication) = 0;
@@ -65,7 +66,7 @@ class GAMESHAREDMODULE_API IClientUIInterface
 public:
 	virtual void InitializeUI() = 0;
 	virtual void HandleMouseOverDetection() = 0;
-	virtual void NotifyStateChanged() = 0;
+	virtual void NotifyClientEvent(FGameplayTag Tag) = 0;
 	virtual void ReceiveBossData(const FBossDataStruct& BossData) = 0;
 	virtual void ReceiveSkillReplicationData(const struct FSkillSlotReplicationArray& SkillSlotsReplication) = 0;
 };

@@ -37,15 +37,12 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GA")
 	TSubclassOf<UGameplayAbility> AbilityClass;
-	
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Effect")
-	TSubclassOf<UGameplayEffect> GEClass;
+	TArray<TSubclassOf<UGameplayEffect>> GEClasses;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Effect")
 	float CoolTime = 0.f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Effect")
-	TSubclassOf<UGameplayEffect> GE_CoolTimeClass;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Effect")
 	TSubclassOf<UGameplayEffect> GE_CueClass;

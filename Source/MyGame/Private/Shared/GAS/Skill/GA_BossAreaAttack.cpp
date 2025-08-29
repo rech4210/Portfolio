@@ -111,41 +111,43 @@ void UGA_BossAreaAttack::PerformAreaAttack(){
     SkillContext.SkillData = SkillDataAsset;
     SkillContext.DetectedActors = TargetDetector->DetectTargets(SkillContext);
 
-    if (SkillDataAsset->GEClass)
-    {
-        for (AActor* TargetActor : SkillContext.DetectedActors)
+    for (const auto& GEClass : SkillDataAsset->GEClasses) {
+        if (GEClass)
         {
-            if (TargetActor)
+            for (AActor* TargetActor : SkillContext.DetectedActors)
             {
-                FGameplayEffectSpecHandle SpecHandle = SkillContext.SourceASC->MakeOutgoingSpec(SkillDataAsset->GEClass, 1.0f, SkillContext.SourceASC->MakeEffectContext());
-                if (SpecHandle.IsValid())
+                if (TargetActor)
                 {
+                    FGameplayEffectSpecHandle SpecHandle = SkillContext.SourceASC->MakeOutgoingSpec(GEClass, 1.0f, SkillContext.SourceASC->MakeEffectContext());
+                    if (SpecHandle.IsValid())
+                    {
                     
-                    if (auto ASC = GetTargetASC(TargetActor)) {
-                        if (ASC->HasMatchingGameplayTag(UEnumTagMatchHelper::GetTagFromEnum(EPlayerState::Guard))) {
-                            return;
-                        }
+                        if (auto ASC = GetTargetASC(TargetActor)) {
+                            if (ASC->HasMatchingGameplayTag(UEnumTagMatchHelper::GetTagFromEnum(EPlayerState::Guard))) {
+                                return;
+                            }
                         
-                        if (!TagEffect)
-                        {
-                            UE_LOG(LogTemp, Error, TEXT("UKnockBackExecution: TagEffect is not set!"));
-                            return;
-                        }
+                            if (!TagEffect)
+                            {
+                                UE_LOG(LogTemp, Error, TEXT("UKnockBackExecution: TagEffect is not set!"));
+                                return;
+                            }
 
-                        FGameplayEffectSpecHandle Spec = ASC->MakeOutgoingSpec(TagEffect, 1.f, FGameplayEffectContextHandle());
-                        if(!Spec.IsValid())
-                        {
-                            UE_LOG(LogTemp, Error, TEXT("UKnockBackExecution: Failed to create a valid spec from KnockBackEffectClass!"));
-                            return;
-                        }
+                            FGameplayEffectSpecHandle Spec = ASC->MakeOutgoingSpec(TagEffect, 1.f, FGameplayEffectContextHandle());
+                            if(!Spec.IsValid())
+                            {
+                                UE_LOG(LogTemp, Error, TEXT("UKnockBackExecution: Failed to create a valid spec from KnockBackEffectClass!"));
+                                return;
+                            }
 	
-                        const FGameplayTag DurationTag = UEnumTagMatchHelper::GetTagFromEnum(EGasDataType::TagDuration);
-                        UE_LOG(LogTemp, Log, TEXT("UKnockBackExecution: Applying knockback tag with duration %f, using tag %s"), KnockbackTagMagnitude, *DurationTag.ToString());
+                            const FGameplayTag DurationTag = UEnumTagMatchHelper::GetTagFromEnum(EGasDataType::TagDuration);
+                            UE_LOG(LogTemp, Log, TEXT("UKnockBackExecution: Applying knockback tag with duration %f, using tag %s"), KnockbackTagMagnitude, *DurationTag.ToString());
 	
-                        SkillContext.SourceASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), ASC);
+                            SkillContext.SourceASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), ASC);
                         
-                        Spec.Data->SetSetByCallerMagnitude(DurationTag, KnockbackTagMagnitude);
-                        ASC->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
+                            Spec.Data->SetSetByCallerMagnitude(DurationTag, KnockbackTagMagnitude);
+                            ASC->ApplyGameplayEffectSpecToSelf(*Spec.Data.Get());
+                        }
                     }
                 }
             }

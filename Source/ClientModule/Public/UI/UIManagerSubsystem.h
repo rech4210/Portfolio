@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Blueprint/UserWidget.h"
 #include "Engine/World.h"
@@ -52,7 +53,7 @@ public:
 	virtual void HandleLoginResult(bool bSuccess, const FString& Token, const FString& UserId) override;
 
 	virtual void ProcessMouseOverDetection() override;
-	virtual void NotifyStateChanged() override;
+	virtual void NotifyClientEvent(FGameplayTag Tag) override;
 	virtual void ProcessBossData(const FBossDataStruct& BossData) override;
 	virtual void SkillHUDReplication(const struct FSkillSlotReplicationArray& SkillSlotsReplication) override;
 

@@ -14,9 +14,7 @@ UCLASS()
 class MYGAME_API UGA_Skill1 : public UGA_Base
 {
 	GENERATED_BODY()
-
 public:
-
 	UGA_Skill1();
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Data")
 	TObjectPtr<USkillDataAsset> SkillDataAsset;
@@ -28,26 +26,19 @@ public:
 		const FGameplayEventData* TriggerEventData
 	) override;
 
+	virtual void OnAvatarSet(const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilitySpec& Spec) override;
+
 protected:
-	UFUNCTION(BlueprintCallable)
-    void OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Data);
-
-    UFUNCTION(BlueprintCallable)
-    void OnTargetDataCancelled(const FGameplayAbilityTargetDataHandle& Data);
-
-    UFUNCTION(BlueprintCallable)
-    void OnMontageCompleted(FGameplayTag EventTag, FGameplayEventData EventData);
-
-    UFUNCTION(BlueprintCallable)
-    void OnMontageInterrupted(FGameplayTag EventTag, FGameplayEventData EventData);
-
-	UFUNCTION(BlueprintImplementableEvent)
-	void K2_MontageExectue();
-
-	virtual TArray<AActor*> GetTargetActorsByStrategy(FSkillContext SkillContext) override;
+	UPROPERTY()
+	TArray<AActor*>	 TargetActors;
+	virtual TArray<AActor*> GetTargetActorsByStrategy() override;
+	virtual void OnMontageCompleted(FGameplayTag EventTag, FGameplayEventData EventData) override;
+	virtual void OnMontageInterrupted(FGameplayTag EventTag, FGameplayEventData EventData) override;
+	
+	virtual void OnTargetDataCancelled(const FGameplayAbilityTargetDataHandle& Data) override;
+	virtual void OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Data) override;
 private:
 	FVector HitPoint;
-	
 	UPROPERTY()
 	USkillTargetBase* TargetingStrategy;
 };

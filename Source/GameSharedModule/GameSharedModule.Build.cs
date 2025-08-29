@@ -16,7 +16,8 @@ public class GameSharedModule : ModuleRules
                 "GameplayTags",
                 "UMG",
                 "Json",
-                "JsonUtilities"
+                "JsonUtilities",
+                "GameplayTags"
             }
         );
     }

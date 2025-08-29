@@ -34,7 +34,7 @@ public:
 
 	virtual void HandleMouseOverDetection() override;
 
-	virtual void NotifyStateChanged() override;
+	virtual void NotifyClientEvent(FGameplayTag Tag) override;
 
 	virtual void ReceiveBossData(const FBossDataStruct& BossData) override;
 

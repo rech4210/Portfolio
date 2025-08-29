@@ -18,9 +18,11 @@ void AGGwaPlayerController::BeginPlay() {
 #if !UE_SERVER
 	InitializeClientComponent();
 	bShowMouseCursor = true;
+	bEnableMouseOverEvents = true;
 
 	FInputModeGameAndUI InputMode;
 	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	InputMode.SetHideCursorDuringCapture(false);
 	SetInputMode(InputMode);
 #endif
 }
@@ -41,6 +43,10 @@ void AGGwaPlayerController::TryBindASCInput() {
 		ASC->BindAbilityActivationToInputComponent(InputComponent, FGameplayAbilityInputBinds("Confirm", "Cancel", FTopLevelAssetPath(TEXT("/Script/SkillModule"), TEXT("EAbilityInputID"))));
 		bIsBindComplete = true;
 	}
+}
+
+UAbilitySystemComponent* AGGwaPlayerController::GetAbilitySystemComponent() const {
+	return GetPlayerState<AGGwaPlayerState>()->GetAbilitySystemComponent();
 }
 
 void AGGwaPlayerController::AcknowledgePossession(class APawn* PossessedPawn) {
@@ -331,12 +337,12 @@ void AGGwaPlayerController::HandleLoginResult(bool bSuccess, const FString& Toke
 }
 
 
-void AGGwaPlayerController::NotifyStateChanged() {
+void AGGwaPlayerController::NotifyClientEvent(FGameplayTag Tag) {
 	if (!IsLocalPlayerController()) return;
 	
 	if (CachedClientManagerInterface.GetInterface())
 	{
-		CachedClientManagerInterface->NotifyStateChanged();
+		CachedClientManagerInterface->NotifyClientEvent(Tag);
 		UE_LOG(LogTemp, Log, TEXT("GGwaPlayerController::NotifyStateChanged - Delegated"));
 	}
 	else

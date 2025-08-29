@@ -78,9 +78,7 @@ void UGGwaWidget::InitWidget(UGGwaAbilitySystemComponent* AbilitySystemComponent
 
 	ASC = AbilitySystemComponent;
 	GGwaAttributeSet = AttributeSet;
-	
-	ASC->OnEffectAssetApplied.AddDynamic(this, &UGGwaWidget::BindWidgetWithTooltip);
-	
+
 	BP_PlayerStatusWidget->InitWidget();
 	BP_SkillBarWidget->InitWidget();
 	BP_ItemBarWidget->InitWidget();

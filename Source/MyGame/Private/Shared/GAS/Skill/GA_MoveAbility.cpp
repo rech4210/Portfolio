@@ -1,5 +1,7 @@
 
 #include "Shared/GAS/Skill/GA_MoveAbility.h"
+
+#include "AbilitySystemComponent.h"
 #include "NavigationPath.h"
 #include "NavigationSystem.h"
 #include "Shared/Player/GGwaPlayerController.h"
@@ -9,6 +11,7 @@
 #include "TimerManager.h"
 #include "Abilities/Tasks/AbilityTask_WaitTargetData.h"
 #include "SkillModule/Public/Data/SkillTargetActor_Mouse.h"
+#include "Utill/UEnumTagMatchHelper.h"
 
 
 UGA_MoveAbility::UGA_MoveAbility() {
@@ -53,8 +56,13 @@ void UGA_MoveAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 									  const FGameplayAbilityActorInfo* ActorInfo,
 									  const FGameplayAbilityActivationInfo ActivationInfo,
 									  const FGameplayEventData* TriggerEventData){
-	if (!CommitAbility(Handle, ActorInfo, ActivationInfo)) {
-		EndAbility(Handle, ActorInfo, ActivationInfo, false, true);
+	if (!CanActivateAbility(Handle, ActorInfo)) {
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+		return;
+	}
+    
+	if (!ActorInfo || !CommitAbility(Handle, ActorInfo, ActivationInfo)){
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}
 
@@ -65,6 +73,13 @@ void UGA_MoveAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 		NewObject<ASkillTargetActor_Mouse>(this)
 	);
 
+	if (CooldownGameplayEffectClass)
+	{
+		FGameplayEffectSpecHandle CooldownSpecHandle = MakeOutgoingGameplayEffectSpec(CooldownGameplayEffectClass);
+		CooldownSpecHandle.Data->SetSetByCallerMagnitude(UEnumTagMatchHelper::GetTagFromEnum(EGasDataType::Cooldown), CoolTime);
+		CooldownSpecHandle.Data->DynamicGrantedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Data.Cooldown.Move")));
+		ApplyGameplayEffectSpecToOwner(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, CooldownSpecHandle);
+	}
 	
 	if (Task)
 	{

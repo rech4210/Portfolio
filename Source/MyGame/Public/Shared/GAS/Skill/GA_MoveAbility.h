@@ -19,6 +19,8 @@ public:
 	UPROPERTY(EditAnywhere, Category="LineTrace")
 	TSubclassOf<AActor> LineTraceRing;
 
+	UPROPERTY(EditAnywhere, Category="GA")
+	float CoolTime = 0.3f;
 
 	UFUNCTION()
 	void OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Data);

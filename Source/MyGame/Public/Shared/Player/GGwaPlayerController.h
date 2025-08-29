@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "AbilitySystemInterface.h"
 #include "Components/SkillComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "Interface/AuthRPCInterface.h"
@@ -20,7 +21,7 @@ DECLARE_DELEGATE_OneParam(FClientSubsystemDelegate, TScriptInterface<IClientMana
 
 
 UCLASS(Blueprintable)
-class MYGAME_API AGGwaPlayerController : public APlayerController, public IAuthRPCInterface, public IClientManagerInterface {
+class MYGAME_API AGGwaPlayerController : public APlayerController, public IAuthRPCInterface, public IClientManagerInterface, public IAbilitySystemInterface {
 	GENERATED_BODY()
 public:
 	AGGwaPlayerController();
@@ -92,7 +93,7 @@ public:
     virtual void ProcessMouseOverDetection() override;
 
 	UFUNCTION(BlueprintCallable, Category = "Client Service")
-    virtual void NotifyStateChanged() override;
+    virtual void NotifyClientEvent(FGameplayTag Tag) override;
 	UFUNCTION(Client, Reliable , BlueprintCallable, Category = "Client Service")
     virtual void ProcessBossData(const FBossDataStruct& BossData) override;
 
@@ -107,14 +108,11 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Authentication")
 	FString GetCachedUserId() const { return CachedUserId; }
-
 	
 	UFUNCTION()
 	void SetCachedAuthToken(const FString& Token) {CachedAuthToken = Token; }
-
 	UFUNCTION()
 	void SetCachedUserId(const FString& Id) {CachedUserId = Id; }
-
 
 private:
 	UPROPERTY(Transient)
@@ -124,7 +122,9 @@ private:
 	FString CachedUserId;
 
 	void TryBindASCInput();
+
+public:
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+private:
 	bool bIsBindComplete = false;
 };
-
-

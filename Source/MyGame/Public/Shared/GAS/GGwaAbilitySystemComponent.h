@@ -20,11 +20,6 @@ public:
 	UGGwaAbilitySystemComponent();
 	virtual void BeginPlay() override;
 	bool CheckCost(const FGameplayEffectSpecHandle& CostSpecHandle);
-
-	UPROPERTY()
-	FOnEffectAssetApplied OnEffectAssetApplied;
-
-	void ExecuteGameplayCueLocal(const FGameplayTag& GameplayCueTag, const FGameplayCueParameters& Parameters);
 	
 private:
 	void OnGameplayAppliedCallback(UAbilitySystemComponent* ASC, const FGameplayEffectSpec& Spec, FActiveGameplayEffectHandle Handle);
