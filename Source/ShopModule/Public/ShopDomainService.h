@@ -5,13 +5,12 @@
 #include "Engine/World.h"
 #include "Async/TaskGraphInterfaces.h"
 #include "Tasks/Task.h"
-#include "DatabaseModule/Public/DatabaseManager.h"
+#include "GameSharedModule/Public/DTO/ShopDTOs.h"
 #include "ShopDomainService.generated.h"
 
 class APlayerState;
 class UShopComponent;
 class IShopRepositoryInterface;
-struct FShopItemDTO;
 
 DECLARE_MULTICAST_DELEGATE_ThreeParams(FOnItemPurchased, APlayerState* /* PlayerState */, int32 /* ItemID */, int32 /* Quantity */);
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnShopLoaded, APlayerState* /* PlayerState */, const FShopDomain& /* ShopData */);

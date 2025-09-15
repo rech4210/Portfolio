@@ -1,6 +1,6 @@
 
 #include "SkillDomainService.h"
-#include "Repositories/ISkillRepositoryInterface.h"
+#include "GameSharedModule/Public/Interface/ISkillRepositoryInterface.h"
 #include "SkillSubsystem.h"
 #include "Data/SkillDataAsset.h"
 #include "Tasks/Task.h"

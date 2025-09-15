@@ -4,7 +4,6 @@
 #include "UObject/NoExportTypes.h"
 #include "Mappers/ISkillModelBuilder.h"
 #include "SkillModelBuilder.generated.h"
-
 struct FSkillSlotReplicationData;
 
 UCLASS(BlueprintType)

@@ -1,19 +1,26 @@
 ﻿
 #include "InventorySubsystem.h"
-#include "DatabaseModule/Public/DatabaseManager.h"
 #include "InventoryRepository.h"
 #include "InventoryComponent.h"
 #include "InventoryDomainService.h"
 #include "GameFramework/PlayerState.h"
 #include "Interface/PlayerIdentityInterface.h"
+#include "Provider/DBProviderInfra.h"
 
 void UInventorySubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
-	Collection.InitializeDependency(UDatabaseManager::StaticClass());
+	Collection.InitializeDependency(UDBProviderInfra::StaticClass());
 	Super::Initialize(Collection);
 	
 	DefaultInventoryRepository = NewObject<UInventoryRepository>(this, TEXT("DefaultInventoryRepository"));
-	DefaultInventoryRepository->Initialize();
+	if (UDBProviderInfra* Infra = GetGameInstance()->GetSubsystem<UDBProviderInfra>())
+	{
+		DefaultInventoryRepository->Initialize(Infra);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("InventorySubsystem: UDBProviderInfra not available"));
+	}
 	
 	if (!InventoryRepositoryInterface.GetInterface())
 	{

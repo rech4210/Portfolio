@@ -3,7 +3,7 @@
 
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
-#include "InventoryRepositoryInterface.h"
+#include "../../GameSharedModule/Public/Interface/InventoryRepositoryInterface.h"
 #include "Interface/PlayerIdentityInterface.h"
 #include "InventorySubsystem.generated.h"
 

@@ -4,8 +4,10 @@
 #include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"
 #include "HAL/Platform.h"
+#include "Interface/Provider/ISkillDBProvider.h"
 #include "Misc/Parse.h"
 #include "Misc/CommandLine.h"
+#include "Provider/DBProviderInfra.h"
 
 UGGwaGameInstance::UGGwaGameInstance()
 {
@@ -14,6 +16,7 @@ UGGwaGameInstance::UGGwaGameInstance()
 void UGGwaGameInstance::Init() {
 	Super::Init();
 	FTimerHandle TimerHandle;
+	
 	GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &UGGwaGameInstance::HandleMapLoading, 0.1f, false);
 }
 

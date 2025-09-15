@@ -1,33 +1,26 @@
 ﻿
 #include "SkillRepository.h"
 #include "Components/SkillComponent.h"
-#include "Entities/SkillSlot.h"
-#include "Data/SkillDataAsset.h"
 #include "SkillDomain.h"
-#include "DatabaseModule/Public/DatabaseManager.h"
-#include "GameFramework/PlayerState.h"
 #include "Tasks/Task.h"
 #include "Async/Async.h"
 #include "Engine/AssetManager.h"
-
-void USkillRepository::Initialize() 
-{
-	DBManager = GetWorld()->GetGameInstance()->GetSubsystem<UDatabaseManager>();
-	if (!DBManager) 
-	{
-		UE_LOG(LogTemp, Error, TEXT("SkillRepository: DatabaseManager is not available!"));
-	}
-}
+#include "GameSharedModule/Public/DTO/SkillDTOs.h"
+#include "Interface/Provider/ISkillDBProvider.h"
 
 // ============================================================================
 // 3-LAYER MAPPING ARCHITECTURE METHODS (RECOMMENDED)
 // ============================================================================
 
+void USkillRepository::Initialize(IDBProviderInfra* Infra) {
+	DBProvider = (Infra) ? Infra->GetSkillDbProvider() : nullptr;
+}
+
 UE::Tasks::TTask<FSkillRepositoryResult3Layer> USkillRepository::LoadUserSkillSlots(const FString& UserId, const FString& SlotKey)
 {
 	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, UserId, SlotKey]() -> FSkillRepositoryResult3Layer
 	{
-		if (!DBManager)
+		if (!DBProvider)
 		{
 			return FSkillRepositoryResult3Layer::Failure(TEXT("DatabaseManager not available"));
 		}
@@ -37,7 +30,7 @@ UE::Tasks::TTask<FSkillRepositoryResult3Layer> USkillRepository::LoadUserSkillSl
 			return FSkillRepositoryResult3Layer::Failure(TEXT("Invalid UserId"));
 		}
 
-		auto LoadTask = DBManager->LoadUserSkillSlots(UserId, SlotKey);
+		auto LoadTask = DBProvider->LoadUserSkillSlots(UserId, SlotKey);
 		TArray<FSkillSlotDatabaseDTO> LoadedSlots = LoadTask.GetResult();
 		return FSkillRepositoryResult3Layer::SuccessWithSlots(LoadedSlots);
 	});
@@ -47,7 +40,7 @@ UE::Tasks::TTask<FSkillRepositoryResult3Layer> USkillRepository::SaveUserSkillSl
 {
 	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, UserId, SkillSlotDTOs]() -> FSkillRepositoryResult3Layer
 	{
-		if (!DBManager)
+		if (!DBProvider)
 		{
 			return FSkillRepositoryResult3Layer::Failure(TEXT("DatabaseManager not available"));
 		}
@@ -63,7 +56,7 @@ UE::Tasks::TTask<FSkillRepositoryResult3Layer> USkillRepository::SaveUserSkillSl
 		}
 
 		// Execute database operation on worker thread
-		auto SaveTask = DBManager->SaveUserSkillSlots(SkillSlotDTOs);
+		auto SaveTask = DBProvider->SaveUserSkillSlots(SkillSlotDTOs);
 		bool bSuccess = SaveTask.GetResult();
 
 		if (bSuccess)
@@ -81,13 +74,13 @@ UE::Tasks::TTask<FSkillRepositoryResult3Layer> USkillRepository::LoadSkillMaster
 {
 	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, SkillIds]() -> FSkillRepositoryResult3Layer
 	{
-		if (!DBManager)
+		if (!DBProvider)
 		{
 			return FSkillRepositoryResult3Layer::Failure(TEXT("DatabaseManager not available"));
 		}
 
 		// Execute database operation on worker thread
-		auto LoadTask = DBManager->LoadSkillMasterData(SkillIds);
+		auto LoadTask = DBProvider->LoadSkillMasterData(SkillIds);
 		TArray<FSkillMasterDatabaseDTO> LoadedMasterData = LoadTask.GetResult();
 
 		// Return the master data
@@ -99,7 +92,7 @@ UE::Tasks::TTask<FSkillRepositoryResult3Layer> USkillRepository::UpdateSkillSlot
 {
 	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, UserId, SlotKey, SlotIndex, LastUsedTime]() -> FSkillRepositoryResult3Layer
 	{
-		if (!DBManager)
+		if (!DBProvider)
 		{
 			return FSkillRepositoryResult3Layer::Failure(TEXT("DatabaseManager not available"));
 		}
@@ -120,13 +113,13 @@ UE::Tasks::TTask<FSkillRepositoryResult3Layer> USkillRepository::UpdateSkillSlot
 		}
 
 		// Execute database operation on worker thread
-		auto UpdateTask = DBManager->UpdateSkillSlotCooldown(UserId, SlotKey, SlotIndex, LastUsedTime);
+		auto UpdateTask = DBProvider->UpdateSkillSlotCooldown(UserId, SlotKey, SlotIndex, LastUsedTime);
 		bool bSuccess = UpdateTask.GetResult();
 
 		if (bSuccess)
 		{
 			// Reload updated slots
-			auto ReloadTask = DBManager->LoadUserSkillSlots(UserId, SlotKey);
+			auto ReloadTask = DBProvider->LoadUserSkillSlots(UserId, SlotKey);
 			TArray<FSkillSlotDatabaseDTO> UpdatedSlots = ReloadTask.GetResult();
 			return FSkillRepositoryResult3Layer::SuccessWithSlots(UpdatedSlots);
 		}
@@ -141,7 +134,7 @@ UE::Tasks::TTask<FSkillRepositoryResult3Layer> USkillRepository::ClearUserSkillS
 {
 	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, UserId, SlotKey]() -> FSkillRepositoryResult3Layer
 	{
-		if (!DBManager)
+		if (!DBProvider)
 		{
 			return FSkillRepositoryResult3Layer::Failure(TEXT("DatabaseManager not available"));
 		}
@@ -157,7 +150,7 @@ UE::Tasks::TTask<FSkillRepositoryResult3Layer> USkillRepository::ClearUserSkillS
 		}
 
 		// Execute database operation on worker thread
-		auto ClearTask = DBManager->ClearUserSkillSlots(UserId, SlotKey);
+		auto ClearTask = DBProvider->ClearUserSkillSlots(UserId, SlotKey);
 		bool bSuccess = ClearTask.GetResult();
 
 		if (bSuccess)
@@ -175,7 +168,7 @@ UE::Tasks::TTask<FSkillRepositoryResult3Layer> USkillRepository::GetSkillUsageSt
 {
 	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, UserId, SkillId, StartDate, EndDate]() -> FSkillRepositoryResult3Layer
 	{
-		if (!DBManager)
+		if (!DBProvider)
 		{
 			return FSkillRepositoryResult3Layer::Failure(TEXT("DatabaseManager not available"));
 		}
@@ -186,7 +179,7 @@ UE::Tasks::TTask<FSkillRepositoryResult3Layer> USkillRepository::GetSkillUsageSt
 		}
 
 		// Execute database operation on worker thread
-		auto StatsTask = DBManager->GetSkillUsageStatistics(UserId, SkillId, StartDate, EndDate);
+		auto StatsTask = DBProvider->GetSkillUsageStatistics(UserId, SkillId, StartDate, EndDate);
 		TMap<int32, int32> UsageStats = StatsTask.GetResult();
 
 		// For now, return success - you can extend this to include stats in the result

@@ -1,16 +1,22 @@
 ﻿#include "ShopSubsystem.h"
-#include "DatabaseManager.h"
 #include "ShopRepository.h"
 #include "ShopDomainService.h"
 #include "GameFramework/PlayerState.h"
-
+#include "Provider/DBProviderInfra.h"
 void UShopSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
-	Collection.InitializeDependency(UDatabaseManager::StaticClass());
+	Collection.InitializeDependency(UDBProviderInfra::StaticClass());
 	Super::Initialize(Collection);
 	
 	ShopRepository = NewObject<UShopRepository>(this, TEXT("ShopRepository"));
-	ShopRepository->Initialize();
+	if (UDBProviderInfra* Infra = GetGameInstance()->GetSubsystem<UDBProviderInfra>())
+	{
+		ShopRepository->Initialize(Infra);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("ShopSubsystem: UDBProviderInfra not available"));
+	}
 	
 	ShopDomainService = NewObject<UShopDomainService>(this, TEXT("ShopDomainService"));
 	ShopDomainService->Initialize(ShopRepository);

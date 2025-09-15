@@ -2,23 +2,22 @@
 
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
-#include "DatabaseModule/Public/DatabaseManager.h"
 #include "Repository/AuthRepositoryInterface.h"
 #include "AuthRepository.generated.h"
+
+class IAuthDBProvider;
+struct FUserAccountDTO;
+struct FUserAuditLogDTO;
 
 UCLASS()
 class AUTHMODULE_API UAuthRepository : public UObject, public IAuthRepositoryInterface
 {
 	GENERATED_BODY()
-	UPROPERTY()
-	UDatabaseManager* DatabaseManager;
 
 public:
 	UAuthRepository();
-
-	UFUNCTION(BlueprintCallable, Category = "Auth Repository")
-	void Initialize();
-
+	
+	virtual void Initialize(IDBProviderInfra* Infra) override;
 	virtual UE::Tasks::TTask<bool> CreateUser(const FUserAccountDTO& UserData) override;
 	virtual UE::Tasks::TTask<TOptional<FUserAccountDTO>> GetUserByUsername(const FString& Username) override;
 	virtual UE::Tasks::TTask<TOptional<FUserAccountDTO>> GetUserById(const FString& UserId) override;
@@ -38,8 +37,8 @@ public:
 	virtual UE::Tasks::TTask<bool> UnlockExpiredUsers() override;
 
 private:
-	FUserAccountDTO ConvertDatabaseUserToDTO(const FDatabaseUserData& DatabaseUser) const;
-	FUserAuditLogDTO ConvertAuditLogFromDatabaseResult(const TMap<FString, FString>& DatabaseRow) const;
 	FString ConvertDateTimeToString(const FDateTime& DateTime) const;
 	FDateTime ConvertStringToDateTime(const FString& DateTimeString) const;
+
+	TSharedPtr<IAuthDBProvider> AuthDBProvider;
 };

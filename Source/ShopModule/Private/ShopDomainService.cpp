@@ -1,6 +1,6 @@
 ﻿
 #include "ShopDomainService.h"
-#include "IShopRepositoryInterface.h"
+#include "GameSharedModule/Public/Interface/IShopRepositoryInterface.h"
 #include "ShopDomain.h"
 #include "GameFramework/PlayerState.h"
 #include "Components/ShopComponent.h"

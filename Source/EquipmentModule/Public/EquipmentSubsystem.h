@@ -3,7 +3,7 @@
 
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
-#include "IEquipmentRepositoryInterface.h"
+#include "../../GameSharedModule/Public/Interface/IEquipmentRepositoryInterface.h"
 #include "Interface/PlayerIdentityInterface.h"
 #include "EquipmentSubsystem.generated.h"
 
@@ -25,5 +25,5 @@ public:
 
 private:
 	UPROPERTY()
-	UEquipmentRepository* EquipmentRepository;
+	UEquipmentRepository* DefaultEquipmentRepository;
 };

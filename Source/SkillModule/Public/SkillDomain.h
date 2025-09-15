@@ -3,7 +3,9 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
-#include "DatabaseModule/Public/DatabaseManager.h"
+#if WITH_SERVER_CODE
+#include "GameSharedModule/Public/DTO/SkillDTOs.h"
+#endif
 #include "SkillDomain.generated.h"
 
 class USkillDataAsset;

@@ -2,6 +2,7 @@
 #pragma once
 
 #include "UObject/Interface.h"
+#include "IDBProviderInfra.h"
 #include "BaseRepositoryInterface.generated.h"
 
 UINTERFACE()
@@ -13,5 +14,5 @@ class GAMESHAREDMODULE_API IBaseRepositoryInterface {
 	GENERATED_BODY()
 
 public:
-	virtual void Initialize() = 0;
+	virtual void Initialize(IDBProviderInfra* Infra) = 0;
 };

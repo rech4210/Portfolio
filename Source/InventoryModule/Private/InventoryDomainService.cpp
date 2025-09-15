@@ -4,7 +4,6 @@
 #include "InventoryRepository.h"
 #include "InventorySubsystem.h"
 #include "GameFramework/PlayerState.h"
-#include "DatabaseModule/Public/DatabaseManager.h"
 #include "Tasks/Task.h"
 #include "Async/Async.h"
 #include "Interface/PlayerIdentityInterface.h"

@@ -2,7 +2,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#if WITH_SERVER_CODE
 #include "DatabaseManager.h"
+#endif
 #include "InventoryDomain.generated.h"
 
 USTRUCT(BlueprintType)

@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "SkillDomain.h"
+#include "GameSharedModule/Public/DTO/SkillDTOs.h"
 #include "UObject/Object.h"
 #include "Tasks/Task.h"
 #include "Interface/PlayerIdentityInterface.h"

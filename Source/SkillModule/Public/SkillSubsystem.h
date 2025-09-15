@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
-#include "Repositories/ISkillRepositoryInterface.h"
+#include "../../GameSharedModule/Public/Interface/ISkillRepositoryInterface.h"
 #include "Interface/PlayerIdentityInterface.h"
 #include "SkillSubsystem.generated.h"
 

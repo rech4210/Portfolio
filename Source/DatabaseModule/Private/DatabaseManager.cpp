@@ -16,6 +16,8 @@
  * - Unreal 헤더들은 MySQL 헤더 이후 'CoreMinimal.h' 안에서 매크로를 복원한 상태에서 포함해야 함
  */
 #include "DatabaseManager.h"
+#include "GameSharedModule/Public/DTO/ShopDTOs.h"
+#include "GameSharedModule/Public/DTO/AuthDTOs.h"
 
 #include "CoreMinimal.h"
 #include "Tasks/Task.h"
@@ -257,6 +259,7 @@ void UDatabaseManager::Initialize(FSubsystemCollectionBase& Collection)
 	catch (const sql::SQLException &e)
 	{
 		UE_LOG(LogTemp, Fatal, TEXT("Failed to initialize database connection: %hs"), e.what());
+		
 		delete Impl;
 		Impl = nullptr;
 	}
@@ -269,6 +272,66 @@ void UDatabaseManager::Deinitialize()
 	Impl = nullptr;
 	Super::Deinitialize();
 }
+
+template<typename F>
+UE::Tasks::TTask<bool> UDatabaseManager::WithTransaction(F&& Function, const TCHAR* TaskLabel)
+{
+	return UE::Tasks::Launch(TaskLabel, [this, Function = Forward<F>(Function)]() mutable -> bool
+	{
+		if (!Impl)
+		{
+			UE_LOG(LogTemp, Error, TEXT("DatabaseManager not initialized"));
+			return false;
+		}
+
+		sql::Connection* Con = Impl->GetConnection();
+		if (!Con)
+		{
+			UE_LOG(LogTemp, Error, TEXT("Failed to get database connection"));
+			return false;
+		}
+
+		ON_SCOPE_EXIT
+		{
+			if (Con)
+			{
+				Impl->ReturnConnection(Con);
+			}
+		};
+
+		FDatabaseManagerImpl::FTransactionGuard TransactionGuard(Con);
+		if (!TransactionGuard.Connection)
+		{
+			UE_LOG(LogTemp, Error, TEXT("Failed to begin transaction"));
+			return false;
+		}
+
+		bool bSuccess = false;
+		try
+		{
+			bSuccess = Function(Con);
+			if (bSuccess)
+			{
+				if (!TransactionGuard.Commit())
+				{
+					UE_LOG(LogTemp, Error, TEXT("Failed to commit transaction"));
+					return false;
+				}
+			}
+		}
+		catch (const sql::SQLException& e)
+		{
+			UE_LOG(LogTemp, Error, TEXT("Transaction failed with SQL exception: %hs"), e.what());
+		}
+		catch (...)
+		{
+			UE_LOG(LogTemp, Error, TEXT("Transaction failed with unknown exception"));
+		}
+
+		return bSuccess;
+	});
+}
+
 
 void UDatabaseManager::LoadCharacterInfo(const FString& UserId, FCharacterDataLoadDelegate Delegate)
 {
@@ -384,65 +447,6 @@ void UDatabaseManager::LogToExternalServer(const FString& Message)
 	HttpRequest->SetContentAsString(RequestBody);
 	
 	HttpRequest->ProcessRequest();
-}
-
-template<typename F>
-UE::Tasks::TTask<bool> UDatabaseManager::WithTransaction(F&& Function, const TCHAR* TaskLabel)
-{
-	return UE::Tasks::Launch(TaskLabel, [this, Function = Forward<F>(Function)]() mutable -> bool
-	{
-		if (!Impl)
-		{
-			UE_LOG(LogTemp, Error, TEXT("DatabaseManager not initialized"));
-			return false;
-		}
-
-		sql::Connection* Con = Impl->GetConnection();
-		if (!Con)
-		{
-			UE_LOG(LogTemp, Error, TEXT("Failed to get database connection"));
-			return false;
-		}
-
-		ON_SCOPE_EXIT
-		{
-			if (Con)
-			{
-				Impl->ReturnConnection(Con);
-			}
-		};
-
-		FDatabaseManagerImpl::FTransactionGuard TransactionGuard(Con);
-		if (!TransactionGuard.Connection)
-		{
-			UE_LOG(LogTemp, Error, TEXT("Failed to begin transaction"));
-			return false;
-		}
-
-		bool bSuccess = false;
-		try
-		{
-			bSuccess = Function(Con);
-			if (bSuccess)
-			{
-				if (!TransactionGuard.Commit())
-				{
-					UE_LOG(LogTemp, Error, TEXT("Failed to commit transaction"));
-					return false;
-				}
-			}
-		}
-		catch (const sql::SQLException& e)
-		{
-			UE_LOG(LogTemp, Error, TEXT("Transaction failed with SQL exception: %hs"), e.what());
-		}
-		catch (...)
-		{
-			UE_LOG(LogTemp, Error, TEXT("Transaction failed with unknown exception"));
-		}
-
-		return bSuccess;
-	});
 }
 
 UE::Tasks::TTask<TArray<FInventoryItemDTO>> UDatabaseManager::LoadInventoryForPlayer(const FString& UserId)
@@ -594,198 +598,8 @@ UE::Tasks::TTask<bool> UDatabaseManager::RemoveInventoryItem(const FString& User
 }
 
 // ============================================================================
-// SKILL REPOSITORY METHODS
-// ============================================================================
-
-UE::Tasks::TTask<TArray<FSkillSlotDTO>> UDatabaseManager::LoadSkillsForPlayer(const FString& UserId)
-{
-	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, UserId]() -> TArray<FSkillSlotDTO>
-	{
-		TArray<FSkillSlotDTO> ResultSkills;
-
-		if (!Impl)
-		{
-			UE_LOG(LogTemp, Error, TEXT("DatabaseManager not initialized"));
-			return ResultSkills;
-		}
-
-		sql::Connection* Con = Impl->GetConnection();
-		if (!Con)
-		{
-			UE_LOG(LogTemp, Error, TEXT("Failed to get database connection"));
-			return ResultSkills;
-		}
-
-		try
-		{
-			TUniquePtr<sql::PreparedStatement> Stmt(Con->prepareStatement(
-				"SELECT slot_id, skill_id, slot_index, last_used_time, remaining_cooldown, is_active, skill_data FROM skills WHERE user_id = ? ORDER BY slot_index"
-			));
-			Stmt->setString(1, TCHAR_TO_UTF8(*UserId));
-			UE_LOG(LogTemp, Log, TEXT("Executing skill query for user: %s"), *UserId);
-
-			TUniquePtr<sql::ResultSet> Res(Stmt->executeQuery());
-
-			while (Res->next())
-			{
-				FSkillSlotDTO Skill;
-
-				FString SlotIdString = UTF8_TO_TCHAR(Res->getString("slot_id").c_str());
-				UE_LOG(LogTemp, Verbose, TEXT("Raw Slot ID: %s"), *SlotIdString);
-
-				Skill.SkillID = Res->getInt("skill_id");
-				Skill.SlotIndex = Res->getInt("slot_index");
-
-				FString LastUsedString = UTF8_TO_TCHAR(Res->getString("last_used_time").c_str());
-				if (!FDateTime::ParseIso8601(*LastUsedString, Skill.LastUsedTime))
-				{
-					UE_LOG(LogTemp, Warning, TEXT("Failed to parse last used time: %s"), *LastUsedString);
-				}
-
-				Skill.RemainingCooldown = static_cast<float>(Res->getDouble("remaining_cooldown"));
-				Skill.bIsActive = Res->getBoolean("is_active");
-
-				UE_LOG(LogTemp, Verbose, TEXT("Skill loaded: ID=%d, SlotIndex=%d, Active=%s, CD=%.2f"),
-					Skill.SkillID,
-					Skill.SlotIndex,
-					Skill.bIsActive ? TEXT("true") : TEXT("false"),
-					Skill.RemainingCooldown
-				);
-
-				ResultSkills.Add(Skill);
-			}
-
-			UE_LOG(LogTemp, Log, TEXT("Finished loading skills. Total loaded: %d"), ResultSkills.Num());
-		}
-		catch (const sql::SQLException& e)
-		{
-			UE_LOG(LogTemp, Error, TEXT("LoadSkillsForPlayer failed: %hs"), e.what());
-		}
-
-		return ResultSkills;
-	});
-}
-
-UE::Tasks::TTask<bool> UDatabaseManager::SaveSkillsForPlayer(const FString& UserId, const TArray<FSkillSlotDTO>& SkillSlots)
-{
-	return WithTransaction([UserId, SkillSlots](sql::Connection* Con) -> bool
-	{
-		try
-		{
-			TUniquePtr<sql::PreparedStatement> DeleteStmt(Con->prepareStatement(
-				"DELETE FROM skills WHERE user_id = ?"
-			));
-			DeleteStmt->setString(1, TCHAR_TO_UTF8(*UserId));
-			DeleteStmt->executeUpdate();
-
-			TUniquePtr<sql::PreparedStatement> InsertStmt(Con->prepareStatement(
-				"INSERT INTO skills (user_id, slot_id, skill_id, slot_index, last_used_time, remaining_cooldown, is_active, skill_data) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-			));
-
-			for (const FSkillSlotDTO& Skill : SkillSlots)
-			{
-				InsertStmt->setString(1, TCHAR_TO_UTF8(*UserId));
-				InsertStmt->setInt(3, Skill.SkillID);
-				InsertStmt->setInt(4, Skill.SlotIndex);
-				InsertStmt->setString(5, TCHAR_TO_UTF8(*Skill.LastUsedTime.ToIso8601()));
-				InsertStmt->setDouble(6, Skill.RemainingCooldown);
-				InsertStmt->setBoolean(7, Skill.bIsActive);
-				InsertStmt->setString(8, TCHAR_TO_UTF8(*Skill.SkillData));
-				
-				InsertStmt->executeUpdate();
-			}
-
-			return true;
-		}
-		catch (const sql::SQLException& e)
-		{
-			UE_LOG(LogTemp, Error, TEXT("SaveSkillsForPlayer failed: %hs"), e.what());
-			return false;
-		}
-	}, TEXT("Skill/SaveSkills"));
-}
-
-UE::Tasks::TTask<bool> UDatabaseManager::RegisterSkill(const FString& UserId, const FSkillSlotDTO& SkillSlot)
-{
-	return WithTransaction([UserId, SkillSlot](sql::Connection* Con) -> bool
-	{
-		try
-		{
-			TUniquePtr<sql::PreparedStatement> InsertStmt(Con->prepareStatement(
-				"INSERT INTO skills (user_id, slot_id, skill_id, slot_index, last_used_time, remaining_cooldown, is_active, skill_data) VALUES (?, ?, ?, ?, ?, ?, ?, ?) "
-				"ON DUPLICATE KEY UPDATE skill_id = VALUES(skill_id), slot_index = VALUES(slot_index), last_used_time = VALUES(last_used_time), remaining_cooldown = VALUES(remaining_cooldown), is_active = VALUES(is_active), skill_data = VALUES(skill_data)"
-			));
-			
-			InsertStmt->setString(1, TCHAR_TO_UTF8(*UserId));
-			// InsertStmt->setString(2, TCHAR_TO_UTF8(*SkillSlot.SlotId.ToString(EGuidFormats::DigitsWithHyphens)));
-			InsertStmt->setInt(3, SkillSlot.SkillID);
-			InsertStmt->setInt(4, SkillSlot.SlotIndex);
-			InsertStmt->setString(5, TCHAR_TO_UTF8(*SkillSlot.LastUsedTime.ToIso8601()));
-			InsertStmt->setDouble(6, SkillSlot.RemainingCooldown);
-			InsertStmt->setBoolean(7, SkillSlot.bIsActive);
-			InsertStmt->setString(8, TCHAR_TO_UTF8(*SkillSlot.SkillData));
-			
-			int32 AffectedRows = InsertStmt->executeUpdate();
-			return AffectedRows > 0;
-		}
-		catch (const sql::SQLException& e)
-		{
-			UE_LOG(LogTemp, Error, TEXT("RegisterSkill failed: %hs"), e.what());
-			return false;
-		}
-	}, TEXT("Skill/RegisterSkill"));
-}
-
-UE::Tasks::TTask<bool> UDatabaseManager::UnregisterSkill(const FString& UserId, const FGuid& SlotId)
-{
-	return WithTransaction([UserId, SlotId](sql::Connection* Con) -> bool
-	{
-		try
-		{
-			TUniquePtr<sql::PreparedStatement> DeleteStmt(Con->prepareStatement(
-				"DELETE FROM skills WHERE user_id = ? AND slot_id = ?"
-			));
-			DeleteStmt->setString(1, TCHAR_TO_UTF8(*UserId));
-			DeleteStmt->setString(2, TCHAR_TO_UTF8(*SlotId.ToString(EGuidFormats::DigitsWithHyphens)));
-			
-			int32 AffectedRows = DeleteStmt->executeUpdate();
-			return AffectedRows > 0;
-		}
-		catch (const sql::SQLException& e)
-		{
-			UE_LOG(LogTemp, Error, TEXT("UnregisterSkill failed: %hs"), e.what());
-			return false;
-		}
-	}, TEXT("Skill/UnregisterSkill"));
-}
-
-UE::Tasks::TTask<bool> UDatabaseManager::UpdateSkillCooldown(const FString& UserId, const FGuid& SlotId, const FDateTime& LastUsedTime, float RemainingCooldown)
-{
-	return WithTransaction([UserId, SlotId, LastUsedTime, RemainingCooldown](sql::Connection* Con) -> bool
-	{
-		try
-		{
-			TUniquePtr<sql::PreparedStatement> UpdateStmt(Con->prepareStatement(
-				"UPDATE skills SET last_used_time = ?, remaining_cooldown = ? WHERE user_id = ? AND slot_id = ?"
-			));
-			UpdateStmt->setString(1, TCHAR_TO_UTF8(*LastUsedTime.ToIso8601()));
-			UpdateStmt->setDouble(2, RemainingCooldown);
-			UpdateStmt->setString(3, TCHAR_TO_UTF8(*UserId));
-			UpdateStmt->setString(4, TCHAR_TO_UTF8(*SlotId.ToString(EGuidFormats::DigitsWithHyphens)));
-			
-			int32 AffectedRows = UpdateStmt->executeUpdate();
-			return AffectedRows > 0;
-		}
-		catch (const sql::SQLException& e)
-		{
-			UE_LOG(LogTemp, Error, TEXT("UpdateSkillCooldown failed: %hs"), e.what());
-			return false;
-		}
-	}, TEXT("Skill/UpdateCooldown"));
-}
-
-// ============================================================================
 // SHOP REPOSITORY METHODS
+// (Legacy skill methods removed during deprecation cleanup)
 // ============================================================================
 
 UE::Tasks::TTask<FShopRepositoryResult> UDatabaseManager::LoadShopByID(int32 ShopID)
@@ -1241,6 +1055,236 @@ UE::Tasks::TTask<bool> UDatabaseManager::UpdateShopItemPrice(int32 ShopID, int32
 }
 
 // ============================================================================
+// AUTH METHODS IMPLEMENTATION
+// ============================================================================
+
+UE::Tasks::TTask<bool> UDatabaseManager::LockUserAccount(int32 UserId, const FDateTime& ExpiresAt)
+{
+	return WithTransaction([UserId, ExpiresAt](sql::Connection* Con) -> bool
+	{
+		try
+		{
+			TUniquePtr<sql::PreparedStatement> Stmt(Con->prepareStatement(
+				"UPDATE users SET is_locked = 1, lock_expires_at = ? WHERE id = ?"));
+			FString ExpStr = ExpiresAt.ToIso8601();
+			Stmt->setString(1, TCHAR_TO_UTF8(*ExpStr));
+			Stmt->setInt(2, UserId);
+			return Stmt->executeUpdate() > 0;
+		}
+		catch (const sql::SQLException& e)
+		{
+			UE_LOG(LogTemp, Error, TEXT("LockUserAccount failed: %hs"), e.what());
+			return false;
+		}
+	}, TEXT("Auth/LockUserAccount"));
+}
+
+UE::Tasks::TTask<bool> UDatabaseManager::UnlockUserAccount(const FString& UserId)
+{
+	return WithTransaction([UserId](sql::Connection* Con) -> bool
+	{
+		try
+		{
+			TUniquePtr<sql::PreparedStatement> Stmt(Con->prepareStatement(
+				"UPDATE users SET is_locked = 0, lock_expires_at = NULL WHERE user_id = ?"));
+			Stmt->setString(1, TCHAR_TO_UTF8(*UserId));
+			return Stmt->executeUpdate() > 0;
+		}
+		catch (const sql::SQLException& e)
+		{
+			UE_LOG(LogTemp, Error, TEXT("UnlockUserAccount failed: %hs"), e.what());
+			return false;
+		}
+	}, TEXT("Auth/UnlockUserAccount"));
+}
+
+UE::Tasks::TTask<bool> UDatabaseManager::UpdateLastLogin(const FString& UserId)
+{
+	return WithTransaction([UserId](sql::Connection* Con) -> bool
+	{
+		try
+		{
+			TUniquePtr<sql::PreparedStatement> Stmt(Con->prepareStatement(
+				"UPDATE users SET last_login_at = NOW() WHERE user_id = ?"));
+			Stmt->setString(1, TCHAR_TO_UTF8(*UserId));
+			return Stmt->executeUpdate() > 0;
+		}
+		catch (const sql::SQLException& e)
+		{
+			UE_LOG(LogTemp, Error, TEXT("UpdateLastLogin failed: %hs"), e.what());
+			return false;
+		}
+	}, TEXT("Auth/UpdateLastLogin"));
+}
+
+UE::Tasks::TTask<TArray<FDatabaseUserData>> UDatabaseManager::GetExpiredLockedUsers()
+{
+	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this]() -> TArray<FDatabaseUserData>
+	{
+		TArray<FDatabaseUserData> Users;
+		if (!Impl)
+		{
+			return Users;
+		}
+		sql::Connection* Con = Impl->GetConnection();
+		if (!Con)
+		{
+			return Users;
+		}
+		ON_SCOPE_EXIT { Impl->ReturnConnection(Con); };
+		try
+		{
+			TUniquePtr<sql::PreparedStatement> Stmt(Con->prepareStatement(
+				"SELECT user_id, username, password_hash, created_at, last_login_at, is_locked, lock_expires_at, is_deleted, deleted_at FROM users WHERE is_locked = 1 AND lock_expires_at IS NOT NULL AND lock_expires_at < NOW()"));
+			TUniquePtr<sql::ResultSet> Res(Stmt->executeQuery());
+			while (Res->next())
+			{
+				FDatabaseUserData Data;
+				Data.UserId = UTF8_TO_TCHAR(Res->getString("user_id").c_str());
+				Data.Username = UTF8_TO_TCHAR(Res->getString("username").c_str());
+				Data.PasswordHash = UTF8_TO_TCHAR(Res->getString("password_hash").c_str());
+				Data.CreatedAt = FDateTime::UtcNow(); // placeholder
+				Data.bIsLocked = Res->getBoolean("is_locked");
+				Users.Add(Data);
+			}
+		}
+		catch (const sql::SQLException& e)
+		{
+			UE_LOG(LogTemp, Error, TEXT("GetExpiredLockedUsers failed: %hs"), e.what());
+		}
+		return Users;
+	});
+}
+
+// UE::Tasks::TTask<int32> UDatabaseManager::UnlockExpiredUsers()
+// {
+// 	return WithTransaction([](sql::Connection* Con) -> int32
+// 	{
+// 		try
+// 		{
+// 			TUniquePtr<sql::PreparedStatement> Stmt(Con->prepareStatement(
+// 				"UPDATE users SET is_locked = 0, lock_expires_at = NULL WHERE is_locked = 1 AND lock_expires_at IS NOT NULL AND lock_expires_at < NOW()"));
+// 			return Stmt->executeUpdate();
+// 		}
+// 		catch (const sql::SQLException& e)
+// 		{
+// 			UE_LOG(LogTemp, Error, TEXT("UnlockExpiredUsers failed: %hs"), e.what());
+// 			return 0;
+// 		}
+// 	}, TEXT("Auth/UnlockExpiredUsers"));
+// }
+
+UE::Tasks::TTask<TArray<FDatabaseAuditLogData>> UDatabaseManager::GetUserAuditLogs(int32 UserId, int32 Limit)
+{
+	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, UserId, Limit]() -> TArray<FDatabaseAuditLogData>
+	{
+		TArray<FDatabaseAuditLogData> Logs;
+		if (!Impl)
+			return Logs;
+		sql::Connection* Con = Impl->GetConnection();
+		if (!Con)
+			return Logs;
+		ON_SCOPE_EXIT { Impl->ReturnConnection(Con); };
+		try
+		{
+			TUniquePtr<sql::PreparedStatement> Stmt(Con->prepareStatement(
+				"SELECT log_id, user_id, action, details, ip_address, created_at FROM audit_logs WHERE user_id = ? ORDER BY created_at DESC LIMIT ?"));
+			Stmt->setInt(1, UserId);
+			Stmt->setInt(2, Limit);
+			TUniquePtr<sql::ResultSet> Res(Stmt->executeQuery());
+			while (Res->next())
+			{
+				FDatabaseAuditLogData Log;
+				Log.LogId = Res->getInt64("log_id");
+				Log.UserId = Res->getInt("user_id");
+				Log.Action = UTF8_TO_TCHAR(Res->getString("action").c_str());
+				Log.Details = UTF8_TO_TCHAR(Res->getString("details").c_str());
+				Log.IpAddress = UTF8_TO_TCHAR(Res->getString("ip_address").c_str());
+				Logs.Add(Log);
+			}
+		}
+		catch (const sql::SQLException& e)
+		{
+			UE_LOG(LogTemp, Error, TEXT("GetUserAuditLogs failed: %hs"), e.what());
+		}
+		return Logs;
+	});
+}
+
+UE::Tasks::TTask<TArray<FDatabaseAuditLogData>> UDatabaseManager::GetAuditLogsByAction(const FString& Action, int32 Limit)
+{
+	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, Action, Limit]() -> TArray<FDatabaseAuditLogData>
+	{
+		TArray<FDatabaseAuditLogData> Logs;
+		if (!Impl)
+			return Logs;
+		sql::Connection* Con = Impl->GetConnection();
+		if (!Con)
+			return Logs;
+		ON_SCOPE_EXIT { Impl->ReturnConnection(Con); };
+		try
+		{
+			TUniquePtr<sql::PreparedStatement> Stmt(Con->prepareStatement(
+				"SELECT log_id, user_id, action, details, ip_address, created_at FROM audit_logs WHERE action = ? ORDER BY created_at DESC LIMIT ?"));
+			Stmt->setString(1, TCHAR_TO_UTF8(*Action));
+			Stmt->setInt(2, Limit);
+			TUniquePtr<sql::ResultSet> Res(Stmt->executeQuery());
+			while (Res->next())
+			{
+				FDatabaseAuditLogData Log;
+				Log.LogId = Res->getInt64("log_id");
+				Log.UserId = Res->getInt("user_id");
+				Log.Action = UTF8_TO_TCHAR(Res->getString("action").c_str());
+				Log.Details = UTF8_TO_TCHAR(Res->getString("details").c_str());
+				Log.IpAddress = UTF8_TO_TCHAR(Res->getString("ip_address").c_str());
+				Logs.Add(Log);
+			}
+		}
+		catch (const sql::SQLException& e)
+		{
+			UE_LOG(LogTemp, Error, TEXT("GetAuditLogsByAction failed: %hs"), e.what());
+		}
+		return Logs;
+	});
+}
+
+UE::Tasks::TTask<TArray<FDatabaseAuditLogData>> UDatabaseManager::GetRecentAuditLogs(int32 Limit)
+{
+	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, Limit]() -> TArray<FDatabaseAuditLogData>
+	{
+		TArray<FDatabaseAuditLogData> Logs;
+		if (!Impl)
+			return Logs;
+		sql::Connection* Con = Impl->GetConnection();
+		if (!Con)
+			return Logs;
+		ON_SCOPE_EXIT { Impl->ReturnConnection(Con); };
+		try
+		{
+			TUniquePtr<sql::PreparedStatement> Stmt(Con->prepareStatement(
+				"SELECT log_id, user_id, action, details, ip_address, created_at FROM audit_logs ORDER BY created_at DESC LIMIT ?"));
+			Stmt->setInt(1, Limit);
+			TUniquePtr<sql::ResultSet> Res(Stmt->executeQuery());
+			while (Res->next())
+			{
+				FDatabaseAuditLogData Log;
+				Log.LogId = Res->getInt64("log_id");
+				Log.UserId = Res->getInt("user_id");
+				Log.Action = UTF8_TO_TCHAR(Res->getString("action").c_str());
+				Log.Details = UTF8_TO_TCHAR(Res->getString("details").c_str());
+				Log.IpAddress = UTF8_TO_TCHAR(Res->getString("ip_address").c_str());
+				Logs.Add(Log);
+			}
+		}
+		catch (const sql::SQLException& e)
+		{
+			UE_LOG(LogTemp, Error, TEXT("GetRecentAuditLogs failed: %hs"), e.what());
+		}
+		return Logs;
+	});
+}
+
+// ============================================================================
 // PLAYER ID HELPER IMPLEMENTATIONS
 // ============================================================================
 
@@ -1448,40 +1492,40 @@ bool UDatabaseJsonHelper::DeserializeCharacterExtendedData(const FString& JsonDa
 // ============================================================================
 // NOTE: These methods are DEPRECATED and should not be used in production
 // Reason: User authentication should be handled by external auth service
-
-UE::Tasks::TTask<bool> UDatabaseManager::CreateUserAccount(const FString& Username, const FString& PasswordHash, const FString& Email, FString& OutUserId)
-{
-	// DEPRECATED: User account creation should be handled by external auth service (Node.js)
-	// This method violates separation of concerns in microservice architecture
-	// Game server should only handle game-related data, not user account management
-	UE_LOG(LogTemp, Warning, TEXT("DEPRECATED: UDatabaseManager::CreateUserAccount should not be used. Use external auth service."));
-	OutUserId = TEXT("");
-	return UE::Tasks::MakeCompletedTask<bool>(false);
-}
-
-UE::Tasks::TTask<TOptional<FDatabaseUserData>> UDatabaseManager::GetUserByUsername(const FString& Username)
-{
-	// DEPRECATED: User account queries should be handled by external auth service
-	// Game server should only work with verified user IDs from JWT tokens
-	UE_LOG(LogTemp, Warning, TEXT("DEPRECATED: UDatabaseManager::GetUserByUsername should not be used. Use external auth service."));
-	return UE::Tasks::MakeCompletedTask<TOptional<FDatabaseUserData>>(TOptional<FDatabaseUserData>());
-}
-
-UE::Tasks::TTask<TOptional<FDatabaseUserData>> UDatabaseManager::GetUserById(const FString& UserId)
-{
-	// DEPRECATED: User account queries should be handled by external auth service
-	// Game server should only work with verified user IDs from JWT tokens for game data queries
-	UE_LOG(LogTemp, Warning, TEXT("DEPRECATED: UDatabaseManager::GetUserById should not be used. Use external auth service."));
-	return UE::Tasks::MakeCompletedTask<TOptional<FDatabaseUserData>>(TOptional<FDatabaseUserData>());
-}
-
-UE::Tasks::TTask<bool> UDatabaseManager::UpdateUserAccount(const FDatabaseUserData& UserData)
-{
-	// DEPRECATED: User account updates should be handled by external auth service
-	// Game server should not manage user account lifecycle
-	UE_LOG(LogTemp, Warning, TEXT("DEPRECATED: UDatabaseManager::UpdateUserAccount should not be used. Use external auth service."));
-	return UE::Tasks::MakeCompletedTask<bool>(false);
-}
+//
+// UE::Tasks::TTask<bool> UDatabaseManager::CreateUserAccount(const FString& Username, const FString& PasswordHash, const FString& Email, FString& OutUserId)
+// {
+// 	// DEPRECATED: User account creation should be handled by external auth service (Node.js)
+// 	// This method violates separation of concerns in microservice architecture
+// 	// Game server should only handle game-related data, not user account management
+// 	UE_LOG(LogTemp, Warning, TEXT("DEPRECATED: UDatabaseManager::CreateUserAccount should not be used. Use external auth service."));
+// 	OutUserId = TEXT("");
+// 	return UE::Tasks::MakeCompletedTask<bool>(false);
+// }
+//
+// UE::Tasks::TTask<TOptional<FDatabaseUserData>> UDatabaseManager::GetUserByUsername(const FString& Username)
+// {
+// 	// DEPRECATED: User account queries should be handled by external auth service
+// 	// Game server should only work with verified user IDs from JWT tokens
+// 	UE_LOG(LogTemp, Warning, TEXT("DEPRECATED: UDatabaseManager::GetUserByUsername should not be used. Use external auth service."));
+// 	return UE::Tasks::MakeCompletedTask<TOptional<FDatabaseUserData>>(TOptional<FDatabaseUserData>());
+// }
+//
+// UE::Tasks::TTask<TOptional<FDatabaseUserData>> UDatabaseManager::GetUserById(const FString& UserId)
+// {
+// 	// DEPRECATED: User account queries should be handled by external auth service
+// 	// Game server should only work with verified user IDs from JWT tokens for game data queries
+// 	UE_LOG(LogTemp, Warning, TEXT("DEPRECATED: UDatabaseManager::GetUserById should not be used. Use external auth service."));
+// 	return UE::Tasks::MakeCompletedTask<TOptional<FDatabaseUserData>>(TOptional<FDatabaseUserData>());
+// }
+//
+// UE::Tasks::TTask<bool> UDatabaseManager::UpdateUserAccount(const FDatabaseUserData& UserData)
+// {
+// 	// DEPRECATED: User account updates should be handled by external auth service
+// 	// Game server should not manage user account lifecycle
+// 	UE_LOG(LogTemp, Warning, TEXT("DEPRECATED: UDatabaseManager::UpdateUserAccount should not be used. Use external auth service."));
+// 	return UE::Tasks::MakeCompletedTask<bool>(false);
+// }
 
 FString UDatabaseJsonHelper::SerializeSkillData(const TMap<FString, FString>& SkillProperties)
 {
@@ -1553,61 +1597,8 @@ bool UDatabaseJsonHelper::DeserializeEquipmentEnhancement(const FString& JsonDat
 }
 
 // ============================================================================
-// SlotIndex-based Skill Management Methods
-// ============================================================================
-
-UE::Tasks::TTask<bool> UDatabaseManager::UnregisterSkill(const FString& UserId, int32 SlotIndex)
-{
-	return WithTransaction([UserId, SlotIndex](sql::Connection* Con) -> bool
-	{
-		try
-		{
-			TUniquePtr<sql::PreparedStatement> DeleteStmt(Con->prepareStatement(
-				"DELETE FROM user_skill_slots WHERE user_id = ? AND slot_index = ?"
-			));
-			DeleteStmt->setString(1, TCHAR_TO_UTF8(*UserId));
-			DeleteStmt->setInt(2, SlotIndex);
-			
-			int32 AffectedRows = DeleteStmt->executeUpdate();
-			return AffectedRows > 0;
-		}
-		catch (const sql::SQLException& e)
-		{
-			UE_LOG(LogTemp, Error, TEXT("UnregisterSkill (SlotIndex) failed: %hs"), e.what());
-			return false;
-		}
-	}, TEXT("Skill/UnregisterSkillByIndex"));
-}
-
-UE::Tasks::TTask<bool> UDatabaseManager::UpdateSkillCooldown(const FString& UserId, int32 SlotIndex, const FDateTime& LastUsedTime, float RemainingCooldown)
-{
-	return WithTransaction([UserId, SlotIndex, LastUsedTime, RemainingCooldown](sql::Connection* Con) -> bool
-	{
-		try
-		{
-			FString LastUsedString = LastUsedTime.ToString(TEXT("%Y-%m-%d %H:%M:%S"));
-			
-			TUniquePtr<sql::PreparedStatement> UpdateStmt(Con->prepareStatement(
-				"UPDATE user_skill_slots SET last_used_time = ?, remaining_cooldown = ? WHERE user_id = ? AND slot_index = ?"
-			));
-			UpdateStmt->setString(1, TCHAR_TO_UTF8(*LastUsedString));
-			UpdateStmt->setDouble(2, RemainingCooldown);
-			UpdateStmt->setString(3, TCHAR_TO_UTF8(*UserId));
-			UpdateStmt->setInt(4, SlotIndex);
-			
-			int32 AffectedRows = UpdateStmt->executeUpdate();
-			return AffectedRows > 0;
-		}
-		catch (const sql::SQLException& e)
-		{
-			UE_LOG(LogTemp, Error, TEXT("UpdateSkillCooldown (SlotIndex) failed: %hs"), e.what());
-			return false;
-		}
-	}, TEXT("Skill/UpdateCooldownByIndex"));
-}
-
-// ============================================================================
 // 3-LAYER MAPPING ARCHITECTURE IMPLEMENTATION
+// (All legacy single-slot skill mutation methods removed)
 // ============================================================================
 
 UE::Tasks::TTask<TArray<FSkillSlotDatabaseDTO>> UDatabaseManager::LoadUserSkillSlots(const FString& UserId, const FString& SlotKey)
