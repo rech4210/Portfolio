@@ -2,7 +2,9 @@
 
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
+#if WITH_SERVER_CODE
 #include "DatabaseModule/Public/DatabaseManager.h"
+#endif
 #include "Repository/AuthRepositoryInterface.h"
 #include "AuthRepository.generated.h"
 

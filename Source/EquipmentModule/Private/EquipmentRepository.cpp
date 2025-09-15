@@ -3,7 +3,7 @@
 #include "Components/EquipmentComponent.h"
 #include "DatabaseModule/Public/DatabaseManager.h"
 
-void UEquipmentRepository::Initialize() {
+void UEquipmentRepository::Initialize(IDBProviderInfra* Infra) {
 	DBManager = GetWorld()->GetGameInstance()->GetSubsystem<UDatabaseManager>();
 	if (!DBManager) {
 		UE_LOG(LogTemp, Error, TEXT("EquipmentRepo : DatabaseManager is not available!"));

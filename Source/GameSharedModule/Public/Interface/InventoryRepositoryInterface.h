@@ -2,19 +2,20 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameSharedModule/Public/Interface/BaseRepositoryInterface.h"
 #include "UObject/Interface.h"
-#include "InventoryDomain.h"
+#include "Interface/BaseRepositoryInterface.h"
 #include "InventoryRepositoryInterface.generated.h"
 
-class APlayerState;
+struct FInventoryDomain;
+struct FInventoryRepositoryResult;
+struct FInventoryItemDTO;
 
 UINTERFACE()
 class UInventoryRepositoryInterface : public UBaseRepositoryInterface {
 	GENERATED_BODY()
 };
 
-class INVENTORYMODULE_API IInventoryRepositoryInterface : public IBaseRepositoryInterface {
+class GAMESHAREDMODULE_API IInventoryRepositoryInterface : public IBaseRepositoryInterface {
 	GENERATED_BODY()
 public:
 	

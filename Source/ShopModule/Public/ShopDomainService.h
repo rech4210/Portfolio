@@ -5,7 +5,9 @@
 #include "Engine/World.h"
 #include "Async/TaskGraphInterfaces.h"
 #include "Tasks/Task.h"
+#if WITH_SERVER_CODE
 #include "DatabaseModule/Public/DatabaseManager.h"
+#endif
 #include "ShopDomainService.generated.h"
 
 class APlayerState;

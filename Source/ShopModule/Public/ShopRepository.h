@@ -2,10 +2,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "IShopRepositoryInterface.h"
+#include "GameSharedModule/Public/DTO/ShopDTOs.h"
+#include "../../GameSharedModule/Public/Interface/IShopRepositoryInterface.h"
 #include "UObject/Object.h"
 #include "Tasks/Task.h"
-#include "DatabaseModule/Public/DatabaseManager.h"
+class IDBProviderInfra; // forward
+class IShopDBProvider; // forward
 #include "ShopRepository.generated.h"
 
 class UShopComponent;
@@ -19,7 +21,7 @@ public:
 	// ============================================================================
 	// Base repository interface
 	// ============================================================================
-	virtual void Initialize() override;
+	virtual void Initialize(IDBProviderInfra* Infra) override;
 
 	// ============================================================================
 	// DDD-based methods (pure domain operations)
@@ -33,6 +35,5 @@ public:
 	virtual UE::Tasks::TTask<bool> ShopExists(int32 ShopID) override;
 
 private:
-	UPROPERTY()
-	TObjectPtr<UDatabaseManager> DBManager;
+	TSharedPtr<IShopDBProvider> ShopProvider;
 };

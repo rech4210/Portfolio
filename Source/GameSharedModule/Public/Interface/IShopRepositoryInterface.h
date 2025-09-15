@@ -3,11 +3,12 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
-#include "Async/Future.h"
 #include "Tasks/Task.h"
 #include "Interface/BaseRepositoryInterface.h"
-#include "DatabaseModule/Public/DatabaseManager.h"
+#include "GameSharedModule/Public/DTO/ShopDTOs.h"
 #include "IShopRepositoryInterface.generated.h"
+
+// Shop DTOs now provided via ShopDTOs.h
 
 class UShopComponent;
 UINTERFACE()
@@ -15,7 +16,7 @@ class UShopRepositoryInterface : public UBaseRepositoryInterface {
 	GENERATED_BODY()
 };
 
-class SHOPMODULE_API IShopRepositoryInterface : public IBaseRepositoryInterface{
+class GAMESHAREDMODULE_API IShopRepositoryInterface : public IBaseRepositoryInterface{
 	GENERATED_BODY()
 public:
 	

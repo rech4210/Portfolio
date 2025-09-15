@@ -1,5 +1,7 @@
 #include "SkillSubsystem.h"
-#include "DatabaseModule/Public/DatabaseManager.h"
+#if WITH_SERVER_CODE
+#include "DatabaseModule/Public/Provider/DBProviderInfra.h"
+#endif
 #include "SkillRepository.h"
 #include "SkillDomainService.h"
 #include "Components/SkillComponent.h"
@@ -9,11 +11,19 @@
 
 void USkillSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
-	Collection.InitializeDependency(UDatabaseManager::StaticClass());
+	// Collection.InitializeDependency(UDatabaseManager::StaticClass());
 	Super::Initialize(Collection);
 	
 	DefaultSkillRepository = NewObject<USkillRepository>(this, TEXT("DefaultSkillRepository"));
-	DefaultSkillRepository->Initialize();
+#if WITH_SERVER_CODE
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (auto ProviderInfra = GI->GetSubsystem<UDBProviderInfra>())
+		{
+			DefaultSkillRepository->Initialize(ProviderInfra);
+		}
+	}
+#endif
 	
 	if (!SkillRepositoryInterface.GetInterface())
 	{

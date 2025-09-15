@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
-#include "IShopRepositoryInterface.h"
+#include "../../GameSharedModule/Public/Interface/IShopRepositoryInterface.h"
 #include "ShopSubsystem.generated.h"
 
 class UShopRepository;

@@ -3,7 +3,7 @@
 #include "MyGame/Public/Shared/Mode/BaseGameMode.h"
 #include "MyGame/Public/Shared/Mode/ModeType.h"
 #include "GameFramework/GameMode.h"
-#include "Repositories/ISkillRepositoryInterface.h"
+#include "GameSharedModule/Public/Interface/ISkillRepositoryInterface.h"
 #include "Interface/PlayerIdentityInterface.h"
 #include "GGwaGameMode.generated.h"
 

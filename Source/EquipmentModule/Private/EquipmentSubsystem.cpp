@@ -12,7 +12,7 @@ void UEquipmentSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	Collection.InitializeDependency(UDatabaseManager::StaticClass());
 	Super::Initialize(Collection);
 	EquipmentRepository = NewObject<UEquipmentRepository>(this, TEXT("EquipmentRepository"));
-	EquipmentRepository->Initialize();
+	// EquipmentRepository->Initialize(TODO); Infra 주입으로 변경
 }
 
 void UEquipmentSubsystem::Deinitialize()

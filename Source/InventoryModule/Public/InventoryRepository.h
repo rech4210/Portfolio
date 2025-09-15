@@ -2,9 +2,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "InventoryRepositoryInterface.h"
+#include "../../GameSharedModule/Public/Interface/InventoryRepositoryInterface.h"
 #include "UObject/Object.h"
 #include "Tasks/Task.h"
+class IDBProviderInfra; // forward
+class IInventoryDBProvider; // forward
 #include "InventoryRepository.generated.h"
 
 class UInventoryComponent;
@@ -17,7 +19,7 @@ class INVENTORYMODULE_API UInventoryRepository : public UObject, public IInvento
 	GENERATED_BODY()
 
 public:
-	virtual void Initialize() override;
+	virtual void Initialize(IDBProviderInfra* Infra) override;
 
 	// ========================================================================
 	// PURE REPOSITORY METHODS - NO ENGINE DEPENDENCIES
@@ -29,6 +31,5 @@ public:
 	virtual UE::Tasks::TTask<FInventoryRepositoryResult> RemoveItemByPlayerId(
 		const FGuid& PlayerId, const FName& ItemID, int32 Quantity) override;
 private:
-	UPROPERTY()
-	TObjectPtr<UDatabaseManager> DBManager;
+	TSharedPtr<IInventoryDBProvider> InventoryProvider;
 };
