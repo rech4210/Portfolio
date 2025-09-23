@@ -24,4 +24,8 @@ public:
 	virtual void Request_Client_TravelToGameWorld(const FString& MapURL) = 0;
 
 	virtual void Request_Client_ConnectToGameServerWithToken(const FString& Token, const FString& UserId) = 0;
+
+	// New callbacks for auth results (server -> client bridge intent)
+	virtual void NotifyAuthLoginResult(bool bSuccess, const FString& UserId, const FString& Token, const FString& ErrorCode) {}
+	virtual void NotifyAuthRegisterResult(bool bSuccess, const FString& UserId, const FString& Token, const FString& ErrorCode) {}
 };

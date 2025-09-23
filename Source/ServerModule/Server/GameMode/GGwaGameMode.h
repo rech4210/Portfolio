@@ -7,7 +7,6 @@
 #include "Interface/PlayerIdentityInterface.h"
 #include "GGwaGameMode.generated.h"
 
-class UAuthVerificationService;
 class UBattleFlowController;
 class UDatabaseManager;
 class IInventoryRepositoryInterface;
@@ -55,8 +54,6 @@ protected:
 private:
 	UPROPERTY()
 	UBattleFlowController* BattleFlowController;
-	UPROPERTY()
-	TObjectPtr<UAuthVerificationService> AuthVerificationService;
 	UPROPERTY()
 	TObjectPtr<UDatabaseManager> DatabaseManager;
 

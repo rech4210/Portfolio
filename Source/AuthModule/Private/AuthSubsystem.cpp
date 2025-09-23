@@ -17,6 +17,8 @@ void UAuthSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	Collection.InitializeDependency(UDBProviderInfra::StaticClass());
 	Super::Initialize(Collection);
 
+	UE_LOG(LogTemp, Warning, TEXT("[DEPRECATED][UAuthSubsystem] This subsystem is legacy. Migrate to server-only AuthSessionSubsystem + AuthExternalService. Will be removed soon."));
+
 	DefaultAuthRepository = NewObject<UAuthRepository>(this, TEXT("DefaultAuthRepository"));
 	if (UDBProviderInfra* Infra = GetGameInstance()->GetSubsystem<UDBProviderInfra>()){
 		DefaultAuthRepository->Initialize(Infra);

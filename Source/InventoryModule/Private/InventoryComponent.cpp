@@ -1,7 +1,7 @@
 #include "InventoryComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Engine/ActorChannel.h"
-#include "DatabaseModule/Public/DatabaseManager.h"
+#include "GameSharedModule/Public/DTO/InventoryDTOs.h"
 #include "Engine/AssetManager.h"
 #include "GameSharedModule/Public/Data/ItemDataAsset.h"
 

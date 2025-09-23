@@ -10,6 +10,6 @@ public class MyGameServerTarget : TargetRules
 		DefaultBuildSettings = BuildSettingsVersion.V5;
 		// bPrintToolChainTimingInfo = true;
 
-		ExtraModuleNames.AddRange( new string[] { "MyGame", "ServerModule"} );
+		ExtraModuleNames.AddRange( new string[] { "MyGame", "ServerModule", "AuthServerModule", "DatabaseModule"} );
 	}
 }

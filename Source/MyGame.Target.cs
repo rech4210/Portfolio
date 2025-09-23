@@ -15,6 +15,6 @@ public class MyGameTarget : TargetRules
 
 	private void RegisterModulesCreatedByRider()
 	{
-		ExtraModuleNames.AddRange(new string[] { "ClientModule", "ServerModule"});
+		ExtraModuleNames.AddRange(new string[] { "ClientModule"});
 	}
 }

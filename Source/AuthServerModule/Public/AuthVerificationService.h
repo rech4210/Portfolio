@@ -7,6 +7,7 @@
 
 DECLARE_DELEGATE_TwoParams(FOnTokenVerified, bool /*bSuccess*/, const FString& /*UserId*/);
 
+// DEPRECATED: Use UAuthExternalService (combined login + verify) instead.
 UCLASS()
 class AUTHSERVERMODULE_API UAuthVerificationService : public UObject
 {
