@@ -1,9 +1,7 @@
 #include "Mappers/SkillModelBuilder.h"
 
 #include "Components/SkillComponent.h"
-#include "Entities/SkillSlot.h"
 #include "Data/SkillDataAsset.h"
-#include "DatabaseModule/Public/DatabaseManager.h"
 
 USkillModelBuilder::USkillModelBuilder()
 {

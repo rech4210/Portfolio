@@ -15,8 +15,8 @@ void UInventoryRepository::Initialize(IDBProviderInfra* Infra)
 		UE_LOG(LogTemp, Error, TEXT("InventoryRepository Initialize: Infra is null"));
 		return;
 	}
-	InventoryProvider = Infra->GetInventoryDbProvider();
-	if (!InventoryProvider.IsValid())
+	InventoryDBProvider = Infra->GetInventoryDbProvider();
+	if (!InventoryDBProvider.IsValid())
 	{
 		UE_LOG(LogTemp, Error, TEXT("InventoryRepository: InventoryProvider is not available!"));
 	}
@@ -30,14 +30,14 @@ UE::Tasks::TTask<FInventoryRepositoryResult> UInventoryRepository::LoadInventory
 {
 	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerId]() -> FInventoryRepositoryResult
 	{
-		if (!InventoryProvider.IsValid())
+		if (!InventoryDBProvider.IsValid())
 		{
 			return FInventoryRepositoryResult::Failure(TEXT("InventoryProvider not available"));
 		}
 
 		FString UserId = PlayerId.ToString();
 
-		auto LoadTask = InventoryProvider->LoadInventoryForPlayer(UserId);
+		auto LoadTask = InventoryDBProvider->LoadInventoryForPlayer(UserId);
 		TArray<FInventoryItemDTO> LoadedItems = LoadTask.GetResult();
 		FInventoryDomain InventoryData(PlayerId, LoadedItems);
 		return FInventoryRepositoryResult::Success(InventoryData);
@@ -48,7 +48,7 @@ UE::Tasks::TTask<FInventoryRepositoryResult> UInventoryRepository::SaveInventory
 {
 	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, InventoryData]() -> FInventoryRepositoryResult
 	{
-		if (!InventoryProvider.IsValid())
+		if (!InventoryDBProvider.IsValid())
 		{
 			return FInventoryRepositoryResult::Failure(TEXT("InventoryProvider not available"));
 		}
@@ -62,7 +62,7 @@ UE::Tasks::TTask<FInventoryRepositoryResult> UInventoryRepository::SaveInventory
 		FString UserId = InventoryData.PlayerId.ToString();
 
 		// Execute database operation on worker thread
-		auto SaveTask = InventoryProvider->SaveInventoryForPlayer(UserId, InventoryData.Items);
+		auto SaveTask = InventoryDBProvider->SaveInventoryForPlayer(UserId, InventoryData.Items);
 		bool bSuccess = SaveTask.GetResult();
 
 		if (bSuccess)
@@ -80,20 +80,20 @@ UE::Tasks::TTask<FInventoryRepositoryResult> UInventoryRepository::AddItemByPlay
 	const FGuid& PlayerId, const FInventoryItemDTO& Item)
 {
 	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerId, Item]() -> FInventoryRepositoryResult {
-		if (!InventoryProvider.IsValid())
+		if (!InventoryDBProvider.IsValid())
 		{
 			return FInventoryRepositoryResult::Failure(TEXT("InventoryProvider not available"));
 		}
 		
 		FString UserId = PlayerId.ToString();
 		
-		auto bSuccess = InventoryProvider->AddInventoryItem(UserId, Item).GetResult();
+		auto bSuccess = InventoryDBProvider->AddInventoryItem(UserId, Item).GetResult();
 		if (bSuccess) {
 			FInventoryRepositoryResult& Result = LoadInventoryByPlayerId(PlayerId).GetResult();
 			return FInventoryRepositoryResult::Success(Result.InventoryData);
 		}
 		
-		auto PrerequisitesTask = InventoryProvider->AddInventoryItem(UserId, Item);
+		auto PrerequisitesTask = InventoryDBProvider->AddInventoryItem(UserId, Item);
 		Launch(UE_SOURCE_LOCATION, [this, PlayerId, PrerequisitesTask]() mutable ->FInventoryRepositoryResult {
 			auto Ok = PrerequisitesTask.GetResult();
 			if (Ok) {
@@ -114,14 +114,14 @@ UE::Tasks::TTask<FInventoryRepositoryResult> UInventoryRepository::RemoveItemByP
 {
 	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, PlayerId, ItemID, Quantity]() -> FInventoryRepositoryResult
 	{
-		if (!InventoryProvider.IsValid())
+		if (!InventoryDBProvider.IsValid())
 		{
 			return FInventoryRepositoryResult::Failure(TEXT("InventoryProvider not available"));
 		}
 
 		FString UserId = PlayerId.ToString();
 
-		auto RemoveTask = InventoryProvider->RemoveInventoryItem(UserId, ItemID, Quantity);
+		auto RemoveTask = InventoryDBProvider->RemoveInventoryItem(UserId, ItemID, Quantity);
 		bool bSuccess = RemoveTask.GetResult();
 
 		if (bSuccess)

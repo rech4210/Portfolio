@@ -1,30 +1,25 @@
 #include "SkillSubsystem.h"
-#if WITH_SERVER_CODE
-#include "DatabaseModule/Public/Provider/DBProviderInfra.h"
-#endif
 #include "SkillRepository.h"
 #include "SkillDomainService.h"
 #include "Components/SkillComponent.h"
 #include "Data/SkillDataAsset.h"
 #include "GameFramework/PlayerState.h"
 #include "Interface/PlayerIdentityInterface.h"
+#include "Provider/DBProviderInfra.h"
 
 void USkillSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
-	// Collection.InitializeDependency(UDatabaseManager::StaticClass());
+	Collection.InitializeDependency(UDBProviderInfra::StaticClass());
 	Super::Initialize(Collection);
 	
 	DefaultSkillRepository = NewObject<USkillRepository>(this, TEXT("DefaultSkillRepository"));
-#if WITH_SERVER_CODE
-	if (UGameInstance* GI = GetGameInstance())
-	{
-		if (auto ProviderInfra = GI->GetSubsystem<UDBProviderInfra>())
-		{
-			DefaultSkillRepository->Initialize(ProviderInfra);
-		}
+	if (UDBProviderInfra* Infra = GetGameInstance()->GetSubsystem<UDBProviderInfra>()) {
+		DefaultSkillRepository->Initialize(Infra);
 	}
-#endif
-	
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("SkillSubsystem: UDBProviderInfra not available"));
+	}
 	if (!SkillRepositoryInterface.GetInterface())
 	{
 		SkillRepositoryInterface = DefaultSkillRepository;

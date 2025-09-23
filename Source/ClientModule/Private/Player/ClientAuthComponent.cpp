@@ -9,7 +9,7 @@
 UClientAuthComponent::UClientAuthComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
-	AuthService = nullptr;
+	// AuthService = nullptr;
 	OwnerController = nullptr;
 }
 
@@ -27,39 +27,40 @@ void UClientAuthComponent::InitializeAuth()
 		return;
 	}
 
-	AuthService = NewObject<UAuthService>(this, TEXT("AuthService"));
-	if (!AuthService){
-		UE_LOG(LogTemp, Error, TEXT("ClientAuthComponent: Failed to create AuthService!"));
-	}
+	// AuthService = NewObject<UAuthService>(this, TEXT("AuthService"));
+	// if (!AuthService){
+	// 	UE_LOG(LogTemp, Error, TEXT("ClientAuthComponent: Failed to create AuthService!"));
+	// }
 }
 
 void UClientAuthComponent::RequestRegistration(const FString& Username, const FString& Password)
 {
 	UE_LOG(LogTemp, Log, TEXT("ClientAuthComponent::RequestRegistration: Username=%s"), *Username);
 
-	if (!AuthService)
-	{
-		UE_LOG(LogTemp, Error, TEXT("ClientAuthComponent: AuthService not available"));
-		return;
-	}
-
-	AuthService->RequestRegistration(Username, Password, OwnerController);
+	// if (!AuthService)
+	// {
+	// 	UE_LOG(LogTemp, Error, TEXT("ClientAuthComponent: AuthService not available"));
+	// 	return;
+	// }
+	OwnerController->RequestServerRegistration(Username, Password);
+	// AuthService->RequestRegistration(Username, Password, OwnerController);
 }
 
 void UClientAuthComponent::RequestLogin(const FString& Username, const FString& Password)
 {
 	UE_LOG(LogTemp, Log, TEXT("ClientAuthComponent::RequestLogin: Username=%s"), *Username);
 
-	if (!AuthService)
-	{
-		UE_LOG(LogTemp, Error, TEXT("ClientAuthComponent: AuthService not available"));
-		BP_OnLoginResult(false, TEXT(""), TEXT(""));
-		return;
-	}
+	// if (!AuthService)
+	// {
+	// 	UE_LOG(LogTemp, Error, TEXT("ClientAuthComponent: AuthService not available"));
+	// 	BP_OnLoginResult(false, TEXT(""), TEXT(""));
+	// 	return;
+	// }
 
 	UE_LOG(LogTemp, Log, TEXT("ClientAuthComponent: Successfully bound login delegate"));
 
-	AuthService->RequestLogin(Username, Password, OwnerController);
+	OwnerController->RequestServerLogin(Username, Password);
+	// AuthService->RequestLogin(Username, Password, OwnerController);
 }
 
 void UClientAuthComponent::OnServerRegistrationResult(bool bSuccess, const FString& Message)

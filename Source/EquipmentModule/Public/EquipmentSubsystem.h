@@ -25,5 +25,5 @@ public:
 
 private:
 	UPROPERTY()
-	UEquipmentRepository* EquipmentRepository;
+	UEquipmentRepository* DefaultEquipmentRepository;
 };

@@ -3,16 +3,20 @@
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
 #include "Data/AuthDTO.h"
+#include "Interface/BaseRepositoryInterface.h"
 #include "Tasks/Task.h"
 #include "AuthRepositoryInterface.generated.h"
 
+struct FUserAccountDTO;
+struct FUserAuditLogDTO;
+
 UINTERFACE(MinimalAPI, BlueprintType)
-class UAuthRepositoryInterface : public UInterface
+class UAuthRepositoryInterface : public UBaseRepositoryInterface
 {
 	GENERATED_BODY()
 };
 
-class AUTHMODULE_API IAuthRepositoryInterface
+class AUTHMODULE_API IAuthRepositoryInterface : public IBaseRepositoryInterface
 {
 	GENERATED_BODY()
 

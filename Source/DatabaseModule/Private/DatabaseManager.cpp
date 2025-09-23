@@ -1492,40 +1492,40 @@ bool UDatabaseJsonHelper::DeserializeCharacterExtendedData(const FString& JsonDa
 // ============================================================================
 // NOTE: These methods are DEPRECATED and should not be used in production
 // Reason: User authentication should be handled by external auth service
-
-UE::Tasks::TTask<bool> UDatabaseManager::CreateUserAccount(const FString& Username, const FString& PasswordHash, const FString& Email, FString& OutUserId)
-{
-	// DEPRECATED: User account creation should be handled by external auth service (Node.js)
-	// This method violates separation of concerns in microservice architecture
-	// Game server should only handle game-related data, not user account management
-	UE_LOG(LogTemp, Warning, TEXT("DEPRECATED: UDatabaseManager::CreateUserAccount should not be used. Use external auth service."));
-	OutUserId = TEXT("");
-	return UE::Tasks::MakeCompletedTask<bool>(false);
-}
-
-UE::Tasks::TTask<TOptional<FDatabaseUserData>> UDatabaseManager::GetUserByUsername(const FString& Username)
-{
-	// DEPRECATED: User account queries should be handled by external auth service
-	// Game server should only work with verified user IDs from JWT tokens
-	UE_LOG(LogTemp, Warning, TEXT("DEPRECATED: UDatabaseManager::GetUserByUsername should not be used. Use external auth service."));
-	return UE::Tasks::MakeCompletedTask<TOptional<FDatabaseUserData>>(TOptional<FDatabaseUserData>());
-}
-
-UE::Tasks::TTask<TOptional<FDatabaseUserData>> UDatabaseManager::GetUserById(const FString& UserId)
-{
-	// DEPRECATED: User account queries should be handled by external auth service
-	// Game server should only work with verified user IDs from JWT tokens for game data queries
-	UE_LOG(LogTemp, Warning, TEXT("DEPRECATED: UDatabaseManager::GetUserById should not be used. Use external auth service."));
-	return UE::Tasks::MakeCompletedTask<TOptional<FDatabaseUserData>>(TOptional<FDatabaseUserData>());
-}
-
-UE::Tasks::TTask<bool> UDatabaseManager::UpdateUserAccount(const FDatabaseUserData& UserData)
-{
-	// DEPRECATED: User account updates should be handled by external auth service
-	// Game server should not manage user account lifecycle
-	UE_LOG(LogTemp, Warning, TEXT("DEPRECATED: UDatabaseManager::UpdateUserAccount should not be used. Use external auth service."));
-	return UE::Tasks::MakeCompletedTask<bool>(false);
-}
+//
+// UE::Tasks::TTask<bool> UDatabaseManager::CreateUserAccount(const FString& Username, const FString& PasswordHash, const FString& Email, FString& OutUserId)
+// {
+// 	// DEPRECATED: User account creation should be handled by external auth service (Node.js)
+// 	// This method violates separation of concerns in microservice architecture
+// 	// Game server should only handle game-related data, not user account management
+// 	UE_LOG(LogTemp, Warning, TEXT("DEPRECATED: UDatabaseManager::CreateUserAccount should not be used. Use external auth service."));
+// 	OutUserId = TEXT("");
+// 	return UE::Tasks::MakeCompletedTask<bool>(false);
+// }
+//
+// UE::Tasks::TTask<TOptional<FDatabaseUserData>> UDatabaseManager::GetUserByUsername(const FString& Username)
+// {
+// 	// DEPRECATED: User account queries should be handled by external auth service
+// 	// Game server should only work with verified user IDs from JWT tokens
+// 	UE_LOG(LogTemp, Warning, TEXT("DEPRECATED: UDatabaseManager::GetUserByUsername should not be used. Use external auth service."));
+// 	return UE::Tasks::MakeCompletedTask<TOptional<FDatabaseUserData>>(TOptional<FDatabaseUserData>());
+// }
+//
+// UE::Tasks::TTask<TOptional<FDatabaseUserData>> UDatabaseManager::GetUserById(const FString& UserId)
+// {
+// 	// DEPRECATED: User account queries should be handled by external auth service
+// 	// Game server should only work with verified user IDs from JWT tokens for game data queries
+// 	UE_LOG(LogTemp, Warning, TEXT("DEPRECATED: UDatabaseManager::GetUserById should not be used. Use external auth service."));
+// 	return UE::Tasks::MakeCompletedTask<TOptional<FDatabaseUserData>>(TOptional<FDatabaseUserData>());
+// }
+//
+// UE::Tasks::TTask<bool> UDatabaseManager::UpdateUserAccount(const FDatabaseUserData& UserData)
+// {
+// 	// DEPRECATED: User account updates should be handled by external auth service
+// 	// Game server should not manage user account lifecycle
+// 	UE_LOG(LogTemp, Warning, TEXT("DEPRECATED: UDatabaseManager::UpdateUserAccount should not be used. Use external auth service."));
+// 	return UE::Tasks::MakeCompletedTask<bool>(false);
+// }
 
 FString UDatabaseJsonHelper::SerializeSkillData(const TMap<FString, FString>& SkillProperties)
 {

@@ -6,6 +6,7 @@
 #include "GameSharedModule/Public/DTO/SkillDTOs.h" // Extracted skill DTOs
 #include "GameSharedModule/Public/DTO/ShopDTOs.h" // Extracted shop DTOs
 #include "GameSharedModule/Public/DTO/AuthDTOs.h" // Extracted auth DTOs
+#include "GameSharedModule/Public/DTO/InventoryDTOs.h" // Extracted inventory DTO
 #include "DatabaseManager.generated.h"
 
 DECLARE_DELEGATE_OneParam(FCharacterDataLoadDelegate, const TOptional<FCharacterData>& /* CharacterData */);
@@ -25,34 +26,6 @@ struct FDatabaseManagerImpl;
 // ============================================================================
 
 
-/**
- * Inventory Item Data Transfer Object
- */
-USTRUCT(BlueprintType)
-struct DATABASEMODULE_API FInventoryItemDTO
-{
-	GENERATED_BODY()
-
-	UPROPERTY()
-	FName ItemID;
-
-	UPROPERTY()
-	int32 Quantity;
-
-	UPROPERTY()
-	int32 SlotIndex;
-
-	UPROPERTY()
-	FString ItemData;
-
-	FInventoryItemDTO()
-		: Quantity(0), SlotIndex(-1)
-	{}
-
-	FInventoryItemDTO(const FName& InItemID, int32 InQuantity, int32 InSlotIndex, const FString& InItemData)
-		: ItemID(InItemID), Quantity(InQuantity), SlotIndex(InSlotIndex), ItemData(InItemData)
-	{}
-};
 
 
 USTRUCT(BlueprintType)
@@ -209,11 +182,6 @@ public:
 	 */
 	UE::Tasks::TTask<bool> RemoveInventoryItem(const FString& UserId, const FName& ItemID, int32 Quantity);
 
-	// ========================================================================
-	// SKILL MANAGEMENT METHODS
-	// ========================================================================
-
-
 	// ============================================================================
 	// Shop Data Management Methods
 	// ============================================================================
@@ -302,42 +270,6 @@ public:
 	// The game server should only handle game-related data, not user account management
 	// Use external auth service for: registration, login, password management, account locks
 	// Game server responsibility: character data, inventory, skills, shop data only
-
-	/**
-	 * DEPRECATED: Create a new user account in the database
-	 * @deprecated Use external auth service (Node.js) for user account creation
-	 * This method violates separation of concerns in microservice architecture
-	 */
-	UE_DEPRECATED(5.0, "User account creation should be handled by external auth service")
-	UE::Tasks::TTask<bool> CreateUserAccount(const FString& Username, const FString& PasswordHash, const FString& Email, FString& OutUserId);
-
-	/**
-	 * DEPRECATED: Get user account by username
-	 * @deprecated Use external auth service for user account queries
-	 * Game server should only query by verified user ID from JWT token
-	 */
-	UE_DEPRECATED(5.0, "User account queries should be handled by external auth service")
-	UE::Tasks::TTask<TOptional<FDatabaseUserData>> GetUserByUsername(const FString& Username);
-
-	/**
-	 * DEPRECATED: Get user account by user ID
-	 * @deprecated Use external auth service for user account queries
-	 * Game server should only work with verified user IDs from JWT tokens
-	 */
-	UE_DEPRECATED(5.0, "User account queries should be handled by external auth service")
-	UE::Tasks::TTask<TOptional<FDatabaseUserData>> GetUserById(const FString& UserId);
-
-	/**
-	 * DEPRECATED: Update user account information
-	 * @deprecated Use external auth service for user account updates
-	 */
-	UE_DEPRECATED(5.0, "User account updates should be handled by external auth service")
-	UE::Tasks::TTask<bool> UpdateUserAccount(const FDatabaseUserData& UserData);
-
-	/**
-	 * @param ExpiresAt When the lock should expire
-	 * @return Task that completes when user is locked
-	 */
 	
 	UE::Tasks::TTask<bool> LockUserAccount(int32 UserId, const FDateTime& ExpiresAt);
 

@@ -1,29 +1,28 @@
-﻿
-#include "EquipmentSubsystem.h"
-
-#include "DatabaseManager.h"
+﻿#include "EquipmentSubsystem.h"
 #include "EquipmentRepository.h"
 #include "Components/EquipmentComponent.h"
 #include "GameFramework/PlayerState.h"
 #include "Interface/PlayerIdentityInterface.h"
+#include "Provider/DBProviderInfra.h"
 
 void UEquipmentSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
-	Collection.InitializeDependency(UDatabaseManager::StaticClass());
+	// Collection.InitializeDependency(UDatabaseManager::StaticClass());
+	Collection.InitializeDependency(UDBProviderInfra::StaticClass());
 	Super::Initialize(Collection);
-	EquipmentRepository = NewObject<UEquipmentRepository>(this, TEXT("EquipmentRepository"));
+	DefaultEquipmentRepository = NewObject<UEquipmentRepository>(this, TEXT("EquipmentRepository"));
 	// EquipmentRepository->Initialize(TODO); Infra 주입으로 변경
 }
 
 void UEquipmentSubsystem::Deinitialize()
 {
-	EquipmentRepository = nullptr;
+	DefaultEquipmentRepository = nullptr;
 	Super::Deinitialize();
 }
 
 TScriptInterface<IEquipmentRepositoryInterface> UEquipmentSubsystem::GetEquipmentRepository() const
 {
-	return EquipmentRepository;
+	return DefaultEquipmentRepository;
 }
 
 void UEquipmentSubsystem::RequestLoadEquipmentData(TScriptInterface<IPlayerIdentityInterface> PlayerIdentity)
@@ -33,7 +32,7 @@ void UEquipmentSubsystem::RequestLoadEquipmentData(TScriptInterface<IPlayerIdent
 		return;
 	}
 
-	if (EquipmentRepository && PlayerIdentity)
+	if (DefaultEquipmentRepository && PlayerIdentity)
 	{
 		UObject* PlayerObject = Cast<UObject>(PlayerIdentity.GetObject());
 		APlayerState* PlayerState = Cast<APlayerState>(PlayerObject);
@@ -43,7 +42,7 @@ void UEquipmentSubsystem::RequestLoadEquipmentData(TScriptInterface<IPlayerIdent
 			{
 				if (PlayerState->HasAuthority())
 				{
-					EquipmentRepository->LoadEquipmentData(PlayerIdentity->GetPlayerGuid(), *EquipmentComponent);
+					DefaultEquipmentRepository->LoadEquipmentData(PlayerIdentity->GetPlayerGuid(), *EquipmentComponent);
 				}
 			}
 		}
@@ -52,7 +51,7 @@ void UEquipmentSubsystem::RequestLoadEquipmentData(TScriptInterface<IPlayerIdent
 
 void UEquipmentSubsystem::Client_OnEquipmentStateUpdated(UEquipmentComponent* EquipmentComponent)
 {
-	if (EquipmentRepository && EquipmentComponent)
+	if (DefaultEquipmentRepository && EquipmentComponent)
 	{
 		UE_LOG(LogTemp, Log, TEXT("EquipmentSubsystem: Client received equipment state update for %d items"), 
 			EquipmentComponent->GetAllEquipment().Num());

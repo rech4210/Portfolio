@@ -8,7 +8,7 @@ public class AuthServerModule : ModuleRules
 
 		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "Json", "JsonUtilities", "HTTP" ,"NetCore" });
 
-		PrivateDependencyModuleNames.AddRange(new string[] {  });
+		PrivateDependencyModuleNames.AddRange(new string[] {"GameSharedModule", "DatabaseModule" });
 
 		// Add jwt-cpp library dependency here later
 	}

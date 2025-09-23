@@ -6,8 +6,8 @@
 
 #include "IAuthDBProvider.generated.h"
 
-struct FDatabaseUserData; // forward
-struct FDatabaseAuditLogData; // forward
+struct FDatabaseUserData;
+struct FDatabaseAuditLogData;
 
 UINTERFACE()
 class UAuthDBProvider : public UInterface {
@@ -18,6 +18,7 @@ class GAMESHAREDMODULE_API IAuthDBProvider {
 	GENERATED_BODY()
 public:
 	// Account state operations
+	
 	virtual UE::Tasks::TTask<bool> LockUserAccount(int32 UserId, const FDateTime& ExpiresAt) = 0;
 	virtual UE::Tasks::TTask<bool> UnlockUserAccount(const FString& UserId) = 0;
 	virtual UE::Tasks::TTask<bool> UpdateLastLogin(const FString& UserId) = 0;

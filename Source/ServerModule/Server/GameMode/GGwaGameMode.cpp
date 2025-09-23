@@ -7,7 +7,7 @@
 #include "Engine/Engine.h"
 #include "HttpModule.h"
 #include "GameMode/BattleFlowController.h"
-#include "AuthVerificationService.h" 
+#include "AuthSessionSubsystem.h" // Replaces deprecated AuthVerificationService
 #include "Misc/Parse.h"
 #include "Misc/CommandLine.h"
 #include "InventorySubsystem.h"
@@ -26,20 +26,24 @@ AGGwaGameMode::AGGwaGameMode()
 	PlayerStateClass = AGGwaPlayerState::StaticClass();
 	DefaultPawnClass = AGGwaCharacter::StaticClass();
 	
-	AuthVerificationService = NewObject<UAuthVerificationService>(this, TEXT("AuthVerificationService"));
+	// Deprecated verification service removed. Runtime token checks should use UAuthSessionSubsystem::VerifyToken when handshake RPC added.
 // #if UE_SERVER
 	/*Repository 주입, 초기화 시점 잘 고려하기*/
-		// auto DBProvider = GetWorld()->GetSubsystem<UDBProviderInfra>();
-		// // Subsystems should self-initialize their repositories; optional safety re-init if needed
-		// if(DBProvider)
-		// {
-		// 	if(auto SkillSubsystem = GetWorld()->GetSubsystem<USkillSubsystem>())
-		// 		if(auto SkillRepo = SkillSubsystem->GetSkillRepository()) SkillRepo->Initialize(DBProvider);
-		// 	if(auto InventorySubsystem = GetWorld()->GetSubsystem<UInventorySubsystem>())
-		// 		if(auto InventoryRepo = InventorySubsystem->GetInventoryRepository()) InventoryRepo->Initialize(DBProvider);
-		// 	if(auto ShopSubsystem = GetWorld()->GetSubsystem<UShopSubsystem>())
-		// 		if(auto ShopRepo = ShopSubsystem->GetShopRepository()) ShopRepo->Initialize(DBProvider);
-		// }
+	// auto DBProvider = GetWorld()->GetSubsystem<UDBProviderInfra>();
+	// auto SkillDBProvider = DBProvider->GetSkillDbProvider();
+	//
+	// auto SkillSubsystem = GetWorld()->GetSubsystem<USkillSubsystem>();
+	// auto SkillRepo = SkillSubsystem->GetSkillRepository();
+	// SkillRepo->Initialize(DBProvider);
+	//
+	// auto InventorySubsystem = GetWorld()->GetSubsystem<UInventorySubsystem>();
+	// auto InventoryRepo = InventorySubsystem->GetInventoryRepository();
+	// InventoryRepo->Initialize(MakeShareable<IDBProviderInfra>(DBProvider));
+	//
+	// auto ShopSubsystem = GetWorld()->GetSubsystem<UShopSubsystem>();
+	// auto ShopRepo = ShopSubsystem->GetShopRepository();
+	// ShopRepo->Initialize(MakeShareable<IDBProviderInfra>(DBProvider));
+
 	//so on...
 // #endif
 }

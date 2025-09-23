@@ -1,6 +1,5 @@
 #include "AuthSubsystem.h"
 #include "Repository/AuthRepository.h"
-#include "DatabaseModule/Public/DatabaseManager.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
 #include "GameSharedModule/Public/Interface/AuthRPCInterface.h"
@@ -10,15 +9,20 @@
 #include "Interfaces/IHttpResponse.h"
 #include "Tasks/Task.h"
 #include "Async/Async.h"
+#include "Provider/DBProviderInfra.h"
 
 
 void UAuthSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
-	Collection.InitializeDependency(UDatabaseManager::StaticClass());
+	Collection.InitializeDependency(UDBProviderInfra::StaticClass());
 	Super::Initialize(Collection);
 
+	UE_LOG(LogTemp, Warning, TEXT("[DEPRECATED][UAuthSubsystem] This subsystem is legacy. Migrate to server-only AuthSessionSubsystem + AuthExternalService. Will be removed soon."));
+
 	DefaultAuthRepository = NewObject<UAuthRepository>(this, TEXT("DefaultAuthRepository"));
-	DefaultAuthRepository->Initialize();
+	if (UDBProviderInfra* Infra = GetGameInstance()->GetSubsystem<UDBProviderInfra>()){
+		DefaultAuthRepository->Initialize(Infra);
+	}
 
 	if (!AuthRepositoryInterface.GetInterface())
 	{

@@ -1,27 +1,22 @@
 ﻿#include "Repository/AuthRepository.h"
-#include "DatabaseModule/Public/DatabaseManager.h"
 #include "Engine/Engine.h"
 #include "Tasks/Task.h"
 #include "Misc/DateTime.h"
+#include "Provider/AuthDBProvider.h"
 
-UAuthRepository::UAuthRepository()
-{
-	DatabaseManager = nullptr;
+UAuthRepository::UAuthRepository(){
 }
 
-void UAuthRepository::Initialize()
-{
-	if (GetWorld())
+void UAuthRepository::Initialize(IDBProviderInfra* Infra) {
+	if (!Infra)
 	{
-		DatabaseManager = GetWorld()->GetGameInstance()->GetSubsystem<UDatabaseManager>();
-		if (DatabaseManager)
-		{
-			UE_LOG(LogTemp, Log, TEXT("AuthRepository: DatabaseManager initialized successfully"));
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("AuthRepository: Failed to get DatabaseManager subsystem"));
-		}
+		UE_LOG(LogTemp, Error, TEXT("InventoryRepository Initialize: Infra is null"));
+		return;
+	}
+	AuthDBProvider = Infra->GetAuthDbProvider();
+	if (!AuthDBProvider.IsValid())
+	{
+		UE_LOG(LogTemp, Error, TEXT("InventoryRepository: InventoryProvider is not available!"));
 	}
 }
 
@@ -29,21 +24,21 @@ UE::Tasks::TTask<bool> UAuthRepository::CreateUser(const FUserAccountDTO& UserDa
 {
 	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, UserData]() -> bool
 	{
-		if (!DatabaseManager)
+		if (!AuthDBProvider)
 		{
-			UE_LOG(LogTemp, Error, TEXT("AuthRepository::CreateUser: DatabaseManager is null"));
+			UE_LOG(LogTemp, Error, TEXT("AuthRepository::CreateUser: AuthDBProvider is null"));
 			return false;
 		}
 
-		// Delegate user creation to DatabaseManager
+		// Delegate user creation to AuthDBProvider
 		UE_LOG(LogTemp, Log, TEXT("AuthRepository::CreateUser: Creating user %s with ID %s"), 
 			*UserData.Username, *UserData.UserId);
 
-		// Use DatabaseManager's CreateUserAccount method
-		// Note: DatabaseManager auth methods are deprecated - this should use external auth service
-		UE_LOG(LogTemp, Warning, TEXT("AuthRepository::CreateUser: Using deprecated DatabaseManager method"));
+		// Use AuthDBProvider's CreateUserAccount method
+		// Note: AuthDBProvider auth methods are deprecated - this should use external auth service
+		UE_LOG(LogTemp, Warning, TEXT("AuthRepository::CreateUser: Using deprecated AuthDBProvider method"));
 		
-		// Since DatabaseManager auth methods are deprecated, return false to indicate 
+		// Since AuthDBProvider auth methods are deprecated, return false to indicate 
 		// that user creation should be handled by external auth service
 		return false;
 	});
@@ -53,19 +48,19 @@ UE::Tasks::TTask<TOptional<FUserAccountDTO>> UAuthRepository::GetUserByUsername(
 {
 	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, Username]() -> TOptional<FUserAccountDTO>
 	{
-		if (!DatabaseManager)
+		if (!AuthDBProvider)
 		{
-			UE_LOG(LogTemp, Error, TEXT("AuthRepository::GetUserByUsername: DatabaseManager is null"));
+			UE_LOG(LogTemp, Error, TEXT("AuthRepository::GetUserByUsername: AuthDBProvider is null"));
 			return TOptional<FUserAccountDTO>();
 		}
 
 		UE_LOG(LogTemp, Log, TEXT("AuthRepository::GetUserByUsername: Searching for user %s"), *Username);
 
-		// Use DatabaseManager's GetUserByUsername method
-		// Note: DatabaseManager auth methods are deprecated - this should use external auth service
-		UE_LOG(LogTemp, Warning, TEXT("AuthRepository::GetUserByUsername: Using deprecated DatabaseManager method"));
+		// Use AuthDBProvider's GetUserByUsername method
+		// Note: AuthDBProvider auth methods are deprecated - this should use external auth service
+		UE_LOG(LogTemp, Warning, TEXT("AuthRepository::GetUserByUsername: Using deprecated AuthDBProvider method"));
 		
-		// Since DatabaseManager auth methods are deprecated, return empty result to indicate 
+		// Since AuthDBProvider auth methods are deprecated, return empty result to indicate 
 		// that user queries should be handled by external auth service
 		return TOptional<FUserAccountDTO>();
 	});
@@ -75,21 +70,21 @@ UE::Tasks::TTask<TOptional<FUserAccountDTO>> UAuthRepository::GetUserById(const 
 {
 	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, UserId]() -> TOptional<FUserAccountDTO>
 	{
-		if (!DatabaseManager)
+		if (!AuthDBProvider)
 		{
-			UE_LOG(LogTemp, Error, TEXT("AuthRepository::GetUserById: DatabaseManager is null"));
+			UE_LOG(LogTemp, Error, TEXT("AuthRepository::GetUserById: AuthDBProvider is null"));
 			return TOptional<FUserAccountDTO>();
 		}
 
 		
 			UE_LOG(LogTemp, Log, TEXT("AuthRepository::GetUserById: Searching for user ID %s"), *UserId);
 
-			// Convert string UserId to int32 for DatabaseManager
+			// Convert string UserId to int32 for AuthDBProvider
 			// Since we now use string UserIds, we need to pass the string directly
-			// but DatabaseManager deprecated methods expect different parameter types
-			UE_LOG(LogTemp, Warning, TEXT("AuthRepository::GetUserById: Using deprecated DatabaseManager method"));
+			// but AuthDBProvider deprecated methods expect different parameter types
+			UE_LOG(LogTemp, Warning, TEXT("AuthRepository::GetUserById: Using deprecated AuthDBProvider method"));
 			
-			// For now, since DatabaseManager auth methods are deprecated, return empty result
+			// For now, since AuthDBProvider auth methods are deprecated, return empty result
 			return TOptional<FUserAccountDTO>();
 		
 	});
@@ -99,17 +94,17 @@ UE::Tasks::TTask<bool> UAuthRepository::UpdateUser(const FUserAccountDTO& UserDa
 {
 	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, UserData]() -> bool
 	{
-		if (!DatabaseManager)
+		if (!AuthDBProvider)
 		{
-			UE_LOG(LogTemp, Error, TEXT("AuthRepository::UpdateUser: DatabaseManager is null"));
+			UE_LOG(LogTemp, Error, TEXT("AuthRepository::UpdateUser: AuthDBProvider is null"));
 			return false;
 		}
 
 		
 			UE_LOG(LogTemp, Log, TEXT("AuthRepository::UpdateUser: Updating user %s"), *UserData.UserId);
 
-			// Note: DatabaseManager doesn't have a direct UpdateUser method for auth-specific fields
-			// This would need to be implemented with custom SQL through DatabaseManager
+			// Note: AuthDBProvider doesn't have a direct UpdateUser method for auth-specific fields
+			// This would need to be implemented with custom SQL through AuthDBProvider
 			// For now, log the operation and return true as placeholder
 			
 			UE_LOG(LogTemp, Warning, TEXT("AuthRepository::UpdateUser: Auth-specific user updates not yet implemented"));
@@ -142,9 +137,9 @@ UE::Tasks::TTask<bool> UAuthRepository::UpdateLastLogin(const FString& UserId)
 {
 	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, UserId]() -> bool
 	{
-		if (!DatabaseManager)
+		if (!AuthDBProvider)
 		{
-			UE_LOG(LogTemp, Error, TEXT("AuthRepository::UpdateLastLogin: DatabaseManager is null"));
+			UE_LOG(LogTemp, Error, TEXT("AuthRepository::UpdateLastLogin: AuthDBProvider is null"));
 			return false;
 		}
 
@@ -163,9 +158,9 @@ UE::Tasks::TTask<bool> UAuthRepository::LockUser(const FString& UserId, const FD
 {
 	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, UserId, ExpiresAt]() -> bool
 	{
-		if (!DatabaseManager)
+		if (!AuthDBProvider)
 		{
-			UE_LOG(LogTemp, Error, TEXT("AuthRepository::LockUser: DatabaseManager is null"));
+			UE_LOG(LogTemp, Error, TEXT("AuthRepository::LockUser: AuthDBProvider is null"));
 			return false;
 		}
 
@@ -185,9 +180,9 @@ UE::Tasks::TTask<bool> UAuthRepository::UnlockUser(const FString& UserId)
 {
 	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, UserId]() -> bool
 	{
-		if (!DatabaseManager)
+		if (!AuthDBProvider)
 		{
-			UE_LOG(LogTemp, Error, TEXT("AuthRepository::UnlockUser: DatabaseManager is null"));
+			UE_LOG(LogTemp, Error, TEXT("AuthRepository::UnlockUser: AuthDBProvider is null"));
 			return false;
 		}
 
@@ -206,9 +201,9 @@ UE::Tasks::TTask<bool> UAuthRepository::AddAuditLog(const FUserAuditLogDTO& Audi
 {
 	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, AuditLog]() -> bool
 	{
-		if (!DatabaseManager)
+		if (!AuthDBProvider)
 		{
-			UE_LOG(LogTemp, Error, TEXT("AuthRepository::AddAuditLog: DatabaseManager is null"));
+			UE_LOG(LogTemp, Error, TEXT("AuthRepository::AddAuditLog: AuthDBProvider is null"));
 			return false;
 		}
 
@@ -232,9 +227,9 @@ UE::Tasks::TTask<TArray<FUserAuditLogDTO>> UAuthRepository::GetAuditLogs(const F
 	{
 		TArray<FUserAuditLogDTO> AuditLogs;
 
-		if (!DatabaseManager)
+		if (!AuthDBProvider)
 		{
-			UE_LOG(LogTemp, Error, TEXT("AuthRepository::GetAuditLogs: DatabaseManager is null"));
+			UE_LOG(LogTemp, Error, TEXT("AuthRepository::GetAuditLogs: AuthDBProvider is null"));
 			return AuditLogs;
 		}
 
@@ -254,25 +249,24 @@ UE::Tasks::TTask<bool> UAuthRepository::CheckUsernameExists(const FString& Usern
 {
 	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this, Username]() -> bool
 	{
-		if (!DatabaseManager)
+		if (!AuthDBProvider)
 		{
-			UE_LOG(LogTemp, Error, TEXT("AuthRepository::CheckUsernameExists: DatabaseManager is null"));
+			UE_LOG(LogTemp, Error, TEXT("AuthRepository::CheckUsernameExists: AuthDBProvider is null"));
 			return false;
 		}
 
 		
 			UE_LOG(LogTemp, Log, TEXT("AuthRepository::CheckUsernameExists: Checking if username %s exists"), *Username);
 
-			// Use DatabaseManager's GetUserByUsername to check existence
-			auto GetUserTask = DatabaseManager->GetUserByUsername(Username);
-			TOptional<FDatabaseUserData> DatabaseUserOpt = GetUserTask.GetResult();
-			
-			bool bExists = DatabaseUserOpt.IsSet();
-			UE_LOG(LogTemp, Log, TEXT("AuthRepository::CheckUsernameExists: Username %s exists = %s"), 
-				*Username, bExists ? TEXT("true") : TEXT("false"));
-			
-			return bExists;
-		
+			// // Use AuthDBProvider's GetUserByUsername to check existence
+			// auto GetUserTask = AuthDBProvider->GetUserByUsername(Username);
+			// TOptional<FDatabaseUserData> DatabaseUserOpt = GetUserTask.GetResult();
+			//
+			// bool bExists = DatabaseUserOpt.IsSet();
+			// UE_LOG(LogTemp, Log, TEXT("AuthRepository::CheckUsernameExists: Username %s exists = %s"), 
+			// 	*Username, bExists ? TEXT("true") : TEXT("false"));
+			//
+			return false;
 	});
 }
 
@@ -282,9 +276,9 @@ UE::Tasks::TTask<TArray<FUserAccountDTO>> UAuthRepository::GetExpiredLockedUsers
 	{
 		TArray<FUserAccountDTO> ExpiredUsers;
 
-		if (!DatabaseManager)
+		if (!AuthDBProvider)
 		{
-			UE_LOG(LogTemp, Error, TEXT("AuthRepository::GetExpiredLockedUsers: DatabaseManager is null"));
+			UE_LOG(LogTemp, Error, TEXT("AuthRepository::GetExpiredLockedUsers: AuthDBProvider is null"));
 			return ExpiredUsers;
 		}
 
@@ -303,9 +297,9 @@ UE::Tasks::TTask<bool> UAuthRepository::UnlockExpiredUsers()
 {
 	return UE::Tasks::Launch(UE_SOURCE_LOCATION, [this]() -> bool
 	{
-		if (!DatabaseManager)
+		if (!AuthDBProvider)
 		{
-			UE_LOG(LogTemp, Error, TEXT("AuthRepository::UnlockExpiredUsers: DatabaseManager is null"));
+			UE_LOG(LogTemp, Error, TEXT("AuthRepository::UnlockExpiredUsers: AuthDBProvider is null"));
 			return false;
 		}
 
@@ -318,27 +312,6 @@ UE::Tasks::TTask<bool> UAuthRepository::UnlockExpiredUsers()
 			return true;
 		
 	});
-}
-
-// Helper methods - DEPRECATED
-FUserAccountDTO UAuthRepository::ConvertDatabaseUserToDTO(const FDatabaseUserData& DatabaseUser) const
-{
-	// DEPRECATED: This conversion should not be needed as auth data should come from external service
-	// Game server should only work with verified user IDs from JWT tokens, not raw auth data
-	UE_LOG(LogTemp, Warning, TEXT("DEPRECATED: AuthRepository::ConvertDatabaseUserToDTO should not be used"));
-	
-	FUserAccountDTO UserData;
-	// Return empty data since this conversion violates architectural boundaries
-	return UserData;
-}
-
-FUserAuditLogDTO UAuthRepository::ConvertAuditLogFromDatabaseResult(const TMap<FString, FString>& DatabaseRow) const
-{
-	FUserAuditLogDTO AuditLog;
-	
-	// TODO: Implement conversion from database row to audit log DTO
-	
-	return AuditLog;
 }
 
 FString UAuthRepository::ConvertDateTimeToString(const FDateTime& DateTime) const

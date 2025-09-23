@@ -11,6 +11,7 @@
 #include "GameSharedModule/Public/Enums/EClientUIKey.h"
 #include "GGwaPlayerController.generated.h"
 
+class IAuthRequestRouter;
 class ABossCharacter;
 class UBaseDataAsset;
 class UAuthSubsystem;
@@ -44,6 +45,8 @@ public:
 	virtual void Request_Client_TravelToGameWorld(const FString& MapURL) override;
 	virtual void Request_Client_ConnectToGameServerWithToken(const FString& Token, const FString& UserId) override;
 	virtual bool IsAuthRPCAvailable() const override;
+	virtual void NotifyAuthLoginResult(bool bSuccess, const FString& UserId, const FString& Token, const FString& ErrorCode) override;
+	virtual void NotifyAuthRegisterResult(bool bSuccess, const FString& UserId, const FString& Token, const FString& ErrorCode) override;
 
 private:
 	UFUNCTION(Server, Reliable, WithValidation)
@@ -113,18 +116,15 @@ public:
 	void SetCachedAuthToken(const FString& Token) {CachedAuthToken = Token; }
 	UFUNCTION()
 	void SetCachedUserId(const FString& Id) {CachedUserId = Id; }
-
+	
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 private:
+	void TryBindASCInput();
+	
 	UPROPERTY(Transient)
 	FString CachedAuthToken;
 
 	UPROPERTY(Transient)
 	FString CachedUserId;
-
-	void TryBindASCInput();
-
-public:
-	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
-private:
 	bool bIsBindComplete = false;
 };

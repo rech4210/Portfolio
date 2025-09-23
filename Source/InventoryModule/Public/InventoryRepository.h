@@ -5,12 +5,11 @@
 #include "../../GameSharedModule/Public/Interface/InventoryRepositoryInterface.h"
 #include "UObject/Object.h"
 #include "Tasks/Task.h"
-class IDBProviderInfra; // forward
-class IInventoryDBProvider; // forward
 #include "InventoryRepository.generated.h"
 
+class IDBProviderInfra;
+class IInventoryDBProvider;
 class UInventoryComponent;
-class UDatabaseManager;
 struct FInventoryItemDTO;
 
 UCLASS()
@@ -31,5 +30,5 @@ public:
 	virtual UE::Tasks::TTask<FInventoryRepositoryResult> RemoveItemByPlayerId(
 		const FGuid& PlayerId, const FName& ItemID, int32 Quantity) override;
 private:
-	TSharedPtr<IInventoryDBProvider> InventoryProvider;
+	TSharedPtr<IInventoryDBProvider> InventoryDBProvider;
 };

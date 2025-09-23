@@ -2,8 +2,7 @@
 #include "ShopRepository.h"
 #include "ShopDomainService.h"
 #include "GameFramework/PlayerState.h"
-#include "DatabaseModule/Public/Provider/DBProviderInfra.h"
-
+#include "Provider/DBProviderInfra.h"
 void UShopSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Collection.InitializeDependency(UDBProviderInfra::StaticClass());

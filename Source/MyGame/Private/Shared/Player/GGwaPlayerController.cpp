@@ -3,11 +3,10 @@
 #include "Abilities/GameplayAbilityTypes.h"
 #include "Shared/AI/Interface/ServerLogicBridge.h"
 #include "Shared/GAS/GGwaAbilitySystemComponent.h"
-#include "Shared/Player/GGwaCharacter.h"
 #include "Shared/Player/GGwaPlayerState.h"
-#include "AuthModule/Public/AuthSubsystem.h"
 #include "Engine/World.h"
 #include "GameSharedModule/Public/Utils/ClientUIMapping.h"
+#include "Interface/AuthRequestRouter.h"
 
 AGGwaPlayerController::AGGwaPlayerController() {
 }
@@ -24,6 +23,7 @@ void AGGwaPlayerController::BeginPlay() {
 	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 	InputMode.SetHideCursorDuringCapture(false);
 	SetInputMode(InputMode);
+
 #endif
 }
 
@@ -48,6 +48,7 @@ void AGGwaPlayerController::TryBindASCInput() {
 UAbilitySystemComponent* AGGwaPlayerController::GetAbilitySystemComponent() const {
 	return GetPlayerState<AGGwaPlayerState>()->GetAbilitySystemComponent();
 }
+
 
 void AGGwaPlayerController::AcknowledgePossession(class APawn* PossessedPawn) {
 	Super::AcknowledgePossession(PossessedPawn);
@@ -90,6 +91,30 @@ bool AGGwaPlayerController::IsAuthRPCAvailable() const {
 	return true;
 }
 
+
+// ----------------- Auth Result RPCs -----------------
+void AGGwaPlayerController::NotifyAuthLoginResult(bool bSuccess, const FString& UserId, const FString& Token,
+	const FString& ErrorCode) {
+	if (bSuccess)
+	{
+		HandleLoginResult(true, CachedAuthToken, UserId);
+	}
+	else
+	{
+		HandleLoginResult(false, TEXT(""), UserId);
+		UE_LOG(LogTemp, Warning, TEXT("Client_AuthLoginResult: Login failed (%s)"), *ErrorCode);
+	}
+}
+
+void AGGwaPlayerController::NotifyAuthRegisterResult(bool bSuccess, const FString& UserId, const FString& Token,
+	const FString& ErrorCode) {
+	HandleRegistrationResult(bSuccess, bSuccess ? UserId : ErrorCode);
+	if (!bSuccess)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Client_AuthRegisterResult: Registration failed (%s)"), *ErrorCode);
+	}
+}
+
 // ============================================================================
 // AUTHENTICATION RPC IMPLEMENTATIONS
 // ============================================================================
@@ -103,14 +128,13 @@ void AGGwaPlayerController::Server_Register_Implementation(const FString& Userna
 	{
 		ClientIP = GetNetConnection()->RemoteAddr->ToString(false);
 	}
-
-	if (UAuthSubsystem* AuthSubsystem = GetGameInstance()->GetSubsystem<UAuthSubsystem>())
+	if (auto AuthRouter = FAuthRouterRegistry::Get(GetGameInstance()))
 	{
-		AuthSubsystem->RequestServerRegistration(Username, Password, ClientIP, this);
+		AuthRouter->RequestRegistration(Username, Password, ClientIP, this);
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("AGGwaPlayerController::Server_Register: AuthSubsystem not found"));
+		UE_LOG(LogTemp, Error, TEXT("AGGwaPlayerController::Server_Register: AuthSessionSubsystem not found"));
 	}
 }
 
@@ -128,13 +152,13 @@ void AGGwaPlayerController::Server_Login_Implementation(const FString& Username,
 		ClientIP = GetNetConnection()->RemoteAddr->ToString(false);
 	}
 
-	if (UAuthSubsystem* AuthSubsystem = GetGameInstance()->GetSubsystem<UAuthSubsystem>())
+	if (auto AuthRouter = FAuthRouterRegistry::Get(GetGameInstance()))
 	{
-		AuthSubsystem->RequestServerAuthentication(Username, Password, ClientIP, this);
+		AuthRouter->RequestLogin(Username, Password, ClientIP, this);
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("AGGwaPlayerController::Server_Login: AuthSubsystem not found"));
+		UE_LOG(LogTemp, Error, TEXT("AGGwaPlayerController::Server_Login: AuthSessionSubsystem not found"));
 	}
 }
 

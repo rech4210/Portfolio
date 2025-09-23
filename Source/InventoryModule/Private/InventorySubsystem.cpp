@@ -5,7 +5,7 @@
 #include "InventoryDomainService.h"
 #include "GameFramework/PlayerState.h"
 #include "Interface/PlayerIdentityInterface.h"
-#include "DatabaseModule/Public/Provider/DBProviderInfra.h"
+#include "Provider/DBProviderInfra.h"
 
 void UInventorySubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
