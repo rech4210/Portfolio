@@ -1,6 +1,9 @@
 
 # GAS 멀티플레이 데디서버 기반 게임플레이 구현
 
+작업 기간: 2025.04–2025.09
+주요 한계 및 개선 과제: DBModule 응집 완화, 아웃박스 패턴, UI ViewModel 도입, CI/CD 고도화
+
 ## 환경 요약
 
 
@@ -17,11 +20,11 @@ URL : https://github.com/rech4210/Portfolio
 ## 1. 프로젝트 개요
 
 
-해당 프로젝트는 Unreal Engine 5를 활용하여 구현한 멀티플레이 GAS 구조로, **Gameplay Ability System (GAS)** 를 기반으로 플레이어 능력과 효과를 관리합니다. 전체 코드는 클라이언트와 서버 로직을 분리한 모듈 구조로 작성되었으며, 서버 로직은 로컬 DB 서버와 연결되어 작업을 수행합니다. 목표는 GAS를 활용해 안정적인 데디서버 아키텍처를 구축하고, 클라이언트에 게임플레이 정보를 정확히 **동기화**하는 것입니다.
+해당 프로젝트는 Unreal Engine 5를 활용하여 구현한 멀티플레이 GAS 구조로, **Gameplay Ability System (GAS)** 를 기반으로 플레이어 능력과 효과를 관리합니다. 전체 코드는 클라이언트와 서버 로직을 분리한 모듈 구조로 작성되었으며, 서버 로직은 로컬 DB 서버와 연결되어 작업을 수행합니다. 목표는 GAS 기반 데디서버 구조를 구성하고, 클라이언트에서 게임플레이 정보가 **동기화**되도록 하는 것입니다.
 
 
 ## 2. 아키텍처 & 모듈 구성
-![Image](https://raw.githubusercontent.com/rech4210/Portfolio/27c92a3b332970da3d2fdef841c3a48a90db0ce5/ScreenShot/1.아키텍처.png)
+![Image](ScreenShot/1.아키텍처.png)
 
 
 | 모듈명                        | 역할 요약                                                       |
@@ -29,7 +32,7 @@ URL : https://github.com/rech4210/Portfolio
 | **MyGame**                 | 게임의 핵심 도메인 (캐릭터, GameMode, GAS 시스템 등) 및 공용 코드 기반 제공                  |
 | **ClientModule**           | HUD, 위젯, 입력 등 클라이언트 전용 표현과 인터랙션 처리                          |
 | **ServerModule**           | Dedicated Server 런타임 관리 및 전체 기능 통합, 상태 조율                   |
-| **Shared Feature Modules** | Inventory, Skill, Equipment, Shop, Auth 등 기능 단위로 분리된 재사용 모듈 |
+| **Shared Feature Modules** | Inventory, Skill, Equipment, Shop 등 기능 단위 모듈 (인증은 AuthModule, AuthClientModule, AuthServerModule로 분리) |
 | **GameSharedModule**       | 인터페이스, 공용 구조체, 계약 등 모듈 간 공통 기반 제공                           |
 | **DatabaseModule**         | SQL 실행, DTO 매핑, 커넥션 관리 등 DB 관련 기능 전담                        |
 
@@ -47,9 +50,9 @@ URL : https://github.com/rech4210/Portfolio
 
 ---
 
-## 전투 로그 AI 분석기 도입 – 모듈 분리 필요성 및 클라이언트 연동 시나리오
+## 전투 로그 AI 분석기 도입 – 모듈 분리 필요성 및 클라이언트 연동 시나리오 (가상 시나리오)
 
-![scenario](https://raw.githubusercontent.com/rech4210/Portfolio/27c92a3b332970da3d2fdef841c3a48a90db0ce5/ScreenShot/Scenario.png)
+![scenario](ScreenShot/Scenario.png)
 
 ### 문제 정의
 
@@ -106,11 +109,14 @@ IOC 패턴 기반으로, 컨트롤러는 데이터를 전달하고 컴포넌트�
 ### 도커 설정
 
 개발자마다 다른 MySQL 환경, 수동 스키마/시드 적용, 불확실한 테스트 환경.  
-이런 비효율과 불확실성을 제거하기 위해 MySQL을 Docker로 컨테이너화하여 동일한 DB 환경을 즉시 재현하고, 스키마 및 데이터 초기화를 자동화하며, 개발·CI 전반에서 일관된 검증 흐름을 확보하고자 도입했다.
+이런 비효율을 줄이기 위해 MySQL을 Docker로 컨테이너화하고, 스키마 및 데이터 초기화를 자동화해 개발·CI 환경에서 재현 가능한 흐름을 목표로 했다.
 
-![Image](https://raw.githubusercontent.com/rech4210/Portfolio/27c92a3b332970da3d2fdef841c3a48a90db0ce5/ScreenShot/2.도커설정.png)
+![Image](ScreenShot/2.도커설정.png)
 
-![Image](https://raw.githubusercontent.com/rech4210/Portfolio/27c92a3b332970da3d2fdef841c3a48a90db0ce5/ScreenShot/3.도커설정.png)
+![Image](ScreenShot/3.도커설정.png)
+
+- 실행·재현: 저장소 루트에서 `.env.example`을 `.env`로 복사한 뒤 `docker compose up -d`를 실행한다. JWT 서버는 `JWTServer/.env.example`을 `JWTServer/.env`로 복사하고, `JWTServer`에서 `npm ci` 후 `node app_ue5_compatible.js`로 실행한다.
+- 로컬 `Config/DefaultEngine.ini`의 `DBPassword`는 실제 값으로 설정하고 커밋하지 않는다.
 
 
 
@@ -121,7 +127,7 @@ IOC 패턴 기반으로, 컨트롤러는 데이터를 전달하고 컴포넌트�
 
 ## DDD 로그인 시스템
 
-![Image](https://raw.githubusercontent.com/rech4210/Portfolio/27c92a3b332970da3d2fdef841c3a48a90db0ce5/ScreenShot/4.로그인DDD.png)
+![Image](ScreenShot/4.로그인DDD.png)
 
 ### 로그인 DDD 구성
 
@@ -165,7 +171,7 @@ MMORPG 환경에서 인증과 로그인 로직이 게임플레이 로직과 섞�
 - **효과**: 인프라 교체와 표현 계층 변경이 독립적으로 가능해지고, 각 모듈이 단일 책임을 지며, 확장 시에도 결합도 낮은 구조를 유지한다.
 
 #### 2.3 외부 인증 서버 위임
-![Image](https://raw.githubusercontent.com/rech4210/Portfolio/27c92a3b332970da3d2fdef841c3a48a90db0ce5/ScreenShot/5.유저DB데이터.png)
+![Image](ScreenShot/5.유저DB데이터.png)
 
 - 별도의 **Node.js 기반 인증 서버**가 다음을 담당:
   - 비밀번호 해싱  
@@ -173,7 +179,7 @@ MMORPG 환경에서 인증과 로그인 로직이 게임플레이 로직과 섞�
   - 계정 상태 관리 (잠금/삭제 등)  
 
 #### 2.4 감사 로그 (Audit) & 보안 강화 및 유효성 검증
-![Image](https://raw.githubusercontent.com/rech4210/Portfolio/27c92a3b332970da3d2fdef841c3a48a90db0ce5/ScreenShot/6.유저로그인회원가입추적로깅.png)
+![Image](ScreenShot/6.유저로그인회원가입추적로깅.png)
 
 - `AuthComponent`가 사용자명/비밀번호 정책(최소 길이, 특수문자 등), 계정 잠금/복구 상태, 삭제 상태 등을 관리.  
 - `AuthDomainService`는 보안 담당, 상태 기반 흐름을 도입해 잠금/복구 판단을 일관되게 처리한다.  
@@ -183,7 +189,7 @@ MMORPG 환경에서 인증과 로그인 로직이 게임플레이 로직과 섞�
 이 로그는 보안 사고 분석, 이상 징후 탐지, 운영 의사 결정(예: 정책 조정) 등에 활용 가능하다.
 
 
-### 로그인 시스템 변경 케이스
+### 로그인 시스템 변경 케이스 (가상 시나리오)
 ```sql
 QA:
 "로그인 관련 변경할 때마다 전반에 파급되고, 보안 대응도 흩어져서 2단계 인증이나 정책 변경이 너무 힘들고, 실패 원인 추적도 어렵습니다."
@@ -229,7 +235,7 @@ QA:
 ## DDD 스킬 시스템
 <br>
 
-![3.DDD구조](https://raw.githubusercontent.com/rech4210/Portfolio/27c92a3b332970da3d2fdef841c3a48a90db0ce5/ScreenShot/3.DDD구조.png)
+![3.DDD구조](ScreenShot/3.DDD구조.png)
 
 
 | 파일                                                | 설명                                                                                                                                 | Permalink                                                                                                                                         |
@@ -244,7 +250,7 @@ QA:
 | **ISkillRepositoryInterface**                   | 리포지토리 인터페이스. 스킬 슬롯 로드/저장, 쿨다운 업데이트, 마스터 데이터 로드 등 영속성 관련 메서드를 정의한다.                                                                 | [ISkillRepositoryInterface.h](https://github.com/rech4210/Portfolio/blob/27c92a3b332970da3d2fdef841c3a48a90db0ce5/Source/SkillModule/Public/Repositories/ISkillRepositoryInterface.h) |
 
 
-![Image](https://raw.githubusercontent.com/rech4210/Portfolio/27c92a3b332970da3d2fdef841c3a48a90db0ce5/ScreenShot/9.스킬정보.png)
+![Image](ScreenShot/9.스킬정보.png)
 > DB 스킬 데이터 구조, 실질 DataAsset을 AssetManager에서 관리한다.
 
 
@@ -255,7 +261,7 @@ QA:
 
 #### 해결 메커니즘
 - `USkillRepository`를 추상 인터페이스로 정의하고, `USkillDomainService`에 DI로 주입.  
-- 테스트에서는 `MockRepository`로 도메인 로직만 검증.  
+- 저장소 코드에는 `MockRepository` 구현과 테스트가 포함되어 있지 않아, 실제 DB 없이 검증하는 흐름은 확인되지 않는다.
 - DIP 적용으로 저장소 교체와 테스트 환경 분리 용이.
 
 <br>  
@@ -288,7 +294,7 @@ QA:
 
 ---
 
-## SQL 구조 변경 시나리오 - DDD 기반 구조 도입
+## SQL 구조 변경 시나리오 - DDD 기반 구조 도입 (가상 시나리오)
 ```sql
 QA: `user_skill_slots` 테이블에 `cooldown_end_time` 컬럼을 추가하려고 하는데, SQL 구조 변경이 도메인 로직(쿨다운 계산 등)에 영향을 줄까 걱정됩니다.  
 프로그래머 (기존 구조): 맞습니다. 지금은 도메인 로직이 `LastUsedTime + BaseCooltime` 같은 스키마 세부에 직접 의존해서, 컬럼이 바뀌면 쿨다운 판단 전체가 흔들리고 회귀 테스트도 무거워집니다.  
@@ -309,16 +315,16 @@ QA: `cooldown_end_time`에 이상한 값이 들어오면요?
 - 너무 미래인 값 등 비정상적 입력이면 `RemainingCooldown`을 0으로 정리하거나 로그를 남기고 안전하게 fallback 처리합니다.  
 
 QA: 빠르게 테스트해볼 수 있나요?  
-프로그래머: 실제 DB 없이 `MockRepository`에 테스트용 DTO를 넣고, 매퍼 → 도메인 모델 → 도메인 서비스/컴포넌트 흐름을 검증하면 회귀 테스트가 완료됩니다. 기존 경로도 같은 테스트로 동시에 점검됩니다.  
+프로그래머: 실제 DB 없이 검증하려면 `MockRepository`와 테스트를 추가해 매퍼 → 도메인 모델 → 도메인 서비스/컴포넌트 흐름을 확인할 수 있습니다. 기존 경로도 같은 테스트로 함께 점검할 수 있습니다.
 
 ```
 
-![Image](https://raw.githubusercontent.com/rech4210/Portfolio/27c92a3b332970da3d2fdef841c3a48a90db0ce5/ScreenShot/7.스킬로드.png)
+![Image](ScreenShot/7.스킬로드.png)
 > DDD 스킬 시스템 기반 플레이어간 다른 스킬 로딩
 
 <br>
 
-![Image](https://raw.githubusercontent.com/rech4210/Portfolio/27c92a3b332970da3d2fdef841c3a48a90db0ce5/ScreenShot/8.유저스킬.png)
+![Image](ScreenShot/8.유저스킬.png)
 
 > 유저가 등록한 스킬과 스킬슬롯에 대한 정보를 Table로 저장
 
@@ -327,7 +333,7 @@ QA: 빠르게 테스트해볼 수 있나요?
 ---
 ## **GAS 시스템 기반 게임플레이**
 
-![Image](https://raw.githubusercontent.com/rech4210/Portfolio/27c92a3b332970da3d2fdef841c3a48a90db0ce5/ScreenShot/10.GAS시스템.png)
+![Image](ScreenShot/10.GAS시스템.png)
 
 | 이름                           | 설명                                                                                                                                                                             | PERMALINK                                                                                                                                                                                                                                                                                        |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -376,12 +382,12 @@ QA: 빠르게 테스트해볼 수 있나요?
 | `GA_Skill1` | 예제 스킬. ActivateAbility에서 타겟팅을 시작하고 몽타주를 재생한 뒤, 완료 시 효과와 쿨타임 Gameplay Effect를 생성해 대상에게 적용한다. | [GA_Skill1.cpp](https://github.com/rech4210/Portfolio/blob/27c92a3b332970da3d2fdef841c3a48a90db0ce5/Source/MyGame/Private/Shared/GAS/Skill/GA_Skill1.cpp) |
 | `SkillDataAsset` | 스킬 메타 정보를 담은 데이터 자산. 스킬 ID, 타겟 전략, Ability/Effect 클래스, 쿨타임, 비용, 애니메이션 몽타주 등을 정의하여 스킬 실행 시 활용된다. | [SkillDataAsset.h](https://github.com/rech4210/Portfolio/blob/27c92a3b332970da3d2fdef841c3a48a90db0ce5/Source/SkillModule/Public/Data/SkillDataAsset.h) |
 | `SkillComponent` | 스킬 슬롯과 스킬 데이터 복제를 담당. FSkillSlotReplicationData로 슬롯 정보를 동기화하고, 쿨다운 및 캐시된 스킬 데이터를 관리한다. | [SkillComponent.h](https://github.com/rech4210/Portfolio/blob/27c92a3b332970da3d2fdef841c3a48a90db0ce5/Source/SkillModule/Public/Components/SkillComponent.h) |
-| `ULocalDataBaseLoader` | 로컬 데이터베이스/데이터 자산을 로딩하고 매핑하여 능력 시스템과 스킬 시스템이 사용할 수 있도록 제공하는 캐시 계층. DataAsset 기반 메타와 DB 데이터를 결합해 안정적인 컨텍스트를 구성한다. | [ULocalDataBaseLoader.h](https://github.com/rech4210/Portfolio/blob/27c92a3b332970da3d2fdef841c3a48a90db0ce5/Source/SkillModule/Public/Utill/LocalDataBaseLoader.h) / [ULocalDataBaseLoader.cpp](https://github.com/rech4210/Portfolio/blob/27c92a3b332970da3d2fdef841c3a48a90db0ce5/Source/SkillModule/Private/Utill/LocalDataBaseLoader.cpp) |
+| `ULocalDataBaseLoader` | AssetManager에서 `SkillDataAsset`을 로드하고 `SkillID`와 `PrimaryAssetId`를 매핑한다. DB 조회는 `DatabaseModule`이 담당한다. | [ULocalDataBaseLoader.h](https://github.com/rech4210/Portfolio/blob/27c92a3b332970da3d2fdef841c3a48a90db0ce5/Source/SkillModule/Public/Utill/LocalDataBaseLoader.h) / [ULocalDataBaseLoader.cpp](https://github.com/rech4210/Portfolio/blob/27c92a3b332970da3d2fdef841c3a48a90db0ce5/Source/SkillModule/Private/Utill/LocalDataBaseLoader.cpp) |
 
 
 
 Ability가 실행되면 `GameplayEffect`가 적용되며, GE의 `SetByCaller`를 사용해 `SkillID`를 함께 전달합니다.  
-> 하지만 `SetByCaller`는 메모리 기반 데이터로 구성되기 때문에 네트워크 직렬화가 어렵고, 클라이언트와 서버 간 안정적인 데이터 공유가 불가능합니다.
+> 이 프로젝트에서는 `SetByCaller`만으로 스킬 데이터를 공유하지 않고, 클라이언트와 서버가 `PrimaryAssetId`를 이용해 에셋을 참조하도록 구성했습니다.
 
 이를 위해 Unreal의 **AssetManager**를 활용하여, 서버와 클라이언트가 공유할 수 있는 **PrimaryAssetId 기반 자산 동기화 방식**을 사용합니다.  
 런타임에 자산 로드가 이루어지며, ULocalDataBaseLoader를 통해 캐시된 에셋을 사용할 수 있습니다.
@@ -403,7 +409,7 @@ else {
 
 
 
-![Image](https://raw.githubusercontent.com/rech4210/Portfolio/27c92a3b332970da3d2fdef841c3a48a90db0ce5/ScreenShot/10.플레이어간스킬사용GE적용.png)
+![Image](ScreenShot/10.플레이어간스킬사용GE적용.png)
 > GE가 적용되고, 타겟 ASC에 접근하여 체력이 수정되었습니다.
 
 
@@ -413,17 +419,17 @@ else {
 
 <br>
 
-![Image](https://raw.githubusercontent.com/rech4210/Portfolio/27c92a3b332970da3d2fdef841c3a48a90db0ce5/ScreenShot/11.스킬에셋.png)  
+![Image](ScreenShot/11.스킬에셋.png)
 #### 설계 이유
  - **디자이너 친화적 스킬 정의**: 기획자가 스킬을 쉽게 관리하도록 `AssetManager` 기반의 `SkillDataAsset` 구조를 도입.
- - AssetManager의 스킬 자산의 로딩, 의존성, 생명주기를 중앙 관리하고 비동기 preload 및 스트리밍 최적화로 안정적이고 빠른 접근을 보장한다.
+ - AssetManager가 스킬 자산의 식별자와 로딩을 관리하도록 구성했다.
 
 #### 스킬 로드과정
  - 서버는 DB에서 스킬 ID 컬럼을 기반으로 `ULocalDataBaseLoader`를 통해 대응하는 `PrimaryAssetId`를 조회한다.  
  - 게임 시작 시 `AssetManager`로 스킬 자산을 선로드하고, 이를 바탕으로 `SkillID → PrimaryAssetId` 매핑 테이블을 만든다.  
- - 런타임에는 이 매핑을 써서 `USkillDataAsset`을 안정적으로 참조한다.
+ - 런타임에는 이 매핑에서 `PrimaryAssetId`를 찾아 `USkillDataAsset`을 참조한다.
 
- 이로써 직렬화가 어려운 데이터를 직접 전송하지 않고도, 공통 자산 참조를 통해 안정적으로 스킬 데이터를 동기화할 수 있게 됨.
+ 이 구조에서는 스킬 데이터를 직접 전송하는 대신, 공통 자산 참조를 통해 클라이언트와 서버가 같은 스킬 에셋을 조회하도록 구성했다.
 
 
 ```cpp
@@ -470,13 +476,13 @@ void ULocalDataBaseLoader::Initialize(){
    | `GGwaHUD`                | 능력 데이터와 보스 데이터를 하위 위젯에 전달해 전체 HUD 상태를 조율한다.                                            | [GGwaHUD.cpp](https://github.com/rech4210/Portfolio/blob/27c92a3b332970da3d2fdef841c3a48a90db0ce5/Source/ClientModule/Private/UI/GGwaHUD.cpp)                                |
    | `GGwaWidget`             | ASC/AttributeSet 변경과 효과 적용을 받아 툴팁, 스킬 바, 체력/마나 바 등을 실시간 업데이트한다.                        | [GGwaWidget.cpp](https://github.com/rech4210/Portfolio/blob/27c92a3b332970da3d2fdef841c3a48a90db0ce5/Source/ClientModule/Private/UI/Widget/GGwaWidget.cpp)                   |
 
-![Image](https://raw.githubusercontent.com/rech4210/Portfolio/27c92a3b332970da3d2fdef841c3a48a90db0ce5/ScreenShot/12.ASCAT.png)
+![Image](ScreenShot/12.ASCAT.png)
 
 > 서버로부터 초기 데이터셋을 받아 HUD를 구성하고 GAS 기반 AttributeSet으로 플레이어의 스탯을 설정
 
 #### 버프 및 스킬 쿨타임 UI 처리
 
-![Image](https://raw.githubusercontent.com/rech4210/Portfolio/27c92a3b332970da3d2fdef841c3a48a90db0ce5/ScreenShot/13.UI매핑.png)
+![Image](ScreenShot/13.UI매핑.png)
 
 위 구조로 서버는 단순히 Data만 클라이언트에 복제하면, 클라이언트는 일관된 방식으로 HUD를 구성할 수 있습니다.
 
@@ -484,7 +490,7 @@ void ULocalDataBaseLoader::Initialize(){
 
 ### 보스 캐릭터 구현
 
-![Image](https://raw.githubusercontent.com/rech4210/Portfolio/27c92a3b332970da3d2fdef841c3a48a90db0ce5/ScreenShot/14.보스BT.png)
+![Image](ScreenShot/14.보스BT.png)
 
 > 보스의 Behavior Tree
 
@@ -495,7 +501,7 @@ void ULocalDataBaseLoader::Initialize(){
 보스 캐릭터는 Behavior Tree를 기반으로 동작하며, 총 3단계의 페이즈로 구성되어 있습니다.  
 타겟이 감지되면 공격을 시작하고, 일부 페이즈에서는 광역 공격과 쿨다운 관리도 함께 처리됩니다.
 
-![Image](https://raw.githubusercontent.com/rech4210/Portfolio/27c92a3b332970da3d2fdef841c3a48a90db0ce5/ScreenShot/15.보스공격.png)
+![Image](ScreenShot/15.보스공격.png)
 
 > 근접 공격과 피격에 따른 체력 감소
 
@@ -505,15 +511,15 @@ void ULocalDataBaseLoader::Initialize(){
 ## 4. 배운 점
 
 **1. 모듈화 & DDD (DIP, SRP)**  
-- 책임 분리: Subsystem → DomainService → Component → Repository → DBManager로 계층을 나눠 변경 시 영향 범위를 좁혔다.
+- 책임 분리: Subsystem, DomainService, Component, Repository, DBManager의 역할을 나눠 변경 영향 범위를 줄이도록 설계했다.
 - 인프라 유연성: 저장소를 추상화해서 MySQL 외에 Redis/NoSQL 같은 보조 DB를 시험 적용할 수 있었다.  
 - 확장성: 새로운 기능을 기존 코드 수정 없이 느슨하게 붙일 수 있게 설계되었다.  
-- 테스트 용이성: MockRepository 등을 활용해 실제 DB 없이도 빠른 검증을 수행할 수 있게 하였다.
+- 테스트 용이성: 실제 DB 없이 검증하는 방법을 목표로 했으나, 이 저장소에는 `MockRepository`나 관련 테스트 구현이 포함되어 있지 않다.
 
 **2. GAS × Dedicated Server 통합**  
 - 서버/클라이언트 역할 분리: 서버가 진실을 관리하고, 클라이언트는 복제된 상태와 이벤트로 UI를 즉시 반응시키는 협업 모델을 배웠다.  
 - 복제: OnRep_, RPC, Replicate 흐름과 서버 측 요청등 네트워크 흐름을 이해하게 되었다.  
-- 직렬화 대응: 네트워크간의 메모리 복제 문제를 primitive 타입 인자로 AssetManager 기반 SkillDataAsset ↔ PrimaryAssetId 매핑으로 우회해 안정적인 컨텍스트 재구성을 했다.  
+- 직렬화 대응: 네트워크간의 메모리 복제 문제를 primitive 타입 인자로 AssetManager 기반 SkillDataAsset ↔ PrimaryAssetId 매핑으로 우회하는 경로를 구성했다.
 - 실전적 동기화 이해: Unreal 복제 정책, FastArraySerializer, RPC 위임 등을 실제 시스템에서 경험하며 개념을 체감했다.
 
 **3. Docker 기반 DB 환경**  
@@ -522,9 +528,9 @@ void ULocalDataBaseLoader::Initialize(){
 - 지속성 보장: 볼륨을 통해 컨테이너 재시작에도 데이터가 유지되어 개발 중 손실 위험을 낮췄다.
 
 **4. UE::Tasks 사용 이유**  
-- Tick 블로킹 방지: I/O나 DB 작업을 게임 스레드와 분리해 프레임 드랍을 피했다. (이는 게임 스레드의 핵심 로직이 거의 싱글 스레드 기반이기 때문이다)
-- 서버 스케일링 대응: 동시 다수 요청을 병렬로 처리할 수 있기에 안정적인 대응이 가능하다.  
-- 스레드 안전성: 공식 비동기 API로 비동기 결과를 GameThread로 안전하게 수행하는 래퍼를 제공한다.
+- Tick 블로킹 완화를 목표로 I/O·DB 작업을 `UE::Tasks` 작업으로 실행하도록 구성했다.
+- 서버 스케일링 대응: 다수 요청을 병렬 처리하는 구조를 목표로 구성했다.
+- 결과는 `UE::Tasks::TTask`로 전달하며, 별도의 GameThread 전환은 해당 코드에서 확인되지 않는다.
 
 **5. JWT 기반 인증**  
 - 책임 분리: 민감한 인증 로직을 외부 JWT 서버에 위임해 게임 서버의 보안 경계를 명확히 했다.  
@@ -551,8 +557,8 @@ void ULocalDataBaseLoader::Initialize(){
 - 개선: SkillHUDViewModel 같은 중간 표현을 두어 상태 해석을 분리하고, 위젯은 단순히 바인딩만 하도록 한다.
 
 **4. CI/CD 고도화**  
-![Image](https://raw.githubusercontent.com/rech4210/Portfolio/27c92a3b332970da3d2fdef841c3a48a90db0ce5/ScreenShot/16.CI.png)
+![Image](ScreenShot/16.CI.png)
 
-현재 Git Action으로 CI를 시도하였으나 미흡하다고 판단.
+현재 GitHub Actions에는 인증 서버 `npm test` 워크플로와 Windows self-hosted Unreal 빌드·Automation Test 워크플로가 설정되어 있다. `self_hosted_ci.yml`과 `ue_ci.yml`은 주석 처리되어 있다.
 - 스키마-도메인 동기화 테스트: 스키마 변경 발생 시 테스트 DB를 띄워 전체 흐름(예: 스킬 등록/쿨다운)을 자동으로 검증한다.  
 - Feature Flag / Canary Release: 변경을 제한된 그룹에 먼저 적용해 문제를 조기에 발견한다.
