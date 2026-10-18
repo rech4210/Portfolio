@@ -22,7 +22,7 @@ DECLARE_LOG_CATEGORY_EXTERN(LogServerAuth, Log, All);
  * Non-Responsibilities:
  *  - Password hashing / policy (external service)
  *  - Storing credentials locally (no DB persistence of secrets)
- *  - Token transport via travel URL (Deprecated: avoid ?token= leaks)
+ *  - JWT transport via URL query (deprecated; avoid this method)
  * Migration Notes:
  *  - Legacy UAuthSubsystem to be removed once all references replaced.
  *  - UAuthVerificationService is deprecated—use UAuthExternalService.

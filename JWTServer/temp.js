@@ -7,10 +7,17 @@ const { v4: uuidv4 } = require('uuid');
 
 dotenv.config();
 
+const requiredEnv = ['JWT_SECRET', 'DB_PASSWORD'];
+const missingEnv = requiredEnv.filter((name) => !process.env[name]);
+if (missingEnv.length > 0) {
+    console.error(`Missing required environment variables: ${missingEnv.join(", ")}`);
+    process.exit(1);
+}
+
 const app = express();
 app.use(express.json());
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-default-secret-key';
+const JWT_SECRET = process.env.JWT_SECRET;
 const SALT_ROUNDS = 10;
 
 // --- Database Connection Pool ---
@@ -19,7 +26,7 @@ const dbPool = mysql.createPool({
     host: process.env.DB_HOST || '127.0.0.1',
     port: process.env.DB_PORT || 3307,
     user: process.env.DB_USER || 'Regacy',
-    password: process.env.DB_PASSWORD || 'GGwa1234',
+    password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME || 'MyGameDB',
     waitForConnections: true,
     connectionLimit: 10,
@@ -277,7 +284,7 @@ app.post('/login', async (req, res) => {
 
         res.json({ 
             success: true,
-            token: token,
+            'token': token,
             user: {
                 userId: user.user_id,
                 username: user.username,

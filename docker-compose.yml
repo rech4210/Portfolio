@@ -4,10 +4,10 @@ services:
     container_name: MySQLContainer
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: test
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: MyGameDB
       MYSQL_USER: Regacy
-      MYSQL_PASSWORD: GGwa1234
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     ports:
       - "3307:3306" # 3307 임의 포트
     volumes:

@@ -9,7 +9,6 @@ REM --- 설정 (Docker 환경에 맞게 수정) ---
 SET DB_HOST=127.0.0.1
 SET DB_PORT=3307
 SET DB_USER=Regacy
-SET DB_PASSWORD=GGwa1234
 SET DB_NAME=MyGameDB
 SET MYSQL_PATH="C:\Program Files\MySQL\MySQL Server 8.4\bin\mysql.exe"
 REM ---------------
@@ -58,9 +57,9 @@ ECHO.
 ECHO Executing schema on Docker database: %DB_NAME%...
 
 REM MySQL 클라이언트로 실행 (데이터베이스 생성 포함)
-ECHO CREATE DATABASE IF NOT EXISTS %DB_NAME% CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; | %MYSQL_PATH% -h %DB_HOST% -P %DB_PORT% -u %DB_USER% -p%DB_PASSWORD% --ssl-mode=DISABLED
+ECHO CREATE DATABASE IF NOT EXISTS %DB_NAME% CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; | %MYSQL_PATH% -h %DB_HOST% -P %DB_PORT% -u %DB_USER% -p --ssl-mode=DISABLED
 
-%MYSQL_PATH% -h %DB_HOST% -P %DB_PORT% -u %DB_USER% -p%DB_PASSWORD%  --ssl-mode=DISABLED %DB_NAME% < %MASTER_SCHEMA_FILE%
+%MYSQL_PATH% -h %DB_HOST% -P %DB_PORT% -u %DB_USER% -p  --ssl-mode=DISABLED %DB_NAME% < %MASTER_SCHEMA_FILE%
 
 IF %ERRORLEVEL% NEQ 0 (
     ECHO.

@@ -185,7 +185,7 @@
 [2025.07.25-02.11.11:443][152]LogTemp: Warning: [Game Server] PreLogin attempt
 [2025.07.25-02.11.11:444][152]LogTemp: Warning: [Game Server] Connection from address: 127.0.0.1
 [2025.07.25-02.11.11:445][152]LogTemp: Warning: [Game Server] Options: ?Name=DESKTOP-44E40J8-9E839B534E67F26C41CCD2B53888B11F?SplitscreenCount=1
-[2025.07.25-02.11.11:446][152]LogTemp: Warning: [Game Server] Provided Token: ...
+[2025.07.25-02.11.11:446][152]LogTemp: Warning: [Game Server] Provided Token: [REDACTED]
 [2025.07.25-02.11.11:446][152]LogTemp: Warning: [Game Server] Provided UserId:
 [2025.07.25-02.11.11:447][152]LogTemp: Warning: [Game Server] Development Mode: Allowing connection without token
 [2025.07.25-02.11.11:575][156]LogTemp: Warning: Server is ALIVE. Current GameMode is [ BP_ServerGameMode_C_0 ] running in map [ ThirdPersonMap ]
@@ -241,17 +241,17 @@
 [2025.07.25-02.11.32:155][772]LogNet: NotifyAcceptingChannel Control 0 server World /Game/Map/ThirdPersonMap.ThirdPersonMap: Accepted
 [2025.07.25-02.11.32:155][772]LogNet: Remote platform little endian=1
 [2025.07.25-02.11.32:156][772]LogNet: This platform little endian=1
-[2025.07.25-02.11.32:188][773]LogNet: Login request: ?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJhNWNmNGJhZC1kMTQ4LTQ2ZmUtODJjYS04YjM5OGJjMWUzOWMiLCJ1c2VybmFtZSI6InRlc3QxIiwiaWF0IjoxNzUzNDA5NDkxLCJleHAiOjE3NTM0MTMwOTF9.5BQ0qOhKpNR0YizznqIgXRpTtegtRxH2nL_jgkYlISM&userid=a5cf4bad-d148-46fe-82ca-8b398bc1e39c?Name=DESKTOP-44E40J8-B0B005764D81E13AE41BFE8CCAB3E82F userId: NULL:DESKTOP-44E40J8-B0B005764D81E13AE41BFE8CCAB3E82F platform: NULL
+[2025.07.25-02.11.32:188][773]LogNet: Login request: ?token=[REDACTED]&userid=a5cf4bad-d148-46fe-82ca-8b398bc1e39c?Name=DESKTOP-44E40J8-B0B005764D81E13AE41BFE8CCAB3E82F userId: NULL:DESKTOP-44E40J8-B0B005764D81E13AE41BFE8CCAB3E82F platform: NULL
 [2025.07.25-02.11.32:190][773]LogTemp: Warning: [Game Server] PreLogin attempt
 [2025.07.25-02.11.32:190][773]LogTemp: Warning: [Game Server] Connection from address: 127.0.0.1
-[2025.07.25-02.11.32:190][773]LogTemp: Warning: [Game Server] Options: ?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJhNWNmNGJhZC1kMTQ4LTQ2ZmUtODJjYS04YjM5OGJjMWUzOWMiLCJ1c2VybmFtZSI6InRlc3QxIiwiaWF0IjoxNzUzNDA5NDkxLCJleHAiOjE3NTM0MTMwOTF9.5BQ0qOhKpNR0YizznqIgXRpTtegtRxH2nL_jgkYlISM&userid=a5cf4bad-d148-46fe-82ca-8b398bc1e39c?Name=DESKTOP-44E40J8-B0B005764D81E13AE41BFE8CCAB3E82F?SplitscreenCount=1
-[2025.07.25-02.11.32:192][773]LogTemp: Warning: [Game Server] Provided Token: eyJhbGciOiJIUzI1NiIs...
+[2025.07.25-02.11.32:190][773]LogTemp: Warning: [Game Server] Options: ?token=[REDACTED]&userid=a5cf4bad-d148-46fe-82ca-8b398bc1e39c?Name=DESKTOP-44E40J8-B0B005764D81E13AE41BFE8CCAB3E82F?SplitscreenCount=1
+[2025.07.25-02.11.32:192][773]LogTemp: Warning: [Game Server] Provided Token: [REDACTED]
 [2025.07.25-02.11.32:192][773]LogTemp: Warning: [Game Server] Provided UserId:
 [2025.07.25-02.11.32:193][773]LogTemp: [Game Server] Starting async token verification for user:
 [2025.07.25-02.11.32:193][773]LogTemp: Warning: [Game Server] Development Mode: AuthVerificationService not available, allowing connection
 [2025.07.25-02.11.32:653][787]LogTemp: Warning: Server is ALIVE. Current GameMode is [ BP_ServerGameMode_C_0 ] running in map [ ThirdPersonMap ]
 [2025.07.25-02.11.32:986][797]LogNet: Client netspeed is 100000
-[2025.07.25-02.11.32:986][797]LogNet: Join request: /Game/Map/ThirdPersonMap?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJhNWNmNGJhZC1kMTQ4LTQ2ZmUtODJjYS04YjM5OGJjMWUzOWMiLCJ1c2VybmFtZSI6InRlc3QxIiwiaWF0IjoxNzUzNDA5NDkxLCJleHAiOjE3NTM0MTMwOTF9.5BQ0qOhKpNR0YizznqIgXRpTtegtRxH2nL_jgkYlISM&userid=a5cf4bad-d148-46fe-82ca-8b398bc1e39c?Name=DESKTOP-44E40J8-B0B005764D81E13AE41BFE8CCAB3E82F?SplitscreenCount=1
+[2025.07.25-02.11.32:986][797]LogNet: Join request: /Game/Map/ThirdPersonMap?token=[REDACTED]&userid=a5cf4bad-d148-46fe-82ca-8b398bc1e39c?Name=DESKTOP-44E40J8-B0B005764D81E13AE41BFE8CCAB3E82F?SplitscreenCount=1
 [2025.07.25-02.11.32:989][797]LogTemp: Warning: GGwaPlayerController::BeginPlay - IsServer: 1 | IsLocalPlayerController: 0
 [2025.07.25-02.11.32:994][797]LogTemp: Warning: Ability: Default__GA_BPMoveAbility_C | InputID: 0
 [2025.07.25-02.11.32:995][797]LogTemp: Warning: Ability: Default__BP_GA_Skill1_C | InputID: 1

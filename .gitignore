@@ -111,4 +111,11 @@ clang_build.txt
 *.database/postgres/*
 *프롬프트용/*
 Gemini.bat
-ProjectBuilder.bat
+ProjectBuilder.batnode_modules/
+.env
+*.env
+!.env.example
+Binaries/
+Intermediate/
+Saved/
+DerivedDataCache/
